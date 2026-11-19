@@ -30,10 +30,15 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#4a5570"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "top": {
-          "colour": "#66718c"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [7, 23, 14, 15],
+          "fit": "fill",
+          "tint": "#f0f2fa"
         },
         "bottom": {
           "colour": "#2a2f3a"
@@ -51,10 +56,15 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#465172"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#f0f2fa"
         },
         "top": {
-          "colour": "#626d8e"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [7, 39, 14, 15],
+          "fit": "fill",
+          "tint": "#e4e8f4"
         },
         "bottom": {
           "colour": "#2a2f3a"
@@ -72,10 +82,15 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#4e5976"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#e4e8f4"
         },
         "top": {
-          "colour": "#6a7592"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [7, 55, 14, 15],
+          "fit": "fill",
+          "tint": "#f8f8ff"
         },
         "bottom": {
           "colour": "#2a2f3a"
@@ -93,10 +108,15 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#43506a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#f8f8ff"
         },
         "top": {
-          "colour": "#5f6a86"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [7, 71, 14, 15],
+          "fit": "fill",
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2f3a"
@@ -338,6 +358,102 @@
         },
         "top": {
           "colour": "#80859a"
+        }
+      }
+    },
+    {
+      "id": "pebble-1",
+      "kind": "cylinder",
+      "at": [-1.42, 0, 0.62],
+      "size": [0.17, 0.08, 0.136],
+      "turn": [0, 20, 0],
+      "sides": 5,
+      "taper": 0.6,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 30],
+          "tint": "#e0e4f0"
+        },
+        "top": {
+          "colour": "#6a7590"
+        },
+        "bottom": {
+          "colour": "#2a2f3a"
+        }
+      }
+    },
+    {
+      "id": "pebble-2",
+      "kind": "cylinder",
+      "at": [-0.3, 0, 1.45],
+      "size": [0.12, 0.06, 0.096],
+      "turn": [0, 50, 0],
+      "sides": 5,
+      "taper": 0.6,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 30],
+          "tint": "#d8dcec"
+        },
+        "top": {
+          "colour": "#6a7590"
+        },
+        "bottom": {
+          "colour": "#2a2f3a"
+        }
+      }
+    },
+    {
+      "id": "pebble-3",
+      "kind": "cylinder",
+      "at": [0.86, 0, 1.43],
+      "size": [0.2, 0.09, 0.16000000000000003],
+      "turn": [0, -15, 0],
+      "sides": 5,
+      "taper": 0.6,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 30],
+          "tint": "#e8ecf4"
+        },
+        "top": {
+          "colour": "#6a7590"
+        },
+        "bottom": {
+          "colour": "#2a2f3a"
+        }
+      }
+    },
+    {
+      "id": "pebble-4",
+      "kind": "cylinder",
+      "at": [1.45, 0, -0.18],
+      "size": [0.1, 0.05, 0.08000000000000002],
+      "turn": [0, 70, 0],
+      "sides": 5,
+      "taper": 0.6,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 30],
+          "tint": "#d0d6e8"
+        },
+        "top": {
+          "colour": "#6a7590"
+        },
+        "bottom": {
+          "colour": "#2a2f3a"
         }
       }
     }

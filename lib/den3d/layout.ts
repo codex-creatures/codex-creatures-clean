@@ -18,7 +18,7 @@ import { FLOOR, ROCK, type Floorplan, type Pt, type Rect } from "../dungeon/floo
 import { OBJ, type ObjId } from "../den/scene";
 
 export const HALL_W = 12;        // floor tiles across each room's half of the hall
-export const HALL_D = 11;        // …and down it
+export const HALL_D = 15;        // …and down it (the user, 2026-11-19: 4 more rows south, for the bigger pool and pits)
 export const NOOK_W = 6;         // floor tiles across each room's half of the nook
 export const NOOK_D = 6;         // …and down it
 export const DEN_WALL = 3;       // 🧪 u: the Den's rock walls (the Labyrinth's are 2.25): a cavern, so the buildings stand under them
@@ -70,7 +70,7 @@ export type DenLayout = { floor?: Partial<Record<FloorKey, Pt>>; wall?: Partial<
 export const FLOOR_KEYS: FloorKey[] = ["altar", "pool", "pit", "training"];
 export const WALL_KEYS: WallKey[] = ["board", "bookcase", "cage"];
 export const SNAP = 0.5;                      // u: the floor grid
-export const FLOOR_START: Record<FloorKey, Pt> = { altar: { x: 7, y: 13 }, pool: { x: 4.7, y: 17 }, pit: { x: 9.9, y: 16.9 }, training: { x: 17.5, y: 15 } };
+export const FLOOR_START: Record<FloorKey, Pt> = { altar: { x: 8, y: 12.5 }, pool: { x: 6.4, y: 20 }, pit: { x: 10.2, y: 17 }, training: { x: 18.5, y: 16.5 } };
 export const WALL_START: Record<WallKey, SlotId> = { board: "hall-1", bookcase: "hall-2", cage: "nook-1" };
 // A wall slot: where along which face (x, the face's y), and how wide a thing it takes.
 export type Slot = { id: SlotId; x: number; face: number; wide: number; opened?: boolean };
@@ -82,20 +82,21 @@ export const SLOTS: Slot[] = [
   { id: "nook-2", x: 18.6, face: NOOK_N, wide: 1.5, opened: true },
 ];
 // Each movable thing's size (u), and how far a wall thing stands out from its wall (0: hung on it).
-export const FLOOR_SIZE: Record<FloorKey, { w: number; d: number }> = { altar: { w: 2.2, d: 2 }, pool: { w: 2, d: 1.5 }, pit: { w: 2.6, d: 2.8 }, training: { w: 2.6, d: 3.1 } };
-const WALL_SIZE: Record<WallKey, { w: number; d: number; out: number }> = { board: { w: 1.35, d: 0.2, out: 0 }, bookcase: { w: 1.25, d: 0.5, out: 0.25 }, cage: { w: 1.1, d: 1.1, out: 0.6 } };
+// (The user, 2026-11-19: the altar 0.6 the size, the pool big and swampy, the Sparring/Training Pit twice the size.)
+export const FLOOR_SIZE: Record<FloorKey, { w: number; d: number }> = { altar: { w: 1.6, d: 1.5 }, pool: { w: 3.8, d: 2.6 }, pit: { w: 2.6, d: 2.8 }, training: { w: 5.2, d: 5.2 } };
+const WALL_SIZE: Record<WallKey, { w: number; d: number; out: number }> = { board: { w: 1.35, d: 0.2, out: 0 }, bookcase: { w: 1.25, d: 0.5, out: 0.25 }, cage: { w: 1.05, d: 1.05, out: 0.55 } };
 // The middle of the hall, where floor things may stand (room 2's half only once the wall's gone; a margin
 // kept clear for walking along the walls and in front of the buildings).
 export function floorZone(opened: boolean): { x0: number; x1: number; y0: number; y1: number } {
-  return { x0: 3.6, x1: opened ? ROOM2.x + ROOM2.w - 3.1 : DIVIDE_X - 1.5, y0: HALL_Y + 3, y1: HALL_Y + HALL_D - 0.6 };
+  return { x0: 4.2, x1: opened ? ROOM2.x + ROOM2.w - 3.1 : DIVIDE_X - 1.5, y0: HALL_Y + 3, y1: HALL_Y + HALL_D - 0.6 };
 }
 // The braziers stand either side of the altar's front, and of the pit in the tavern's room: they move with them.
-export const BRAZIER_AT = { dx: 1.5, dy: 1.6 };
+export const BRAZIER_AT: Record<"altar" | "training", { dx: number; dy: number }> = { altar: { dx: 1.15, dy: 1 }, training: { dx: 2.9, dy: 2.1 } };
 // How much floor a thing keeps to itself (its footprint, its braziers, and room to walk round).
 const KEEP = 0.3;
 export function keptBox(key: FloorKey, at: Pt) {
-  const s = FLOOR_SIZE[key], fires = key === "altar" || key === "training";
-  const hw = Math.max(s.w / 2, fires ? BRAZIER_AT.dx + 0.2 : 0) + KEEP, below = Math.max(s.d / 2, fires ? BRAZIER_AT.dy + 0.2 : 0) + KEEP;
+  const s = FLOOR_SIZE[key], fire = key === "altar" || key === "training" ? BRAZIER_AT[key] : null;
+  const hw = Math.max(s.w / 2, fire ? fire.dx + 0.2 : 0) + KEEP, below = Math.max(s.d / 2, fire ? fire.dy + 0.2 : 0) + KEEP;
   return { x0: at.x - hw, x1: at.x + hw, y0: at.y - s.d / 2 - KEEP, y1: at.y + below };
 }
 export const snap = (v: number) => Math.round(v / SNAP) * SNAP;
@@ -170,15 +171,15 @@ export function stations(s: DenState, p: Placed = placed(undefined, s.opened)): 
     return { x: slot.x, y: z.out ? slot.face + z.out : slot.face, w: z.w, d: z.d, room: (slot.x < DIVIDE_X ? 1 : 2) as 1 | 2 };
   };
   const out: Station[] = [
-    { key: "shack", obj: OBJ.crate, label: "Klutz's Den", href: "/klutz", x: 2.15, y: back(HALL_N, 2.5), w: 3.25, d: 2.5, tall: 3, room: 1 },
-    { key: "storehouse", obj: OBJ.chest, label: "Storehouse", href: "/chest?store=1", x: 1.8, y: 13.1, w: 2.6, d: 3.45, tall: 3, turn: "east", room: 1 },
+    { key: "shack", obj: OBJ.crate, label: "Klutz's Den", href: "/klutz", x: 2.15, y: back(HALL_N, 2.7), w: 3.25, d: 2.7, tall: 3, room: 1 },
+    { key: "storehouse", obj: OBJ.chest, label: "Storehouse", href: "/chest?store=1", x: 2.05, y: 13.1, w: 3.1, d: 3.45, tall: 3, turn: "east", room: 1 },
     { key: "arch", obj: OBJ.arch, label: "The Labyrinth", href: "/dungeon", x: mid(ARCH), y: NOOK_N, w: 2.9, d: 0.2, tall: 3, wall: true, room: 1 },
     { key: "lectern", obj: OBJ.scroll, label: "Bestiary", href: "/guide", x: 11.6, y: 4.6, w: 0.8, d: 0.6, tall: 1.3, room: 1 },
     { key: "board", obj: OBJ.quests, label: "Quest Board", href: "/board", ...wallAt("board"), tall: 2.45, wall: true, move: "wall" },
     { key: "bookcase", obj: OBJ.bookcase, label: "Bookcase", href: "/bookcase", ...wallAt("bookcase"), tall: 2, move: "wall" },
-    { key: "cage", obj: OBJ.cage, label: "Cage", href: "/cage", ...wallAt("cage"), tall: 2.1, move: "wall" },
-    { key: "altar", obj: OBJ.altar, label: "Soul Altar", href: "/altar", ...floorAt("altar"), tall: 2, move: "floor" },
-    { key: "pool", obj: OBJ.pool, label: "Healing Pool", href: "/pool", ...floorAt("pool"), tall: 0.4, move: "floor" },
+    { key: "cage", obj: OBJ.cage, label: "Cage", href: "/cage", ...wallAt("cage"), tall: 1.6, move: "wall" },
+    { key: "altar", obj: OBJ.altar, label: "Soul Altar", href: "/altar", ...floorAt("altar"), tall: 1.45, move: "floor" },
+    { key: "pool", obj: OBJ.pool, label: "Healing Pool", href: "/pool", ...floorAt("pool"), tall: 0.7, move: "floor" },
     { key: "pit", obj: OBJ.pit, label: "The Pit", href: "/pit", ...floorAt("pit"), tall: 0.6, move: "floor" },
   ];
   // The wall's stone socket, where Klutz uses the Labyrinth Stone (in the old Den's rubble's place: its tour id).
@@ -201,10 +202,10 @@ export const DEN_LIGHT = { torch: 5.5, brazier: 4.5, altar: 4, tavern: 4.5, lant
 export const SCONCES: Pt[] = [{ x: 12.2, y: NOOK_N }, { x: 13.8, y: NOOK_N }, { x: 20, y: HALL_N }];
 export const ARCH_LIGHTS: Pt[] = [{ x: mid(ARCH) - 1.2, y: NOOK_N }, { x: mid(ARCH) + 1.2, y: NOOK_N }];
 export const PORTAL_LIGHTS: Pt[] = [{ x: mid(PORTAL) - 1.2, y: NOOK_N }, { x: mid(PORTAL) + 1.2, y: NOOK_N }];
-const LANTERNS: Pt[] = [{ x: 2.6, y: 10.4 }, { x: 3.4, y: 13.1 }, { x: 5.2, y: 8.4 }]; // (the shack's and storehouse's doors, the board)
+const LANTERNS: Pt[] = [{ x: 2.6, y: 10.6 }, { x: 3.9, y: 13.1 }, { x: 5.2, y: 8.4 }]; // (the shack's and storehouse's doors, the board)
 export function braziers(p: Placed, s: DenState): Pt[] {
-  const by = (c: Pt) => [-1, 1].map((k) => ({ x: c.x + k * BRAZIER_AT.dx, y: c.y + BRAZIER_AT.dy }));
-  return [...by(p.floor.altar), ...(s.opened && s.pit ? by(p.floor.training) : [])];
+  const by = (c: Pt, f: { dx: number; dy: number }) => [-1, 1].map((k) => ({ x: c.x + k * f.dx, y: c.y + f.dy }));
+  return [...by(p.floor.altar, BRAZIER_AT.altar), ...(s.opened && s.pit ? by(p.floor.training, BRAZIER_AT.training) : [])];
 }
 export function denLights(s: DenState, p: Placed = placed(undefined, s.opened)): { x: number; y: number; r: number }[] {
   const inRoom = (q: Pt) => s.opened || q.x < DIVIDE_X;
@@ -226,9 +227,9 @@ export function denLit(plan: Floorplan, shown: Uint8Array): Uint8Array {
 // Klutz round room 1 when he's home (up into the nook and back), and visitors round the whole Den, each going
 // from spot to spot along a loop; between spots they find their way round whatever stands in the way
 // (routeLoop), so moving things never leaves anyone walking through them.
-export const KLUTZ_LOOP: Pt[] = [{ x: 4.5, y: 10.6 }, { x: 9.5, y: 9.4 }, { x: 8.8, y: 4.6 }, { x: 11.5, y: 10.2 }, { x: 7, y: 18.1 }, { x: 4.3, y: 15.6 }];
-export const VISITOR_LOOP: Pt[] = [{ x: 15, y: 11 }, { x: 16.5, y: 4.6 }, { x: 19, y: 10.8 }, { x: 23.5, y: 15.5 }, { x: 19, y: 18.1 }, { x: 13, y: 17.5 },
-  { x: 7, y: 18.1 }, { x: 4.3, y: 15.6 }, { x: 4.5, y: 10.6 }, { x: 9.5, y: 9.4 }, { x: 13, y: 5 }];
+export const KLUTZ_LOOP: Pt[] = [{ x: 4.5, y: 10.8 }, { x: 9.5, y: 9.4 }, { x: 8.8, y: 4.6 }, { x: 11.5, y: 10.2 }, { x: 11.6, y: 21.2 }, { x: 5.5, y: 21.9 }, { x: 4.3, y: 16.2 }];
+export const VISITOR_LOOP: Pt[] = [{ x: 15, y: 11 }, { x: 16.5, y: 4.6 }, { x: 19, y: 10.8 }, { x: 23.5, y: 15.5 }, { x: 22.5, y: 21.5 }, { x: 13, y: 21.5 },
+  { x: 5.5, y: 21.9 }, { x: 4.3, y: 16.2 }, { x: 4.5, y: 10.8 }, { x: 9.5, y: 9.4 }, { x: 13, y: 5 }];
 export const STROLL = { klutz: 0.55, visitor: 0.45, pause: 3 }; // u a second; s stopped at each spot
 const CELL = 0.5;                                               // u: the grid they find their way on
 

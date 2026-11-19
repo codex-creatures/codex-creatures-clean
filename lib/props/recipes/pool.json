@@ -4,307 +4,29 @@
   "name": "Healing Pool",
   "setting": "den",
   "ref": {
-    "src": "/sprites/den3d/pool-top.png",
-    "foot": [47, 62]
+    "src": "/sprites/props/healing_pool.png",
+    "foot": [34, 20]
   },
   "halo": {
     "colour": "#2aa3ad",
-    "radius": 1.6,
+    "radius": 2.6,
     "strength": 0.25
   },
   "parts": [
     {
-      "id": "stone-1",
+      "id": "mud",
       "kind": "cylinder",
-      "at": [0.8429, 0, 0.1192],
-      "size": [0.5332, 0.1875, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, -106.2, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#4a4744"
-        },
-        "top": {
-          "colour": "#6e6a66"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "stone-2",
-      "kind": "cylinder",
-      "at": [0.6167, 0, 0.4182],
-      "size": [0.43, 0.166667, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, -144.33, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#45423f"
-        },
-        "top": {
-          "colour": "#66625e"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "moss-2",
-      "kind": "cylinder",
-      "at": [0.6167, 0.170667, 0.4182],
-      "size": [0.1806, 0.0125, 0.14],
-      "sides": 7,
-      "turn": [0, -144.33, 0],
+      "at": [0, 0, 0],
+      "size": [4.05, 0.03, 2.76],
+      "sides": 28,
       "faces": {
         "top": {
-          "colour": "#5f7d3c"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#4a4632"
         },
-        "side": {
-          "colour": "#4a6330"
-        }
-      }
-    },
-    {
-      "id": "stone-3",
-      "kind": "cylinder",
-      "at": [0.1947, 0, 0.5844],
-      "size": [0.6364, 0.229167, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, -170.79, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#4f4b48"
-        },
-        "top": {
-          "colour": "#75716c"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "stone-4",
-      "kind": "cylinder",
-      "at": [-0.2891, 0, 0.5651],
-      "size": [0.4816, 0.1875, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, 166.02, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#4a4744"
-        },
-        "top": {
-          "colour": "#6e6a66"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "stone-5",
-      "kind": "cylinder",
-      "at": [-0.6811, 0, 0.3664],
-      "size": [0.5848, 0.208333, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, 137.86, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#45423f"
-        },
-        "top": {
-          "colour": "#66625e"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "moss-5",
-      "kind": "cylinder",
-      "at": [-0.6811, 0.212333, 0.3664],
-      "size": [0.245616, 0.0125, 0.14],
-      "sides": 7,
-      "turn": [0, 137.86, 0],
-      "faces": {
-        "top": {
-          "colour": "#5f7d3c"
-        },
-        "side": {
-          "colour": "#4a6330"
-        }
-      }
-    },
-    {
-      "id": "stone-6",
-      "kind": "cylinder",
-      "at": [-0.8569, 0, 0.0513],
-      "size": [0.4472, 0.166667, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, 97.01, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#4f4b48"
-        },
-        "top": {
-          "colour": "#75716c"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "stone-7",
-      "kind": "cylinder",
-      "at": [-0.7606, 0, -0.28],
-      "size": [0.688, 0.25, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, 52.89, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#4a4744"
-        },
-        "top": {
-          "colour": "#6e6a66"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "stone-8",
-      "kind": "cylinder",
-      "at": [-0.4228, 0, -0.5225],
-      "size": [0.4988, 0.1875, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, 21.5, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#45423f"
-        },
-        "top": {
-          "colour": "#66625e"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "stone-9",
-      "kind": "cylinder",
-      "at": [0.0492, 0, -0.599],
-      "size": [0.5676, 0.208333, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, -2.29, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#4f4b48"
-        },
-        "top": {
-          "colour": "#75716c"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "moss-9",
-      "kind": "cylinder",
-      "at": [0.0492, 0.212333, -0.599],
-      "size": [0.238392, 0.0125, 0.14],
-      "sides": 7,
-      "turn": [0, -2.29, 0],
-      "faces": {
-        "top": {
-          "colour": "#5f7d3c"
-        },
-        "side": {
-          "colour": "#4a6330"
-        }
-      }
-    },
-    {
-      "id": "stone-10",
-      "kind": "cylinder",
-      "at": [0.5056, 0, -0.4854],
-      "size": [0.4644, 0.166667, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, -26.88, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#4a4744"
-        },
-        "top": {
-          "colour": "#6e6a66"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "stone-11",
-      "kind": "cylinder",
-      "at": [0.8014, 0, -0.2176],
-      "size": [0.6192, 0.229167, 0.291667],
-      "sides": 6,
-      "taper": 0.74,
-      "turn": [0, -60.84, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "colour": "#45423f"
-        },
-        "top": {
-          "colour": "#66625e"
-        },
-        "bottom": {
-          "colour": "#2a2826"
-        }
-      }
-    },
-    {
-      "id": "moss-11",
-      "kind": "cylinder",
-      "at": [0.8014, 0.233167, -0.2176],
-      "size": [0.260064, 0.0125, 0.14],
-      "sides": 7,
-      "turn": [0, -60.84, 0],
-      "faces": {
-        "top": {
-          "colour": "#5f7d3c"
-        },
-        "side": {
-          "colour": "#4a6330"
+        "*": {
+          "colour": "#2a261a"
         }
       }
     },
@@ -312,9 +34,8 @@
       "id": "basin",
       "kind": "cylinder",
       "at": [0, 0, 0],
-      "size": [1.75, 0.125, 1.25],
-      "sides": 24,
-      "hole": 0.86,
+      "size": [3.5, 0.05, 2.36],
+      "sides": 28,
       "faces": {
         "side": {
           "colour": "#1c2228"
@@ -334,34 +55,1186 @@
       "id": "water",
       "kind": "cylinder",
       "at": [0, 0, 0],
-      "size": [1.541667, 0.0625, 1.083333],
-      "sides": 24,
-      "glow": true,
+      "size": [3.3, 0.07, 2.16],
+      "sides": 28,
       "faces": {
         "top": {
           "colour": "#1fb5b5",
-          "anim": "ripple"
+          "anim": "ripple",
+          "tint": "#9cc8a4"
         },
         "side": {
-          "colour": "#0a4a5a"
+          "colour": "#0a3a3a"
         },
         "bottom": {
-          "colour": "#0a4a5a"
+          "colour": "#0a3a3a"
+        }
+      }
+    },
+    {
+      "id": "stone-1",
+      "kind": "cylinder",
+      "at": [1.656273, 0, 0],
+      "size": [0.730191, 0.216844, 0.481492],
+      "turn": [0, 90, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4a4744"
+        },
+        "top": {
+          "colour": "#6e6a66"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-2",
+      "kind": "cylinder",
+      "at": [1.449039, 0, 0.69056],
+      "size": [0.688013, 0.243428, 0.449051],
+      "turn": [0, 54.361185, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#45423f"
+        },
+        "top": {
+          "colour": "#66625e"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-3",
+      "kind": "cylinder",
+      "at": [0.749408, 0, 0.998994],
+      "size": [0.283561, 0.149553, 0.185649],
+      "turn": [0, 26.502561, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4f4b48"
+        },
+        "top": {
+          "colour": "#75716c"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "moss-3",
+      "kind": "cylinder",
+      "at": [0.749408, 0.152553, 0.998994],
+      "size": [0.127602, 0.0125, 0.085068],
+      "turn": [0, -63.497439, 0],
+      "sides": 7,
+      "faces": {
+        "top": {
+          "colour": "#4f6d34"
+        },
+        "side": {
+          "colour": "#4a6330"
+        }
+      }
+    },
+    {
+      "id": "stone-4",
+      "kind": "cylinder",
+      "at": [0.521841, 0, 1.143152],
+      "size": [0.406032, 0.108599, 0.254565],
+      "turn": [0, 16.879555, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#3f4448"
+        },
+        "top": {
+          "colour": "#5e6468"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-5",
+      "kind": "cylinder",
+      "at": [0.108432, 0, 1.150785],
+      "size": [0.355876, 0.16384, 0.24422],
+      "turn": [0, 3.58384, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4a4744"
+        },
+        "top": {
+          "colour": "#6e6a66"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "moss-5",
+      "kind": "cylinder",
+      "at": [0.108432, 0.16684, 1.150785],
+      "size": [0.160144, 0.0125, 0.106763],
+      "turn": [0, -86.41616, 0],
+      "sides": 7,
+      "faces": {
+        "top": {
+          "colour": "#5f7d3c"
+        },
+        "side": {
+          "colour": "#4a6330"
+        }
+      }
+    },
+    {
+      "id": "stone-6",
+      "kind": "cylinder",
+      "at": [-0.21968, 0, 1.066273],
+      "size": [0.299805, 0.120835, 0.184162],
+      "turn": [0, -7.797947, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#45423f"
+        },
+        "top": {
+          "colour": "#66625e"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "moss-6",
+      "kind": "cylinder",
+      "at": [-0.21968, 0.123835, 1.066273],
+      "size": [0.134912, 0.0125, 0.089942],
+      "turn": [0, -97.797947, 0],
+      "sides": 7,
+      "faces": {
+        "top": {
+          "colour": "#4f6d34"
+        },
+        "side": {
+          "colour": "#4a6330"
+        }
+      }
+    },
+    {
+      "id": "stone-7",
+      "kind": "cylinder",
+      "at": [-0.543973, 0, 1.15194],
+      "size": [0.371269, 0.104104, 0.219429],
+      "turn": [0, -17.426538, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4f4b48"
+        },
+        "top": {
+          "colour": "#75716c"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-8",
+      "kind": "cylinder",
+      "at": [-0.805255, 0, 0.942086],
+      "size": [0.31586, 0.163628, 0.176323],
+      "turn": [0, -29.6036, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#3f4448"
+        },
+        "top": {
+          "colour": "#5e6468"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "moss-8",
+      "kind": "cylinder",
+      "at": [-0.805255, 0.166628, 0.942086],
+      "size": [0.142137, 0.0125, 0.094758],
+      "turn": [0, -119.6036, 0],
+      "sides": 7,
+      "faces": {
+        "top": {
+          "colour": "#5f7d3c"
+        },
+        "side": {
+          "colour": "#4a6330"
+        }
+      }
+    },
+    {
+      "id": "stone-9",
+      "kind": "cylinder",
+      "at": [-1.115094, 0, 0.868416],
+      "size": [0.406383, 0.111589, 0.248236],
+      "turn": [0, -40.481392, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4a4744"
+        },
+        "top": {
+          "colour": "#6e6a66"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "moss-9",
+      "kind": "cylinder",
+      "at": [-1.115094, 0.114589, 0.868416],
+      "size": [0.182872, 0.0125, 0.121915],
+      "turn": [0, -130.481392, 0],
+      "sides": 7,
+      "faces": {
+        "top": {
+          "colour": "#5f7d3c"
+        },
+        "side": {
+          "colour": "#4a6330"
+        }
+      }
+    },
+    {
+      "id": "stone-10",
+      "kind": "cylinder",
+      "at": [-1.417312, 0, 0.650339],
+      "size": [0.299863, 0.142983, 0.175415],
+      "turn": [0, -55.382233, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#45423f"
+        },
+        "top": {
+          "colour": "#66625e"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-11",
+      "kind": "cylinder",
+      "at": [-1.618502, 0, 0.443014],
+      "size": [0.395342, 0.144404, 0.248052],
+      "turn": [0, -67.618691, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4f4b48"
+        },
+        "top": {
+          "colour": "#75716c"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-12",
+      "kind": "cylinder",
+      "at": [-1.679796, 0, 0.09216],
+      "size": [0.409123, 0.149576, 0.240429],
+      "turn": [0, -85.281598, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#3f4448"
+        },
+        "top": {
+          "colour": "#5e6468"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-13",
+      "kind": "cylinder",
+      "at": [-1.62546, 0, -0.29275],
+      "size": [0.299508, 0.15563, 0.204155],
+      "turn": [0, -105.160356, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4a4744"
+        },
+        "top": {
+          "colour": "#6e6a66"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "moss-13",
+      "kind": "cylinder",
+      "at": [-1.62546, 0.15863, -0.29275],
+      "size": [0.134779, 0.0125, 0.089852],
+      "turn": [0, -195.160356, 0],
+      "sides": 7,
+      "faces": {
+        "top": {
+          "colour": "#4f6d34"
+        },
+        "side": {
+          "colour": "#4a6330"
+        }
+      }
+    },
+    {
+      "id": "stone-14",
+      "kind": "cylinder",
+      "at": [-1.414217, 0, -0.524382],
+      "size": [0.601701, 0.206231, 0.420848],
+      "turn": [0, -119.154107, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#45423f"
+        },
+        "top": {
+          "colour": "#66625e"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "moss-14",
+      "kind": "cylinder",
+      "at": [-1.414217, 0.209231, -0.524382],
+      "size": [0.270765, 0.0125, 0.18051],
+      "turn": [0, -209.154107, 0],
+      "sides": 7,
+      "faces": {
+        "top": {
+          "colour": "#4f6d34"
+        },
+        "side": {
+          "colour": "#4a6330"
+        }
+      }
+    },
+    {
+      "id": "stone-15",
+      "kind": "cylinder",
+      "at": [-1.00363, 0, -0.943884],
+      "size": [0.614277, 0.211024, 0.422795],
+      "turn": [0, -144.748083, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4f4b48"
+        },
+        "top": {
+          "colour": "#75716c"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-16",
+      "kind": "cylinder",
+      "at": [-0.424123, 0, -1.179541],
+      "size": [0.39934, 0.153279, 0.236135],
+      "turn": [0, -166.558146, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#3f4448"
+        },
+        "top": {
+          "colour": "#5e6468"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "moss-16",
+      "kind": "cylinder",
+      "at": [-0.424123, 0.156279, -1.179541],
+      "size": [0.179703, 0.0125, 0.119802],
+      "turn": [0, -256.558146, 0],
+      "sides": 7,
+      "faces": {
+        "top": {
+          "colour": "#5f7d3c"
+        },
+        "side": {
+          "colour": "#4a6330"
+        }
+      }
+    },
+    {
+      "id": "stone-17",
+      "kind": "cylinder",
+      "at": [-0.0147, 0, -1.160124],
+      "size": [0.500396, 0.21851, 0.330848],
+      "turn": [0, -179.517449, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4a4744"
+        },
+        "top": {
+          "colour": "#6e6a66"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-18",
+      "kind": "cylinder",
+      "at": [0.485829, 0, -1.164161],
+      "size": [0.282849, 0.116461, 0.171432],
+      "turn": [0, -195.50379, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#45423f"
+        },
+        "top": {
+          "colour": "#66625e"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-19",
+      "kind": "cylinder",
+      "at": [0.660322, 0, -0.952954],
+      "size": [0.622315, 0.273039, 0.401729],
+      "turn": [0, -204.730247, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4f4b48"
+        },
+        "top": {
+          "colour": "#75716c"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-20",
+      "kind": "cylinder",
+      "at": [1.165442, 0, -0.756319],
+      "size": [0.725013, 0.277499, 0.460233],
+      "turn": [0, -225.686978, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#3f4448"
+        },
+        "top": {
+          "colour": "#5e6468"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-21",
+      "kind": "cylinder",
+      "at": [1.564888, 0, -0.313533],
+      "size": [0.555694, 0.245153, 0.309995],
+      "turn": [0, -253.226187, 0],
+      "sides": 6,
+      "taper": 0.72,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#4a4744"
+        },
+        "top": {
+          "colour": "#6e6a66"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "mat-1",
+      "kind": "cylinder",
+      "at": [-0.554667, 0.03, -1.134392],
+      "size": [0.424547, 0.008, 0.183928],
+      "sides": 8,
+      "faces": {
+        "top": {
+          "colour": "#33592a"
+        },
+        "side": {
+          "colour": "#284a21"
+        }
+      }
+    },
+    {
+      "id": "mat-2",
+      "kind": "cylinder",
+      "at": [1.415472, 0.03, 0.769468],
+      "size": [0.33269, 0.008, 0.262543],
+      "sides": 8,
+      "faces": {
+        "top": {
+          "colour": "#41702f"
+        },
+        "side": {
+          "colour": "#284a21"
+        }
+      }
+    },
+    {
+      "id": "mat-3",
+      "kind": "cylinder",
+      "at": [1.37143, 0.03, -0.714334],
+      "size": [0.520784, 0.008, 0.283364],
+      "sides": 8,
+      "faces": {
+        "top": {
+          "colour": "#284a21"
+        },
+        "side": {
+          "colour": "#284a21"
+        }
+      }
+    },
+    {
+      "id": "mat-4",
+      "kind": "cylinder",
+      "at": [1.841556, 0.03, -0.055035],
+      "size": [0.491221, 0.008, 0.230352],
+      "sides": 8,
+      "faces": {
+        "top": {
+          "colour": "#4f8238"
+        },
+        "side": {
+          "colour": "#284a21"
+        }
+      }
+    },
+    {
+      "id": "mat-5",
+      "kind": "cylinder",
+      "at": [0.020438, 0.03, 1.191878],
+      "size": [0.520554, 0.008, 0.227796],
+      "sides": 8,
+      "faces": {
+        "top": {
+          "colour": "#33592a"
+        },
+        "side": {
+          "colour": "#284a21"
+        }
+      }
+    },
+    {
+      "id": "mat-6",
+      "kind": "cylinder",
+      "at": [0.171191, 0.03, 1.165663],
+      "size": [0.521746, 0.008, 0.247053],
+      "sides": 8,
+      "faces": {
+        "top": {
+          "colour": "#41702f"
+        },
+        "side": {
+          "colour": "#284a21"
+        }
+      }
+    },
+    {
+      "id": "mat-7",
+      "kind": "cylinder",
+      "at": [-1.077395, 0.03, 0.952411],
+      "size": [0.483723, 0.008, 0.220203],
+      "sides": 8,
+      "faces": {
+        "top": {
+          "colour": "#284a21"
+        },
+        "side": {
+          "colour": "#284a21"
+        }
+      }
+    },
+    {
+      "id": "mat-8",
+      "kind": "cylinder",
+      "at": [-0.277937, 0.03, -1.157991],
+      "size": [0.349657, 0.008, 0.217406],
+      "sides": 8,
+      "faces": {
+        "top": {
+          "colour": "#4f8238"
+        },
+        "side": {
+          "colour": "#284a21"
+        }
+      }
+    },
+    {
+      "id": "mat-9",
+      "kind": "cylinder",
+      "at": [1.83974, 0.03, -0.110152],
+      "size": [0.458102, 0.008, 0.284663],
+      "sides": 8,
+      "faces": {
+        "top": {
+          "colour": "#33592a"
+        },
+        "side": {
+          "colour": "#284a21"
+        }
+      }
+    },
+    {
+      "id": "reed-1-1",
+      "kind": "box",
+      "at": [-1.182672, 0, -0.816102],
+      "size": [0.041667, 0.608086, 0.041667],
+      "turn": [-5.833762, 0, -0.051101],
+      "faces": {
+        "*": {
+          "colour": "#4a6a2c"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "rush-1-1",
+      "kind": "box",
+      "at": [-1.182672, 0.516873, -0.816102],
+      "size": [0.0625, 0.166667, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a3a22"
+        },
+        "top": {
+          "colour": "#7a5434"
+        }
+      }
+    },
+    {
+      "id": "reed-1-2",
+      "kind": "box",
+      "at": [-1.241439, 0, -0.651932],
+      "size": [0.041667, 0.542829, 0.041667],
+      "turn": [-5.005584, 0, -1.06662],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-1-3",
+      "kind": "box",
+      "at": [-1.284955, 0, -0.745221],
+      "size": [0.041667, 0.574609, 0.041667],
+      "turn": [0.107819, 0, 5.142931],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-1-4",
+      "kind": "box",
+      "at": [-1.249648, 0, -0.854276],
+      "size": [0.041667, 0.469535, 0.041667],
+      "turn": [0.667058, 0, -5.944877],
+      "faces": {
+        "*": {
+          "colour": "#4a6a2c"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "rush-1-4",
+      "kind": "box",
+      "at": [-1.249648, 0.399104, -0.854276],
+      "size": [0.0625, 0.166667, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a3a22"
+        },
+        "top": {
+          "colour": "#7a5434"
+        }
+      }
+    },
+    {
+      "id": "reed-1-5",
+      "kind": "box",
+      "at": [-1.433638, 0, -0.808143],
+      "size": [0.041667, 0.613829, 0.041667],
+      "turn": [-1.133266, 0, -8.493755],
+      "faces": {
+        "*": {
+          "colour": "#4a6a2c"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-1-6",
+      "kind": "box",
+      "at": [-1.220853, 0, -0.658602],
+      "size": [0.041667, 0.714007, 0.041667],
+      "turn": [2.894469, 0, 9.177754],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-1-7",
+      "kind": "box",
+      "at": [-1.245208, 0, -0.727771],
+      "size": [0.041667, 0.639615, 0.041667],
+      "turn": [6.37119, 0, -9.25967],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "rush-1-7",
+      "kind": "box",
+      "at": [-1.245208, 0.543673, -0.727771],
+      "size": [0.0625, 0.166667, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a3a22"
+        },
+        "top": {
+          "colour": "#7a5434"
+        }
+      }
+    },
+    {
+      "id": "reed-2-1",
+      "kind": "box",
+      "at": [1.032108, 0, -0.936189],
+      "size": [0.041667, 0.383938, 0.041667],
+      "turn": [-7.848059, 0, 2.100846],
+      "faces": {
+        "*": {
+          "colour": "#4a6a2c"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "rush-2-1",
+      "kind": "box",
+      "at": [1.032108, 0.326348, -0.936189],
+      "size": [0.0625, 0.166667, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a3a22"
+        },
+        "top": {
+          "colour": "#7a5434"
+        }
+      }
+    },
+    {
+      "id": "reed-2-2",
+      "kind": "box",
+      "at": [1.076805, 0, -0.930598],
+      "size": [0.041667, 0.430887, 0.041667],
+      "turn": [2.798589, 0, -5.134817],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-2-3",
+      "kind": "box",
+      "at": [1.397582, 0, -0.867028],
+      "size": [0.041667, 0.619501, 0.041667],
+      "turn": [4.389501, 0, -2.062335],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-2-4",
+      "kind": "box",
+      "at": [1.024471, 0, -0.909371],
+      "size": [0.041667, 0.673055, 0.041667],
+      "turn": [7.58984, 0, -6.951359],
+      "faces": {
+        "*": {
+          "colour": "#4a6a2c"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "rush-2-4",
+      "kind": "box",
+      "at": [1.024471, 0.572097, -0.909371],
+      "size": [0.0625, 0.166667, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a3a22"
+        },
+        "top": {
+          "colour": "#7a5434"
+        }
+      }
+    },
+    {
+      "id": "reed-2-5",
+      "kind": "box",
+      "at": [1.20349, 0, -0.933124],
+      "size": [0.041667, 0.434051, 0.041667],
+      "turn": [1.641859, 0, -6.589423],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-2-6",
+      "kind": "box",
+      "at": [1.109089, 0, -0.817759],
+      "size": [0.041667, 0.572443, 0.041667],
+      "turn": [-0.309877, 0, 9.876332],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-3-1",
+      "kind": "box",
+      "at": [1.665367, 0, 0.25918],
+      "size": [0.041667, 0.351666, 0.041667],
+      "turn": [-7.901552, 0, -1.730718],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "rush-3-1",
+      "kind": "box",
+      "at": [1.665367, 0.298916, 0.25918],
+      "size": [0.0625, 0.166667, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a3a22"
+        },
+        "top": {
+          "colour": "#7a5434"
+        }
+      }
+    },
+    {
+      "id": "reed-3-2",
+      "kind": "box",
+      "at": [1.593697, 0, 0.393295],
+      "size": [0.041667, 0.660984, 0.041667],
+      "turn": [4.222942, 0, -1.263337],
+      "faces": {
+        "*": {
+          "colour": "#4a6a2c"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-3-3",
+      "kind": "box",
+      "at": [1.884978, 0, 0.36621],
+      "size": [0.041667, 0.614737, 0.041667],
+      "turn": [1.154612, 0, -3.039321],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-3-4",
+      "kind": "box",
+      "at": [1.698786, 0, 0.298862],
+      "size": [0.041667, 0.57697, 0.041667],
+      "turn": [3.548203, 0, 3.302354],
+      "faces": {
+        "*": {
+          "colour": "#4a6a2c"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "rush-3-4",
+      "kind": "box",
+      "at": [1.698786, 0.490425, 0.298862],
+      "size": [0.0625, 0.166667, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a3a22"
+        },
+        "top": {
+          "colour": "#7a5434"
+        }
+      }
+    },
+    {
+      "id": "reed-4-1",
+      "kind": "box",
+      "at": [-1.65841, 0, 0.234591],
+      "size": [0.041667, 0.688073, 0.041667],
+      "turn": [7.811924, 0, -1.238785],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "rush-4-1",
+      "kind": "box",
+      "at": [-1.65841, 0.584862, 0.234591],
+      "size": [0.0625, 0.166667, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a3a22"
+        },
+        "top": {
+          "colour": "#7a5434"
+        }
+      }
+    },
+    {
+      "id": "reed-4-2",
+      "kind": "box",
+      "at": [-1.567113, 0, 0.25452],
+      "size": [0.041667, 0.493109, 0.041667],
+      "turn": [-6.732583, 0, -3.144663],
+      "faces": {
+        "*": {
+          "colour": "#4a6a2c"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-4-3",
+      "kind": "box",
+      "at": [-1.666648, 0, 0.202378],
+      "size": [0.041667, 0.732074, 0.041667],
+      "turn": [4.592093, 0, -5.858585],
+      "faces": {
+        "*": {
+          "colour": "#5a7a34"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "reed-4-4",
+      "kind": "box",
+      "at": [-1.630607, 0, 0.062906],
+      "size": [0.041667, 0.716224, 0.041667],
+      "turn": [4.802889, 0, 2.703887],
+      "faces": {
+        "*": {
+          "colour": "#4a6a2c"
+        },
+        "top": {
+          "colour": "#7a9a44"
+        }
+      }
+    },
+    {
+      "id": "rush-4-4",
+      "kind": "box",
+      "at": [-1.630607, 0.60879, 0.062906],
+      "size": [0.0625, 0.166667, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a3a22"
+        },
+        "top": {
+          "colour": "#7a5434"
         }
       }
     },
     {
       "id": "lily-1",
       "kind": "cylinder",
-      "at": [-0.36, 0.0625, 0.16],
-      "size": [0.33, 0.0125, 0.24],
+      "at": [-0.8, 0.07, 0.3],
+      "size": [0.36, 0.0125, 0.27],
+      "turn": [0, 0, 0],
       "sides": 9,
-      "turn": [0, 20, 0],
-      "glow": true,
-      "outline": true,
       "faces": {
         "top": {
-          "colour": "#6aa84f"
+          "colour": "#5a9444"
         },
         "side": {
           "colour": "#2f5a2a"
@@ -371,12 +1244,10 @@
     {
       "id": "lily-2",
       "kind": "cylinder",
-      "at": [0.3, 0.0625, -0.16],
-      "size": [0.27, 0.0125, 0.2],
+      "at": [0.55, 0.07, -0.35],
+      "size": [0.3, 0.0125, 0.225],
+      "turn": [0, 37, 0],
       "sides": 9,
-      "turn": [0, -30, 0],
-      "glow": true,
-      "outline": true,
       "faces": {
         "top": {
           "colour": "#6aa84f"
@@ -389,12 +1260,10 @@
     {
       "id": "lily-3",
       "kind": "cylinder",
-      "at": [0.47, 0.0625, 0.18],
-      "size": [0.19, 0.0125, 0.15],
+      "at": [0.95, 0.07, 0.4],
+      "size": [0.22, 0.0125, 0.165],
+      "turn": [0, 74, 0],
       "sides": 9,
-      "turn": [0, 10, 0],
-      "glow": true,
-      "outline": true,
       "faces": {
         "top": {
           "colour": "#6aa84f"
@@ -407,15 +1276,13 @@
     {
       "id": "lily-4",
       "kind": "cylinder",
-      "at": [-0.12, 0.0625, -0.24],
-      "size": [0.16, 0.0125, 0.12],
+      "at": [-0.25, 0.07, -0.5],
+      "size": [0.18, 0.0125, 0.135],
+      "turn": [0, 111, 0],
       "sides": 9,
-      "turn": [0, 45, 0],
-      "glow": true,
-      "outline": true,
       "faces": {
         "top": {
-          "colour": "#6aa84f"
+          "colour": "#5a9444"
         },
         "side": {
           "colour": "#2f5a2a"
@@ -425,12 +1292,10 @@
     {
       "id": "lily-5",
       "kind": "cylinder",
-      "at": [0.08, 0.0625, 0.3],
-      "size": [0.11, 0.0125, 0.085],
-      "sides": 8,
-      "turn": [0, 30, 0],
-      "glow": true,
-      "outline": true,
+      "at": [0.1, 0.07, 0.55],
+      "size": [0.13, 0.0125, 0.0975],
+      "turn": [0, 148, 0],
+      "sides": 9,
       "faces": {
         "top": {
           "colour": "#6aa84f"
@@ -443,15 +1308,106 @@
     {
       "id": "lily-6",
       "kind": "cylinder",
-      "at": [-0.5, 0.0625, -0.08],
-      "size": [0.1, 0.0125, 0.08],
-      "sides": 8,
-      "turn": [0, -15, 0],
-      "glow": true,
-      "outline": true,
+      "at": [-1.1, 0.07, -0.25],
+      "size": [0.14, 0.0125, 0.105],
+      "turn": [0, 185, 0],
+      "sides": 9,
       "faces": {
         "top": {
           "colour": "#6aa84f"
+        },
+        "side": {
+          "colour": "#2f5a2a"
+        }
+      }
+    },
+    {
+      "id": "lily-7",
+      "kind": "cylinder",
+      "at": [1.25, 0.07, -0.05],
+      "size": [0.16, 0.0125, 0.12],
+      "turn": [0, 222, 0],
+      "sides": 9,
+      "faces": {
+        "top": {
+          "colour": "#5a9444"
+        },
+        "side": {
+          "colour": "#2f5a2a"
+        }
+      }
+    },
+    {
+      "id": "lily-8",
+      "kind": "cylinder",
+      "at": [-0.45, 0.07, 0.62],
+      "size": [0.11, 0.0125, 0.0825],
+      "turn": [0, 259, 0],
+      "sides": 9,
+      "faces": {
+        "top": {
+          "colour": "#6aa84f"
+        },
+        "side": {
+          "colour": "#2f5a2a"
+        }
+      }
+    },
+    {
+      "id": "flower",
+      "kind": "cylinder",
+      "at": [-0.8, 0.0825, 0.3],
+      "size": [0.125, 0.0625, 0.104167],
+      "sides": 6,
+      "taper": 1.4,
+      "faces": {
+        "*": {
+          "colour": "#e8a0c0"
+        },
+        "top": {
+          "colour": "#f4d0e0"
+        }
+      }
+    },
+    {
+      "id": "scum-80",
+      "kind": "cylinder",
+      "at": [-1.2, 0.071, 0.5],
+      "size": [0.42, 0.004, 0.21],
+      "sides": 10,
+      "faces": {
+        "top": {
+          "colour": "#3f6a3a"
+        },
+        "side": {
+          "colour": "#2f5a2a"
+        }
+      }
+    },
+    {
+      "id": "scum-81",
+      "kind": "cylinder",
+      "at": [1.05, 0.071, -0.62],
+      "size": [0.38, 0.004, 0.19],
+      "sides": 10,
+      "faces": {
+        "top": {
+          "colour": "#3f6a3a"
+        },
+        "side": {
+          "colour": "#2f5a2a"
+        }
+      }
+    },
+    {
+      "id": "scum-82",
+      "kind": "cylinder",
+      "at": [0.2, 0.071, -0.82],
+      "size": [0.3, 0.004, 0.15],
+      "sides": 10,
+      "faces": {
+        "top": {
+          "colour": "#3f6a3a"
         },
         "side": {
           "colour": "#2f5a2a"

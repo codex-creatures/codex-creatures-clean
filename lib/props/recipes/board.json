@@ -17,10 +17,14 @@
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#3e2618"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9c7c66"
         },
         "top": {
-          "colour": "#5a3a24"
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [2, 2, 22, 44],
+          "tint": "#8a6a58"
         }
       }
     },
@@ -32,10 +36,14 @@
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#3e2618"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9c7c66"
         },
         "top": {
-          "colour": "#5a3a24"
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [2, 2, 22, 44],
+          "tint": "#8a6a58"
         }
       }
     },
@@ -47,7 +55,9 @@
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#6a4028"
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [2, 2, 22, 44],
+          "tint": "#b09078"
         },
         "front": {
           "colour": "#7a4c30"
@@ -62,10 +72,14 @@
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#4a2a1c"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#86644f"
         },
         "top": {
-          "colour": "#6a3e28"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#a88a72"
         }
       }
     },
@@ -77,10 +91,14 @@
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#4a2a1c"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#86644f"
         },
         "top": {
-          "colour": "#6a3e28"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#a88a72"
         }
       }
     },
@@ -92,7 +110,14 @@
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#4a2a1c"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#86644f"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#a88a72"
         }
       }
     },
@@ -104,7 +129,14 @@
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#4a2a1c"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#86644f"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#a88a72"
         }
       }
     },
@@ -135,7 +167,9 @@
           "tint": "#e0d0c0"
         },
         "back": {
-          "colour": "#2e1f14"
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [2, 2, 22, 44],
+          "tint": "#6a5040"
         }
       }
     },
@@ -152,7 +186,9 @@
           "tint": "#9a8a7a"
         },
         "back": {
-          "colour": "#2e1f14"
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [2, 2, 22, 44],
+          "tint": "#6a5040"
         }
       }
     },
@@ -164,10 +200,118 @@
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#7a5a3a"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#a07c5e"
         },
         "top": {
-          "colour": "#9a7a52"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#c09a74"
+        }
+      }
+    },
+    {
+      "id": "plate-lt",
+      "kind": "box",
+      "at": [-0.635, 2.3, 0.105],
+      "size": [0.1875, 0.1875, 0.041667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#33363f"
+        },
+        "front": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "stud-lt",
+      "kind": "box",
+      "at": [-0.635, 2.341667, 0.115],
+      "size": [0.0625, 0.0625, 0.020833],
+      "faces": {
+        "*": {
+          "colour": "#a8acbb"
+        }
+      }
+    },
+    {
+      "id": "plate-rt",
+      "kind": "box",
+      "at": [0.635, 2.3, 0.105],
+      "size": [0.1875, 0.1875, 0.041667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#33363f"
+        },
+        "front": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "stud-rt",
+      "kind": "box",
+      "at": [0.635, 2.341667, 0.115],
+      "size": [0.0625, 0.0625, 0.020833],
+      "faces": {
+        "*": {
+          "colour": "#a8acbb"
+        }
+      }
+    },
+    {
+      "id": "plate-lb",
+      "kind": "box",
+      "at": [-0.635, 0.52, 0.105],
+      "size": [0.1875, 0.1875, 0.041667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#33363f"
+        },
+        "front": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "stud-lb",
+      "kind": "box",
+      "at": [-0.635, 0.561667, 0.115],
+      "size": [0.0625, 0.0625, 0.020833],
+      "faces": {
+        "*": {
+          "colour": "#a8acbb"
+        }
+      }
+    },
+    {
+      "id": "plate-rb",
+      "kind": "box",
+      "at": [0.635, 0.52, 0.105],
+      "size": [0.1875, 0.1875, 0.041667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#33363f"
+        },
+        "front": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "stud-rb",
+      "kind": "box",
+      "at": [0.635, 0.561667, 0.115],
+      "size": [0.0625, 0.0625, 0.020833],
+      "faces": {
+        "*": {
+          "colour": "#a8acbb"
         }
       }
     }

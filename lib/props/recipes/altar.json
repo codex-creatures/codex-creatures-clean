@@ -12,7 +12,7 @@
       "id": "footing",
       "kind": "box",
       "at": [0, 0, 0],
-      "size": [2.25, 0.25, 2.25],
+      "size": [1.35, 0.15, 1.35],
       "outline": true,
       "faces": {
         "*": {
@@ -24,8 +24,8 @@
     {
       "id": "base",
       "kind": "cylinder",
-      "at": [0, 0.25, 0],
-      "size": [2.975742, 0.5, 2.975742],
+      "at": [0, 0.15, 0],
+      "size": [1.785445, 0.3, 1.785445],
       "sides": 4,
       "taper": 0.712871,
       "outline": true,
@@ -46,8 +46,8 @@
     {
       "id": "ledge",
       "kind": "box",
-      "at": [0, 0.75, 0],
-      "size": [1.5, 0.291667, 1.5],
+      "at": [0, 0.45, 0],
+      "size": [0.9, 0.175, 0.9],
       "outline": true,
       "faces": {
         "*": {
@@ -63,8 +63,8 @@
     {
       "id": "corner-base",
       "kind": "box",
-      "at": [1, 0, 1],
-      "size": [0.3125, 0.25, 0.3125],
+      "at": [0.6, 0, 0.6],
+      "size": [0.1875, 0.15, 0.1875],
       "four": true,
       "outline": true,
       "faces": {
@@ -77,8 +77,8 @@
     {
       "id": "corner-pillar",
       "kind": "box",
-      "at": [1, 0.25, 1],
-      "size": [0.270833, 0.791667, 0.270833],
+      "at": [0.6, 0.15, 0.6],
+      "size": [0.1625, 0.475, 0.1625],
       "glow": false,
       "outline": true,
       "faces": {
@@ -96,8 +96,8 @@
     {
       "id": "corner-cap",
       "kind": "box",
-      "at": [1, 1.041667, 1],
-      "size": [0.291667, 0.0625, 0.291667],
+      "at": [0.6, 0.625, 0.6],
+      "size": [0.175, 0.0375, 0.175],
       "light": "unlit",
       "outline": true,
       "faces": {
@@ -113,8 +113,8 @@
     {
       "id": "corner-spike",
       "kind": "cylinder",
-      "at": [1, 1.104167, 1],
-      "size": [0.166667, 0.270833, 0.166667],
+      "at": [0.6, 0.6625, 0.6],
+      "size": [0.1, 0.1625, 0.1],
       "sides": 6,
       "taper": 0,
       "light": "unlit",
@@ -128,8 +128,8 @@
     {
       "id": "cauldron-foot",
       "kind": "cylinder",
-      "at": [0, 1.041667, 0],
-      "size": [0.625, 0.375, 0.625],
+      "at": [0, 0.625, 0],
+      "size": [0.375, 0.225, 0.375],
       "sides": 16,
       "taper": 1.3,
       "outline": true,
@@ -142,8 +142,8 @@
     {
       "id": "cauldron-low",
       "kind": "cylinder",
-      "at": [0, 1.416667, 0],
-      "size": [0.8125, 0.375, 0.8125],
+      "at": [0, 0.85, 0],
+      "size": [0.4875, 0.225, 0.4875],
       "sides": 16,
       "taper": 1.9846,
       "outline": true,
@@ -156,8 +156,8 @@
     {
       "id": "cauldron-high",
       "kind": "cylinder",
-      "at": [0, 1.791667, 0],
-      "size": [1.625, 0.375, 1.625],
+      "at": [0, 1.075, 0],
+      "size": [0.975, 0.225, 0.975],
       "sides": 16,
       "taper": 0.79,
       "outline": true,
@@ -170,8 +170,8 @@
     {
       "id": "cauldron-rim",
       "kind": "cylinder",
-      "at": [0, 2.166667, 0],
-      "size": [1.333333, 0.208333, 1.333333],
+      "at": [0, 1.3, 0],
+      "size": [0.8, 0.125, 0.8],
       "sides": 16,
       "hole": 0.84,
       "outline": true,
@@ -193,8 +193,8 @@
     {
       "id": "soup",
       "kind": "cylinder",
-      "at": [0, 2.229167, 0],
-      "size": [1.125, 0.020833, 1.125],
+      "at": [0, 1.3375, 0],
+      "size": [0.675, 0.0125, 0.675],
       "sides": 16,
       "glow": true,
       "faces": {
@@ -210,8 +210,8 @@
     {
       "id": "skull",
       "kind": "sprite",
-      "at": [0, 1.520834, 0.78],
-      "size": [0.708333, 0.541667],
+      "at": [0, 0.9125, 0.468],
+      "size": [0.425, 0.325],
       "faces": {
         "front": {
           "src": "/sprites/den3d/parts/altar-skull.png",
@@ -223,8 +223,8 @@
     {
       "id": "chain-l",
       "kind": "sprite",
-      "at": [-0.82, 0.625, 0.55],
-      "size": [0.3125, 0.958333],
+      "at": [-0.492, 0.375, 0.33],
+      "size": [0.1875, 0.575],
       "faces": {
         "front": {
           "src": "/sprites/den3d/parts/altar-chain.png",
@@ -236,8 +236,8 @@
     {
       "id": "chain-r",
       "kind": "sprite",
-      "at": [0.82, 0.625, 0.55],
-      "size": [0.3125, 0.958333],
+      "at": [0.492, 0.375, 0.33],
+      "size": [0.1875, 0.575],
       "faces": {
         "front": {
           "src": "/sprites/den3d/parts/altar-chain-r.png",
@@ -249,7 +249,7 @@
   ],
   "halo": {
     "colour": "#5fe0d0",
-    "radius": 2.2,
+    "radius": 1.32,
     "strength": 0.45
   }
 }

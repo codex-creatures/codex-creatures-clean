@@ -62,7 +62,8 @@ function faceMaterial(f: FacePoly, lit: boolean): THREE.MeshBasicMaterial | THRE
       "vFaceUv = uv;\nvec4 mvPosition = modelMatrix * vec4(transformed, 1.0);\nmvPosition.x += uLean * (mvPosition.x - uCx) * mvPosition.y;\n" +
       "mvPosition = viewMatrix * mvPosition;\ngl_Position = projectionMatrix * mvPosition;\n");
     sh.fragmentShader = "uniform vec4 uCrop;\nuniform float uTile;\nuniform float uTime;\nuniform vec2 uCells;\nuniform vec3 uRamp[5];\nvarying vec2 vFaceUv;\n"
-      + (swirl ? SWIRL_GLSL : "") + sh.fragmentShader.replace("#include <map_fragment>", `
+      // (A line break after it: a lit material's shader starts with a #define, which must start its own line.)
+      + (swirl ? SWIRL_GLSL + "\n" : "") + sh.fragmentShader.replace("#include <map_fragment>", `
       #ifdef USE_MAP
         vec2 size = vec2(textureSize(map, 0));
         vec2 f = uTile > 0.5 ? fract(vMapUv) : clamp(vMapUv, 0.0, 0.9999);

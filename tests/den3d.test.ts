@@ -101,8 +101,8 @@ describe("moving things", () => {
     expect(fitsFloor("pool", { x: 8, y: 17 }, start, true)).toBe(false);           // on the Pit
     expect(fitsFloor("altar", { x: 1.5, y: 13 }, start, true)).toBe(false);        // on the storehouse, off the middle
     expect(fitsFloor("altar", { x: 7, y: 9 }, start, true)).toBe(false);           // in front of the shack, off the middle
-    expect(fitsFloor("pool", { x: 15.5, y: 12 }, start, true)).toBe(true);         // across in the tavern's room, once it's open
-    expect(fitsFloor("pool", { x: 15.5, y: 12 }, placed(undefined, false), false)).toBe(false); // …not before
+    expect(fitsFloor("altar", { x: 14.5, y: 12 }, start, true)).toBe(true);        // across in the tavern's room, once it's open
+    expect(fitsFloor("altar", { x: 14.5, y: 12 }, placed(undefined, false), false)).toBe(false); // …not before
     expect(fitsFloor("training", { x: 8, y: 12.5 }, start, true)).toBe(false);     // the tavern's pit stays in its room
     expect(floorZone(false).x1).toBeLessThan(DIVIDE_X - 0.5); // (clear of the old wall's socket)
   });
@@ -119,11 +119,11 @@ describe("moving things", () => {
   });
 
   it("saves only what's moved, and puts back anything saved where it can't stand now", () => {
-    const moved: Placed = { ...start, floor: { ...start.floor, altar: { x: 8, y: 12.5 } } };
-    expect(toLayout(moved)).toEqual({ floor: { altar: { x: 8, y: 12.5 } }, wall: {} });
-    expect(placed({ floor: { altar: { x: 8, y: 12.5 } } }, true).floor.altar).toEqual({ x: 8, y: 12.5 });
+    const moved: Placed = { ...start, floor: { ...start.floor, altar: { x: 7, y: 13 } } };
+    expect(toLayout(moved)).toEqual({ floor: { altar: { x: 7, y: 13 } }, wall: {} });
+    expect(placed({ floor: { altar: { x: 7, y: 13 } } }, true).floor.altar).toEqual({ x: 7, y: 13 });
     expect(placed({ floor: { altar: { x: 1, y: 1 } } }, true).floor.altar).toEqual(FLOOR_START.altar);  // off the floor
-    expect(placed({ floor: { pool: { x: 15.5, y: 12 } } }, false).floor.pool).toEqual(FLOOR_START.pool); // in room 2 with the wall up
+    expect(placed({ floor: { altar: { x: 14.5, y: 12 } } }, false).floor.altar).toEqual(FLOOR_START.altar); // in room 2 with the wall up
     expect(placed({ wall: { cage: "nook-mid" } }, false).wall.cage).toEqual(WALL_START.cage);           // the middle slot with the wall up
     const twice = placed({ wall: { board: "nook-2", cage: "nook-2" } }, true).wall;                      // two in one slot: the later goes back
     expect(twice.board).toBe("nook-2");

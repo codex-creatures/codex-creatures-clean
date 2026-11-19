@@ -42,8 +42,8 @@ placement (players could block themselves in). With it off, nothing changes.
   high (`DEN_WALL`; the Labyrinth's are 2.25): a cavern, the buildings under them. 🧪 The walls and floor
   are the Labyrinth's kit F, every pixel kept, recoloured warm sandstone and earth (scripts/den-kit-warm.mjs);
   lanterns by the shack's and storehouse's doors, braziers in the tavern's room once it's open.
-- **The shape** (the user's drawing, 2026-11-19; lib/den3d/layout.ts): a **T**. A wide hall (12 × 11 floor
-  each side) with a narrower nook (6 × 6 each side) rising from the middle of its back wall, split down the
+- **The shape** (the user's drawing, 2026-11-19; lib/den3d/layout.ts): a **T**. A wide hall (12 × 15 floor
+  each side; 11 deep till the user added 4 rows south, 2026-11-19, for the bigger pool and pits) with a narrower nook (6 × 6 each side) rising from the middle of its back wall, split down the
   middle by a wall that all moves away once Klutz uses the Labyrinth Stone. Each nook has a way out in the
   middle of its north wall, mirrored: a dark hole in the rock face under an arch (the user, 2026-11-18: a hole in
   the wall, not a short corridor; the hole is the arch's open middle, scripts/den-parts.mjs). Room 1's is the
@@ -64,14 +64,20 @@ placement (players could block themselves in). With it off, nothing changes.
   saves; anything saved where it can't stand now goes back to its start. Klutz and visitors find their way
   round wherever things stand (`routeLoop`).
 - **Props from recipes** (the user approved them for the new Den, 2026-11-19, to try with players): the Soul Altar,
-  the healing pool, the Pit, the Sparring and Training Pits, the quest board, Klutz's shack, the storehouse and the
+  the healing pool, the Pit, the Sparring and Training Pits, the quest board, the cage, Klutz's shack, the storehouse and the
   tavern (once repaired; the boarded-up one keeps its old look) are drawn from their recipes (lib/props/recipes,
   world/art-pipeline.md §6.6) by Den3DPlaces' `Place` (`Made`): the buildings and the board with their backs to
   their wall (the storehouse turned to face east from the west wall), the rest in the middle of their footprints.
   They're lit by a key light from the upper left (`DEN_KEY`, Den3D: only the recipes take it) times the Den's own
   light where they stand, as the old drawings were tinted. Footprints, slots, taps and moving them are unchanged.
   A recipe that won't read falls back to its old drawing (lib/props/recipes/load.ts). The user's verdict: the altar
-  the most impressive, the Pit the least detailed and next to improve.
+  the most impressive, the Pit the least detailed and next to improve. Their second round (2026-11-19): the altar 0.6 its
+  size (its soup within reach, under the buildings' eaves), the buildings 1.7× deeper (they read as fronts, not
+  buildings), the board's posts, frame and back in wood, the Sparring and Training Pits twice the size (as many stones and
+  spears again, the dummy 0.85), the Pit's stones in its drawing's blocks with rubble round them, the pool big and swampy
+  as the old Den's (about 3.3 × 2.2 of murky water, a ragged bank, mud, moss, reeds and bulrushes), and a new cage, 1 × 1
+  and 1.5 high (a wooden plinth and posts, iron caps, round bars all round and over the top, straw; the creature on it).
+  The braziers stand closer to the smaller altar and further out round the bigger pit (`BRAZIER_AT`, per place).
 - **3D models** (the user, 2026-11-19, now the fallbacks for the props above): the Soul Altar (a two-tier plinth, a black cauldron with the horned
   skull, teal lanterns, the soul fire and its spirits), the healing pool (a ring of stones round its water and
   lily pads), the Pit (a stone frame, an iron grate) and the Sparring Pit (a low wall round sand, the dummy;
@@ -98,7 +104,7 @@ placement (players could block themselves in). With it off, nothing changes.
 - **The bag:** not in the Den. With the new Den on, the whole bag empties when a run ends (lib/den3d/bag.ts:
   potions back to storage, packed gear unpacked, found things into storage as before; a codex with no room
   on the bookcase stays in it), so you pack it at the Labyrinth's entrance each run. Off: as before.
-- **Art:** the bookcase, cage, lectern, barrels, crates, pots and torches are the Labyrinth's approved 3D
+- **Art:** the bookcase, lectern, barrels, crates, pots and torches are the Labyrinth's approved 3D
   things. 🧪 Samples, waiting for the user's approval (lib/den3d/art.ts, public/sprites/den3d/, PIXELLAB.md;
   the Den palette art/palettes/den.json), each drawn square on screen at 48 art pixels a unit, its size from
   its picture: the **buildings** (shack, storehouse, tavern, and the tavern boarded up till it's repaired) as

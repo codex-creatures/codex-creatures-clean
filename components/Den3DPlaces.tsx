@@ -53,10 +53,12 @@ export function Place({ s, tint, stretch, pitch = Math.PI / 3, caged, repaired, 
     case "cage": {
       const sprite = caged ? CREATURE_SPRITES[caged] : undefined, art = sprite && artFor(sprite);
       const tall = 0.8, w = art ? tall * (art.w / art.h) : 0;
+      // (The cage's recipe, 1 × 1 and 1.5 high, the user's 2026-11-19 redesign; the creature stands on its straw.)
+      const cage = made("cage");
       return (
-        <group position={at}>
-          <Decor3D kind="cage" stretch={stretch} colour={tint} />
-          {art && <Upright src={art.src} x={0} y={0} w={Math.min(w, 0.9)} h={tall * stretch} below={-0.14} colour={tint} />}
+        <group>
+          {cage ?? <group position={at}><Decor3D kind="cage" stretch={stretch} colour={tint} /></group>}
+          {art && <group position={at}><Upright src={art.src} x={0} y={0} w={Math.min(w, 0.75)} h={tall * stretch} below={cage ? -0.23 : -0.14} colour={tint} /></group>}
         </group>
       );
     }
