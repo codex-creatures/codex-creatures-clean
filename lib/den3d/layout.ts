@@ -135,20 +135,93 @@ const overlaps = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 &
 const absent = (k: FloorKey, p: Placed, opened: boolean) => !opened && p.floor[k].x > DIVIDE_X;
 const stateFor = (opened: boolean): DenState => ({ opened, pit: opened, trainingPit: false, repaired: false });
 export function fitsFloor(key: FloorKey, at: Pt, p: Placed, opened: boolean): boolean {
-  const s = FLOOR_SIZE[key], plan = denPlan(opened);
-  const x0 = at.x - s.w / 2 - FLOOR_MARGIN, x1 = at.x + s.w / 2 + FLOOR_MARGIN, y0 = at.y - s.d / 2 - FLOOR_MARGIN, y1 = at.y + s.d / 2 + FLOOR_MARGIN;
-  const nx = Math.ceil((x1 - x0) / 0.25), ny = Math.ceil((y1 - y0) / 0.25);
-  for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
-    const tx = Math.round(x0 + ((x1 - x0) * i) / nx), ty = Math.round(y0 + ((y1 - y0) * j) / ny);
-    if (tx < 0 || ty < 0 || tx >= plan.w || ty >= plan.h || plan.tiles[ty * plan.w + tx] !== FLOOR || (!opened && tx >= DIVIDE_X)) return false;
-  }
-  if (key === "training" && at.x - s.w / 2 < DIVIDE_X + 0.5) return false;
-  const next: Placed = { ...p, floor: { ...p.floor, [key]: at } }, mine = keptBox(key, at);
-  if (FLOOR_KEYS.some((k) => k !== key && !absent(k, next, opened) && overlaps(mine, keptBox(k, next.floor[k])))) return false;
-  if (DECOR.some((d) => overlaps(mine, { x0: d.at.x - 0.6, x1: d.at.x + 0.6, y0: d.at.y - 0.6, y1: d.at.y + 0.6 }))) return false;
-  const list = stations(stateFor(opened), next);
-  if (list.some((st) => (!st.move || st.move === "wall") && overlaps(mine, keepClear(st)))) return false;
-  return allReachable(list, next, opened);
+  return floorFitter(key, p, opened)(at);
+}
+// The same question for many spots at once (fitMap, while a thing's being dragged): everything that doesn't depend on
+// where the thing goes is worked out once (the others, the places that don't move, the walking grid round them), so
+// each spot costs only its own checks and one walk over the grid.
+export function floorFitter(key: FloorKey, p: Placed, opened: boolean): (at: Pt) => boolean {
+  const s = FLOOR_SIZE[key], plan = denPlan(opened), shown = denShown(opened), state = stateFor(opened);
+  const others = FLOOR_KEYS.filter((k) => k !== key && !absent(k, p, opened)).map((k) => keptBox(k, p.floor[k]));
+  const decor = DECOR.map((d) => ({ x0: d.at.x - 0.6, x1: d.at.x + 0.6, y0: d.at.y - 0.6, y1: d.at.y + 0.6 }));
+  const rest = stations(state, p).filter((st) => st.key !== key);
+  const fixed = rest.filter((st) => !st.move || st.move === "wall").map(keepClear);
+  const firesOf = (k: FloorKey, c: Pt): Pt[] => k === "altar" ? [-1, 1].map((d) => ({ x: c.x + d * BRAZIER_AT.altar.dx, y: c.y + BRAZIER_AT.altar.dy }))
+    : k === "training" ? (opened ? [-1, 1].map((d) => ({ x: c.x + d * BRAZIER_AT.training.dx, y: c.y + BRAZIER_AT.training.dy })) : [])
+    : isLamp(k) ? (opened || c.x < DIVIDE_X ? [c] : []) : [];
+  const otherFires = FLOOR_KEYS.filter((k) => k !== key).flatMap((k) => firesOf(k, p.floor[k]));
+  // The walking grid with everything but this thing on it, and where each other place must be reached from.
+  const W = Math.ceil(PLAN_W / CELL), H = Math.ceil(PLAN_H / CELL);
+  const cx = (i: number) => (i % W) * CELL - 0.5 + CELL / 2, cy = (i: number) => Math.floor(i / W) * CELL - 0.5 + CELL / 2;
+  const cell = (x: number, y: number) => Math.floor((y + 0.5) / CELL) * W + Math.floor((x + 0.5) / CELL);
+  const still = strollBlocked(plan, shown, rest, otherFires), base = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) base[i] = still(cx(i), cy(i)) ? 1 : 0;
+  const start = cell(mid(ARCH), NOOK_N + 1), out = 0.65;
+  const sides = (st: { x: number; y: number; w: number; d: number }): Pt[] =>
+    [{ x: st.x, y: st.y + st.d / 2 + out }, { x: st.x, y: st.y - st.d / 2 - out }, { x: st.x - st.w / 2 - out, y: st.y }, { x: st.x + st.w / 2 + out, y: st.y }];
+  const targets: Pt[][] = rest.filter((st) => !isLamp(st.key) && st.key !== "arch").map((st) =>
+    st.wall || st.key === "bookcase" || st.key === "cage" || st.key === "shack" || st.key === "tavern" ? [{ x: st.x, y: st.y + st.d / 2 + out }]
+      : st.turn === "east" ? [{ x: st.x + st.w / 2 + out, y: st.y }] : sides(st));
+  const seen = new Uint8Array(W * H), q = new Int32Array(W * H);
+  return (at) => {
+    const x0 = at.x - s.w / 2 - FLOOR_MARGIN, x1 = at.x + s.w / 2 + FLOOR_MARGIN, y0 = at.y - s.d / 2 - FLOOR_MARGIN, y1 = at.y + s.d / 2 + FLOOR_MARGIN;
+    const nx = Math.ceil((x1 - x0) / 0.25), ny = Math.ceil((y1 - y0) / 0.25);
+    for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
+      const tx = Math.round(x0 + ((x1 - x0) * i) / nx), ty = Math.round(y0 + ((y1 - y0) * j) / ny);
+      if (tx < 0 || ty < 0 || tx >= plan.w || ty >= plan.h || plan.tiles[ty * plan.w + tx] !== FLOOR || (!opened && tx >= DIVIDE_X)) return false;
+    }
+    if (key === "training" && at.x - s.w / 2 < DIVIDE_X + 0.5) return false;
+    const mine = keptBox(key, at);
+    if (others.some((o) => overlaps(mine, o)) || decor.some((o) => overlaps(mine, o)) || fixed.some((o) => overlaps(mine, o))) return false;
+    // Walk the grid from the Labyrinth's tunnel with this thing (and its fires) where it would stand.
+    const fires = firesOf(key, at), foot = { x0: at.x - s.w / 2 - 0.3, x1: at.x + s.w / 2 + 0.3, y0: at.y - s.d / 2 - 0.3, y1: at.y + s.d / 2 + 0.3 };
+    const hasStation = !isLamp(key) || opened || at.x < DIVIDE_X;
+    const free = (i: number) => {
+      if (base[i]) return false;
+      const x = cx(i), y = cy(i);
+      if (hasStation && x > foot.x0 && x < foot.x1 && y > foot.y0 && y < foot.y1) return false;
+      return !fires.some((f) => Math.hypot(f.x - x, f.y - y) < 0.45);
+    };
+    seen.fill(0);
+    if (!free(start)) return false;
+    let n = 0; q[n++] = start; seen[start] = 1;
+    for (let h = 0; h < n; h++) {
+      const i = q[h], x = i % W, y = Math.floor(i / W);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const ix = x + dx, iy = y + dy, j = iy * W + ix;
+        if (ix < 0 || iy < 0 || ix >= W || iy >= H || seen[j] || !free(j)) continue;
+        seen[j] = 1; q[n++] = j;
+      }
+    }
+    const near = (pt: Pt) => [[0, 0], [CELL, 0], [-CELL, 0], [0, CELL], [0, -CELL]].some(([dx, dy]) => {
+      const x = pt.x + dx, y = pt.y + dy;
+      return x > -0.5 && y > -0.5 && x < PLAN_W - 0.5 && y < PLAN_H - 0.5 && seen[cell(x, y)] === 1;
+    });
+    if (!targets.every((t) => t.some(near))) return false;
+    return isLamp(key) || sides({ x: at.x, y: at.y, w: s.w, d: s.d }).some(near);
+  };
+}
+// Where a floor thing could go, for showing while it's dragged (the user, 2026-11-19): every snap spot for its middle
+// on the shown floor, 2 where it fits, 1 where it doesn't, 0 off the floor (rock, or room 2 before the wall's gone).
+// Spot (i, j) is at (i, j) × SNAP.
+export type FitMap = { w: number; h: number; at: Uint8Array };
+export function fitMap(key: FloorKey, p: Placed, opened: boolean): FitMap {
+  const m = fitMapper(key, p, opened);
+  while (!m.next(Infinity));
+  return m.map;
+}
+// The map a few rows at a time (`next(rows)`, true once it's all done), so working it out never stalls a drag.
+export function fitMapper(key: FloorKey, p: Placed, opened: boolean): { map: FitMap; next: (rows: number) => boolean } {
+  const fits = floorFitter(key, p, opened), plan = denPlan(opened), shown = denShown(opened);
+  const w = Math.round((PLAN_W - 1) / SNAP) + 1, h = Math.round((PLAN_H - 1) / SNAP) + 1, map = { w, h, at: new Uint8Array(w * h) };
+  let j = 0;
+  return { map, next: (rows) => {
+    for (const end = Math.min(h, j + rows); j < end; j++) for (let i = 0; i < w; i++) {
+      const x = i * SNAP, y = j * SNAP, t = Math.round(y) * plan.w + Math.round(x);
+      if (plan.tiles[t] === FLOOR && shown[t]) map.at[j * w + i] = fits({ x, y }) ? 2 : 1;
+    }
+    return j >= h;
+  } };
 }
 // The floor a place that doesn't move keeps to itself: its footprint, and the room in front of its door or way out.
 function keepClear(st: Station): Box {

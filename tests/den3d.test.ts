@@ -5,7 +5,7 @@ import { FLOOR, ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { parseDenOptions, stepAngle, DEN_DEFAULTS, DEN_ANGLES } from "@/lib/den3d/setting";
 import {
   denPlan, denShown, stations, strollAt, routeLoop, routeTime, strollBlocked, braziers, clampView, denArea, firstView, stationAt, denLights,
-  placed, fitsFloor, fitsWall, placeWall, nearestSlot, toLayout, snap, allReachable, LAMP_KEYS, FLOOR_START, WALL_START, SLOTS,
+  placed, fitsFloor, fitsWall, placeWall, nearestSlot, toLayout, snap, allReachable, fitMap, SNAP, LAMP_KEYS, FLOOR_START, WALL_START, SLOTS,
   KLUTZ_LOOP, VISITOR_LOOP, STROLL, ROOM1, ROOM2, NOOK1, NOOK2, WALL_GAP, DIVIDE_X, PLAN_W, LOOK_PAST, type Station, type DenState, type Placed,
 } from "@/lib/den3d/layout";
 
@@ -118,6 +118,18 @@ describe("moving things", () => {
     // The Pit pushed against the storehouse's door: nobody could get to it.
     const shut: Placed = { ...start, floor: { ...start.floor, pit: { x: 5, y: 15.2 } } };
     expect(allReachable(stations(state, shut), shut, true)).toBe(false);
+  });
+
+  it("maps where a thing being moved could go: green where it fits, red where it doesn't, nothing off the floor", () => {
+    const m = fitMap("altar", start, true), at = (x: number, y: number) => m.at[Math.round(y / SNAP) * m.w + Math.round(x / SNAP)];
+    expect(at(FLOOR_START.altar.x, FLOOR_START.altar.y)).toBe(2);   // where it stands now
+    expect(at(9.5, 2.5)).toBe(1);                                   // in front of the way into the Labyrinth
+    expect(at(0, 0)).toBe(0);                                       // the rock
+    const differ: string[] = [];                                    // (every spot as fitsFloor says)
+    for (let j = 0; j < m.h; j++) for (let i = 0; i < m.w; i++) if (m.at[j * m.w + i] && (m.at[j * m.w + i] === 2) !== fitsFloor("altar", { x: i * SNAP, y: j * SNAP }, start, true)) differ.push(`${i},${j}`);
+    expect(differ).toEqual([]);
+    const shut = fitMap("altar", placed(undefined, false), false);
+    expect(shut.at[Math.round(15 / SNAP) * shut.w + Math.round(18 / SNAP)]).toBe(0); // room 2 before the wall's gone
   });
 
   it("moves the standing torches too, and they stay where they're put", () => {

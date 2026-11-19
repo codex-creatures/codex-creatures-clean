@@ -60,7 +60,9 @@ placement (players could block themselves in). With it off, nothing changes.
   (the user, 2026-11-19: "more flexibility"): `FLOOR_MARGIN` clear of the rock, clear of each other and of the
   barrels, crates and pots (`DECOR`), of the room in front of a building's door, a wall thing and a way out
   (`DOOR_CLEAR`), and never boxing a place in: every place must still be reachable on foot from the Labyrinth's
-  tunnel (`allReachable`; why fully free placement was ruled out, 2026-11-18). Wall things (the bookcase, the quest board, the cage) snap to slots (`SLOTS`): beside each tunnel, in
+  tunnel (`allReachable`; why fully free placement was ruled out, 2026-11-18). While a floor thing is held, the floor
+  shows where its middle can go (the user, 2026-11-19): green where it fits, red where it doesn't (`fitMap`, worked
+  out a few rows a frame, `FIT_ROWS`, so a drag never stalls). Wall things (the bookcase, the quest board, the cage) snap to slots (`SLOTS`): beside each tunnel, in
   the middle between them (once the wall's gone), and along the hall's back wall by the shack; dropping on a
   taken slot swaps the two. Where it can't go it's red ("It won't fit there") and goes back. Kept in the save
   in its own field (`den3d`, lib/den3d/placement.ts: only what's moved), so it goes with save files and cloud

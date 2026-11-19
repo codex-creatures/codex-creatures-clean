@@ -19,7 +19,7 @@ import { ROCK, type Floorplan, type Pt } from "@/lib/dungeon/floorplan";
 import {
   denPlan, denShown, denLit, denLights, stations, stationAt, strollAt, routeLoop, routeTime, strollBlocked, braziers, clampView, denArea, firstView,
   placed as placeAll, fitsFloor, fitsWall, placeWall, nearestSlot, toLayout, snap,
-  KLUTZ_LOOP, VISITOR_LOOP, STROLL, SCONCES, DEN_WALL, DIVIDE_X, ROOM1, ZOOM, DECOR, isLamp,
+  KLUTZ_LOOP, VISITOR_LOOP, STROLL, SCONCES, DEN_WALL, DIVIDE_X, ROOM1, ZOOM, DECOR, isLamp, fitMapper, SNAP, type FitMap,
   type Station, type DenState, type DenLayout, type Placed, type Route, type FloorKey, type WallKey, type SlotId,
 } from "@/lib/den3d/layout";
 import { loadDenLayout, saveDenLayout } from "@/lib/den3d/placement";
@@ -66,6 +66,8 @@ const NO = new THREE.Color(1, 0.35, 0.35); // a thing being moved where it can't
 // it turns, and how quickly it follows.
 const TURN = { perSpeed: 0.55, max: 6, follow: 5 };
 const PRESS_GLOW = 1.45; // 🧪 how much brighter a place is while a finger's on it
+const FIT_ROWS = 6;       // rows of the where-it-fits map worked out each frame (a row: every half unit across the Den)
+const FIT_COLOURS = { fits: [90, 220, 120, 75], no: [230, 60, 50, 60] }; // 🧪 RGBA over the floor
 
 export type Den3DProps = {
   caged?: string; klutz: KlutzMode; klutzNews: boolean; highlight?: ObjId; rubble: Rubble; onBlast?: () => void;
@@ -175,8 +177,25 @@ export default function Den3D(p: Den3DProps) {
     const at = { x: snap(f.x + m.grab.x), y: snap(f.y + m.grab.y) };
     return { ...m, at, ok: fitsFloor(m.key as FloorKey, at, settled, opened) };
   };
+  // Where a floor thing being moved could go (the user, 2026-11-19: "show where in the Den it can be dragged to"):
+  // worked out a few rows a frame from when it lifts, shown green where it fits and red where it doesn't.
+  const [fit, setFit] = useState<{ map: FitMap; rev: number } | null>(null);
+  const fitJob = useRef(0);
+  const showFit = (key: FloorKey) => {
+    const job = ++fitJob.current, m = fitMapper(key, settled, opened);
+    let rev = 0;
+    const step = () => {
+      if (job !== fitJob.current) return;
+      const done = m.next(FIT_ROWS);
+      setFit({ map: m.map, rev: ++rev });
+      if (!done) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  const hideFit = () => { fitJob.current++; setFit(null); };
   const lift = (s: Station, f: Pt) => {
     if (navigator.vibrate) navigator.vibrate(15);
+    if (s.move === "floor") showFit(s.key as FloorKey);
     const start: Moving = { key: s.key as FloorKey | WallKey, kind: s.move!, at: { x: s.x, y: s.y }, ok: true, grab: { x: s.x - f.x, y: s.y - f.y } };
     setMoving(aim(start, f));
   };
@@ -245,11 +264,13 @@ export default function Den3D(p: Den3DProps) {
     if (held.current?.lift) window.clearTimeout(held.current.lift);
     held.current = null;
     setPressed(null);
+    hideFit();
     setMoving(null);
   };
   // Let go of a thing being moved: it stays where it can stand (and that's kept), or goes back.
   function drop(m: Moving) {
     setMoving(null);
+    hideFit();
     if (!m.ok) return;
     const next = toLayout(m.kind === "wall" ? placeWall(settled, m.key as WallKey, m.slot!) : { ...settled, floor: { ...settled.floor, [m.key]: m.at } });
     setLayout(next);
@@ -282,7 +303,7 @@ export default function Den3D(p: Den3DProps) {
         <Canvas resize={{ offsetSize: true }} orthographic flat gl={{ antialias: false, powerPreference: "high-performance" }}
           style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
           <DenWorld pitch={pitch} across={across} state={state} placed={now} plan={plan} shown={shown} list={list} walkers={walkers} caged={p.caged} klutz={p.klutz}
-            movingKey={moving && !moving.ok ? moving.key : null} pressedKey={moving ? null : pressed} stoneReady={p.rubble === "dynamite"}
+            movingKey={moving && !moving.ok ? moving.key : null} pressedKey={moving ? null : pressed} fit={moving ? fit : null} stoneReady={p.rubble === "dynamite"}
             viewRef={view} spanRef={span} glideRef={glide} cameraRef={camera} labelsRef={labels} movedAtRef={movedAt} />
         </Canvas>
       </div>
@@ -349,9 +370,9 @@ function walkerAt(walkers: Walker[], p: Pt, pitch: number): Walker | undefined {
 }
 
 // ── The scene ──
-function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, caged, klutz, movingKey, pressedKey, stoneReady, viewRef, spanRef, glideRef, cameraRef, labelsRef, movedAtRef }: {
+function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, caged, klutz, movingKey, pressedKey, fit, stoneReady, viewRef, spanRef, glideRef, cameraRef, labelsRef, movedAtRef }: {
   pitch: number; across: number; state: DenState; placed: Placed; plan: Floorplan; shown: Uint8Array; list: Station[]; walkers: Walker[]; caged?: string; klutz: KlutzMode;
-  movingKey: string | null; pressedKey: string | null; stoneReady: boolean;
+  movingKey: string | null; pressedKey: string | null; fit: { map: FitMap; rev: number } | null; stoneReady: boolean;
   viewRef: React.RefObject<Pt>; spanRef: React.RefObject<{ across: number; deep: number }>; glideRef: React.RefObject<{ from: Pt; to: Pt; at: number } | null>;
   cameraRef: React.RefObject<THREE.Camera | null>; labelsRef: React.RefObject<Map<string, HTMLElement>>; movedAtRef: React.RefObject<number | null>;
 }) {
@@ -378,6 +399,7 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
   return (
     <>
       <DenRock pitch={pitch} plan={plan} seen={seen} field={field} centre={centre} />
+      {fit && <FitOverlay map={fit.map} rev={fit.rev} />}
       {/* Shadows on the floor under everything that stands on it (the lights don't move, so they're fixed patches). */}
       {list.filter((s) => !s.wall && !s.quiet).map((s) => <Shadow key={`shadow:${s.key}`} {...shadowOf(s)} />)}
       {fires.map((c, i) => <Shadow key={`shadow:fire${i}`} x={c.x + 0.06} y={c.y + 0.04} w={0.42} d={0.26} />)}
@@ -502,6 +524,29 @@ function Flame({ at, w, h, seed }: { at: [number, number, number]; w: number; h:
     m.scale.set(w * kw, h * k, 1); m.position.set(at[0], at[1] + (h * (k - 1)) / 2, at[2]);
   });
   return <mesh ref={mesh} raycast={() => null} position={at} scale={[w, h, 1]}><planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} /></mesh>;
+}
+
+// The where-it-fits map over the floor while a thing's being moved: each square a spot for its middle, green where it
+// fits, red where it doesn't (or would block a way out, a door, or someone's way through), nothing off the floor.
+function FitOverlay({ map, rev }: { map: FitMap; rev: number }) {
+  // (A new small texture each time more of the map is worked out: a few times, over a fraction of a second.)
+  const tex = useMemo(() => {
+    const data = new Uint8Array(map.w * map.h * 4);
+    for (let j = 0; j < map.h; j++) for (let i = 0; i < map.w; i++) {
+      const v = map.at[j * map.w + i], c = v === 2 ? FIT_COLOURS.fits : v === 1 ? FIT_COLOURS.no : [0, 0, 0, 0];
+      data.set(c, ((map.h - 1 - j) * map.w + i) * 4); // (the texture's first row is the south edge)
+    }
+    const t = new THREE.DataTexture(data, map.w, map.h);
+    t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.needsUpdate = true;
+    return t;
+  }, [map, rev]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => tex.dispose(), [tex]);
+  return (
+    <mesh raycast={() => null} position={[((map.w - 1) * SNAP) / 2, 0.006, ((map.h - 1) * SNAP) / 2]} rotation={[-Math.PI / 2, 0, 0]} scale={[map.w * SNAP, map.h * SNAP, 1]} renderOrder={2}>
+      <planeGeometry />
+      <meshBasicMaterial map={tex} transparent depthWrite={false} toneMapped={false} />
+    </mesh>
+  );
 }
 
 // ── Shadows ──
