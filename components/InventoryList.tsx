@@ -9,9 +9,10 @@ import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } 
 import type { Teams } from "@/lib/teams";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { computeSellGold } from "@/lib/items/economy/sell";
-import { findCreatureTemplate } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, KLUTZ } from "@/lib/creatures/creatureData";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import ItemDetailModal from "./ItemDetailModal";
+import ScrollTargetPicker, { type ScrollReader } from "./ScrollTargetPicker";
 import CreatureDetailModal from "./CreatureDetailModal";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import CardModal from "./CardModal";
@@ -69,6 +70,7 @@ type Props = {
   headerExtra?: React.ReactNode; // e.g. the Pit's VS AI button
   unavailableItems?: Set<string>; // gear you can't take right now (Klutz has it in the Labyrinth)
   bigBoxes?: readonly CappedBox[]; // chest boxes built bigger (the storage schematics)
+  klutzReads?: number;   // Klutz's level, once he's helping: he can read a scroll from here too
   perRow?: number;       // creatures and gear this many a row (the Inventory: 4); else as many as fit
   guideGearUp?: boolean; // Klutz wants armour on a creature (lib/quest.ts needsGearUp): glow the way to it
 };
@@ -82,9 +84,10 @@ export default function InventoryList({
   favoriteIds, onToggleFavorite, teams, onToggleTeam, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
   sellTotal, onOpenSellConfirm, onToggleSellMode, onSellOne, onResetAll, onGlobalReset,
-  tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems, bigBoxes = [], guideGearUp, perRow,
+  tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems, bigBoxes = [], guideGearUp, perRow, klutzReads,
 }: Props) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
+  const [readingScroll, setReadingScroll] = useState<string | null>(null); // a scroll waiting for its reader
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
   // How far down the creature window is scrolled: flicking to the next creature stays there.
   const creatureScroll = useRef(0);
@@ -115,6 +118,12 @@ export default function InventoryList({
     () => new Map([...inventory.filter(isCreatureDrop).map((c) => [c.id, c.name] as [string, string]), [KLUTZ_DROP_ID, "Klutz"]]),
     [inventory]
   );
+  // Who can read a scroll from here: Klutz (once he's helping), then your creatures, highest level first.
+  const scrollReaders: ScrollReader[] = [
+    ...(klutzReads !== undefined ? [{ id: KLUTZ_DROP_ID, name: "Klutz", level: klutzReads, creatureId: KLUTZ.id, rarity: KLUTZ.rarity }] : []),
+    ...(inventory.filter(isCreatureDrop) as CreatureOrItemDrop[]).map((c) => ({ id: c.id, name: c.name, level: c.level ?? 1, creatureId: c.creatureId ?? "", rarity: c.rarity }))
+      .sort((a, b) => b.level - a.level),
+  ];
   // The rarest creature you have enough cards to summon (its colour lights up the Cards tab).
   const summonable = useMemo(() => {
     const counts = new Map<string, { n: number; rarity: CreatureOrItemDrop["rarity"] }>();
@@ -385,6 +394,7 @@ export default function InventoryList({
           currentIndex={detailIndex}
           onNavigate={(idx) => setDetailIndex(idx)}
           locked={lockedIds.has(navigableItems[detailIndex].id)}
+          onRead={onReadScroll && (() => setReadingScroll(navigableItems[detailIndex].id))}
           // Sold: the window stays open on the next piece (or the one before,
           // at the end), and closes once there's nothing left.
           onSell={onSellOne && ((id) => {
@@ -393,6 +403,14 @@ export default function InventoryList({
             setDetailIndex(left > 0 ? Math.min(detailIndex, left - 1) : null);
           })}
         />
+      )}
+      {readingScroll && onReadScroll && (
+        <ScrollTargetPicker readers={scrollReaders} onClose={() => setReadingScroll(null)}
+          onPick={(id) => {
+            onReadScroll(id, readingScroll);
+            setReadingScroll(null);
+            setDetailIndex(null);
+          }} />
       )}
     </div>
   );

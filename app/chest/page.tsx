@@ -138,6 +138,7 @@ export default function InventoryPage() {
         onSetMoves={game.setMoves}
         onLearnCodex={game.learnCodex}
         onReadScroll={game.readScroll}
+        klutzReads={klutzHelping(quest) ? game.klutz.level ?? 1 : undefined}
         onSetSoulStone={game.setSoulStone}
         gold={game.gold}
         tabCounts={game.tabCounts}

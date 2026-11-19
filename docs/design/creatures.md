@@ -156,7 +156,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ **Explorer level** (you, `save.player`) gets every fight's full XP and gates scan rarity
   (section 2).
 - ✅ **Tattered XP Scroll:** a flat 400 XP (`SCROLL_XP`, about Lv 1 → 5). Read from the creature
-  window; works on Klutz.
+  window; works on Klutz. Or from the Inventory (the user, 2026-11-20): tap the scroll, 📜 Read, and pick
+  who reads it, Klutz first (once he's helping), then your creatures (components/ScrollTargetPicker.tsx).
   - 🧪 Drop rates: mini-boss chests 25%, boss chests 50%, 20% of merchants at 200 gold. The 25% and
     50% are Claude's numbers.
 - ✅ Enemy levels come in bands by depth (`DUNGEONS[d].levels`). Cyclops Lv 6, Hydra Lv 16, Warden Lv 25 (the Abyss).

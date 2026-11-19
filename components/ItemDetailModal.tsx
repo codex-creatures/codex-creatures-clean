@@ -29,6 +29,7 @@ type Props = {
   // Selling from here (the Inventory). Without it, only the price shows.
   onSell?: (id: string) => void;
   locked?: boolean; // favourited, worn or packed: not for sale
+  onRead?: () => void; // an XP scroll: pick who reads it (components/ScrollTargetPicker)
 };
 
 // How far a finger must travel sideways to flick to the next item.
@@ -99,7 +100,7 @@ function RarityBadge({ rarity }: { rarity: Rarity }) {
   );
 }
 
-export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, onClose, items, currentIndex, onNavigate, onSell, locked }: Props) {
+export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, onClose, items, currentIndex, onNavigate, onSell, locked, onRead }: Props) {
   // "Sell for …?" waiting for a yes. Flicking to another item cancels it.
   const [confirmFor, setConfirmFor] = useState<string | null>(null);
   const confirming = confirmFor === item.id;
@@ -225,8 +226,12 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
           )}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <button onClick={() => onToggleFavorite(item.id)} style={{ padding: "11px 0", borderRadius: 10, border: isFavorite ? "1px solid rgba(245,197,66,0.6)" : "1px solid rgba(255,255,255,0.15)", background: isFavorite ? "rgba(245,197,66,0.12)" : "transparent", color: isFavorite ? "#f5c542" : "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: 600, fontSize: 14, transition: "all 0.15s" }}>
+        {/* (A scroll's Read sits beside Favourite, in the same row: nothing below moves.) */}
+        <div style={{ display: "flex", gap: 10 }}>
+          {item.scroll && onRead && (
+            <button className="pixel-btn" onClick={onRead} style={{ flex: 1, minHeight: 44 }}>📜 Read</button>
+          )}
+          <button onClick={() => onToggleFavorite(item.id)} style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: isFavorite ? "1px solid rgba(245,197,66,0.6)" : "1px solid rgba(255,255,255,0.15)", background: isFavorite ? "rgba(245,197,66,0.12)" : "transparent", color: isFavorite ? "#f5c542" : "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: 600, fontSize: 14, transition: "all 0.15s" }}>
             {isFavorite ? "★ Favorited — protected from selling" : "☆ Add to Favourites"}
           </button>
         </div>
