@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { KLUTZ, CREATURE_BY_ID, MOVE_BY_NAME, canLearnFromCodex, defaultMoveNames, resolveMoves } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, triangleFor, NEUTRAL_COUNTER, setCombatRules, LIVE_RULES, TRIANGLE_RULES, type Fighter } from "../lib/combat/engine";
-import { planExpedition, klutzStatus, collectKlutz, sendKlutz, tripLog, TRIP_LOG, currentHp, HEAL_MS_PER_HP, FIND_XP, gearCount, recallKlutz, type KlutzState, type Expedition,
+import { planExpedition, klutzStatus, collectKlutz, sendKlutz, tripLog, TRIP_LOG, currentHp, drinkPotion, HEAL_MS_PER_HP, FIND_XP, gearCount, recallKlutz, type KlutzState, type Expedition,
   pointsEarned, pointsFree, spendPoints, respecKlutz, klutzProficiency, POINTS_PER_LEVEL, RESPEC_COST,
   FIND_EVERY_MS, FIND_MIX, SKILL_EVERY_MS, findChance, HOME_AT, SEND_AT, XP_SHARE, CATCH_CHANCE, catchChance, TRAP_STEP, SKILL_STEP, SKILL_MAX, PACK_START, PACK_TRAIT, packSize, chestSize, CHEST_START,
   destCost, destOpen, capRarity, sendBlock, readyAt, sendHp, spendSkill, skillPointsFree, MAX_WINDOWS, type TripPlan,
@@ -380,5 +380,18 @@ describe("Klutz's trip, as a story (2026-11-18)", () => {
       }
     }
     expect(filtered).toBeGreaterThan(0);
+  });
+});
+
+describe("a potion for Klutz in the pool (the user, 2026-11-20)", () => {
+  it("heals him its HP at once, and he heals on from there; topped up, he's home", () => {
+    const now = 1_000_000, k: KlutzState = { level: 3, hp: 20, hpAt: now - 5 * HEAL_MS_PER_HP };
+    const after = drinkPotion(k, 120, 50, now);
+    expect(currentHp(after, 120, now)).toBe(75); // 20, +5 from the pool, +50
+    expect(currentHp(after, 120, now + 2 * HEAL_MS_PER_HP)).toBe(77);
+    const full = drinkPotion(k, 120, 100, now);
+    expect(full.hp).toBeUndefined();
+    expect(klutzStatus(full, 120, now).kind).toBe("home");
+    expect(full.level).toBe(3);
   });
 });

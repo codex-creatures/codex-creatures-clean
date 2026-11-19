@@ -27,7 +27,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     as creatures.
   - **Home** when his pack is full, when he's down to 10% HP (`HOME_AT`), or when something beats him: no penalty, he
     keeps everything. Call him back any time. He can set off from 40% HP (`SEND_AT`; the pool still heals 1 HP every
-    10 s), not while his chest is full, and not without the gold. A safety stop after 100 windows (about 33 h).
+    10 s, and a potion from your Inventory heals him its HP at once: its button shows under his HP while he rests,
+    lib/klutz.ts `drinkPotion`, the user, 2026-11-20), not while his chest is full, and not without the gold. A safety stop after 100 windows (about 33 h).
   - **His pack** holds 8 (`PACK_START`), up to 20: the **Bigger Pack** trait (+4; free since 2026-11-14, the user: the trait pick
     is its price, it cost 1,000 gold) and **Pack Upgrades** (+1 each; in 5% of chests, and 20% of merchants' carts at
     500 rising to 4,000: `KLUTZ_PACK_PRICES`), sewn on from his Skills tab: it shows his pack's slots (all 20, the

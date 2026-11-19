@@ -482,8 +482,17 @@ export function klutzStatus(k: KlutzState, maxHp: number, now = Date.now()): Klu
 
 export function currentHp(k: KlutzState, maxHp: number, now = Date.now()): number {
   if (k.hp === undefined) return maxHp;
-  const healed = k.hp + Math.floor((now - (k.hpAt ?? now)) / HEAL_MS_PER_HP);
+  const healed = k.hp + Math.floor(Math.max(0, now - (k.hpAt ?? now)) / HEAL_MS_PER_HP); // (a clock a moment behind: nothing yet)
   return Math.min(maxHp, healed);
+}
+// A potion from your Inventory, drunk in the pool (the user, 2026-11-20: to get him out again
+// sooner): its HP at once, and he heals on from there. Full, he's just home.
+export function drinkPotion(k: KlutzState, maxHp: number, heal: number, now = Date.now()): KlutzState {
+  const hp = currentHp(k, maxHp, now) + heal;
+  if (hp < maxHp) return { ...k, hp, hpAt: now };
+  const rest = { ...k };
+  delete rest.hp; delete rest.hpAt;
+  return rest;
 }
 // When he could set off again (SEND_AT of his HP), and whether he can now.
 export const sendHp = (maxHp: number) => Math.ceil(SEND_AT * maxHp);

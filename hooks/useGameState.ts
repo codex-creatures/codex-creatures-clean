@@ -11,10 +11,10 @@ import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, isRetiredMove, KLUTZ, CREATURE_TEMPLATES, renamedMove, replaceRetired, REUSED_NAMES, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { findPrice } from "@/lib/scanReveal";
-import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
+import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, POTIONS, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, retiredCodexMove } from "@/lib/drops";
 import type { Rarity } from "@/lib/items/budgets";
-import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, sendBlock, destCost, spendSkill, canPickTrait, pickTrait, selectiveOpen, cageFilterOpen, chestUpgradePrice, packSize, PACK_TRAIT, PACK_MAX, type KlutzState, type KlutzDest, type SkillKey, type TraitKey, type BossClears, type SendBlock } from "@/lib/klutz";
+import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, sendBlock, klutzStatus, drinkPotion, destCost, spendSkill, canPickTrait, pickTrait, selectiveOpen, cageFilterOpen, chestUpgradePrice, packSize, PACK_TRAIT, PACK_MAX, type KlutzState, type KlutzDest, type SkillKey, type TraitKey, type BossClears, type SendBlock } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { endTour } from "@/lib/tour";
 import { canReroll, reroll, rerollCost, REROLL_ESSENCE } from "@/lib/enchantress";
@@ -547,6 +547,16 @@ export function useGameState(initialTab: TabKey = "all") {
     if (!g || !g.offers?.includes(move) || g.bought?.includes(move) || shelfFree <= 0 || !spendGold(codexPrice(move))) return false;
     addDrop(codexDrop(move));
     setTavern(updateTavern((x) => buyFromVisitor(x, "librarian", move)));
+    return true;
+  }
+
+  // A potion from your Inventory for Klutz while he rests (lib/klutz.ts drinkPotion); it's used up.
+  function healKlutz(potionId: string): boolean {
+    const d = inventory.find((x) => x.id === potionId);
+    if (!d || d.dropType !== "item" || !d.potion || klutzStatus(klutz, klutzFighter.maxHp).kind !== "healing") return false;
+    const heal = POTIONS[d.potion].heal;
+    setInventory((prev) => prev.filter((x) => x.id !== potionId));
+    setKlutz((k) => drinkPotion(k, klutzFighter.maxHp, heal));
     return true;
   }
 
@@ -1324,6 +1334,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, upgradeBookcase, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, ascendCreature, ascendAway, ascendBusy, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, pickKlutzTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, pickKlutzTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, healKlutz, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

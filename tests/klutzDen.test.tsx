@@ -22,10 +22,10 @@ const trip: KlutzTrip = {
   caged: 1,
 };
 
-async function open(search = "") {
+async function open(search = "", save: Record<string, unknown> = {}) {
   vi.resetModules();
   localStorage.clear();
-  localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: [], equipment: {}, gold: 0, caged: [], quest: { stage: "done" }, klutz: { level: 6, trips: [trip] } }));
+  localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: [], equipment: {}, gold: 0, caged: [], quest: { stage: "done" }, klutz: { level: 6, trips: [trip] }, ...save }));
   window.history.replaceState(null, "", `/klutz${search}`);
   const Page = (await import("@/app/klutz/page")).default;
   host = document.createElement("div");
@@ -37,6 +37,17 @@ const tap = async (el: Element | null | undefined) => { expect(el).toBeTruthy();
 
 describe("Klutz's Den", () => {
   afterEach(() => { act(() => root.unmount()); host.remove(); });
+  it("resting, he can drink a potion from your Inventory: it's used up and he's healed", async () => {
+    const potion = { id: "p1", barcode: "", dropType: "item", itemCategory: "consumable", rarity: "common", roll: 0, name: "Lesser Potion", potion: "lesser", createdAt: "" };
+    await open("?tab=hunt", { inventory: [potion], klutz: { level: 6, trips: [trip], hp: 10, hpAt: Date.now() } });
+    const btn = [...host.querySelectorAll("button")].find((b) => b.textContent?.includes("+50 HP"));
+    await tap(btn);
+    expect([...host.querySelectorAll("button")].some((b) => b.textContent?.includes("+50 HP"))).toBe(false);
+    expect(host.textContent).toContain("❤️ 60/");
+    const saved = JSON.parse(localStorage.getItem(SAVE_KEY)!);
+    expect(saved.inventory).toEqual([]);
+    expect(saved.klutz.hp).toBe(60);
+  });
 
   it("is his home, with Hunt, Kit, Skills, Crate and Trips", async () => {
     await open();

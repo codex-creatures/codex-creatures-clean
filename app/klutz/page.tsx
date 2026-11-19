@@ -24,7 +24,8 @@ import Link from "next/link";
 import { useEscape } from "@/hooks/useEscape";
 import { startTour, TOUR_CHOICES } from "@/lib/tour";
 import DenFrame from "@/components/DenFrame";
-import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
+import PixelSprite, { creatureSprite, PotionIcon } from "@/components/PixelSprite";
+import { POTIONS } from "@/lib/dungeon/run";
 import { LevelBar } from "@/components/CreatureDetailModal";
 import CodeCache from "@/components/CodeCache";
 import KlutzGear from "@/components/KlutzGear";
@@ -188,6 +189,10 @@ function SendTab({ game, nudge, now, status, recallArmed, setRecallArmed }: { ga
 
   const block = game.klutzSendBlock(picked, now);
   const hp = status.kind === "healing" ? status.hp : f.maxHp;
+  // Potions in your Inventory, one button a kind: one drunk heals him at once (the user, 2026-11-20).
+  const potions = (Object.keys(POTIONS) as (keyof typeof POTIONS)[])
+    .map((kind) => ({ kind, held: game.inventory.filter((d) => d.dropType === "item" && d.potion === kind) }))
+    .filter((p) => p.held.length > 0);
   const cost = destCost(picked);
   return (
     <>
@@ -243,6 +248,15 @@ function SendTab({ game, nudge, now, status, recallArmed, setRecallArmed }: { ga
           <div style={{ marginTop: 10 }}>
             <div style={{ height: 6, background: "#0e0f14" }}><div style={{ height: "100%", width: `${(hp / f.maxHp) * 100}%`, background: "#22c55e" }} /></div>
             <div style={{ fontSize: 12, color: MUTED, marginTop: 3 }}>💤 {hp}/{f.maxHp} HP in the pool · full in {clock(status.fullAt - now)}</div>
+            {potions.length > 0 && (
+              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                {potions.map((p) => (
+                  <button key={p.kind} className="chip" style={{ minHeight: 44, flex: 1 }} onClick={() => game.healKlutz(p.held[0].id)} title={`Give him a ${POTIONS[p.kind].name}`}>
+                    <PotionIcon kind={p.kind} /> +{POTIONS[p.kind].heal} HP · {p.held.length}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
         <button className={`pixel-btn${nudge && !block ? " tutorial-pulse" : ""}`} style={{ marginTop: 10, width: "100%" }} disabled={!!block} onClick={() => setWhy(game.sendKlutzOff(picked))}>
