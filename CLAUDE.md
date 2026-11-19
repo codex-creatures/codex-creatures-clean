@@ -45,7 +45,7 @@ own: everything else runs in the browser.
      user chose a fresh start for Combat V2: saves from before it are left in the browser, unread,
      and pre-V2 save files are refused. That was the user's call; don't do it again unasked.)
      Per device, not in saves: `codex_creatures_ui_scale_v1` (lib/uiScale.ts),
-     `codex_creatures_haptics_v1` (lib/haptics.ts), `codex_creatures_den3d_v2` (v1 left unread: on for everyone, 2026-11-20) and `codex_creatures_den3d_opts_v1` (lib/den3d/setting.ts), `codex_creatures_camera_v1` (lib/scanner.ts), `codex_creatures_propbuilder_draft_v1` (the prop builder lab's unsaved drafts),
+     `codex_creatures_haptics_v1` (lib/haptics.ts), `codex_creatures_hand_v1` (lib/handedness.ts), `codex_creatures_den3d_v2` (v1 left unread: on for everyone, 2026-11-20) and `codex_creatures_den3d_opts_v1` (lib/den3d/setting.ts), `codex_creatures_camera_v1` (lib/scanner.ts), `codex_creatures_propbuilder_draft_v1` (the prop builder lab's unsaved drafts),
      `codex_creatures_auth_v1` (lib/online/client.ts), `codex_creatures_cloud_v1` and
      `codex_creatures_cloud_last_v1` (lib/online/cloudSave.ts).
    - New save fields must be optional, with a default for old saves (e.g. `storage`; a creature or

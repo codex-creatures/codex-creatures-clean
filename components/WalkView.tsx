@@ -44,6 +44,7 @@ import { CreatureArt } from "@/components/CreaturePortrait";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { PartyMember } from "@/components/PartySlots";
 import { drawnScale } from "@/lib/uiScale";
+import { useLeftHanded } from "@/lib/handedness";
 
 // (Faded browns on the old paper: SCROLL_SHEET.)
 const INK = { edge: "#6b4f2a", floor: "#c4a874", wall: "#5e4024", trail: "#7a4a1a", cut: "#b02a1e", mark: "#e8d6a8", text: "#3a2a14", you: "#e0483e" };
@@ -245,13 +246,14 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   );
 }
 
-// The stick, bottom right (above the dock's Bag; the user, 2026-11-09): press
+// The stick, bottom right (above the dock's Bag; the user, 2026-11-09; bottom left in left-handed mode): press
 // anywhere on the ring and drag, and you walk that way while it's held; the
 // knob follows your thumb. Tap a thing to use it (the ✋ button over it was
 // taken out: the user, 2026-11-09). Tapping the floor to walk works as before.
 const STICK_SIZE = "min(28cqw, 120px)";
 const STICK_KNOB = 0.42; // the knob's share of the ring
 export function Stick({ onPush }: { onPush: (push: Pt | null) => void }) {
+  const left = useLeftHanded(); // (left-handed mode: bottom left: lib/handedness.ts)
   const ring = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState<Pt>({ x: 0, y: 0 });
   const push = (e: React.PointerEvent) => {
@@ -265,7 +267,7 @@ export function Stick({ onPush }: { onPush: (push: Pt | null) => void }) {
   const letGo = () => { onPush(null); setKnob({ x: 0, y: 0 }); };
   const travel = ((1 - STICK_KNOB) / 2) * 100; // % of the ring the knob sits in from the edge, centred
   return (
-    <div style={{ position: "absolute", right: 10, bottom: 10, zIndex: 4 }}>
+    <div style={{ position: "absolute", ...(left ? { left: 10 } : { right: 10 }), bottom: 10, zIndex: 4 }}>
       <div ref={ring} aria-label="Walk"
         onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); push(e); }}
         onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) push(e); }}

@@ -82,6 +82,7 @@ import Shaker from "@/components/dungeon/Shaker";
 import { useDungeonSave } from "@/hooks/useDungeonSave";
 import { forgetDenView } from "@/lib/den3d/view";
 import { beatenTitle, clearedLine, chestName, dropLabel } from "@/lib/dungeon/runText";
+import { useLeftHanded } from "@/lib/handedness";
 
 export default function DungeonPage() {
   const game = useGameState();
@@ -113,6 +114,9 @@ export default function DungeonPage() {
   const [sheet, setSheet] = useState<"roster" | "bag" | null>(null);
   const [bagStart, setBagStart] = useState<number | undefined>(undefined); // the bag opened on this slot (the merchant's Use)
   const [retreatArmed, setRetreatArmed] = useState(false);
+  // Left-handed mode (Settings): the dock mirrored, Bag and Retreat on the left by the stick (lib/handedness.ts).
+  const leftHanded = useLeftHanded();
+  const side = (right: boolean) => (leftHanded ? { order: right ? 0 : 1 } : undefined);
   const [giveUpArmed, setGiveUpArmed] = useState(false); // a run that can't be opened: tap twice to give it up
   const [leaveAsk, setLeaveAsk] = useState(false); // tapped back to the Den mid-run: it ends the run, so a word first
   // Bumped to shake the screen (the witch's stab, and the illness after it).
@@ -1610,17 +1614,17 @@ export default function DungeonPage() {
     {
       fill: walking,
       dock: (
-        // Two by two: Party and Bag on top, Scroll and Retreat below.
+        // Two by two: Party and Bag on top, Scroll and Retreat below (left-handed: mirrored, each row's right one first).
         <div className="dock-tabs" style={{ gridAutoFlow: "row", gridTemplateColumns: "1fr 1fr" }}>
-          <button className="dock-tab" onClick={() => setSheet("roster")} disabled={!!clubTutorial}>
+          <button className="dock-tab" style={side(false)} onClick={() => setSheet("roster")} disabled={!!clubTutorial}>
             🐾 Party <span className="count">{fightingTeam(run).length}/{run.party.length}</span>
           </button>
-          <button className="dock-tab" onClick={() => { setBagStart(undefined); setSheet("bag"); }} disabled={!!clubTutorial}>
+          <button className="dock-tab" style={side(true)} onClick={() => { setBagStart(undefined); setSheet("bag"); }} disabled={!!clubTutorial}>
             🎒 Bag <span className="count">{(lab.meta.bag ?? []).length}/{bagSize(lab.meta)}</span>
             {(run.pending?.length ?? 0) > 0 && <span aria-label="Your bag is full" style={{ position: "absolute", top: 3, right: 3, width: 10, height: 10, borderRadius: 5, background: "#ff6b5e", border: "2px solid #1d1209" }} />}
           </button>
           {/* A look costs one of the run's; tapped while the scroll's already out, it's put away, free. */}
-          <button className="dock-tab" onClick={() => {
+          <button className="dock-tab" style={leftHanded ? { order: 3 } : undefined} onClick={() => {
             if (walking ? walkScroll : mapOpen === "view") { if (walking) setWalkScroll(false); else setMapOpen(null); return; }
             setSheet(null); if (walking) setWalkScroll(true); else setMapOpen("view"); updateRun((r) => ({ ...r, scrollLooks: (r.scrollLooks ?? 0) + 1 }));
           }}
@@ -1628,7 +1632,7 @@ export default function DungeonPage() {
             📜 Scroll <span className="count">{scrollLooksLeft(run)}/{SCROLL_LOOKS}</span>
           </button>
           {/* Retreat: tap twice (it ends the run). */}
-          <button className="dock-tab" style={{ color: "#ff8a80", background: retreatArmed ? "#6e1f18" : undefined }}
+          <button className="dock-tab" style={{ color: "#ff8a80", background: retreatArmed ? "#6e1f18" : undefined, ...(leftHanded ? { order: 2 } : {}) }}
             disabled={battle.match !== null && !battle.match.state.winner}
             onClick={() => {
               if (!retreatArmed) { setRetreatArmed(true); window.setTimeout(() => setRetreatArmed(false), 3000); return; }

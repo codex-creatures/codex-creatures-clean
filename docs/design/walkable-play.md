@@ -38,7 +38,8 @@ square shows where you're walking: you just walk (the user, 2026-11-09).
 `holdAt`): once a held finger moves, you walk toward the floor under it, again as it moves (and as
 the camera follows you, so a finger held near an edge keeps you walking that way); a drag never
 opens things on the way. A plain tap is as before.
-A **joystick** bottom right, above the dock (the user, 2026-11-09; `walkStick`, WalkView `Stick`):
+A **joystick** bottom right, above the dock (the user, 2026-11-09; `walkStick`, WalkView `Stick`; bottom left in
+Settings' **left-handed mode**, the dock mirrored with it so Bag and Retreat sit on the left: lib/handedness.ts, 2026-11-20):
 held, you walk the way it points, a tile at a time snapped to the eight ways, sliding along
 a wall you push into diagonally. Things are used by tapping them (the ✋ button was taken
 out, the user, 2026-11-09). On a keyboard, WASD or the arrows walk (`keysPush`, two at once

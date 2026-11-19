@@ -25,6 +25,7 @@ import {
 import { writeUiScale, UI_SCALES, UI_SCALE_EVENT } from "@/lib/uiScale";
 import { useUiScale } from "@/hooks/useUiScale";
 import { canVibrate, readHaptics, writeHaptics, buzz } from "@/lib/haptics";
+import { useLeftHanded, writeLeftHanded } from "@/lib/handedness";
 import { useNewDen, switchNewDen, useDenOptions, setDenOptions } from "@/hooks/useNewDen";
 import { DEN_ANGLES, stepAngle } from "@/lib/den3d/setting";
 
@@ -63,6 +64,7 @@ export default function SettingsPage() {
 
   // Vibration: null until loaded, and stays null where the browser can't vibrate (the panel's hidden).
   const [haptics, setHaptics] = useState<boolean | null>(null);
+  const leftHanded = useLeftHanded();
   useEffect(() => { if (canVibrate()) setHaptics(readHaptics(window.localStorage)); }, []);
   function toggleHaptics() {
     setHaptics(writeHaptics(window.localStorage, !haptics));
@@ -216,6 +218,21 @@ export default function SettingsPage() {
           </button>
         </div>
       )}
+
+      <div className="stone-panel" style={panel}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>✋ Left-handed</div>
+          <Help title="Left-handed">
+            <ul>
+              <li>In the Labyrinth, the walk stick moves to the <b>bottom left</b>, and the Bag and Retreat buttons to the left with it.</li>
+              <li>It&apos;s for <b>this device only</b>, and isn&apos;t in exported saves.</li>
+            </ul>
+          </Help>
+        </div>
+        <button className="pixel-btn" onClick={() => writeLeftHanded(window.localStorage, !leftHanded)} style={{ display: "block", width: "100%", marginTop: 8 }}>
+          {leftHanded ? "🤚 Left" : "✋ Right (off)"}
+        </button>
+      </div>
 
       {newDen !== null && (
         <div className="stone-panel" style={panel}>
