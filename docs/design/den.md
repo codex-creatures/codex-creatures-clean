@@ -128,7 +128,8 @@ placement (players could block themselves in). With it off, the old Den, as it w
   (`VISITOR_LOOP`); tap one for their wares.
 - **The bag:** not in the Den. With the new Den on, the whole bag empties when a run ends (lib/den3d/bag.ts:
   potions back to storage, packed gear unpacked, found things into storage as before; a codex with no room
-  on the bookcase stays in it), so you pack it at the Labyrinth's entrance each run. Off: as before.
+  on the bookcase stays in it), so you pack it at the Labyrinth's entrance each run (going into the Encampment with no potion packed and some in storage,
+  the Bag tab glows: `bagWantsPotions`, lib/dungeon/run.ts, the user, 2026-11-20; only a nudge). Off: as before.
 - **Art:** the bookcase, lectern, barrels, crates, pots and torches are the Labyrinth's approved 3D
   things. 🧪 Samples, waiting for the user's approval (lib/den3d/art.ts, public/sprites/den3d/, PIXELLAB.md;
   the Den palette art/palettes/den.json), each drawn square on screen at 48 art pixels a unit, its size from
@@ -365,7 +366,9 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
   is done. **A reward always comes home, even into a full box** (as a run's haul does): only a codex needs
   room, on the bookcase (`rewardBlocked`). (A full consumables box held back an XP scroll, and with it every
   reward after it.) A ❗ on the board in the
-  Den while the next reward is ready. Claiming opens crates and gear in the Code Cache window.
+  Den while the next reward is ready, and once Klutz's quest is done till the campaign's first been opened (`campaignUnseen`;
+  the user, 2026-11-20: "encourage them to check it out and then go to the Encampment"; not for anyone who's claimed one);
+  the first quest's ➜ (do an Encampment run) glows till its reward's claimed. Claiming opens crates and gear in the Code Cache window.
   A reward with no room (chest boxes, the bookcase for codexes) waits ("No room for it").
 - **Rewards** (the user): gold for the small ones, Tattered XP Scrolls for some, better things at
   milestones; **crates** opened as you claim them (Materials, Gear, Codex: a number of things in a

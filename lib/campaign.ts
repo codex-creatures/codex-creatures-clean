@@ -331,8 +331,8 @@ export const CAMPAIGN = CHAPTERS.flatMap((ch, chapter) => ch.quests.map((quest) 
 // Saved: how many rewards you've claimed (in order), and the events counted.
 // drank: the run (its id) a potion was last drunk on. (Before 2026-11-17, meta.runs: but only the
 // Labyrinth counts those, so a potion drunk once marked every Encampment, Deep and Abyss run after it.)
-// v: the quest list it counts claims in (missing: before CAMPAIGN_V).
-export type CampaignState = { claimed?: number; tally?: Record<string, number>; drank?: string | number; v?: number };
+// v: the quest list it counts claims in (missing: before CAMPAIGN_V). looked: the campaign's been opened (missing: never).
+export type CampaignState = { claimed?: number; tally?: Record<string, number>; drank?: string | number; v?: number; looked?: boolean };
 // 2 (2026-11-20): "Do an Encampment run" came in first. A save from before that had claimed some counts it
 // as claimed too (they're past it: its 50 gold isn't owed), so every claim stays on the quest it was.
 export const CAMPAIGN_V = 2;
@@ -343,6 +343,10 @@ export function upToDate(s: CampaignState): CampaignState {
 }
 
 export const questDone = (quest: CampaignQuest, c: CampaignCtx) => quest.progress(c) >= quest.goal;
+// A ❗ on the Den's quest board till the campaign's first been looked at (the user, 2026-11-20: "encourage them to check it
+// out and then go to the Encampment"). Anyone who's claimed a reward has found it already.
+export const campaignUnseen = (s: CampaignState) => !s.looked && claimedCount(s) === 0;
+export const lookedAtCampaign = (s: CampaignState): CampaignState => (s.looked ? s : { ...s, looked: true });
 export const claimedCount = (s: CampaignState) => Math.max(0, Math.min(CAMPAIGN.length, Math.floor(s.claimed ?? 0)));
 // The next quest to claim (undefined: all claimed), and whether it's ready.
 export const nextQuest = (s: CampaignState) => CAMPAIGN[claimedCount(s)];

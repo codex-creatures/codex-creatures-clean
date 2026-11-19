@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, cyclopsChest, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
+import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, bagWantsPotions, cyclopsChest, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
 import { createBattle, resolveRound, isValidAction, revivable, swapTargets } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES } from "../lib/creatures/creatureData";
@@ -131,5 +131,14 @@ describe("the Cyclops' chest", () => {
       expect(chest.length).toBeLessThanOrEqual(CYCLOPS_CHEST_MAX);
       expect("gear" in chest[chest.length - 1] && !(chest[chest.length - 1] as { gear: { codexMove?: string } }).gear.codexMove).toBe(true); // gear rolled last
     }
+  });
+});
+
+describe("packing for the Encampment", () => {
+  it("nudges you to pack a potion when you've none in the bag and some in storage, going into the Encampment", () => {
+    expect(bagWantsPotions(0, [], 2)).toBe(true);
+    expect(bagWantsPotions(0, ["lesser"], 2)).toBe(false);      // one's packed
+    expect(bagWantsPotions(0, [], 0)).toBe(false);              // none to pack
+    expect(bagWantsPotions(1, [], 2)).toBe(false);              // only the Encampment
   });
 });

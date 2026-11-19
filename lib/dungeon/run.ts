@@ -341,6 +341,9 @@ export const bagSize = (meta: { bagSize?: number }) => meta.bagSize ?? BINDLE;
 export const onBindle = (meta: { bagSize?: number }) => bagSize(meta) < BACKPACK; // the backpack's still to find
 export const bagName = (meta: { bagSize?: number }) => (bagSize(meta) > BINDLE ? "Rugged backpack" : "Bindle");
 export const isPotionEntry = (e: BagEntry): e is PotionKey => e === "potion" || e === "lesser";
+// At the Encampment's entrance with no potion packed but some in storage, the bag's tab glows (the user, 2026-11-20: the
+// new Den empties the bag after every run, so it's easy to walk in with none). Only a nudge: you can go in without.
+export const bagWantsPotions = (dungeon: DungeonId, bag: BagEntry[], stored: number) => dungeon === 0 && stored > 0 && !bag.some(isPotionEntry);
 export const gearEntry = (dropId: string): BagEntry => `gear:${dropId}`;
 export const gearIdOf = (e: BagEntry): string | undefined => (e.startsWith("gear:") ? e.slice(5) : undefined);
 export const lootEntry = (dropId: string): BagEntry => `loot:${dropId}`;

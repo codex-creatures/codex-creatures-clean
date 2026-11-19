@@ -21,7 +21,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { hasBookPlans } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { CHAPTERS, CRATE_NAMES, PLANS_TAKEN_GOLD, rewardBlocked, type CampaignReward, claimNext, claimedCount, currentChapter, loadCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
+import { CHAPTERS, CRATE_NAMES, PLANS_TAKEN_GOLD, rewardBlocked, type CampaignReward, claimNext, claimedCount, currentChapter, loadCampaign, lookedAtCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
 import { klutzHelping } from "@/lib/quest";
 import { useRouter } from "next/navigation";
 import { hydraStep } from "@/lib/trainingPit";
@@ -271,6 +271,9 @@ function CampaignList() {
   const [burst, setBurst] = useState<{ show: ClaimShow; drops: Drop[] | null; title: string } | null>(null);
   // Opened, the list starts at the top, then glides down to the quest you're on (the user, 2026-11-17).
   const current = useRef<HTMLDivElement>(null), glided = useRef(false);
+  // Seen: the Den's quest board loses its first ❗ (lib/campaign.ts campaignUnseen); the first quest's ➜ (do an
+  // Encampment run) glows till its reward's claimed.
+  useEffect(() => { if (game.hydrated && klutzHelping(game.quest)) updateCampaign(lookedAtCampaign); }, [game.hydrated, game.quest]);
   useEffect(() => {
     if (glided.current || !current.current) return;
     glided.current = true;
@@ -348,7 +351,7 @@ function CampaignList() {
             </div>
             {got ? <span className="note-seal" title="Claimed" aria-label="Claimed">✓</span>
               : ready ? <span aria-hidden style={{ width: 44 }} />
-              : <button className="note-go" onClick={(e) => { e.stopPropagation(); if (q.go) router.push(q.go); }} aria-label="Go there" title="Go there"
+              : <button className={`note-go${claimed === 0 && at === claimed ? " tutorial-pulse" : ""}`} onClick={(e) => { e.stopPropagation(); if (q.go) router.push(q.go); }} aria-label="Go there" title="Go there"
                   style={{ visibility: !done && q.go ? "visible" : "hidden" }}>➜</button>}
           </div>
         );

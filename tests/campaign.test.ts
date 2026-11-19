@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   CAMPAIGN, CHAPTERS, SUPPLIES, campaignCtx, rewardModel, canClaimNext, claimNext, claimedCount, currentChapter, nextQuest, noteCampaign, onlyEffective,
-  questDone, rewardBlocked, noteDrank, drankOn, loadCampaign, rewardText, rollCampaignReward, upToDate, CAMPAIGN_V, type CampaignCtx, type CampaignState,
+  questDone, rewardBlocked, noteDrank, drankOn, loadCampaign, rewardText, rollCampaignReward, upToDate, CAMPAIGN_V, type CampaignCtx, type CampaignState, campaignUnseen, lookedAtCampaign,
 } from "../lib/campaign";
 import { weaponDrop, armorDrop, codexDrop, randomCodexMove } from "../lib/drops";
 import { ARMOR_KEYS } from "../lib/items/armor";
@@ -246,5 +246,15 @@ describe("a potion drunk", () => {
     const key = Object.keys(store)[0];
     store[key] = JSON.stringify({ ...JSON.parse(store[key]), campaign: { ...loadCampaign(), drank: 4 } });
     expect(drankOn("camp-run-b")).toBe(false);
+  });
+});
+
+describe("the quest board's first ❗", () => {
+  it("shows till the campaign's been looked at, and never for anyone who's claimed a reward", () => {
+    expect(campaignUnseen({})).toBe(true);
+    expect(campaignUnseen(lookedAtCampaign({}))).toBe(false);
+    expect(campaignUnseen({ claimed: 2 })).toBe(false);
+    const seen = { looked: true };
+    expect(lookedAtCampaign(seen)).toBe(seen); // (nothing to write)
   });
 });

@@ -9,7 +9,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { TEAM_SLOTS, teamMembers } from "@/lib/teams";
 import BagPacker from "@/components/BagPacker";
 import CreaturePortrait from "@/components/CreaturePortrait";
-import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, type DungeonSave, DUNGEONS, DEEP_ROUTE, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE, CRAWLABLE, scrollOpen, bossLevel, CAMP_CHIEF_LEVEL } from "@/lib/dungeon/run";
+import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, bagWantsPotions, type DungeonSave, DUNGEONS, DEEP_ROUTE, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE, CRAWLABLE, scrollOpen, bossLevel, CAMP_CHIEF_LEVEL } from "@/lib/dungeon/run";
 import { SectionTitle, loadOwnedCreatures, rarityColor, MUTED, type OwnedCreature } from "@/components/BattleScreen";
 import Help from "@/components/Help";
 import { gearMarks } from "@/components/CreatureMarks";
@@ -123,6 +123,7 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
   const injured = owned.filter((c) => lab.meta.injuries[c.id] !== undefined);
   const canPay = gold >= fee;
   const bag = lab.meta.bag ?? [];
+  const packPotions = !quest && bagWantsPotions(dungeon, bag, game.inventory.filter((d) => d.dropType === "item" && d.potion).length);
 
   // Tapping a creature: in or out of the party (free pick), or of the team (saved straight away).
   function toggle(id: string) {
@@ -196,7 +197,7 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
       {/* Party or bag: two tabs, the same size whichever is open. */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
         <button className="chip" data-active={tab === "party"} onClick={() => setTab("party")} style={{ minHeight: 44, textTransform: "none" }}>🐾 Party {party.length}/{cap}</button>
-        <button className="chip" data-active={tab === "bag"} onClick={() => setTab("bag")} style={{ minHeight: 44, textTransform: "none" }}>🎒 {bagName(lab.meta)} {bag.length}/{bagSize(lab.meta)}</button>
+        <button className={`chip${packPotions && tab !== "bag" ? " tutorial-pulse" : ""}`} data-active={tab === "bag"} onClick={() => setTab("bag")} style={{ minHeight: 44, textTransform: "none" }}>🎒 {bagName(lab.meta)} {bag.length}/{bagSize(lab.meta)}</button>
       </div>
 
       {tab === "bag" ? <BagPacker game={game} lab={lab} onSave={onSave} /> : <>
