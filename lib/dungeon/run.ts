@@ -458,9 +458,12 @@ export function nextToTake<T>(items: T[], free: (x: T) => boolean, rank: (x: T) 
   items.forEach((x, i) => { if (best < 0 || rank(x) > rank(items[best])) best = i; });
   return best;
 }
-// How rare a thing in a chest is, for "Take all": potions come after Commons.
+// How rare a thing in a chest is, for "Take all": potions come after Commons, a Healing Potion before a
+// Lesser one (the user, 2026-11-20: it took whichever came first).
 export const dropRank = (d?: Drop) => (d && "rarity" in d ? RARITIES.indexOf(d.rarity) : -1);
-export const sackRank = (x: SackItem) => ("gear" in x ? dropRank(x.gear) : -1);
+export const potionRank = (p: PotionKey) => (p === "potion" ? -0.4 : -0.6);
+export const sackRank = (x: SackItem) => ("gear" in x ? dropRank(x.gear) : "potion" in x ? potionRank(x.potion) : -1);
+export const floorRank = (f: FloorItem) => (f.drop ? dropRank(f.drop) : f.potion ? potionRank(f.potion) : -1);
 // A chest holds at most CHEST_SLOTS things: rolled more, the least rare fall
 // out (gold and potions first, then Commons, Uncommons…; a tie, the last one).
 export const CHEST_SLOTS = 5;

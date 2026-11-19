@@ -458,7 +458,7 @@ describe("the Labyrinth's gentle start", () => {
   });
 });
 
-import { nextToTake, sackRank, type SackItem as Sack } from "../lib/dungeon/run";
+import { nextToTake, sackRank, floorRank, type SackItem as Sack } from "../lib/dungeon/run";
 import type { Drop as AnyDrop } from "../lib/types";
 
 describe("Take all", () => {
@@ -470,6 +470,9 @@ describe("Take all", () => {
     const noGold = chest.filter((x) => !free(x));
     expect(nextToTake(noGold, free, sackRank, false)).toBe(2); // the epic
     expect(nextToTake([{ potion: "lesser" }, gear("common")], free, sackRank, false)).toBe(1); // potions after Commons
+    // A Healing Potion before a Lesser one (the user, 2026-11-20), from a sack or off the floor.
+    expect(nextToTake([{ potion: "lesser" }, { potion: "potion" }], free, sackRank, false)).toBe(1);
+    expect(nextToTake([{ room: "a", potion: "lesser" }, { room: "a", potion: "potion" }], () => false, floorRank, false)).toBe(1);
   });
   it("ties go to the first, and a full bag only takes what needs no room", () => {
     expect(nextToTake([gear("rare"), gear("rare")], free, sackRank, false)).toBe(0);
