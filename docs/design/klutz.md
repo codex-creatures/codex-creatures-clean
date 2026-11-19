@@ -16,9 +16,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     Hydra and Abyss Legendary; the Abyss rolls a rarity up 30% of the time), how many levels tougher its creatures
     are (0 to +3) and how many strike first (10% to 40%: they use their style's first-strike move, so a glass cannon
     takes chip damage). 🧪 Those numbers are Claude's.
-  - **Once in every 20 minutes** (`FIND_EVERY_MS`), at a random moment in it, something happens: a creature 27%, a
-    codex 9%, a material or potion 18%, a weapon or armour piece 36%, or nothing 10% (`FIND_MIX`; the user, 2026-11-19:
-    every 20 minutes on the dot felt far too rigid). Rarities at the usual split, capped by the dungeon, by his level
+  - **Once in every 20 minutes** (`FIND_EVERY_MS`), at a random moment in it, he may come across something (the user, 2026-11-19:
+    every 20 minutes on the dot felt far too rigid). Nothing at all is 30% less 1% a level (`NOTHING_START`,
+    `NOTHING_STEP`, `findChance`; the user, 2026-11-20): 71% at Lv 1, 100% at Lv 30, shown on the Hunt tab (🔍). When
+    it's something: a creature 30%, a codex 10%, a material or potion 20%, a weapon or armour piece 40% (`FIND_MIX`). Rarities at the usual split, capped by the dungeon, by his level
     (`SCAN_UNLOCK`) and by your explorer level (`capRarity`). The old "never rarer than his piece" rule is gone.
   - **Creatures:** he fights it (no healing on the way); beaten, it's caught at `CATCH_CHANCE` (Common 100%,
     Uncommon 90%, Rare 70%, Epic 40%, Legendary 15%; 🧪), plus Trapping. Caught ones go to the cage (spares let go,
@@ -56,7 +57,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     order, each with how many minutes in: a fight says the creature (rarity, level), how many rounds, the damage he
     took and his HP, and how it ended (caught; beaten but got away; caught but the cage full; under the cage filter,
     let go: `filtered`; or it beat him), with its XP; gear a creature dropped follows it; a skill's extra find says
-    which skill spotted it; a find under his Selective rarity says he left it behind (`Expedition.passed`, from
+    which skill spotted it (with a ⭐); a window that brought nothing gets a line of its own (he broke into some crates, but they were empty…: `Expedition.empty`, `EMPTY_LINES`, the user 2026-11-20); a find under his Selective rarity says he left it behind (`Expedition.passed`, from
     2026-11-18); it ends with why he came home, or "still exploring". In a scrolling panel that keeps the newest line
     in view. Under it while he's out, his pack: a slot for each it holds, filled with what he's picked up (full: he's
     heading home). (The testing "skip to the end" button went the same day.)

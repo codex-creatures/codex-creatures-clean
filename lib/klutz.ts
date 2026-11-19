@@ -10,7 +10,7 @@
 //   first (chip damage, so a glass-cannon Klutz doesn't walk through it).
 // - In each FIND_EVERY_MS, at a random moment, something happens (FIND_MIX):
 //   a wild creature he fights, a codex, a material or consumable, a weapon or
-//   armour piece, or nothing.
+//   armour piece, or (less often as he levels: findChance) nothing.
 //   Rarities roll at the usual split, capped by the dungeon, by what his level
 //   has opened (SCAN_UNLOCK) and by your own explorer level.
 // - A beaten creature is caught at CATCH_CHANCE for its rarity (more with
@@ -58,7 +58,11 @@ import { addXp, canFind, clampLevel, xpForEnemy } from "./creatures/levels";
 // ── v2 trips ──
 // (The user, 2026-11-19: "far too rigid", so each window's encounter comes at a random moment in it, and may be nothing.)
 export const FIND_EVERY_MS = 20 * 60 * 1000;  // a window: one encounter in each 20 minutes he's out, at a random moment
-export const FIND_MIX = { creature: 0.27, codex: 0.09, goods: 0.18, gear: 0.36, nothing: 0.1 }; // what it is
+export const FIND_MIX = { creature: 0.3, codex: 0.1, goods: 0.2, gear: 0.4 }; // what it is, when it's something
+// Nothing at all, NOTHING_START less NOTHING_STEP a level (the user, 2026-11-20: so at Lv 30 he always finds something).
+export const NOTHING_START = 0.3;
+export const NOTHING_STEP = 0.01;
+export const findChance = (level?: number) => Math.min(1, 1 - NOTHING_START + NOTHING_STEP * clampLevel(level));
 // His find skills roll on a clock of their own: in each SKILL_EVERY_MS, each in a random order, each at a random moment.
 export const SKILL_EVERY_MS = 30 * 60 * 1000;
 export const GOODS_MATERIAL = 0.5;            // …a material or consumable: a material bundle this often, else a potion
@@ -161,6 +165,7 @@ export type Expedition = {
   finds?: KlutzFind[];   // …what he found
   left?: number;         // …things he left behind (Selective)
   passed?: { at: number; name: string; rarity: Rarity; qty?: number }[]; // …and which, when (from 2026-11-18, for the trip's story)
+  empty?: number[];      // when a window brought nothing (from 2026-11-20, for the trip's story)
   home?: "pack" | "hurt" | "ko" | "limit"; // …why he came home (recalled: `recalled`)
   letGo?: boolean; // he caught something but the cage was full, so he let it go
   caged?: number;  // how many of his catches went in the cage (the first ones; the rest he let go)
@@ -387,6 +392,7 @@ export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math
   const encounters: KlutzEncounter[] = [], finds: KlutzFind[] = [];
   let hp = startHp, used = 0, left = 0, at = now, home: Expedition["home"] = "limit";
   const passed: NonNullable<Expedition["passed"]> = [];
+  const empty: number[] = [];
   // Into his pack, unless Selective leaves it; true when the pack's full.
   const take = (d: Drop, skill?: KlutzFind["skill"]) => {
     if (leave && ri(rarityOf(d)) < ri(leave)) {
@@ -413,11 +419,13 @@ export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math
   for (const m of moments) {
     at = m.at;
     let full = false;
-    const x = m.skill ? 0 : rng() * (FIND_MIX.creature + FIND_MIX.codex + FIND_MIX.goods + FIND_MIX.gear + FIND_MIX.nothing);
+    const something = !m.skill && rng() < findChance(L);
+    const x = something ? rng() * (FIND_MIX.creature + FIND_MIX.codex + FIND_MIX.goods + FIND_MIX.gear) : 0;
     if (m.skill) {
       // A skill's roll: an extra find, at its chance.
       if (rng() < skillChance(m.skill, sk(m.skill))) full = take(m.skill === "armourer" ? gearPiece(roll(), rng) : m.skill === "scavenger" ? goods(roll(), rng) : codex(rng, cap), m.skill);
-    } else if (x < FIND_MIX.creature) {
+    } else if (!something) empty.push(at); // nothing this window
+    else if (x < FIND_MIX.creature) {
       const rarity = roll(), gearRarity = oneLower(rarity);
       const lo = Math.max(1, L - HUNT_BELOW), hi = clampLevel(L + HUNT_ABOVE);
       const foeLevel = clampLevel(lo + Math.floor(rng() * (hi - lo + 1)) + where.levelsUp);
@@ -437,13 +445,12 @@ export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math
       if (dropped) full = take(dropped);
     } else if (x < FIND_MIX.creature + FIND_MIX.codex) full = take(codex(rng, cap));
     else if (x < FIND_MIX.creature + FIND_MIX.codex + FIND_MIX.goods) full = take(goods(roll(), rng));
-    else if (x < FIND_MIX.creature + FIND_MIX.codex + FIND_MIX.goods + FIND_MIX.gear) full = take(gearPiece(roll(), rng));
-    // (else nothing this window)
+    else full = take(gearPiece(roll(), rng));
     if (full) { home = "pack"; ended = true; break; }
     if (hp <= HOME_AT * klutz.maxHp) { home = "hurt"; ended = true; break; }
   }
   if (!ended && home !== "ko") at = now + span; // the safety stop: the end of his last window
-  return { v: 2, dest: plan.dest, cost: destCost(plan.dest), startHp, finds, ...(left ? { left, passed } : {}), home,
+  return { v: 2, dest: plan.dest, cost: destCost(plan.dest), startHp, finds, ...(left ? { left, passed } : {}), ...(empty.length ? { empty } : {}), home,
     startedAt: now, endsAt: at, maxHp: klutz.maxHp, encounters, collected: false };
 }
 
@@ -452,7 +459,7 @@ export function recallKlutz(k: KlutzState, now = Date.now()): KlutzState {
   const ex = k.expedition;
   if (!ex || ex.collected || now >= ex.endsAt) return k;
   return { ...k, expedition: { ...ex, endsAt: now, encounters: ex.encounters.filter((e) => e.at <= now), ...(ex.finds ? { finds: ex.finds.filter((f) => f.at <= now) } : {}),
-    ...(ex.passed ? { passed: ex.passed.filter((p) => p.at <= now) } : {}), recalled: true } };
+    ...(ex.passed ? { passed: ex.passed.filter((p) => p.at <= now) } : {}), ...(ex.empty ? { empty: ex.empty.filter((t) => t <= now) } : {}), recalled: true } };
 }
 
 // His HP after what he's done by `upTo` (v2 trips start on startHp).

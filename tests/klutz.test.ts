@@ -4,7 +4,7 @@ import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, triangleFor, NEUTRAL_COUNTER, setCombatRules, LIVE_RULES, TRIANGLE_RULES, type Fighter } from "../lib/combat/engine";
 import { planExpedition, klutzStatus, collectKlutz, sendKlutz, tripLog, TRIP_LOG, currentHp, HEAL_MS_PER_HP, FIND_XP, gearCount, recallKlutz, type KlutzState, type Expedition,
   pointsEarned, pointsFree, spendPoints, respecKlutz, klutzProficiency, POINTS_PER_LEVEL, RESPEC_COST,
-  FIND_EVERY_MS, FIND_MIX, SKILL_EVERY_MS, HOME_AT, SEND_AT, XP_SHARE, CATCH_CHANCE, catchChance, TRAP_STEP, SKILL_STEP, SKILL_MAX, PACK_START, PACK_TRAIT, packSize, chestSize, CHEST_START,
+  FIND_EVERY_MS, FIND_MIX, SKILL_EVERY_MS, findChance, HOME_AT, SEND_AT, XP_SHARE, CATCH_CHANCE, catchChance, TRAP_STEP, SKILL_STEP, SKILL_MAX, PACK_START, PACK_TRAIT, packSize, chestSize, CHEST_START,
   destCost, destOpen, capRarity, sendBlock, readyAt, sendHp, spendSkill, skillPointsFree, MAX_WINDOWS, type TripPlan,
   TRAIT_LEVELS, traitPicks, traitsPicked, canPickTrait, pickTrait, nextTraitLevel, selectiveOpen } from "../lib/klutz";
 import { ENTRY_FEES } from "../lib/dungeon/run";
@@ -44,7 +44,7 @@ describe("Klutz's expeditions (v2, the user, 2026-11-14)", () => {
     }
   });
 
-  it("an encounter is a creature 27%, a codex 9%, a material or consumable 18%, a weapon or armour 36%, nothing 10%", () => {
+  it("something is a creature 30%, a codex 10%, a material or consumable 20%, a weapon or armour 40%; nothing is 30% less 1% a level", () => {
     const n = { creature: 0, codex: 0, goods: 0, gear: 0 };
     for (let s = 1; s < 300; s++) {
       const ex = planExpedition(mighty(), t0, seeded(s), { ...top, pack: 20 });
@@ -58,11 +58,14 @@ describe("Klutz's expeditions (v2, the user, 2026-11-14)", () => {
       }
     }
     // (A beaten creature's dropped gear counts as gear: GEAR_DROP_CHANCE of the creature share.)
-    const all = n.creature + n.codex + n.goods + n.gear, some = 1 - FIND_MIX.nothing;
-    expect(n.creature / all).toBeCloseTo(FIND_MIX.creature / some / (1 + FIND_MIX.creature / some * 0.2), 1);
-    expect(n.codex / all).toBeCloseTo(FIND_MIX.codex / some, 1);
-    expect(n.goods / all).toBeCloseTo(FIND_MIX.goods / some, 1);
-    expect(FIND_MIX.creature + FIND_MIX.codex + FIND_MIX.goods + FIND_MIX.gear + FIND_MIX.nothing).toBeCloseTo(1);
+    const all = n.creature + n.codex + n.goods + n.gear;
+    expect(n.creature / all).toBeCloseTo(FIND_MIX.creature / (1 + FIND_MIX.creature * 0.2), 1);
+    expect(n.codex / all).toBeCloseTo(FIND_MIX.codex, 1);
+    expect(n.goods / all).toBeCloseTo(FIND_MIX.goods, 1);
+    expect(findChance(1)).toBeCloseTo(0.71);
+    expect(findChance(15)).toBeCloseTo(0.85);
+    expect(findChance(30)).toBe(1);
+    expect(planExpedition(mighty(), t0, seeded(2), { ...top, pack: 20 }).empty).toBeUndefined(); // Lv 30: never nothing
   });
 
   it("rarities are capped by the dungeon, by his level and by your explorer level", () => {
@@ -110,7 +113,7 @@ describe("Klutz's expeditions (v2, the user, 2026-11-14)", () => {
   it("his find skills each roll once in each 30 minutes, at random moments; some windows bring nothing", () => {
     let empty = 0, offBeat = 0;
     for (let s = 1; s < 60; s++) {
-      const ex = planExpedition(mighty(), t0, seeded(s), { ...top, pack: 20, skills: { armourer: SKILL_MAX, scavenger: SKILL_MAX } });
+      const ex = planExpedition(mighty(), t0, seeded(s), { ...top, level: 1, pack: 20, skills: { armourer: SKILL_MAX, scavenger: SKILL_MAX } });
       const seen = new Set<string>();
       for (const x of ex.finds!.filter((f) => f.skill)) {
         expect(x.skill).not.toBe("scholar"); // no points in it: it never rolls
@@ -120,8 +123,8 @@ describe("Klutz's expeditions (v2, the user, 2026-11-14)", () => {
         if ((x.at - t0) % SKILL_EVERY_MS) offBeat++;
       }
       const busy = new Set([...ex.encounters.map((e) => e.at), ...ex.finds!.filter((f) => !f.skill).map((f) => f.at)].map((at) => Math.floor((at - t0) / FIND_EVERY_MS)));
-      const windows = Math.ceil((ex.endsAt - t0) / FIND_EVERY_MS);
-      empty += windows - busy.size;
+      for (const at of ex.empty ?? []) expect(busy.has(Math.floor((at - t0) / FIND_EVERY_MS))).toBe(false); // kept for the story
+      empty += ex.empty?.length ?? 0;
     }
     expect(empty).toBeGreaterThan(0);
     expect(offBeat).toBeGreaterThan(0);

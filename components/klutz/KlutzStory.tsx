@@ -22,7 +22,18 @@ const GOLD = "#f1d9a0";
 const GOOD = "#7CFC9A", BAD = "#ff8a80";
 const SKILL_SAW: Record<NonNullable<KlutzFind["skill"]>, string> = { armourer: "His Armourer's eye", scavenger: "His Scavenger's nose", scholar: "His Scholar's instinct" };
 
+// A window that brought nothing (the user, 2026-11-20): one of these, picked by when it was, so it never changes.
+export const EMPTY_LINES = [
+  "He broke into some crates, but they were empty.",
+  "He checked a cage, but it was empty.",
+  "He dug through a pile of rubble and found nothing.",
+  "He pried open an old chest: just cobwebs.",
+  "He followed some tracks, but lost them.",
+  "He poked around a dead end. Nothing.",
+];
+
 type Line =
+  | { at: number; kind: "empty" }
   | { at: number; kind: "fight"; e: KlutzEncounter; dmg: number; kept: boolean }
   | { at: number; kind: "find"; find: KlutzFind; dropped: boolean }
   | { at: number; kind: "left"; name: string; rarity: Rarity; qty?: number };
@@ -72,10 +83,11 @@ export function storyOf(ex: Expedition, upTo: number): Line[] {
   }
   // (A piece found in the same moment as a fight he won, not by a skill, is what that creature dropped.)
   for (const x of finds) lines.push({ at: x.at, kind: "find", find: x, dropped: !x.skill && wonAt.has(x.at) });
+  for (const t of (ex.empty ?? []).filter((t) => t <= upTo)) lines.push({ at: t, kind: "empty" });
   for (const p of passed) lines.push({ at: p.at, kind: "left", name: p.name, rarity: p.rarity, ...(p.qty ? { qty: p.qty } : {}) });
   // (A trip from before v2: one find for the whole trip, at its end.)
   if (ex.find && upTo >= ex.endsAt) lines.push({ at: ex.endsAt, kind: "find", find: { at: ex.endsAt, drop: ex.find }, dropped: false });
-  const order = { fight: 0, find: 1, left: 2 } as const;
+  const order = { fight: 0, find: 1, left: 2, empty: 3 } as const;
   return lines.sort((a, b) => a.at - b.at || order[a.kind] - order[b.kind]);
 }
 
@@ -91,6 +103,13 @@ function homeLine(ex: Expedition) {
 }
 
 function StoryLine({ l, ex, seenIds }: { l: Line; ex: Expedition; seenIds: Set<string> }) {
+  if (l.kind === "empty") {
+    return (
+      <Row at={l.at} ex={ex} icon={<span style={{ fontSize: 16, opacity: 0.6 }}>🕸️</span>} dim>
+        {EMPTY_LINES[Math.floor(l.at / 1000) % EMPTY_LINES.length]}
+      </Row>
+    );
+  }
   if (l.kind === "left") {
     return (
       <Row at={l.at} ex={ex} icon={<span style={{ fontSize: 16, opacity: 0.6 }}>🍂</span>} dim>

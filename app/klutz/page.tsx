@@ -39,11 +39,11 @@ import { Coin } from "@/components/GoldCount";
 import { useGameState } from "@/hooks/useGameState";
 import { KLUTZ } from "@/lib/creatures/creatureData";
 import { klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
-import { clampLevel, SCAN_UNLOCK } from "@/lib/creatures/levels";
+import { clampLevel, MAX_LEVEL, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/items/budgets";
 import {
-  klutzStatus, pointsFree, HEAL_MS_PER_HP, CAPTURE_XP, FIND_XP, XP_SHARE, HUNT_BELOW, HUNT_ABOVE, FIND_EVERY_MS, FIND_MIX, SKILL_EVERY_MS, GEAR_DROP_CHANCE, HOME_AT, SEND_AT,
+  klutzStatus, pointsFree, HEAL_MS_PER_HP, CAPTURE_XP, FIND_XP, XP_SHARE, HUNT_BELOW, HUNT_ABOVE, FIND_EVERY_MS, FIND_MIX, SKILL_EVERY_MS, findChance, NOTHING_STEP, GEAR_DROP_CHANCE, HOME_AT, SEND_AT,
   KLUTZ_DESTS, destCost, destOpen, bestRarity, packSize, chestSize, chestUpgradePrice, skillPointsFree, skillLevel, skillChance, catchChance, readyAt,
   SKILL_KEYS, SKILL_MAX, PACK_TRAIT, PACK_MAX, TRAIT_LEVELS, traitsPicked, traitPicks, nextTraitLevel, canPickTrait,
   type Expedition, type KlutzDest, type SkillKey, type SendBlock, type TraitKey,
@@ -191,10 +191,12 @@ function SendTab({ game, now, status, recallArmed, setRecallArmed }: { game: Gam
       <div className="stone-panel" style={{ marginTop: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div className="pixel-font" style={{ fontSize: 18, color: GOLD, flex: 1 }}>Where to?</div>
+          {/* His odds of finding something each window (the user, 2026-11-20: "you can see his odds"). */}
+          <span style={{ fontSize: 13, color: "#7CFC9A" }} title="His chance of finding something every 20 minutes">🔍 {Math.round(findChance(klutzLv) * 100)}%</span>
           <Help title="Klutz's trips">
             <HelpSection title="The trip">
               <ul>
-                <li>Once in every <b>{FIND_EVERY_MS / 60000} minutes</b>, at any moment, he comes across something: a <b>creature</b> ({Math.round(FIND_MIX.creature * 100)}%), a <b>codex</b> ({Math.round(FIND_MIX.codex * 100)}%), a <b>material or potion</b> ({Math.round(FIND_MIX.goods * 100)}%), a <b>weapon or armour</b> ({Math.round(FIND_MIX.gear * 100)}%), or <b>nothing</b> ({Math.round(FIND_MIX.nothing * 100)}%).</li>
+                <li>Once in every <b>{FIND_EVERY_MS / 60000} minutes</b>, at any moment, he has a <b>{Math.round(findChance(klutzLv) * 100)}%</b> chance (+{Math.round(NOTHING_STEP * 100)}% a level, 100% at Lv {MAX_LEVEL}) of coming across something: a <b>creature</b> ({Math.round(FIND_MIX.creature * 100)}%), a <b>codex</b> ({Math.round(FIND_MIX.codex * 100)}%), a <b>material or potion</b> ({Math.round(FIND_MIX.goods * 100)}%), or a <b>weapon or armour</b> ({Math.round(FIND_MIX.gear * 100)}%).</li>
                 <li>He comes home when his <b>pack is full</b> ({packSize(k)} slots), when he&apos;s down to <b>{Math.round(HOME_AT * 100)}% HP</b>, or when something beats him. He keeps everything.</li>
                 <li>He can set off from <b>{Math.round(SEND_AT * 100)}% HP</b> (the pool heals 1 HP every {HEAL_MS_PER_HP / 1000}s). Lower HP, shorter trip.</li>
                 <li>You can <b>call him back</b> any time.</li>

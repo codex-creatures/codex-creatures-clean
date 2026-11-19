@@ -7,6 +7,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { SAVE_KEY } from "@/lib/save";
 import type { KlutzTrip } from "@/lib/klutz";
+import { EMPTY_LINES } from "@/components/klutz/KlutzStory";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), prefetch: vi.fn() }), usePathname: () => "/klutz" }));
 
@@ -97,7 +98,7 @@ describe("Klutz's trip, told as a story", () => {
       v: 2, dest: 0, startHp: 100, maxHp: 120, startedAt: start, endsAt: now + 30 * min, collected: false, home: "pack",
       encounters: [{ at: start + 10 * min, creatureId: "moss_wolf", rarity: "common", gearRarity: "common", won: true, caught: true, rounds: 3, level: 4, hpAfter: 82, loot: [], xp: 20 }],
       finds: [{ at: start + 10 * min, drop: item("Rusty Sword", { itemCategory: "weapon", itemKey: "sword" }) }, { at: start + 20 * min, drop: item("Leather Cap", { itemCategory: "armor", armorSlot: "helmet" }), skill: "armourer" }],
-      left: 1, passed: [{ at: start + 20 * min, name: "Nails", rarity: "common", qty: 2 }],
+      left: 1, passed: [{ at: start + 20 * min, name: "Nails", rarity: "common", qty: 2 }], empty: [start + 25 * min],
     };
     vi.resetModules();
     localStorage.clear();
@@ -115,6 +116,7 @@ describe("Klutz's trip, told as a story", () => {
     expect(text).toContain("It dropped Rusty Sword");
     expect(text).toContain("His Armourer's eye spotted Leather Cap");
     expect(text).toContain("but it was below your Selective rarity, so he left it behind");
+    expect(EMPTY_LINES.some((l) => text.includes(l))).toBe(true); // a window that brought nothing
     expect(text).toContain("…still exploring");
     expect(text).toContain("His pack");
     expect(text).toMatch(/2\/\d+/);
