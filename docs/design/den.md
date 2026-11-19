@@ -59,13 +59,17 @@ placement (players could block themselves in). With it off, the old Den, as it w
   hall's top-right corner, the portal, the Sparring/Training Pit (once the tavern has its pit).
 - **Moving things** (the user, 2026-11-19): hold a movable thing still (`LIFT_MS` 450 ms) and it lifts; drag
   it and let go. Floor things (the Soul Altar with its two braziers, the healing pool, the Pit, the standing
-  torches, and the tavern's pit in its own half) snap to a half-unit grid anywhere on the open floor, nooks included
-  (the user, 2026-11-19: "more flexibility"): `FLOOR_MARGIN` clear of the rock, clear of each other and of the
+  torches, and the tavern's pit in its own half) snap to the floor's small tiles (`SNAP` ⅓ u: each tile is 3 × 3 of them;
+  the user, 2026-11-20, was a half unit) anywhere on the open floor, nooks included
+  (the user, 2026-11-19: "more flexibility"): `FLOOR_MARGIN` clear of the rock, two small tiles (`GAP` ⅔ u, was 0.6) clear of each other and of the
   barrels, crates and pots (`DECOR`), of the room in front of a building's door, a wall thing and a way out
   (`DOOR_CLEAR`), and never boxing a place in: every place must still be reachable on foot from the Labyrinth's
   tunnel (`allReachable`; why fully free placement was ruled out, 2026-11-18). While a floor thing is held, the floor
   shows where its middle can go (the user, 2026-11-19): green where it fits, red where it doesn't (`fitMap`, worked
-  out a few rows a frame, `FIT_ROWS`, so a drag never stalls). Wall things (the bookcase, the quest board, the cage) snap to slots (`SLOTS`): beside each tunnel, in
+  out a few ms a frame, `FIT_MS`, so a drag never stalls), and the thing's own footprint shows under it, green or red
+  (the user, 2026-11-20; wall things' too). **Standing torches** keep no gap (the user, 2026-11-20: "so you can customize
+  the lighting"): their foot is one small tile (`LAMP_FOOT`) and may touch anything, the rock included, but not stand on
+  it, nor in front of a door or a way out, nor box anything in. Things put down with the old 0.6 gap still load where they were. Wall things (the bookcase, the quest board, the cage) snap to slots (`SLOTS`): beside each tunnel, in
   the middle between them (once the wall's gone), and along the hall's back wall by the shack; dropping on a
   taken slot swaps the two. Where it can't go it's red ("It won't fit there") and goes back. Kept in the save
   in its own field (`den3d`, lib/den3d/placement.ts: only what's moved), so it goes with save files and cloud
@@ -90,7 +94,8 @@ placement (players could block themselves in). With it off, the old Den, as it w
   arch and the PvP portal are recipes too (`tavern-broken`, `socket`, `arch`, `portal`; the arches' pictures stand out
   from the wall with their stones' thickness behind, over their holes); the bookcase and lectern stay the Labyrinth's
   3D things. The bigger flat-colour faces wear shared textures (stone, wood, grain; world/art-pipeline.md §6.6).
-- **Light, shadows and life** (the user, 2026-11-19): a higher ambient light (`DEN_STONE` remember 0.48, the recipes'
+- **Light, shadows and life** (the user, 2026-11-19): a higher ambient light (`DEN_STONE` remember 0.48, 0.58 since 2026-11-20 with
+  every light's reach up, `DEN_LIGHT`, for "too many dark spots"; the recipes'
   key light brighter), standing torches where it was darkest (along the walls and the south end to start; they
   move like the rest, `LAMP_KEYS`, with no name over them; finding and upgrading them is an idea for later), and the healing pool's own glow. Every place, lamp, brazier and person has a
   fixed shadow on the floor (the lights never move): a soft patch in three stepped bands, a little to the lower right,

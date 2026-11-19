@@ -5,7 +5,7 @@ import { FLOOR, ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { parseDenOptions, stepAngle, DEN_DEFAULTS, DEN_ANGLES } from "@/lib/den3d/setting";
 import {
   denPlan, denShown, stations, strollAt, routeLoop, routeTime, strollBlocked, braziers, clampView, denArea, firstView, stationAt, denLights,
-  placed, fitsFloor, fitsWall, placeWall, nearestSlot, toLayout, snap, allReachable, fitMap, SNAP, LAMP_KEYS, FLOOR_START, WALL_START, SLOTS,
+  placed, fitsFloor, floorFitter, footBox, GAP, LAMP_FOOT, FLOOR_SIZE, fitsWall, placeWall, nearestSlot, toLayout, snap, allReachable, fitMap, SNAP, LAMP_KEYS, FLOOR_START, WALL_START, SLOTS,
   KLUTZ_LOOP, VISITOR_LOOP, STROLL, ROOM1, ROOM2, NOOK1, NOOK2, WALL_GAP, DIVIDE_X, PLAN_W, LOOK_PAST, type Station, type DenState, type Placed,
 } from "@/lib/den3d/layout";
 
@@ -97,7 +97,8 @@ describe("moving things", () => {
   });
 
   it("lets a floor thing stand anywhere on the open floor, clear of the rock and the others, snapped to the grid", () => {
-    expect(snap(7.3)).toBe(7.5);
+    expect(snap(7.3)).toBe(7.333);                                                  // the floor's small tiles, 3 a tile
+    expect(snap(7.6)).toBe(7.667);
     expect(fitsFloor("pool", { x: 8, y: 17 }, start, true)).toBe(false);           // on the Pit
     expect(fitsFloor("altar", { x: 1.5, y: 13 }, start, true)).toBe(false);        // on the storehouse, off the middle
     expect(fitsFloor("altar", { x: 7, y: 9 }, start, true)).toBe(false);           // in front of the bookcase
@@ -125,11 +126,29 @@ describe("moving things", () => {
     expect(at(FLOOR_START.altar.x, FLOOR_START.altar.y)).toBe(2);   // where it stands now
     expect(at(9.5, 2.5)).toBe(1);                                   // in front of the way into the Labyrinth
     expect(at(0, 0)).toBe(0);                                       // the rock
-    const differ: string[] = [];                                    // (every spot as fitsFloor says)
-    for (let j = 0; j < m.h; j++) for (let i = 0; i < m.w; i++) if (m.at[j * m.w + i] && (m.at[j * m.w + i] === 2) !== fitsFloor("altar", { x: i * SNAP, y: j * SNAP }, start, true)) differ.push(`${i},${j}`);
+    const differ: string[] = [], fits = floorFitter("altar", start, true); // (every spot as fitsFloor says: the same fitter, made once)
+    for (let j = 0; j < m.h; j++) for (let i = 0; i < m.w; i++) if (m.at[j * m.w + i] && (m.at[j * m.w + i] === 2) !== fits({ x: i * SNAP, y: j * SNAP })) differ.push(`${i},${j}`);
     expect(differ).toEqual([]);
     const shut = fitMap("altar", placed(undefined, false), false);
     expect(shut.at[Math.round(15 / SNAP) * shut.w + Math.round(18 / SNAP)]).toBe(0); // room 2 before the wall's gone
+  });
+
+  it("keeps two small tiles between things, but lets a torch stand right up against them", () => {
+    // The pool moved to the Pit's west side: its footprint's east edge GAP (2/3 u) from the Pit's west edge fits, any closer doesn't.
+    const pit = footBox("pit", start.floor.pit), pool = FLOOR_SIZE.pool, y = 19; // (the pool, below the storehouse's door, overlapping the Pit north to south)
+    const at = (gap: number) => ({ x: pit.x0 - gap - pool.w / 2, y });
+    expect(fitsFloor("pool", at(GAP), start, true)).toBe(true);
+    expect(fitsFloor("pool", at(GAP - 1 / 3), start, true)).toBe(false);
+    // A torch with its foot touching the Pit's, and the Pit's own start then still fits beside it.
+    const ly = start.floor.pit.y, lamp = { x: pit.x0 - LAMP_FOOT / 2, y: ly };
+    expect(fitsFloor("lamp-1", lamp, start, true)).toBe(true);
+    expect(fitsFloor("lamp-1", { x: lamp.x + 0.1, y: ly }, start, true)).toBe(false);   // on it
+    const lit = { ...start, floor: { ...start.floor, "lamp-1": lamp } };
+    expect(fitsFloor("pit", start.floor.pit, lit, true)).toBe(true);
+    // Something put down 0.6 from the Pit before the gap grew still loads where it was.
+    expect(placed({ floor: { pool: at(0.6) } }, true).floor.pool).toEqual(at(0.6));
+    // …and against the rock (the hall's west wall's face is at x 0.5).
+    expect(fitsFloor("lamp-1", { x: 0.5 + LAMP_FOOT / 2, y: 22 }, start, true)).toBe(true);
   });
 
   it("moves the standing torches too, and they stay where they're put", () => {

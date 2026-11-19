@@ -18,8 +18,8 @@ import * as THREE from "three";
 import { ROCK, type Floorplan, type Pt } from "@/lib/dungeon/floorplan";
 import {
   denPlan, denShown, denLit, denLights, stations, stationAt, strollAt, routeLoop, routeTime, strollBlocked, braziers, clampView, denArea, firstView,
-  placed as placeAll, fitsFloor, fitsWall, placeWall, nearestSlot, toLayout, snap,
-  KLUTZ_LOOP, VISITOR_LOOP, STROLL, SCONCES, DEN_WALL, DIVIDE_X, ROOM1, ZOOM, DECOR, isLamp, fitMapper, SNAP, type FitMap,
+  placed as placeAll, footBox, wallFoot, fitsFloor, fitsWall, placeWall, nearestSlot, toLayout, snap,
+  KLUTZ_LOOP, VISITOR_LOOP, STROLL, SCONCES, DEN_WALL, DIVIDE_X, ROOM1, ZOOM, DECOR, isLamp, fitMapper, SNAP, type FitMap, type Box,
   type Station, type DenState, type DenLayout, type Placed, type Route, type FloorKey, type WallKey, type SlotId,
 } from "@/lib/den3d/layout";
 import { loadDenLayout, saveDenLayout } from "@/lib/den3d/placement";
@@ -55,8 +55,9 @@ const LIFT_MS = 450;              // ms held still on a movable thing before it 
 const LAB_KIT = WALK_TILES[0].kit!;
 const KIT = { ...LAB_KIT, floor: "/sprites/den3d/kit-floor.png", north: "/sprites/den3d/kit-north.png", cap: "/sprites/den3d/kit-cap.png" };
 // The Den's light: warmer than the Labyrinth's and never pitch dark (it's home). 🧪
-// (The user, 2026-11-19: a higher ambient light, with lamps adding to it in places: remember 0.3 → 0.48.)
-const DEN_STONE = { ...STONE, remember: 0.48, gain: 1.15, warm: [1, 0.82, 0.6] as [number, number, number], flame: [1, 0.76, 0.5] as [number, number, number] };
+// (The user, 2026-11-19: a higher ambient light, with lamps adding to it in places: remember 0.3 → 0.48; 2026-11-20, "too many
+// dark spots": 0.58, with the lights' reaches up, DEN_LIGHT.)
+const DEN_STONE = { ...STONE, remember: 0.58, gain: 1.15, warm: [1, 0.82, 0.6] as [number, number, number], flame: [1, 0.76, 0.5] as [number, number, number] };
 const FIRE_POWER = 0.8;           // 🧪 each light's strength (STONE.fire's 0.85 in the Labyrinth)
 // 🧪 The light the props built from recipes take for their shape (from the upper left, in front), times the Den's own.
 const DEN_KEY = { ambient: 1.05, key: 1.25, at: [-5, 7, 4] as [number, number, number] };
@@ -66,7 +67,8 @@ const NO = new THREE.Color(1, 0.35, 0.35); // a thing being moved where it can't
 // it turns, and how quickly it follows.
 const TURN = { perSpeed: 0.55, max: 6, follow: 5 };
 const PRESS_GLOW = 1.45; // 🧪 how much brighter a place is while a finger's on it
-const FIT_ROWS = 6;       // rows of the where-it-fits map worked out each frame (a row: every half unit across the Den)
+const FIT_MS = 6;         // ms a frame spent working out the where-it-fits map (a row at a time: every small tile across the Den)
+const FOOT_COLOURS = { fits: [120, 255, 150], no: [255, 80, 70] }; // 🧪 the footprint of a thing being moved
 const FIT_COLOURS = { fits: [90, 220, 120, 75], no: [230, 60, 50, 60] }; // 🧪 RGBA over the floor
 
 export type Den3DProps = {
@@ -191,7 +193,9 @@ export default function Den3D(p: Den3DProps) {
     let rev = 0;
     const step = () => {
       if (job !== fitJob.current) return;
-      const done = m.next(FIT_ROWS);
+      const t0 = performance.now();
+      let done = false;
+      while (!done && performance.now() - t0 < FIT_MS) done = m.next(1);
       setFit({ map: m.map, rev: ++rev });
       if (!done) requestAnimationFrame(step);
     };
@@ -307,7 +311,8 @@ export default function Den3D(p: Den3DProps) {
         <Canvas resize={{ offsetSize: true }} orthographic flat gl={{ antialias: false, powerPreference: "high-performance" }}
           style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
           <DenWorld pitch={pitch} across={across} state={state} placed={now} plan={plan} shown={shown} list={list} walkers={walkers} caged={p.caged} klutz={p.klutz}
-            movingKey={moving && !moving.ok ? moving.key : null} pressedKey={moving ? null : pressed} fit={moving ? fit : null} stoneReady={p.rubble === "dynamite"}
+            movingKey={moving && !moving.ok ? moving.key : null}
+            foot={moving ? { box: moving.kind === "wall" ? wallFoot(moving.key as WallKey, moving.slot!) : footBox(moving.key as FloorKey, moving.at), ok: moving.ok } : null} pressedKey={moving ? null : pressed} fit={moving ? fit : null} stoneReady={p.rubble === "dynamite"}
             viewRef={view} spanRef={span} glideRef={glide} cameraRef={camera} labelsRef={labels} movedAtRef={movedAt} />
         </Canvas>
       </div>
@@ -374,9 +379,9 @@ function walkerAt(walkers: Walker[], p: Pt, pitch: number): Walker | undefined {
 }
 
 // ── The scene ──
-function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, caged, klutz, movingKey, pressedKey, fit, stoneReady, viewRef, spanRef, glideRef, cameraRef, labelsRef, movedAtRef }: {
+function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, caged, klutz, movingKey, foot, pressedKey, fit, stoneReady, viewRef, spanRef, glideRef, cameraRef, labelsRef, movedAtRef }: {
   pitch: number; across: number; state: DenState; placed: Placed; plan: Floorplan; shown: Uint8Array; list: Station[]; walkers: Walker[]; caged?: string; klutz: KlutzMode;
-  movingKey: string | null; pressedKey: string | null; fit: { map: FitMap; rev: number } | null; stoneReady: boolean;
+  movingKey: string | null; foot: { box: Box; ok: boolean } | null; pressedKey: string | null; fit: { map: FitMap; rev: number } | null; stoneReady: boolean;
   viewRef: React.RefObject<Pt>; spanRef: React.RefObject<{ across: number; deep: number }>; glideRef: React.RefObject<{ from: Pt; to: Pt; at: number } | null>;
   cameraRef: React.RefObject<THREE.Camera | null>; labelsRef: React.RefObject<Map<string, HTMLElement>>; movedAtRef: React.RefObject<number | null>;
 }) {
@@ -404,6 +409,7 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
     <>
       <DenRock pitch={pitch} plan={plan} seen={seen} field={field} centre={centre} />
       {fit && <FitOverlay map={fit.map} rev={fit.rev} />}
+      {foot && <Footprint {...foot} />}
       {/* Shadows on the floor under everything that stands on it (the lights don't move, so they're fixed patches). */}
       {list.filter((s) => !s.wall && !s.quiet).map((s) => <Shadow key={`shadow:${s.key}`} {...shadowOf(s)} />)}
       {fires.map((c, i) => <Shadow key={`shadow:fire${i}`} x={c.x + 0.06} y={c.y + 0.04} w={0.42} d={0.26} />)}
@@ -550,6 +556,26 @@ function FitOverlay({ map, rev }: { map: FitMap; rev: number }) {
       <planeGeometry />
       <meshBasicMaterial map={tex} transparent depthWrite={false} toneMapped={false} />
     </mesh>
+  );
+}
+
+// The floor a thing being moved would take where it is now (the user, 2026-11-20: "show its footprint when moving items"):
+// filled and edged, green where it can go, red where it can't, over the where-it-fits map.
+function Footprint({ box, ok }: { box: Box; ok: boolean }) {
+  const [r, g, b] = ok ? FOOT_COLOURS.fits : FOOT_COLOURS.no, colour = new THREE.Color(r / 255, g / 255, b / 255);
+  const w = box.x1 - box.x0, d = box.y1 - box.y0;
+  const edges = useMemo(() => new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), []);
+  useEffect(() => () => edges.dispose(), [edges]);
+  return (
+    <group position={[(box.x0 + box.x1) / 2, 0.008, (box.y0 + box.y1) / 2]} rotation={[-Math.PI / 2, 0, 0]} scale={[w, d, 1]}>
+      <mesh raycast={() => null} renderOrder={3}>
+        <planeGeometry />
+        <meshBasicMaterial color={colour} transparent opacity={0.35} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <lineSegments geometry={edges} raycast={() => null} renderOrder={4}>
+        <lineBasicMaterial color={colour} transparent opacity={0.95} depthWrite={false} toneMapped={false} />
+      </lineSegments>
+    </group>
   );
 }
 

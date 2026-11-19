@@ -60,7 +60,7 @@ export function denShown(opened: boolean): Uint8Array {
 }
 
 // ── Where things may go (the user, 2026-11-19: hold one, drag it, let go) ──
-// Floor things snap to a half-unit grid anywhere on the open floor (the user, 2026-11-19: "more flexibility…
+// Floor things snap to the floor's small tiles (each tile 3 × 3 of them) anywhere on the open floor (the user, 2026-11-19: "more flexibility…
 // a huge area you can't move stuff"), clear of the rock, of everything else, of the room in front of doors and
 // the ways out, and never boxing anyone in (fitsFloor); the standing torches move too. Wall things snap to slots
 // on the north walls: beside each tunnel, in the middle between them (once the wall's gone), and along the hall's
@@ -74,9 +74,9 @@ export const LAMP_KEYS: LampKey[] = ["lamp-1", "lamp-2", "lamp-3", "lamp-4", "la
 export const FLOOR_KEYS: FloorKey[] = ["altar", "pool", "pit", "training", ...LAMP_KEYS];
 export const isLamp = (k: string): k is LampKey => k.startsWith("lamp-");
 export const WALL_KEYS: WallKey[] = ["board", "bookcase", "cage"];
-export const SNAP = 0.5;                      // u: the floor grid
+export const SNAP = 1 / 3;                    // u: the floor grid, its small tiles (the user, 2026-11-20; was 0.5)
 // (The standing torches start where the Den was darkest: along the walls and the south end.)
-export const FLOOR_START: Record<FloorKey, Pt> = { altar: { x: 8, y: 12.5 }, pool: { x: 6.4, y: 20 }, pit: { x: 10.2, y: 17.2 }, training: { x: 18.5, y: 16.5 },
+export const FLOOR_START: Record<FloorKey, Pt> = { altar: { x: 8, y: 12.5 }, pool: { x: 6.4, y: 20 }, pit: { x: 10.5, y: 17.2 }, training: { x: 18.5, y: 16.5 },
   "lamp-1": { x: 3.4, y: 21.4 }, "lamp-2": { x: 11.6, y: 21.8 }, "lamp-3": { x: 14.6, y: 21.8 }, "lamp-4": { x: 24.4, y: 13.6 }, "lamp-5": { x: 24.4, y: 20.6 } };
 export const WALL_START: Record<WallKey, SlotId> = { board: "hall-1", bookcase: "hall-2", cage: "nook-1" };
 // A wall slot: where along which face (x, the face's y), and how wide a thing it takes.
@@ -92,6 +92,9 @@ export const SLOTS: Slot[] = [
 // (The user, 2026-11-19: the altar 0.6 the size, the pool big and swampy, the Sparring/Training Pit twice the size.)
 export const FLOOR_SIZE: Record<FloorKey, { w: number; d: number }> = { altar: { w: 1.6, d: 1.5 }, pool: { w: 3.8, d: 2.6 }, pit: { w: 2.6, d: 2.8 }, training: { w: 5.2, d: 5.2 },
   ...(Object.fromEntries(LAMP_KEYS.map((k) => [k, { w: 0.5, d: 0.5 }])) as Record<LampKey, { w: number; d: number }>) };
+// A standing torch's foot: one small tile, and it may stand right up against anything (the user, 2026-11-20: "they can be next
+// to other units - so you can customize the lighting"), the rock included; only the gap between other things is kept.
+export const LAMP_FOOT = 1 / 3;
 const WALL_SIZE: Record<WallKey, { w: number; d: number; out: number }> = { board: { w: 1.35, d: 0.2, out: 0 }, bookcase: { w: 1.25, d: 0.5, out: 0.25 }, cage: { w: 1.05, d: 1.05, out: 0.55 } };
 // How far a floor thing keeps from the rock (u), and the room kept clear in front of a door or a way out.
 export const FLOOR_MARGIN = 0.35;
@@ -101,15 +104,25 @@ export const DECOR: { kind: "barrels" | "crates" | "pots"; at: Pt }[] = [
   { kind: "barrels", at: { x: 1.1, y: 17.7 } }, { kind: "crates", at: { x: 1.1, y: 18.9 } }, { kind: "pots", at: { x: 1.1, y: 20.1 } }];
 // The braziers stand either side of the altar's front, and of the pit in the tavern's room: they move with them.
 export const BRAZIER_AT: Record<"altar" | "training", { dx: number; dy: number }> = { altar: { dx: 1.15, dy: 1 }, training: { dx: 2.9, dy: 2.1 } };
-// How much floor a thing keeps to itself (its footprint, its braziers, and room to walk round).
-const KEEP = 0.3;
-export function keptBox(key: FloorKey, at: Pt) {
-  if (isLamp(key)) return { x0: at.x - 0.3, x1: at.x + 0.3, y0: at.y - 0.3, y1: at.y + 0.3 }; // (a torch: just its foot)
+// The gap kept between things: two of the floor's small tiles (the user, 2026-11-20), half of it round each.
+// (Torches keep none: LAMP_FOOT.)
+export const GAP = 2 / 3;
+const KEEP = GAP / 2;
+// (The gap before, 0.6: what was put down with it still loads where it was, placed.)
+const OLD_KEEP = 0.3;
+// The floor a thing stands on (its footprint, with its braziers), and what it keeps to itself (that and KEEP round it).
+export function footBox(key: FloorKey, at: Pt): Box {
+  if (isLamp(key)) return { x0: at.x - LAMP_FOOT / 2, x1: at.x + LAMP_FOOT / 2, y0: at.y - LAMP_FOOT / 2, y1: at.y + LAMP_FOOT / 2 };
   const s = FLOOR_SIZE[key], fire = key === "altar" || key === "training" ? BRAZIER_AT[key] : null;
-  const hw = Math.max(s.w / 2, fire ? fire.dx + 0.2 : 0) + KEEP, below = Math.max(s.d / 2, fire ? fire.dy + 0.2 : 0) + KEEP;
-  return { x0: at.x - hw, x1: at.x + hw, y0: at.y - s.d / 2 - KEEP, y1: at.y + below };
+  const hw = Math.max(s.w / 2, fire ? fire.dx + 0.2 : 0), below = Math.max(s.d / 2, fire ? fire.dy + 0.2 : 0);
+  return { x0: at.x - hw, x1: at.x + hw, y0: at.y - s.d / 2, y1: at.y + below };
 }
-export const snap = (v: number) => Math.round(v / SNAP) * SNAP;
+export function keptBox(key: FloorKey, at: Pt, keep = KEEP): Box {
+  const b = footBox(key, at), k = isLamp(key) ? 0 : keep;
+  return { x0: b.x0 - k, x1: b.x1 + k, y0: b.y0 - k, y1: b.y1 + k };
+}
+// (On the grid's small tiles, tidied so a third doesn't save as 6.333333333333334.)
+export const snap = (v: number) => Math.round(Math.round(v / SNAP) * SNAP * 1000) / 1000;
 
 // Where everything movable stands, from the saved layout (what's missing, or no longer fits, at its start).
 export type Placed = { floor: Record<FloorKey, Pt>; wall: Record<WallKey, SlotId> };
@@ -121,7 +134,7 @@ export function placed(layout: DenLayout | undefined, opened: boolean): Placed {
   // (A floor thing saved somewhere it can't stand now: back to its start.)
   for (const k of FLOOR_KEYS) {
     const p = layout?.floor?.[k];
-    if (p && Number.isFinite(p.x) && Number.isFinite(p.y) && fitsFloor(k, p, { floor, wall }, opened)) floor[k] = { x: p.x, y: p.y };
+    if (p && Number.isFinite(p.x) && Number.isFinite(p.y) && floorFitter(k, { floor, wall }, opened, OLD_KEEP)(p)) floor[k] = { x: p.x, y: p.y };
   }
   return { floor, wall };
 }
@@ -129,8 +142,10 @@ export function placed(layout: DenLayout | undefined, opened: boolean): Placed {
 // rock; clear of everything else, and of the room in front of doors and the ways out; and with every place still
 // reachable from the Labyrinth's tunnel, so nothing can be boxed in (why fully free placement was ruled out,
 // 2026-11-18). The tavern's room's pit only in its own half: it's the tavern's.
-type Box = { x0: number; x1: number; y0: number; y1: number };
-const overlaps = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+export type Box = { x0: number; x1: number; y0: number; y1: number };
+// (Touching is fine: thirds never add up exactly in floating point, hence the hair.)
+const E = 1e-6;
+const overlaps = (a: Box, b: Box) => a.x0 < b.x1 - E && b.x0 < a.x1 - E && a.y0 < b.y1 - E && b.y0 < a.y1 - E;
 // (Something in room 2 before the wall's gone isn't there yet.)
 const absent = (k: FloorKey, p: Placed, opened: boolean) => !opened && p.floor[k].x > DIVIDE_X;
 const stateFor = (opened: boolean): DenState => ({ opened, pit: opened, trainingPit: false, repaired: false });
@@ -140,12 +155,17 @@ export function fitsFloor(key: FloorKey, at: Pt, p: Placed, opened: boolean): bo
 // The same question for many spots at once (fitMap, while a thing's being dragged): everything that doesn't depend on
 // where the thing goes is worked out once (the others, the places that don't move, the walking grid round them), so
 // each spot costs only its own checks and one walk over the grid.
-export function floorFitter(key: FloorKey, p: Placed, opened: boolean): (at: Pt) => boolean {
+export function floorFitter(key: FloorKey, p: Placed, opened: boolean, keep = KEEP): (at: Pt) => boolean {
   const s = FLOOR_SIZE[key], plan = denPlan(opened), shown = denShown(opened), state = stateFor(opened);
-  const others = FLOOR_KEYS.filter((k) => k !== key && !absent(k, p, opened)).map((k) => keptBox(k, p.floor[k]));
-  const decor = DECOR.map((d) => ({ x0: d.at.x - 0.6, x1: d.at.x + 0.6, y0: d.at.y - 0.6, y1: d.at.y + 0.6 }));
+  // (A torch keeps no gap: one being moved, or one already standing, is checked foot to foot; anything else keeps GAP.)
+  const lamp = isLamp(key), pad = lamp ? 0 : keep;
+  const others = FLOOR_KEYS.filter((k) => k !== key && !absent(k, p, opened)).map((k) => {
+    const bare = lamp || isLamp(k);
+    return { bare, box: bare ? footBox(k, p.floor[k]) : keptBox(k, p.floor[k], keep) };
+  });
+  const decor = DECOR.map((d) => ({ x0: d.at.x - 0.6 + KEEP - pad, x1: d.at.x + 0.6 - KEEP + pad, y0: d.at.y - 0.6 + KEEP - pad, y1: d.at.y + 0.6 - KEEP + pad }));
   const rest = stations(state, p).filter((st) => st.key !== key);
-  const fixed = rest.filter((st) => !st.move || st.move === "wall").map(keepClear);
+  const fixed = rest.filter((st) => !st.move || st.move === "wall").map((st) => keepClear(st, pad));
   const firesOf = (k: FloorKey, c: Pt): Pt[] => k === "altar" ? [-1, 1].map((d) => ({ x: c.x + d * BRAZIER_AT.altar.dx, y: c.y + BRAZIER_AT.altar.dy }))
     : k === "training" ? (opened ? [-1, 1].map((d) => ({ x: c.x + d * BRAZIER_AT.training.dx, y: c.y + BRAZIER_AT.training.dy })) : [])
     : isLamp(k) ? (opened || c.x < DIVIDE_X ? [c] : []) : [];
@@ -164,15 +184,16 @@ export function floorFitter(key: FloorKey, p: Placed, opened: boolean): (at: Pt)
       : st.turn === "east" ? [{ x: st.x + st.w / 2 + out, y: st.y }] : sides(st));
   const seen = new Uint8Array(W * H), q = new Int32Array(W * H);
   return (at) => {
-    const x0 = at.x - s.w / 2 - FLOOR_MARGIN, x1 = at.x + s.w / 2 + FLOOR_MARGIN, y0 = at.y - s.d / 2 - FLOOR_MARGIN, y1 = at.y + s.d / 2 + FLOOR_MARGIN;
+    const hw = lamp ? LAMP_FOOT / 2 : s.w / 2 + FLOOR_MARGIN, hd = lamp ? LAMP_FOOT / 2 : s.d / 2 + FLOOR_MARGIN;
+    const x0 = at.x - hw, x1 = at.x + hw, y0 = at.y - hd, y1 = at.y + hd;
     const nx = Math.ceil((x1 - x0) / 0.25), ny = Math.ceil((y1 - y0) / 0.25);
     for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
       const tx = Math.round(x0 + ((x1 - x0) * i) / nx), ty = Math.round(y0 + ((y1 - y0) * j) / ny);
       if (tx < 0 || ty < 0 || tx >= plan.w || ty >= plan.h || plan.tiles[ty * plan.w + tx] !== FLOOR || (!opened && tx >= DIVIDE_X)) return false;
     }
     if (key === "training" && at.x - s.w / 2 < DIVIDE_X + 0.5) return false;
-    const mine = keptBox(key, at);
-    if (others.some((o) => overlaps(mine, o)) || decor.some((o) => overlaps(mine, o)) || fixed.some((o) => overlaps(mine, o))) return false;
+    const mine = keptBox(key, at, keep), foot0 = footBox(key, at);
+    if (others.some((o) => overlaps(o.bare ? foot0 : mine, o.box)) || decor.some((o) => overlaps(mine, o)) || fixed.some((o) => overlaps(mine, o))) return false;
     // Walk the grid from the Labyrinth's tunnel with this thing (and its fires) where it would stand.
     const fires = firesOf(key, at), foot = { x0: at.x - s.w / 2 - 0.3, x1: at.x + s.w / 2 + 0.3, y0: at.y - s.d / 2 - 0.3, y1: at.y + s.d / 2 + 0.3 };
     const hasStation = !isLamp(key) || opened || at.x < DIVIDE_X;
@@ -224,8 +245,8 @@ export function fitMapper(key: FloorKey, p: Placed, opened: boolean): { map: Fit
   } };
 }
 // The floor a place that doesn't move keeps to itself: its footprint, and the room in front of its door or way out.
-function keepClear(st: Station): Box {
-  const b = { x0: st.x - st.w / 2 - KEEP, x1: st.x + st.w / 2 + KEEP, y0: st.y - st.d / 2 - KEEP, y1: st.y + st.d / 2 + KEEP };
+function keepClear(st: Station, keep = KEEP): Box {
+  const b = { x0: st.x - st.w / 2 - keep, x1: st.x + st.w / 2 + keep, y0: st.y - st.d / 2 - keep, y1: st.y + st.d / 2 + keep };
   if (st.key === "arch" || st.key === "portal") return { ...b, y1: st.y + DOOR_CLEAR.way };
   if (st.key === "board") return { ...b, y1: st.y + DOOR_CLEAR.board };
   if (st.turn === "east") return { ...b, x1: b.x1 + DOOR_CLEAR.building };
@@ -267,6 +288,11 @@ export function allReachable(list: Station[], p: Placed, opened: boolean): boole
 export function fitsWall(key: WallKey, id: SlotId, opened: boolean): boolean {
   const s = SLOTS.find((q) => q.id === id);
   return !!s && (opened || !s.opened) && WALL_SIZE[key].w <= s.wide + 0.001;
+}
+// The floor a wall thing takes in slot `id` (shown while it's moved, as footBox for floor things).
+export function wallFoot(key: WallKey, id: SlotId): Box {
+  const slot = SLOTS.find((q) => q.id === id)!, z = WALL_SIZE[key], y = z.out ? slot.face + z.out : slot.face;
+  return { x0: slot.x - z.w / 2, x1: slot.x + z.w / 2, y0: y - z.d / 2, y1: y + z.d / 2 };
 }
 export function placeWall(p: Placed, key: WallKey, id: SlotId): Placed {
   const wall = { ...p.wall }, other = WALL_KEYS.find((k) => k !== key && wall[k] === id);
@@ -338,7 +364,9 @@ export function stations(s: DenState, p: Placed = placed(undefined, s.opened)): 
 // The Den's lights: torches on the nook's north wall (and by the tavern), the light on each tunnel's arch,
 // the braziers (with the altar, and the tavern room's pit), lanterns by the shack's and storehouse's doors and
 // the board, the altar's soul fire and the tavern's windows. Tile units and reach in tiles (stone.ts Light3D).
-export const DEN_LIGHT = { torch: 5.5, brazier: 4.5, altar: 4, tavern: 4.5, lantern: 3.5, lamp: 4.5, pool: 3 }; // 🧪 reaches
+// (The user, 2026-11-20: "too many dark spots": every reach up, torch 5.5 → 6.5, brazier 4.5 → 5, lantern 3.5 → 4.5, lamp 4.5 → 6,
+// pool 3 → 3.5; with the ambient up in Den3D's DEN_STONE.)
+export const DEN_LIGHT = { torch: 6.5, brazier: 5, altar: 4, tavern: 5, lantern: 4.5, lamp: 6, pool: 3.5 }; // 🧪 reaches
 // The standing torches (the user, 2026-11-19: "a higher ambient light with additional lighting in certain areas"; they
 // can be moved, LAMP_KEYS): where each stands now (room 2's only once the wall's gone).
 export const lampsAt = (p: Placed, opened: boolean): Pt[] => LAMP_KEYS.map((k) => p.floor[k]).filter((l) => opened || l.x < DIVIDE_X);
