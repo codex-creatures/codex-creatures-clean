@@ -5,7 +5,7 @@ import { shutPlan } from "../lib/dungeon/torch";
 import { roomAt } from "../lib/dungeon/walk";
 import { dungeonCells, shadeOf, oneWayDoors, uprightStretch, rockHeights, carvedMesh, DEFAULT_PITCH, WALL_HEIGHT, SOUTH_LIP } from "../lib/render3d/dungeon3d";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
-import { layoutFloorplan } from "../lib/dungeon/layout";
+import { layoutFloorplan, roomCentre } from "../lib/dungeon/layout";
 import { newWalkRun, migrateWalkRun } from "../lib/world/migrate";
 import { startWalkRun } from "../lib/dungeon/walkRun";
 
@@ -122,16 +122,18 @@ describe("the grey experiment: rock carved by heights", () => {
 
 describe("oneWayDoors: a tunnel up shown shut from above (drawing only)", () => {
   const fix = (n: string) => migrateWalkRun(JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "walk", `${n}.json`), "utf8"))).run;
-  it("in the Cyclops part-way, the tunnels up out of open rooms below you show shut; never one you're in, or one from your room", () => {
+  it("in the Cyclops part-way, only the tunnels up into your room show shut; never one you're in, or one up out of any other room", () => {
     const run = fix("cyclops-mid"), w = run.walk!, L = w.layout, plan = layoutFloorplan(L);
     const live = shutPlan(plan, L, { room: w.room, line: w.line ?? Infinity });
-    const here = roomAt(plan, w.at);
-    const shut = oneWayDoors(L, live, w.at, here);
+    // Standing in the room a still-open tunnel up leads into (its bottom room not yet closed).
+    const up = L.tunnels.find((q) => q.up && (plan.tunnels[q.key] ?? []).some((p) => live.tiles[p.y * live.w + p.x] !== ROCK))!;
+    const here = up.b, me = roomCentre(L.rooms[here]);
+    const shut = oneWayDoors(L, live, me, here);
     expect(shut.length).toBeGreaterThan(0);
     for (const d of shut) {
       const t = L.tunnels.find((q) => q.key === d.key)!;
       expect(t.up).toBe(true);
-      expect(t.a).not.toBe(here);
+      expect(t.b).toBe(here);
       for (const q of d.tiles) expect(live.tiles[q.y * live.w + q.x]).not.toBe(ROCK);
       // The whole tunnel, its top door included, so it shows as a closed one does.
       const own = (plan.tunnels[t.key] ?? []).filter((q) => live.tiles[q.y * live.w + q.x] !== ROCK);
@@ -142,10 +144,12 @@ describe("oneWayDoors: a tunnel up shown shut from above (drawing only)", () => 
     const plugs = new Set(shut.flatMap((d) => d.tiles.map((q) => q.y * live.w + q.x)));
     const h = rockHeights(live, (i) => live.tiles[i] !== ROCK && !plugs.has(i), WALL_HEIGHT, true);
     for (const d of shut) for (const q of d.tiles) if (q.y === L.tunnels.find((u) => u.key === d.key)!.rect.y) expect(h[q.y * live.w + q.x]).toBe(SOUTH_LIP);
+    // Every other tunnel up shows open, whatever room it climbs out of (seen from a room beside it, at an angle).
+    for (const t of L.tunnels) if (t.up && t.b !== here) expect(shut.some((d) => d.key === t.key)).toBe(false);
     // Standing in a tunnel's bottom room, or inside it: that one shows open.
     const t = L.tunnels.find((q) => q.key === shut[0].key)!;
     const inside = { x: t.rect.x, y: t.rect.y + 1 };
     expect(oneWayDoors(L, live, inside, roomAt(plan, inside)).some((d) => d.key === t.key)).toBe(false);
-    expect(oneWayDoors(L, live, w.at, t.a).some((d) => d.key === t.key)).toBe(false);
+    expect(oneWayDoors(L, live, me, t.a).some((d) => d.key === t.key)).toBe(false);
   });
 });

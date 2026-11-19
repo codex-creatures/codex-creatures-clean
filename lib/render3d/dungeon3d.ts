@@ -74,8 +74,10 @@ export const ROCK_MARGIN = 24;
 
 // Tunnels up are one-way (layout.ts stepRule: an up tunnel's top door is entered only from inside
 // it), but one you've come up stays open behind you until its lower room closes. So it isn't seen as
-// a way back, it's shown fallen in (rock, as a closed tunnel is: shutPlan) except from inside the
-// tunnel or the room below it (the user, 2026-11-10: it showed open, though you couldn't go down it).
+// a way back, it's shown fallen in (rock, as a closed tunnel is: shutPlan) from the room it leads up
+// into (the user, 2026-11-10: it showed open, though you couldn't go down it). Only from there: from
+// anywhere else a passage shows open (the user, 2026-11-20: tunnels up out of rooms you weren't in
+// showed shut at some angles till you walked into the room below them).
 // The whole tunnel, not just its top door: with the door alone shut, the tunnel's open floor south of
 // it stood a full wall face in the room's low south rim (the user, 2026-11-12: "a random wall that
 // doesn't fit"). Drawing only: walking, sight and light still go by the floorplan. Each such tunnel,
@@ -84,7 +86,7 @@ export function oneWayDoors(layout: Layout, fp: Floorplan, me: Pt, here: string 
   const out: { key: string; tiles: Pt[] }[] = [];
   const x = Math.round(me.x), y = Math.round(me.y);
   const shut = layout.tunnels.filter((t) => {
-    if (!t.up || t.a === here) return false;
+    if (!t.up || t.b !== here) return false;
     const r = t.rect;
     return !(x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
   });
