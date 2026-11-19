@@ -43,7 +43,7 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
-import { prop3dOf, bookcaseBroken, CANDLE_AT, DECOR_3D, DYNAMITE_GLOW, barrelsOf } from "@/lib/render3d/props3d";
+import { prop3dOf, bookcaseBroken, CANDLE_AT, DECOR_3D, DYNAMITE_GLOW, CLUB_GLOW, barrelsOf } from "@/lib/render3d/props3d";
 import { Prop3D, Campfire, HealingGem, Glow, PROP_LEAN, type Tint } from "@/components/Props3D";
 import { Decor3D } from "@/components/Decor3D";
 import { GLINT_VERT, GLINT_FRAG, RIPPLE, glintNumbers, ratAt, ratBolt, ratHidesFrom, RAT_FLEE } from "@/lib/render3d/puddle";
@@ -438,6 +438,8 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
       continue;
     }
     out.push(<Upright key={t.key} src={a.src} x={t.x} y={t.y} w={w} h={h} below={b.down * stretch} colour={shade && (() => shade(t.x, t.y))} />);
+    // (The first quest's run) Klutz's Club glows gold on the corridor's floor till it's picked up.
+    if (t.def === "club") out.push(<group key={`glow:${t.key}`} position={[t.x, 0, t.y]}><Glow colour={CLUB_GLOW.colour} radius={CLUB_GLOW.radius} strength={CLUB_GLOW.strength} /></group>);
     if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
   }
   for (const f of sim.foes) {

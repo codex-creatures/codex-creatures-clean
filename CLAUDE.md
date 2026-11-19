@@ -154,7 +154,7 @@ kill theirs.
     `budgets.ts`, `ceilings.ts`, **the user's most carefully balanced system**; armour, materials).
   - `dungeon/`: runs (`run.ts`), the scroll map (`map.ts`), walkable layouts (`layout.ts`,
     `interior.ts`), walking, foes, torches and candles (`torch.ts`), campfires, `chamber.ts`, `witch.ts`,
-    `people.ts` (the people who wander, and the locators).
+    `people.ts` (the people who wander, and the locators), `tutorialRun.ts` (the first quest's hand-made walked run).
   - `world/`: the walkable world (units, grid, objects, occupancy, policy, place, placements,
     migrate, version, walkWorld, walkSim, compat). `render/`: projection and the scene builder.
     `render3d/`: the 3D prototype's geometry and its Stone mode's texture and light rules (components/WalkView3D.tsx; world/rendering.md §4.8).

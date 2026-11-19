@@ -180,8 +180,9 @@ export const minibossAllowed = (dungeon: DungeonId, depth: number) => dungeon > 
 //   Every map has one chest (a den turned into it) and at least one stash, all always marked on
 //   the scroll (even on the blind first step), so finding potions and loot is a choice of route. It should be a struggle to reach
 //   the chief without them (the user, 2026-10-27).
-// - At the top, the camp's chief: an Uncommon in Common gear, Lv CAMP_CHIEF_LEVEL. Its chest is a
-//   mini boss's, bar the Iron Cage Schematic (that's for the Labyrinth's mini bosses).
+// - At the top, the camp's chief: the Baby Cyclops (the user, 2026-11-20: the first quest's thief, back
+//   with a club and lots of HP), Lv CAMP_CHIEF_LEVEL: campChief. Its chest is a mini boss's, bar the
+//   Iron Cage Schematic (that's for the Labyrinth's mini bosses).
 // - Beaten the first time, it guards CAMP_CAGES cages, each a Common or Uncommon (even odds) at
 //   Lv CAMP_CAGE_LEVELS, of no race your party has, so you've a team of 3. After that, one cage
 //   with a creature in it CAMP_REPEAT_CHANCE of the time.
@@ -190,6 +191,20 @@ export const CAMP_ROUTE = 7;
 export const CAMP_STASH = 0.3;
 export const CAMP_CHIEF_LEVEL = 5;
 export const CAMP_CAGES = 2;
+// The chief (campChief): a Baby Cyclops swinging a club (a Common maul of CAMP_CHIEF_CLUB, an average Common
+// weapon's roll, the same every time; it may drop, as any foe's gear does: rollEnemyDrops), with no armour
+// but CAMP_CHIEF_HP times its HP, and %s of Claude's (a slow brute: CAMP_CHIEF_PROF). 🧪 Sim (a lone Lv 5
+// Rare starter, Klutz's club and Common armour, Normal AI, vs the chief's Hard): it wins 46% of the time
+// (194 HP) where the Uncommon chief before it lost 52% (123 HP).
+export const CAMP_CHIEF_HP = 2;
+export const CAMP_CHIEF_PROF: CreatureProficiency = { atk: 14, rng: 0, mag: 0, agil: 4, mdef: 12, rdef: 8, magdef: 8 };
+export const CAMP_CHIEF_CLUB = { melee: 15, ranged: 11, magic: 5, agility: 12, hp: 17 };
+export function campChief(): Enemy {
+  return {
+    creatureId: "baby_cyclops", proficiency: { ...CAMP_CHIEF_PROF }, moves: ["Club Smash", "Backhand"], level: CAMP_CHIEF_LEVEL, hpMult: CAMP_CHIEF_HP,
+    gear: [{ slot: "weapon", key: "temporal_maul", rarity: "common", stats: { ...CAMP_CHIEF_CLUB }, drops: false }],
+  };
+}
 export const CAMP_CAGE_LEVELS: [number, number] = [2, 4];
 export const CAMP_REPEAT_CHANCE = 0.2;
 export const LABYRINTH_SCANS = 25;
@@ -1097,7 +1112,10 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
     case "encampment": {
       // The Encampment's top room: its chief, alone, guarding the cages (put in as you walk in: enterRoom).
       if (dungeon === 0) {
-        const chief = makeEnemy(...foeAt(0, "camp", depth, rng), [], rng, CAMP_CHIEF_LEVEL);
+        // (The Uncommon it used to be is still rolled, and set aside, so the rolls after it, and so every
+        // run made from a seed, come out as they did.)
+        makeEnemy(...foeAt(0, "camp", depth, rng), [], rng, CAMP_CHIEF_LEVEL);
+        const chief = campChief();
         return { kind, variant: "plain", enemies: [chief], cages: [], level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
       }
       const variant = pick(ENCAMP_VARIANTS, rng);
@@ -1214,7 +1232,7 @@ export const atTheTop = (run: DungeonRun) => run.current?.kind === "boss" || (du
 // open the cages and the chest: the run's won, even if you leave by the Den
 // or Retreat rather than heading home (run.ts endRun counts it).
 // (Walked out of the boss's room since, sideways: still won.)
-export const wonAtTop = (run: DungeonRun) => !!run.walk && run.status !== "dead"
+export const wonAtTop = (run: DungeonRun) => !!run.walk && run.status !== "dead" && !run.map.quest // (the first quest's thief isn't a boss: no clear)
   && !!(runPosition(run) === run.map.boss ? run.current : run.walk.rooms[run.map.boss])?.done;
 
 // dynamite: Klutz's dynamite quest wants its storehouse (lib/tavern.ts: wantsStorehouse).

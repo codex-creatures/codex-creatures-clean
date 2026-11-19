@@ -22,6 +22,7 @@ import { findPath, walkable, type CanStep } from "../dungeon/walk";
 import { hasFight, fightContainer, type DungeonId, type Room } from "../dungeon/run";
 import { waitsHere, bookcaseOf, type WalkRun } from "../dungeon/walkRun";
 import { personLit, type Wanderer } from "../dungeon/people";
+import { TUTORIAL_LIFE } from "../dungeon/tutorialRun";
 import type { Campfire } from "../dungeon/campfire";
 import type { DungeonMap } from "../dungeon/map";
 import type { Floorplan, Pt } from "../dungeon/floorplan";
@@ -65,6 +66,7 @@ export function placeLabDecor(walk: WalkRun, plan: Floorplan, map: DungeonMap, c
 // in the rooms (not the people who wander), the campfires, candles and wall torches.
 export function placeFloorLifeOf(walk: WalkRun, plan: Floorplan, things: Thing[], candles: Candle[], sconces: Sconce[]): { puddles: Pt[]; holes: RatHole[]; webs: CobWeb[] } {
   // (Bones, pots and nests lying in a corner, world version 16, are walked over: a rat runs past them too.)
+  if (walk.tutorial) return TUTORIAL_LIFE; // (its own, by hand: tutorialRun.ts)
   const taken = [...things.filter((t) => !t.npc && !(t.inert && !t.solid)), ...(walk.fires ?? []), ...candles];
   return placeFloorLife(plan, taken, sconces, [walk.layout.start, walk.layout.boss], seeded(walk.seed + 909));
 }
@@ -122,7 +124,7 @@ export function foeStarts(placed: Placements, ids: string[], room: (id: string) 
 // which of its pictures; solid and npc come from the definition.
 export type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
   cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true; golden?: true;
-  shelf?: true; pickup?: "dynamite" | "backpack"; empty?: true; turned?: true; crate?: number; box?: true }; // crate: a storehouse's crate or barrel, to search (v16) // turned: a table end-on (v15) // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13); shelf: a bookcase against a wall, to search (v14); pickup: a storehouse's find on its floor (v14); empty: an open chest with nothing left in it
+  shelf?: true; pickup?: "dynamite" | "backpack" | "club"; empty?: true; turned?: true; crate?: number; box?: true }; // crate: a storehouse's crate or barrel, to search (v16) // turned: a table end-on (v15) // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13); shelf: a bookcase against a wall, to search (v14); pickup: a storehouse's find on its floor (v14); empty: an open chest with nothing left in it
 const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
   const d = objectDef(t.def);
   return { ...t, solid: d.collision === "solid", ...(d.kind === "npc" ? { npc: true } : {}) };
@@ -223,7 +225,8 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       else if (r.crates) out.push(thingOf({ key: d.id, room: id, ...at, def: d.def, open: !!r.searched?.includes(n), crate: n }));
     }
     const guardedFind = hasFight(r) && !r.done;
-    for (const [what, there] of [["dynamite", !!r.dynamite], ["backpack", !!r.packOnFloor]] as const) {
+    // (The first quest's run) Klutz's Club on the corridor's floor till you pick it up.
+    for (const [what, there] of [["dynamite", !!r.dynamite], ["backpack", !!r.packOnFloor], ["club", r.quest === "club" && !r.done]] as const) {
       const at = there ? placed.spot(`${what}:${id}`) : undefined;
       if (at) out.push(thingOf({ key: `${what}:${id}`, room: id, ...at, def: what, open: false, pickup: what, flag: !guardedFind, ...(guardedFind ? { guarded: true } : {}) }));
     }

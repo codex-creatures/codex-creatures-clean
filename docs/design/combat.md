@@ -194,7 +194,7 @@ How it came about, round by round: history.md.
   | First (15 dmg, 50⚡, always first) | Rush | Quickshot | Blink |
 
   ✅ **Since 2026-11-12 (decision 41) they're neutral:** no race and no own-race bonus, so the race
-  chart counts only for codex moves (the guided first fight's thief is Humanoid, and Klutz's tour
+  chart counts only for codex moves (a starter has its own race move for the guided first fight, and Klutz's tour
   and the Bestiary say so). Until then: each landed as its creature's **main race** (`asRace`, its first
   race), with the match bonus, so the race chart decides every hit. Klutz knows all 9 and lands
   neutral. Two first-strike moves in one round: the faster goes first. 🧪 The heavy names are
@@ -215,8 +215,8 @@ How it came about, round by round: history.md.
   6.1 with no match bonus. The side whose race beats the other's wins about 94% (97% before).
 - ✅ **Guided first fight** teaches races (the user, 2026-10-31): your creature fights with its own
   moves, and the Baby Cyclops thief's race is one those moves are effective against (`thiefRace`: since
-  2026-11-12, one its own race beats, as its core moves land as it; Humanoid if none). Klutz names its race and has you hit it with that move (it glows), then
-  points you to the ▲▼ race chart (it glows) and lets you finish it. Sim: 3–8 rounds (about 6), never a loss.
+  2026-11-20, one its race move beats: every starter has one, `STARTER_RACE_MOVE`, creatures.md; Humanoid if none). Klutz names its race and has you hit it with that move (it glows), then
+  points you to the ▲▼ race chart (it glows) and lets you finish it. It can't knock you out. Sim: 3–8 rounds (about 6), never a loss.
   Bosses (the Cyclops, the Hydra, the Warden's pack) have no race, so no party is hard-countered.
 - ✅ **UI:** moves show their race; tablets are cut in their race's stone with a big style icon
   (impact / arrow / bolt). Cards show race squares under the sprite (not the style); creature

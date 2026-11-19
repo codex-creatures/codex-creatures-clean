@@ -70,7 +70,7 @@ function Showcase({ d, n, status, info }: { d: DungeonId; n: number; status: str
 }
 
 // ── The entrance: choose your party ─────────────────────────────────
-// quest: Klutz's box is still to fetch (the quest's short run, in the Labyrinth). scans: barcodes scanned.
+// quest: Klutz's box is still to fetch (the quest's short run, walked: lib/dungeon/tutorialRun.ts). scans: barcodes scanned.
 // Two tabs: the party (picked freely, or one of your teams: lib/teams.ts) and the bag to pack.
 export default function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSave }: {
   lab: DungeonSave; owned: OwnedCreature[]; game: ReturnType<typeof useGameState>; full: CappedBox[]; quest: boolean; scans: number;
@@ -101,11 +101,11 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
   // until then it's shown, locked. The Abyss opens once you've beaten the Hydra.
   const labOpen = labyrinthOpen(lab.meta, scans);
   const [picked, setDungeon] = useState<DungeonId>(labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0);
-  // Dungeon Crawling (the default) or Speed Scroll. (The quest's run is the old Labyrinth's.)
+  // Dungeon Crawling (the default) or Speed Scroll. (The quest's run is always walked: lib/dungeon/tutorialRun.ts.)
   const [mode, setMode] = useState<"crawl" | "scroll">("crawl");
   const unlocked = (d: DungeonId) => d === 0 || (d === 1 ? labOpen : d === 2 ? deepOpen : (lab.meta.deepClears ?? 0) > 0);
   const dungeon: DungeonId = quest ? 1 : unlocked(picked) ? picked : 0;
-  const walking = !quest && mode === "crawl";
+  const walking = quest || mode === "crawl";
   const notBuilt = walking && !CRAWLABLE.includes(dungeon); // Dungeon Crawling isn't there yet
   // Speed Scroll opens once you've beaten the dungeon crawling (run.ts scrollOpen).
   const crawlFirst = (d: DungeonId) => mode === "scroll" && !scrollOpen(d, lab.meta);

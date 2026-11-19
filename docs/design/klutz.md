@@ -96,9 +96,21 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   until you do; only then does he tell you about his box (`needsFirstCreature`, lib/quest.ts).
 - ✅ **First quest, "Klutz's box":** a Baby Cyclops stole his box. In a guided first fight he gives
   advice (he doesn't fight). The box holds 10 pieces of Common/Uncommon gear (lib/quest.ts).
-  On the way, Klutz's Club lies on the floor and is picked up through the loot window: a tutorial
-  there teaches taking it into the bag and equipping it (tap, or drag onto a creature), and the
-  equip window explains where stats come from (gear × the creature's %).
+  ✅ **Walked, by torchlight** (the user, 2026-11-20: "run like a normal labyrinth… make this feel special as
+  it will be their first experience"; lib/dungeon/tutorialRun.ts): always the same place, made by hand. You start
+  inside (no scroll first) with a line from Klutz handing you a torch, at the bottom of a small entrance: wall
+  torches lit, an empty bookcase to search (dust), cobwebs in its top corners, a puddle, a rat running along the
+  top wall into its hole, crates, pots and a skull in its corners. One corridor leads up, a torch on each wall;
+  halfway up Klutz's Club lies on the floor, glowing gold with a "!" over it. Walk up to it: it goes in your bag,
+  and the bag opens under the walk with the tutorial that teaches equipping it (tap, or drag onto a creature),
+  and the equip window explains where stats come from (gear × the creature's %). The next room is the thief's:
+  standing torches either side of the way up light a pair at a time, bones, pots and barrels in its corners, a
+  cobweb, and the Baby Cyclops waiting at the top with the box. Walk up to him and the guided fight starts; win,
+  and the room's window has the box to pick up and take home. It's free, counts as a Labyrinth run, never a
+  clear. Left before the end, you start it again (the club isn't there twice). Its placements are written by
+  hand at the world version of its day (`TUTORIAL_PLACED`), so it doesn't change when the generator does.
+  (Until 2026-11-20 it was the old Labyrinth's scroll: one tunnel to a "?" room with the club, one on to the thief;
+  a run like that still saved plays out as it did.)
   Before he borrows any gear, you have to put some armour from the box on your creature
   (`needsGearUp`). Each step glows (the user, 2026-10-31): the Pit in the Den, the Creatures tab, your
   creature, the armour slots you have armour for, a piece in the picker, Equip, then "Back to Klutz".

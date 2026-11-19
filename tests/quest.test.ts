@@ -6,7 +6,7 @@ import { CREATURES_BY_RARITY, defaultMoveNames } from "../lib/creatures/creature
 import { rollCreature } from "../lib/creatures/creatureRoll";
 import { createBattle, resolveRound, sendInReplacement } from "../lib/combat/battle";
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
-import { STARTER_LEVEL, withQuickAttack } from "../lib/creatures/starter";
+import { STARTER_LEVEL, STARTER_RACE_MOVE, withQuickAttack, withRaceMove, starterCreature } from "../lib/creatures/starter";
 import { THIEF_HP_MULT, thiefRace, effectiveOn } from "../lib/quest";
 import { stonesFor } from "../lib/creatures/soulStones";
 import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, skipTutorial, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
@@ -46,7 +46,18 @@ describe("the first quest: Klutz's box", () => {
 
   // Your starter (a Lv 3 Rare with Klutz's club and its own starting moves), on its own.
   const starter = (t = CREATURES_BY_RARITY.rare[0]) =>
-    buildFighter(t, { ...KLUTZ_CLUB_STATS }, undefined, withQuickAttack(t, defaultMoveNames(t)), rollCreature(t).proficiency, undefined, "klutz_club", STARTER_LEVEL);
+    buildFighter(t, { ...KLUTZ_CLUB_STATS }, undefined, withRaceMove(t, withQuickAttack(t, defaultMoveNames(t))), rollCreature(t).proficiency, undefined, "klutz_club", STARTER_LEVEL);
+
+  it("your starter knows its style's cheap race move (Claw, or Flame Spit for ranged and magic), so the thief is always a race it lands well on", () => {
+    for (let k = 0; k < 40; k++) {
+      const d = starterCreature() as { creatureId: string; moves: string[] };
+      const t = CREATURES_BY_RARITY.rare.find((c) => c.id === d.creatureId)!;
+      expect(d.moves).toContain(STARTER_RACE_MOVE[t.cls]);
+      expect(d.moves.length).toBeLessThanOrEqual(4);
+      const me = starter(t);
+      expect(me.skills.some((s) => effectiveOn(s, enemyFighter(thiefRoom(thiefRace(me.skills)).enemies![0]).races ?? []))).toBe(true);
+    }
+  });
   const thiefFor = (me: ReturnType<typeof starter>) => enemyFighter(thiefRoom(thiefRace(me.skills)).enemies![0]);
 
   it("the thief's race is one your starter's moves are effective against, if any are (core moves are neutral: then Humanoid)", () => {

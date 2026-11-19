@@ -292,7 +292,7 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   more of them than the scroll's tunnels did.
 - **The walkable Labyrinth** (the Cyclops; ✅ the user, 2026-11-06: live at the Labyrinth's entrance,
   since 2026-11-13 as the Cyclops under Dungeon Crawling (labyrinth.md: the dungeon picker), locked till the Labyrinth opens; the old
-  Labyrinth stays as it is, and Klutz's quest runs are still the old one's;
+  Labyrinth stays as it is; Klutz's quest run is walked too since 2026-11-20, a hand-made place of its own (klutz.md, the first quest; lib/dungeon/tutorialRun.ts);
   `/lab/newrun` → Labyrinth shows it without a save): `startWalkRun(…, dungeon 1)`, a
   Labyrinth run (its fee, run and clear counts, first clear, the Cyclops). Rolling its layout
   takes up to ~2 s, so the screen says "🔥 Lighting the torches…" first. Its rooms are the live Labyrinth's mix by the same code

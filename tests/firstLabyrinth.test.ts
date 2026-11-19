@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rollMap, routeLength, isAhead, waysOn, knownRooms, CAMP_STASH_MARKS } from "../lib/dungeon/map";
 import {
-  DUNGEONS, CAMP_ROUTE, CAMP_CHIEF_LEVEL, CAMP_CAGES, CAMP_CAGE_LEVELS, CAMP_REPEAT_CHANCE, LABYRINTH_SCANS,
+  DUNGEONS, CAMP_ROUTE, CAMP_CHIEF_LEVEL, CAMP_CHIEF_HP, CAMP_CHIEF_CLUB, CAMP_CAGES, CAMP_CAGE_LEVELS, CAMP_REPEAT_CHANCE, LABYRINTH_SCANS,
   makeRoom, campCages, campRoomKind, labyrinthOpen, startRun, enterRoom, leaveRoom, endRun,
   type DungeonMeta, type DungeonRun,
 } from "../lib/dungeon/run";
@@ -56,15 +56,14 @@ describe("the Encampment (the first labyrinth)", () => {
     expect(campRoomKind(false, () => 0.99)).toBe("easy");
   });
 
-  it("the chief: one Uncommon in Common gear (weapon and all), Lv CAMP_CHIEF_LEVEL, played by the Hard AI", () => {
+  it("the chief: the Baby Cyclops with a Common club, no armour and CAMP_CHIEF_HP times its HP, Lv CAMP_CHIEF_LEVEL, played by the Hard AI", () => {
     for (let n = 0; n < 20; n++) {
       const room = makeRoom("encampment", Math.random, CAMP_ROUTE, 0);
       expect(room.enemies).toHaveLength(1);
       const chief = room.enemies![0];
-      expect(CREATURE_BY_ID[chief.creatureId].rarity).toBe("uncommon");
-      expect(chief.level).toBe(CAMP_CHIEF_LEVEL);
-      expect(chief.gear.map((g) => g.slot).sort()).toEqual(["armor", "weapon"]);
-      expect(chief.gear.every((g) => g.rarity === "common")).toBe(true);
+      expect(chief).toMatchObject({ creatureId: "baby_cyclops", level: CAMP_CHIEF_LEVEL, hpMult: CAMP_CHIEF_HP, moves: ["Club Smash", "Backhand"] });
+      expect(chief.gear).toMatchObject([{ slot: "weapon", key: "temporal_maul", rarity: "common", stats: CAMP_CHIEF_CLUB }]);
+      expect(chief.gentle).toBeUndefined(); // (the first quest's thief can't knock you out; the chief can)
       expect(room.level).toBe("hard");
       expect(room.variant).toBe("plain");
     }

@@ -38,13 +38,14 @@ import { goldenDrops } from "@/lib/dungeon/walkRooms";
 import { bountiful, scholarly, enchanted, CHEST_ENCHANT } from "@/lib/items/enchantments";
 import { dealtDamage } from "@/lib/combat/battle";
 import { clubRoom, klutzClub, isClub, thiefRoom, thiefRace, rollBox, wantsClub, wantsThief } from "@/lib/quest";
+import { startTutorialRun, TUTORIAL_HELLO } from "@/lib/dungeon/tutorialRun";
 import { guess as witchGuess, walkAway, sitDown, type Guess, type WitchGame } from "@/lib/dungeon/witch";
 import { xpForEnemy, BOSS_XP, MAX_LEVEL, shareXp, impactsFromLog, xpShown, SCROLL_XP } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
-import { cornerCrateFind, squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
+import { cornerCrateFind, squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { countCampaign, drankOn, noteDrank, onlyEffective } from "@/lib/campaign";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
@@ -335,9 +336,17 @@ export default function DungeonPage() {
       update({ meta: { ...meta, runs: lab.meta.runs + 1 }, run: newWalkRun(startWalkRun(party, team, hp, lab.meta.runs + 1, [], onBindle(lab.meta), Math.random, 1, dynamite)) });
       return;
     }
-    // Klutz's box: until it's back, runs are the quest's short run (club, then thief).
-    if (quest) game.acceptQuest();
-    const r = quest ? startQuestRun(party, team, hp, lab.meta.runs + 1) : startRun(party, team, hp, lab.meta.runs + 1, Math.random, 1, dynamite, onBindle(lab.meta));
+    // Klutz's box: until it's back, runs are the quest's short run, walked by torchlight (lib/dungeon/tutorialRun.ts):
+    // the club in the corridor, then the thief (its race: one your first creature's moves are effective against).
+    if (quest) {
+      game.acceptQuest();
+      const race = thiefRace(byId(team[0])?.fighter.skills ?? []);
+      // (Straight in, no scroll first: there's only the one way, and Klutz shows you it.)
+      update({ meta: { ...meta, runs: lab.meta.runs + 1 }, run: stepInside(startTutorialRun(party, team, hp, lab.meta.runs + 1, race, !wantsClub(game.quest))) });
+      setNotes([TUTORIAL_HELLO]);
+      return;
+    }
+    const r = startRun(party, team, hp, lab.meta.runs + 1, Math.random, 1, dynamite, onBindle(lab.meta));
     update({ meta: { ...meta, runs: lab.meta.runs + 1 }, run: r });
   }
 
@@ -1016,11 +1025,19 @@ export default function DungeonPage() {
     else setNotes([NOTHING_HERE[Math.floor(Math.random() * NOTHING_HERE.length)]]);
   }
   // (World version 14) Walked up to a storehouse's find on its floor: Klutz's dynamite, or the rugged backpack.
-  function walkPickup(id: string, what: "dynamite" | "backpack", st: WalkState) {
+  function walkPickup(id: string, what: "dynamite" | "backpack" | "club", st: WalkState) {
     battle.clear();
     updateRun((r) => walkTo(walkKeep(r, st), id));
     const cur = loadDungeon(), c = cur.run?.current;
     if (!c) return;
+    // (The first quest's run) Klutz's Club: into your bag, and the bag opens under the walk to show you how to
+    // put it on (clubTutorial, as in the old quest room), till it's on your creature.
+    if (what === "club") {
+      if (c.quest !== "club" || c.done) return;
+      takeClub();
+      setNotes(["🏏 Klutz's old club! The thief dropped it running off. Put it on your creature."]);
+      return;
+    }
     if (what === "dynamite") {
       if (!dynamiteHere(c)) return;
       grabDynamite();
@@ -1163,7 +1180,9 @@ export default function DungeonPage() {
     if (room.kind === "miniboss" || (room.kind === "storehouse" && room.guarded)) countDaily("miniboss");
     if (room.quest === "thief") {
       // It runs off, and the box it was carrying drops to the floor (the box is the prize: no gold).
+      // Walking: the room's window opens on it, to pick the box up and head home.
       updateRun((x) => markDone({ ...after(x), hp, battle: undefined }));
+      if (r.walk) setWalkPanel(true);
       setNotes(xpNotes);
       if (wonRows.length > 0) setWon({ rows: wonRows, ups: wonUps, loot: false });
       else setLevelUps(wonUps);

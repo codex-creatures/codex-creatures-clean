@@ -138,6 +138,8 @@ export const TABLE_TOP = 0.83; // u: how high its top is (props3d.ts tableArt; a
 // (Since 2026-11-19 it's the Labyrinth Stone, the user: the quest's dynamite became the stone. Its id stays "dynamite".)
 export const DYNAMITE_ART: ArtRef = { src: "/sprites/items/labyrinth_stone.png", w: 64, h: 64 };
 export const BACKPACK_ART: ArtRef = { src: "/sprites/items/backpack.png", w: 64, h: 64 };
+// (The first quest's run, the user, 2026-11-20) Klutz's Club lying on the corridor's floor, dropped by the thief.
+export const CLUB_ART: ArtRef = { src: "/sprites/items/klutz_club.png", w: 64, h: 64 };
 
 const DEFS: ObjectDef[] = [
   // Things you use.
@@ -155,6 +157,7 @@ const DEFS: ObjectDef[] = [
   // (World version 14) a storehouse's finds on its floor: walked over, picked up.
   def("dynamite", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 0.6, collision: "walk-over", interact: usable("take") }), legacyVisual({ base: DYNAMITE_ART }, { width: SACK_U })),
   def("backpack", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 0.6, collision: "walk-over", interact: usable("take") }), legacyVisual({ base: BACKPACK_ART }, { width: SACK_U })),
+  def("club", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 0.6, collision: "walk-over", interact: usable("take") }), legacyVisual({ base: CLUB_ART }, { width: SACK_U })),
   def("lectern", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 1, interact: usable("read") }), legacyVisual({ base: ref(WALK_LECTERN) }, { width: legacyU(WALK_LECTERN.size) })),
   def("cage", floorThing({ footprint: { w: 3, d: 3 }, kind: "interactable", height: 1.2, interact: usable("open") }), legacyVisual({ shut: ref(WALK_CAGE), open: ref(WALK_CAGE_OPEN) }, { width: legacyU(WALK_CAGE.size) })),
   // Lights.

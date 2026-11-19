@@ -61,6 +61,7 @@ export type CampaignCtx = {
   enchantedArmour: boolean;
   calibrated: boolean;    // the altar's calibration scans are done
   wins: { camp: number; cyclops: number; hydra: number; abyss: number };
+  campRuns: number;       // Encampment runs started
   blasted: boolean;       // the rubble's blown open
   repaired: boolean;      // the tavern's repaired
   blueprints: number;     // schematics built
@@ -113,6 +114,7 @@ export function campaignCtx(save: Obj): CampaignCtx {
     enchantedArmour: loadouts.some((l) => l.armour.some((a) => !!enchantOf(a))),
     calibrated: !calibrating(firstScans),
     wins: { camp: num(meta.campClears), cyclops: num(meta.clears), hydra: num(meta.deepClears), abyss: num(meta.abyssClears) },
+    campRuns: num(meta.campRuns),
     blasted: !!tavern.blasted,
     repaired: !!tavern.repaired,
     blueprints: (num(save.bookcase) >= 2 ? 1 : 0) + (num(save.cage) >= 2 ? 1 : 0) + (Array.isArray(save.storage) ? save.storage.length : 0) + (tavern.pit ? 1 : 0),
@@ -242,6 +244,8 @@ const q = {
 
 export const CHAPTERS: Chapter[] = [
   { name: "The Encampment", quests: [
+    // (First since 2026-11-20, the user: once Klutz's box is home, off to the Encampment. CAMPAIGN_V.)
+    q.once("camp-run", "Do an Encampment run", "/dungeon", (c) => c.campRuns > 0, gold(50)),
     q.scan(3, gold(50)),
     q.bestiary(3, gold(50)),
     q.once("klutz-out", "Send Klutz out hunting", "/klutz", (c) => c.klutzSent || tallied(c, "klutz") > 0, scrolls(1)),
@@ -327,7 +331,16 @@ export const CAMPAIGN = CHAPTERS.flatMap((ch, chapter) => ch.quests.map((quest) 
 // Saved: how many rewards you've claimed (in order), and the events counted.
 // drank: the run (its id) a potion was last drunk on. (Before 2026-11-17, meta.runs: but only the
 // Labyrinth counts those, so a potion drunk once marked every Encampment, Deep and Abyss run after it.)
-export type CampaignState = { claimed?: number; tally?: Record<string, number>; drank?: string | number };
+// v: the quest list it counts claims in (missing: before CAMPAIGN_V).
+export type CampaignState = { claimed?: number; tally?: Record<string, number>; drank?: string | number; v?: number };
+// 2 (2026-11-20): "Do an Encampment run" came in first. A save from before that had claimed some counts it
+// as claimed too (they're past it: its 50 gold isn't owed), so every claim stays on the quest it was.
+export const CAMPAIGN_V = 2;
+export function upToDate(s: CampaignState): CampaignState {
+  if ((s.v ?? 1) >= CAMPAIGN_V) return s;
+  const claimed = Math.floor(s.claimed ?? 0);
+  return { ...s, v: CAMPAIGN_V, ...(claimed > 0 ? { claimed: claimed + 1 } : {}) };
+}
 
 export const questDone = (quest: CampaignQuest, c: CampaignCtx) => quest.progress(c) >= quest.goal;
 export const claimedCount = (s: CampaignState) => Math.max(0, Math.min(CAMPAIGN.length, Math.floor(s.claimed ?? 0)));
@@ -361,7 +374,7 @@ export function onlyEffective(log: BattleEvent[], foeRaces: (readonly RaceV2[] |
 export const CAMPAIGN_FIELD = "campaign";
 export function loadCampaign(save: Obj = readSave()): CampaignState {
   const c = save[CAMPAIGN_FIELD];
-  return c && typeof c === "object" ? (c as CampaignState) : {};
+  return upToDate(c && typeof c === "object" ? (c as CampaignState) : {});
 }
 export const readCampaignCtx = () => campaignCtx(readSave());
 // Change it (read, change, write: whoever else wrote it meanwhile is kept).

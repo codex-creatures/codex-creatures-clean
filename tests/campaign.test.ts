@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   CAMPAIGN, CHAPTERS, SUPPLIES, campaignCtx, rewardModel, canClaimNext, claimNext, claimedCount, currentChapter, nextQuest, noteCampaign, onlyEffective,
-  questDone, rewardBlocked, noteDrank, drankOn, loadCampaign, rewardText, rollCampaignReward, type CampaignCtx, type CampaignState,
+  questDone, rewardBlocked, noteDrank, drankOn, loadCampaign, rewardText, rollCampaignReward, upToDate, CAMPAIGN_V, type CampaignCtx, type CampaignState,
 } from "../lib/campaign";
 import { weaponDrop, armorDrop, codexDrop, randomCodexMove } from "../lib/drops";
 import { ARMOR_KEYS } from "../lib/items/armor";
@@ -104,15 +104,23 @@ describe("what the save says", () => {
 describe("progress and claiming", () => {
   it("rewards are claimed in order: a quest done further on waits for the ones before it", () => {
     const first = CAMPAIGN[0], second = CAMPAIGN[1];
-    const done2 = ctx({ bestiary: second.goal }); // the second's done, the first isn't
+    const done2 = ctx({ scans: 3 }); // the second's done (scan 3), the first (an Encampment run) isn't
     expect(questDone(second, done2) && !questDone(first, done2)).toBe(true);
     expect(canClaimNext({}, done2)).toBe(false);
     expect(claimNext({}, done2)).toEqual({});
-    const both = ctx({ bestiary: second.goal, scans: first.goal });
+    const both = ctx({ scans: 3, campRuns: 1 });
     const s1 = claimNext({}, both);
     expect(claimedCount(s1)).toBe(1);
     expect(nextQuest(s1)).toBe(CAMPAIGN[1]);
     expect(canClaimNext(s1, both)).toBe(true);
+  });
+
+  it("starts with an Encampment run; a save from before it came in keeps every claim on the quest it was", () => {
+    expect(CAMPAIGN[0].id).toBe("camp-run");
+    expect(questDone(CAMPAIGN[0], ctx({ campRuns: 1 }))).toBe(true);
+    expect(upToDate({})).toEqual({ v: CAMPAIGN_V });
+    expect(nextQuest(upToDate({ claimed: 2 }))!.id).toBe("klutz-out"); // (scan 3 and the bestiary were claimed)
+    expect(upToDate({ claimed: 3, v: CAMPAIGN_V }).claimed).toBe(3);
   });
 
   it("the chapter you're on is the next quest's; with everything claimed, the last", () => {

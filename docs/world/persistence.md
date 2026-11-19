@@ -161,6 +161,12 @@ saved runs in tests/fixtures/pins/), each fixture's `tests/golden/walk/<fixture>
 phase-0/1 goldens. **Before changing placement rules, pin the current version; new rules mean a new
 world version.**
 
+**The first quest's run** (2026-11-20, lib/dungeon/tutorialRun.ts) isn't placed by these rules: its layout and
+its placements (`TUTORIAL_PLACED`) are written by hand and saved at `PLACED_V` as made, with `WalkRun.tutorial`
+so its cobwebs, puddle and rat are its own (`TUTORIAL_LIFE`) rather than rolled from the seed. It passes the
+same load checks (tests/tutorialRun.test.ts). Klutz's Club on its floor is a find like the dynamite
+(`club:start`, def `club`).
+
 As built there is no `states` field (§7's "v1 adds … `states`" was dropped in 2a's design:
 everything the player changes already has a home in the run; a `states` map comes with the first
 thing that needs one, such as levers or traps).

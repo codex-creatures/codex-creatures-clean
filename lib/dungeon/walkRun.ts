@@ -48,6 +48,7 @@ export type WalkRun = {
   placed?: Instance[];          // what was generated in it, where (lib/world/compat/v0.ts; missing in a v0 run)
   people?: Person[];            // who wanders it, and where they are (people.ts; world version 9 on: none in older runs)
   tracking?: LocatorKey[];      // the locators you've used this run: your scroll shows who each finds (people.ts locate)
+  tutorial?: true;              // the first quest's run, made by hand (tutorialRun.ts): its cobwebs and rat are its own
 };
 
 // A library's broken bookcases (world version 9): rooms of their own, "<library>~b<i>" (as a second den is).
@@ -125,9 +126,9 @@ function addWanderersRooms(map: DungeonMap, rooms: Record<string, Room>, rng: Rn
 export type WalkDungeon = 0 | 1 | 2;
 
 // A boss waiting for you to walk up to it (foes.ts placeWaiter): the
-// Encampment's chief, the Labyrinth's boss. (Not the Labyrinth's large
+// Encampment's chief, the Labyrinth's boss, the first quest's thief. (Not the Labyrinth's large
 // encampments: their foes look about like any room's.)
-export const waitsHere = (r: Room, dungeon: DungeonId) => r.kind === "boss" || (dungeon === 0 && r.kind === "encampment");
+export const waitsHere = (r: Room, dungeon: DungeonId) => r.kind === "boss" || (dungeon === 0 && r.kind === "encampment") || r.quest === "thief";
 
 // Where a camp's cages stand: a row along the top of its room (its top
 // floor rect's), CAGE_GAP tiles apart, behind the boss waiting below them.
