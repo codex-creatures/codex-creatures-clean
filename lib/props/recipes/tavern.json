@@ -26,7 +26,9 @@
           "fit": "tile"
         },
         "top": {
-          "colour": "#2e1f14"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#bba79c"
         },
         "bottom": {
           "colour": "#1a120c"
@@ -44,7 +46,9 @@
           "colour": "#3e414b"
         },
         "top": {
-          "colour": "#555865"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         }
       }
     },
@@ -116,7 +120,9 @@
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#4a2e1a"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#fff7ca"
         },
         "front": {
           "src": "/sprites/den3d/tavern-front.png",
@@ -124,7 +130,9 @@
           "fit": "fill"
         },
         "top": {
-          "colour": "#4a6a2a"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#4d7a3b"
         }
       }
     },
@@ -151,7 +159,9 @@
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#4a2e1a"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#fff7ca"
         },
         "front": {
           "src": "/sprites/den3d/tavern-front.png",
@@ -159,7 +169,9 @@
           "fit": "fill"
         },
         "top": {
-          "colour": "#4a6a2a"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#4d7a3b"
         }
       }
     },
@@ -192,7 +204,9 @@
           "tint": "#d0d0d8"
         },
         "top": {
-          "colour": "#6e7178"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         }
       }
     },
@@ -210,7 +224,9 @@
           "tint": "#d0d0d8"
         },
         "top": {
-          "colour": "#6e7178"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         }
       }
     },
@@ -228,7 +244,9 @@
           "tint": "#d0d0d8"
         },
         "top": {
-          "colour": "#6e7178"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         }
       }
     },
@@ -347,7 +365,9 @@
           "fit": "fill"
         },
         "top": {
-          "colour": "#1a1a1e"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#62584c"
         }
       }
     },
@@ -362,7 +382,9 @@
           "colour": "#4a4d56"
         },
         "top": {
-          "colour": "#6e7178"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         }
       }
     }

@@ -1,0 +1,80 @@
+{
+  "format": 1,
+  "id": "socket",
+  "name": "Old wall",
+  "setting": "den",
+  "parts": [
+    {
+      "id": "plinth",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [0.78, 0.125, 0.78],
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#d8d2c4"
+        }
+      }
+    },
+    {
+      "id": "post",
+      "kind": "box",
+      "at": [0, 0.125, 0],
+      "size": [0.6, 0.66, 0.6],
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ccc6b8"
+        },
+        "front": {
+          "src": "/sprites/den3d/parts/stone-runes.png",
+          "crop": [0, 0, 48, 48],
+          "fit": "fill",
+          "tint": "#d8d0bc"
+        }
+      }
+    },
+    {
+      "id": "cap",
+      "kind": "box",
+      "at": [0, 0.785, 0],
+      "size": [0.7, 0.104167, 0.7],
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#e4dccc"
+        },
+        "top": {
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#a8a294"
+        }
+      }
+    },
+    {
+      "id": "chip",
+      "kind": "cylinder",
+      "at": [0.42, 0, 0.3],
+      "size": [0.14, 0.07, 0.11],
+      "sides": 5,
+      "taper": 0.6,
+      "outline": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#c0bab0"
+        },
+        "top": {
+          "colour": "#7a786c"
+        }
+      }
+    }
+  ]
+}

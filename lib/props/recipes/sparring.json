@@ -55,7 +55,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#9c9ca2"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -80,7 +82,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#9c9ca2"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -105,7 +109,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#94949a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -130,7 +136,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#94949a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -155,7 +163,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#a4a4aa"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -180,7 +190,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#a4a4aa"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -205,7 +217,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#9c9ca2"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -230,7 +244,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#9c9ca2"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -255,7 +271,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#94949a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -280,7 +298,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#94949a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -305,7 +325,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#a4a4aa"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -330,7 +352,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#a4a4aa"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -355,7 +379,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#9c9ca2"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -380,7 +406,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#9c9ca2"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -405,7 +433,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#94949a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"
@@ -430,7 +460,9 @@
           "tint": "#a8acb4"
         },
         "top": {
-          "colour": "#94949a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2a2e"

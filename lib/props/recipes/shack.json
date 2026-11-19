@@ -26,7 +26,9 @@
           "fit": "tile"
         },
         "top": {
-          "colour": "#2e1f14"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#bba79c"
         },
         "bottom": {
           "colour": "#1a120c"
@@ -44,7 +46,9 @@
           "colour": "#3e414b"
         },
         "top": {
-          "colour": "#555865"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         }
       }
     },
@@ -166,7 +170,9 @@
           "colour": "#3a2416"
         },
         "top": {
-          "colour": "#5a3a24"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#ffffff"
         }
       }
     },

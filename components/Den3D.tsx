@@ -55,11 +55,17 @@ const LIFT_MS = 450;              // ms held still on a movable thing before it 
 const LAB_KIT = WALK_TILES[0].kit!;
 const KIT = { ...LAB_KIT, floor: "/sprites/den3d/kit-floor.png", north: "/sprites/den3d/kit-north.png", cap: "/sprites/den3d/kit-cap.png" };
 // The Den's light: warmer than the Labyrinth's and never pitch dark (it's home). 🧪
-const DEN_STONE = { ...STONE, remember: 0.3, gain: 1.15, warm: [1, 0.82, 0.6] as [number, number, number], flame: [1, 0.76, 0.5] as [number, number, number] };
+// (The user, 2026-11-19: a higher ambient light, with lamps adding to it in places: remember 0.3 → 0.48.)
+const DEN_STONE = { ...STONE, remember: 0.48, gain: 1.15, warm: [1, 0.82, 0.6] as [number, number, number], flame: [1, 0.76, 0.5] as [number, number, number] };
 const FIRE_POWER = 0.8;           // 🧪 each light's strength (STONE.fire's 0.85 in the Labyrinth)
 // 🧪 The light the props built from recipes take for their shape (from the upper left, in front), times the Den's own.
-const DEN_KEY = { ambient: 0.75, key: 1.1, at: [-5, 7, 4] as [number, number, number] };
+const DEN_KEY = { ambient: 1.05, key: 1.25, at: [-5, 7, 4] as [number, number, number] };
 const NO = new THREE.Color(1, 0.35, 0.35); // a thing being moved where it can't go
+// 🧪 The camera turns a little as the view moves (the user, 2026-11-19: so the sides of things shift and the 3D shows),
+// and settles back square when it stops, so a still view keeps its pixels square: degrees per unit a second, the most
+// it turns, and how quickly it follows.
+const TURN = { perSpeed: 0.55, max: 6, follow: 5 };
+const PRESS_GLOW = 1.45; // 🧪 how much brighter a place is while a finger's on it
 
 export type Den3DProps = {
   caged?: string; klutz: KlutzMode; klutzNews: boolean; highlight?: ObjId; rubble: Rubble; onBlast?: () => void;
@@ -87,6 +93,7 @@ export default function Den3D(p: Den3DProps) {
   // Where things stand: the saved layout (the lab's starts fresh), and the thing being moved, if any.
   const [layout, setLayout] = useState<DenLayout>(() => (p.keep === "none" ? {} : loadDenLayout()));
   const [moving, setMoving] = useState<Moving | null>(null);
+  const [pressed, setPressed] = useState<string | null>(null); // (the place under a finger, lit up till it lifts or drags)
   const settled = useMemo(() => placeAll(layout, opened), [layout, opened]);
   const now = useMemo((): Placed => {
     if (!moving) return settled;
@@ -190,6 +197,7 @@ export default function Den3D(p: Den3DProps) {
     const h = held.current = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, drag: false, label };
     // Held still on something movable: it lifts.
     const f = floorAt(e.clientX, e.clientY), s = label ? list.find((x) => x.key === label) : f ? stationAt(list, f, pitch) : undefined;
+    setPressed(s?.key ?? null);
     if (s?.move && f) {
       const id = e.pointerId;
       held.current.lift = window.setTimeout(() => { if (held.current === h && !h.drag && held.current.id === id) lift(s, floorAt(h.x, h.y) ?? f); }, LIFT_MS);
@@ -205,7 +213,7 @@ export default function Den3D(p: Den3DProps) {
     const h = held.current, el = pad.current;
     if (!h || h.id !== e.pointerId || !el) return;
     if (moving) { const f = floorAt(e.clientX, e.clientY); if (f) setMoving(aim(moving, f)); h.x = e.clientX; h.y = e.clientY; return; }
-    if (!h.drag && Math.hypot(e.clientX - h.x0, e.clientY - h.y0) > HOLD_DRAG) { h.drag = true; if (h.lift) window.clearTimeout(h.lift); }
+    if (!h.drag && Math.hypot(e.clientX - h.x0, e.clientY - h.y0) > HOLD_DRAG) { h.drag = true; setPressed(null); if (h.lift) window.clearTimeout(h.lift); }
     if (!h.drag) { h.x = e.clientX; h.y = e.clientY; return; }
     const perPx = span.current.across / el.getBoundingClientRect().width;
     glide.current = null;
@@ -219,6 +227,7 @@ export default function Den3D(p: Den3DProps) {
     const h = held.current;
     if (!h || h.id !== e.pointerId) return;
     held.current = null;
+    setPressed(null);
     if (h.lift) window.clearTimeout(h.lift);
     if (moving) { drop(moving); return; }
     if (h.drag) return;
@@ -235,6 +244,7 @@ export default function Den3D(p: Den3DProps) {
     pinch.current = null;
     if (held.current?.lift) window.clearTimeout(held.current.lift);
     held.current = null;
+    setPressed(null);
     setMoving(null);
   };
   // Let go of a thing being moved: it stays where it can stand (and that's kept), or goes back.
@@ -271,7 +281,7 @@ export default function Den3D(p: Den3DProps) {
         <Canvas resize={{ offsetSize: true }} orthographic flat gl={{ antialias: false, powerPreference: "high-performance" }}
           style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
           <DenWorld pitch={pitch} across={across} state={state} placed={now} plan={plan} shown={shown} list={list} walkers={walkers} caged={p.caged} klutz={p.klutz}
-            movingKey={moving && !moving.ok ? moving.key : null} stoneReady={p.rubble === "dynamite"}
+            movingKey={moving && !moving.ok ? moving.key : null} pressedKey={moving ? null : pressed} stoneReady={p.rubble === "dynamite"}
             viewRef={view} spanRef={span} glideRef={glide} cameraRef={camera} labelsRef={labels} movedAtRef={movedAt} />
         </Canvas>
       </div>
@@ -338,9 +348,9 @@ function walkerAt(walkers: Walker[], p: Pt, pitch: number): Walker | undefined {
 }
 
 // ── The scene ──
-function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, caged, klutz, movingKey, stoneReady, viewRef, spanRef, glideRef, cameraRef, labelsRef, movedAtRef }: {
+function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, caged, klutz, movingKey, pressedKey, stoneReady, viewRef, spanRef, glideRef, cameraRef, labelsRef, movedAtRef }: {
   pitch: number; across: number; state: DenState; placed: Placed; plan: Floorplan; shown: Uint8Array; list: Station[]; walkers: Walker[]; caged?: string; klutz: KlutzMode;
-  movingKey: string | null; stoneReady: boolean;
+  movingKey: string | null; pressedKey: string | null; stoneReady: boolean;
   viewRef: React.RefObject<Pt>; spanRef: React.RefObject<{ across: number; deep: number }>; glideRef: React.RefObject<{ from: Pt; to: Pt; at: number } | null>;
   cameraRef: React.RefObject<THREE.Camera | null>; labelsRef: React.RefObject<Map<string, HTMLElement>>; movedAtRef: React.RefObject<number | null>;
 }) {
@@ -359,18 +369,23 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
   const tint = (x: number, y: number) => () => shade(x, y);
   const v = useMemo(() => new THREE.Vector3(), []);
 
-  const ctx: Tick = { pitch, cameraRef, spanRef, glideRef, viewRef, movedAtRef, labelsRef, pix, size, opened: state.opened, centre, lights, lit, plan, field, lastLight, v, list, walkers, stretch, klutz };
+  const turn = useRef({ yaw: 0, x: NaN, at: 0 }); // (set on the first frame)
+  const ctx: Tick = { pitch, cameraRef, spanRef, glideRef, viewRef, movedAtRef, labelsRef, pix, size, opened: state.opened, centre, turn, lights, lit, plan, field, lastLight, v, list, walkers, stretch, klutz };
   useFrame((st) => denTick(st, ctx));
 
   const pool = list.find((s) => s.key === "pool");
   return (
     <>
       <DenRock pitch={pitch} plan={plan} seen={seen} field={field} centre={centre} />
+      {/* Shadows on the floor under everything that stands on it (the lights don't move, so they're fixed patches). */}
+      {list.filter((s) => !s.wall).map((s) => <Shadow key={`shadow:${s.key}`} {...shadowOf(s)} />)}
+      {fires.map((c, i) => <Shadow key={`shadow:fire${i}`} x={c.x + 0.06} y={c.y + 0.04} w={0.42} d={0.26} />)}
+      {walkers.map((w) => <Shadow key={`shadow:${w.key}`} x={0} y={0} w={0.55} d={0.3} follow={() => strollAt(performance.now() / 1000 + w.lead, w.route, w.speed)} />)}
       {/* The key light from the upper left (and its ambient): only the props built from recipes take it (they're lit;
           everything else is tinted by the Den's own light field), so they keep their shape. 🧪 */}
       <ambientLight color="#ffe6c8" intensity={DEN_KEY.ambient} />
       <directionalLight color="#ffe2bd" intensity={DEN_KEY.key} position={DEN_KEY.at} />
-      {list.map((s) => <Place key={s.key} s={s} tint={movingKey === s.key ? () => NO.clone() : tint(s.x, s.y + s.d / 2)} stretch={stretch} pitch={pitch} caged={caged}
+      {list.map((s) => <Place key={s.key} s={s} tint={movingKey === s.key ? () => NO.clone() : pressedKey === s.key ? () => shade(s.x, s.y + s.d / 2).multiplyScalar(PRESS_GLOW) : tint(s.x, s.y + s.d / 2)} stretch={stretch} pitch={pitch} caged={caged}
         repaired={state.repaired} trainingPit={state.trainingPit} stoneReady={stoneReady} />)}
       {/* The torches on the north walls, and the braziers (with the altar, and the tavern room's pit). */}
       {SCONCES.filter((c) => state.opened || c.x < DIVIDE_X).map((c, i) => {
@@ -378,7 +393,7 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
         return (
           <Mounted key={`sconce${i}`} x={c.x} y={c.y + 0.01} up={1.25}>
             <Sconce w={w} h={h} colour={() => shade(c.x, c.y + 0.6)} />
-            <mesh raycast={() => null} position={[0, h / 2 - KIT_LIGHTS.head / DENSITY, 0.03]} scale={[0.14, 0.2, 1]}><planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} /></mesh>
+            <Flame at={[0, h / 2 - KIT_LIGHTS.head / DENSITY, 0.03]} w={0.14} h={0.2} seed={i} />
           </Mounted>
         );
       })}
@@ -387,7 +402,7 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
         return (
           <group key={`brazier${i}`}>
             <Upright src={WALK_STANDING_TORCH.src} x={c.x} y={c.y} w={w} h={h} below={0} colour={new THREE.Color(1, 1, 1)} follow={() => c} />
-            <mesh raycast={() => null} position={[c.x - w / 2 + fx * k, h - fy * k * stretch + 0.08, c.y + 0.06]} scale={[0.1, 0.18, 1]}><planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} /></mesh>
+            <Flame at={[c.x - w / 2 + fx * k, h - fy * k * stretch + 0.08, c.y + 0.06]} w={0.1} h={0.18} seed={i + 7} />
           </group>
         );
       })}
@@ -413,10 +428,11 @@ type Tick = {
   cameraRef: React.RefObject<THREE.Camera | null>; spanRef: React.RefObject<{ across: number; deep: number }>; glideRef: React.RefObject<{ from: Pt; to: Pt; at: number } | null>;
   viewRef: React.RefObject<Pt>; movedAtRef: React.RefObject<number | null>; labelsRef: React.RefObject<Map<string, HTMLElement>>;
   pix: { across: number }; size: { width: number; height: number }; opened: boolean; centre: React.RefObject<{ x: number; z: number }>;
+  turn: React.RefObject<{ yaw: number; x: number; at: number }>;
   lights: { x: number; y: number; r: number }[]; lit: Uint8Array; plan: Floorplan; field: React.RefObject<LightField | null>; lastLight: React.RefObject<number>;
   v: THREE.Vector3; list: Station[]; walkers: Walker[]; stretch: number; klutz: KlutzMode;
 };
-function denTick(state: { camera: THREE.Camera }, { pitch, cameraRef, spanRef, glideRef, viewRef, movedAtRef, labelsRef, pix, size, opened, centre, lights, lit, plan, field, lastLight, v, list, walkers, stretch, klutz }: Tick) {
+function denTick(state: { camera: THREE.Camera }, { pitch, cameraRef, spanRef, glideRef, viewRef, movedAtRef, labelsRef, pix, size, opened, centre, turn, lights, lit, plan, field, lastLight, v, list, walkers, stretch, klutz }: Tick) {
   const now = performance.now(), cam = state.camera;
   cameraRef.current = cam;
   // How much floor is in view, and where the camera looks (gliding when Klutz shows you somewhere).
@@ -433,8 +449,15 @@ function denTick(state: { camera: THREE.Camera }, { pitch, cameraRef, spanRef, g
   centre.current = { x: Math.round(viewRef.current.x * DENSITY) / DENSITY, z: Math.round(viewRef.current.y * zs) / zs };
   const moved = movedAtRef.current === null ? Infinity : (now - movedAtRef.current) / 1000, shake = moved < SINK ? 0.05 * (1 - moved / SINK) : 0;
   const target = new THREE.Vector3(centre.current.x + (shake ? (Math.random() * 2 - 1) * shake : 0), 0, centre.current.z);
+  // The turn: towards the way the view's sliding across (so you see a little round the sides you're moving past), back to square when still.
+  const tn = turn.current, dt = Math.min(0.1, (now - tn.at) / 1000 || 0.016), speed = Number.isNaN(tn.x) ? 0 : (viewRef.current.x - tn.x) / dt;
+  const want = Math.max(-TURN.max, Math.min(TURN.max, speed * TURN.perSpeed));
+  tn.yaw += (want - tn.yaw) * Math.min(1, dt * TURN.follow);
+  if (Math.abs(tn.yaw) < 0.02 && want === 0) tn.yaw = 0;
+  tn.x = viewRef.current.x; tn.at = now;
+  const yaw = (tn.yaw * Math.PI) / 180;
   if (cam instanceof THREE.OrthographicCamera) {
-    cam.position.copy(target).addScaledVector(new THREE.Vector3(0, Math.sin(pitch), Math.cos(pitch)), 60);
+    cam.position.copy(target).addScaledVector(new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)), 60);
     cam.zoom = size.width / pix.across;
     cam.near = 0.1; cam.far = 200;
     cam.lookAt(target);
@@ -469,6 +492,51 @@ function denTick(state: { camera: THREE.Camera }, { pitch, cameraRef, spanRef, g
   for (const w of walkers) { const at = strollAt(t + w.lead, w.route, w.speed); put(`walker:${w.key}`, at.x, NPC_U * stretch + 0.1, at.y); }
   const pool = list.find((s) => s.key === "pool");
   if (pool && klutz === "pool") put("walker:resting", pool.x, NPC_U * stretch * 0.6 + 0.2, pool.y);
+}
+
+// A flame that flickers: taller and shorter, a touch wider and narrower, each on its own beat (seed), its foot kept still.
+function Flame({ at, w, h, seed }: { at: [number, number, number]; w: number; h: number; seed: number }) {
+  const mesh = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    const m = mesh.current; if (!m) return;
+    const t = performance.now() / 1000 + seed * 1.37, k = 1 + 0.16 * Math.sin(t * 9.1) * Math.sin(t * 3.7 + seed), kw = 1 + 0.08 * Math.sin(t * 7.3 + seed * 2);
+    m.scale.set(w * kw, h * k, 1); m.position.set(at[0], at[1] + (h * (k - 1)) / 2, at[2]);
+  });
+  return <mesh ref={mesh} raycast={() => null} position={at} scale={[w, h, 1]}><planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} /></mesh>;
+}
+
+// ── Shadows ──
+// The lights never move (the user, 2026-11-19), so each thing's shadow is a fixed soft patch on the floor under it, a
+// little to the lower right of it (away from the key light, upper left), in three stepped bands so it stays pixel art.
+// Buildings and things against a wall throw theirs forward onto the floor in front.
+const SHADOW_BANDS = [0.62, 0.42, 0.22];   // 🧪 darkness, middle to edge
+const SHADOW_FALL = { x: 0.12, y: 0.1 }; // u: towards the lower right
+const SHADOW_TEX = (() => {
+  const n = 32, data = new Uint8Array(n * n * 4);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const r = Math.hypot((i + 0.5) / n - 0.5, (j + 0.5) / n - 0.5) * 2;
+    const a = r < 0.55 ? SHADOW_BANDS[0] : r < 0.8 ? SHADOW_BANDS[1] : r < 1 ? SHADOW_BANDS[2] : 0;
+    data.set([0, 0, 0, Math.round(a * 255)], (j * n + i) * 4);
+  }
+  const t = new THREE.DataTexture(data, n, n);
+  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.needsUpdate = true;
+  return t;
+})();
+function shadowOf(s: Station): { x: number; y: number; w: number; d: number } {
+  const { w, d } = s;
+  if (s.key === "shack" || s.key === "tavern") return { x: s.x + SHADOW_FALL.x, y: s.y + d / 2 - 0.1, w: w + 0.3, d: 1.1 };
+  if (s.turn) return { x: s.x + w / 2 - 0.1, y: s.y + SHADOW_FALL.y, w: 1.1, d: d + 0.3 };
+  return { x: s.x + SHADOW_FALL.x, y: s.y + SHADOW_FALL.y, w: w * 1.12 + 0.25, d: d * 1.12 + 0.2 };
+}
+function Shadow({ x, y, w, d, follow }: { x: number; y: number; w: number; d: number; follow?: () => { x: number; y: number } }) {
+  const mesh = useRef<THREE.Mesh>(null);
+  useFrame(() => { if (follow && mesh.current) { const at = follow(); mesh.current.position.set(at.x + SHADOW_FALL.x * 0.5, 0.004, at.y + 0.08); } });
+  return (
+    <mesh ref={mesh} raycast={() => null} position={[x, 0.004, y]} rotation={[-Math.PI / 2, 0, 0]} scale={[w, d, 1]} renderOrder={1}>
+      <planeGeometry />
+      <meshBasicMaterial map={SHADOW_TEX} transparent depthWrite={false} toneMapped={false} />
+    </mesh>
+  );
 }
 
 // The carved rock, in the Labyrinth's Stone shader, lit by the Den's lights.

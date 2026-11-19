@@ -1,0 +1,485 @@
+{
+  "format": 1,
+  "id": "portal",
+  "name": "PvP Portal",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den3d/portal-arch.png",
+    "foot": [69, 72]
+  },
+  "parts": [
+    {
+      "id": "face",
+      "kind": "panel",
+      "at": [0, 0, 0.24],
+      "size": [2.875, 3.041667],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [0, 0, 138, 73],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "pillar-l",
+      "kind": "box",
+      "at": [-1.1875, 0, 0.12],
+      "size": [0.48, 1.458333, 0.23],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "pillar-r",
+      "kind": "box",
+      "at": [1.1875, 0, 0.12],
+      "size": [0.48, 1.458333, 0.23],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-1",
+      "kind": "box",
+      "at": [1.018691, 1.517086, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -87.096774],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-2",
+      "kind": "box",
+      "at": [1.008238, 1.63399, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -81.290323],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-3",
+      "kind": "box",
+      "at": [0.987439, 1.74909, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -75.483871],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-4",
+      "kind": "box",
+      "at": [0.956507, 1.861207, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -69.677419],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-5",
+      "kind": "box",
+      "at": [0.915761, 1.969191, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -63.870968],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-6",
+      "kind": "box",
+      "at": [0.865617, 2.071932, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -58.064516],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-7",
+      "kind": "box",
+      "at": [0.806591, 2.168376, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -52.258065],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-8",
+      "kind": "box",
+      "at": [0.739289, 2.257535, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -46.451613],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-9",
+      "kind": "box",
+      "at": [0.6644, 2.338493, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -40.645161],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-10",
+      "kind": "box",
+      "at": [0.582694, 2.410419, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -34.83871],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-11",
+      "kind": "box",
+      "at": [0.495008, 2.472575, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -29.032258],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-12",
+      "kind": "box",
+      "at": [0.402243, 2.524324, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -23.225806],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-13",
+      "kind": "box",
+      "at": [0.30535, 2.565135, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -17.419355],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-14",
+      "kind": "box",
+      "at": [0.205324, 2.594588, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -11.612903],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-15",
+      "kind": "box",
+      "at": [0.103192, 2.612382, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, -5.806452],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-16",
+      "kind": "box",
+      "at": [0, 2.618333, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 0],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-17",
+      "kind": "box",
+      "at": [-0.103192, 2.612382, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 5.806452],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-18",
+      "kind": "box",
+      "at": [-0.205324, 2.594588, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 11.612903],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-19",
+      "kind": "box",
+      "at": [-0.30535, 2.565135, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 17.419355],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-20",
+      "kind": "box",
+      "at": [-0.402243, 2.524324, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 23.225806],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-21",
+      "kind": "box",
+      "at": [-0.495008, 2.472575, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 29.032258],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-22",
+      "kind": "box",
+      "at": [-0.582694, 2.410419, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 34.83871],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-23",
+      "kind": "box",
+      "at": [-0.6644, 2.338493, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 40.645161],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-24",
+      "kind": "box",
+      "at": [-0.739289, 2.257535, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 46.451613],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-25",
+      "kind": "box",
+      "at": [-0.806591, 2.168376, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 52.258065],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-26",
+      "kind": "box",
+      "at": [-0.865617, 2.071932, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 58.064516],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-27",
+      "kind": "box",
+      "at": [-0.915761, 1.969191, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 63.870968],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-28",
+      "kind": "box",
+      "at": [-0.956507, 1.861207, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 69.677419],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-29",
+      "kind": "box",
+      "at": [-0.987439, 1.74909, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 75.483871],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-30",
+      "kind": "box",
+      "at": [-1.008238, 1.63399, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 81.290323],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    },
+    {
+      "id": "ring-31",
+      "kind": "box",
+      "at": [-1.018691, 1.517086, 0.12],
+      "size": [0.16, 0.36, 0.23],
+      "turn": [0, 0, 87.096774],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/portal-arch.png",
+          "crop": [30, 6, 14, 10],
+          "tint": "#e0e8dc"
+        }
+      }
+    }
+  ]
+}

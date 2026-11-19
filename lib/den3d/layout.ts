@@ -122,6 +122,7 @@ export function fitsFloor(key: FloorKey, at: Pt, p: Placed, opened: boolean): bo
   if (at.x - s.w / 2 < z.x0 || at.x + s.w / 2 > z.x1 || at.y - s.d / 2 < z.y0 || at.y + s.d / 2 > z.y1) return false;
   if (key === "training" && at.x - s.w / 2 < DIVIDE_X + 0.5) return false;
   const hits = (o: { x0: number; x1: number; y0: number; y1: number }) => b.x0 < o.x1 && o.x0 < b.x1 && b.y0 < o.y1 && o.y0 < b.y1;
+  if (lamps(opened).some((l) => hits({ x0: l.x - 0.4, x1: l.x + 0.4, y0: l.y - 0.4, y1: l.y + 0.4 }))) return false;
   return FLOOR_KEYS.every((k) => k === key || (k === "training" && !opened) || !hits(keptBox(k, p.floor[k])));
 }
 // Can wall thing `key` hang in (or stand against) slot `id`? It must fit, and the slot be open; a slot
@@ -198,20 +199,25 @@ export function stations(s: DenState, p: Placed = placed(undefined, s.opened)): 
 // The Den's lights: torches on the nook's north wall (and by the tavern), the light on each tunnel's arch,
 // the braziers (with the altar, and the tavern room's pit), lanterns by the shack's and storehouse's doors and
 // the board, the altar's soul fire and the tavern's windows. Tile units and reach in tiles (stone.ts Light3D).
-export const DEN_LIGHT = { torch: 5.5, brazier: 4.5, altar: 4, tavern: 4.5, lantern: 3.5 }; // 🧪 reaches
+export const DEN_LIGHT = { torch: 5.5, brazier: 4.5, altar: 4, tavern: 4.5, lantern: 3.5, lamp: 4.5, pool: 3 }; // 🧪 reaches
+// Standing lamps where the Den was darkest (the user, 2026-11-19: "a higher ambient light with additional lighting in
+// certain areas"): along the walls and the south end, out of the way; nothing can be moved onto one (fitsFloor).
+export const LAMPS: Pt[] = [{ x: 3.4, y: 20.6 }, { x: 11.6, y: 21.8 }, { x: 14.6, y: 21.8 }, { x: 24.4, y: 13.6 }, { x: 24.4, y: 20.6 }];
+export const lamps = (opened: boolean) => LAMPS.filter((l) => opened || l.x < DIVIDE_X);
 export const SCONCES: Pt[] = [{ x: 12.2, y: NOOK_N }, { x: 13.8, y: NOOK_N }, { x: 20, y: HALL_N }];
 export const ARCH_LIGHTS: Pt[] = [{ x: mid(ARCH) - 1.2, y: NOOK_N }, { x: mid(ARCH) + 1.2, y: NOOK_N }];
 export const PORTAL_LIGHTS: Pt[] = [{ x: mid(PORTAL) - 1.2, y: NOOK_N }, { x: mid(PORTAL) + 1.2, y: NOOK_N }];
 const LANTERNS: Pt[] = [{ x: 2.6, y: 10.6 }, { x: 3.9, y: 13.1 }, { x: 5.2, y: 8.4 }]; // (the shack's and storehouse's doors, the board)
 export function braziers(p: Placed, s: DenState): Pt[] {
   const by = (c: Pt, f: { dx: number; dy: number }) => [-1, 1].map((k) => ({ x: c.x + k * f.dx, y: c.y + f.dy }));
-  return [...by(p.floor.altar, BRAZIER_AT.altar), ...(s.opened && s.pit ? by(p.floor.training, BRAZIER_AT.training) : [])];
+  return [...by(p.floor.altar, BRAZIER_AT.altar), ...(s.opened && s.pit ? by(p.floor.training, BRAZIER_AT.training) : []), ...lamps(s.opened)];
 }
 export function denLights(s: DenState, p: Placed = placed(undefined, s.opened)): { x: number; y: number; r: number }[] {
   const inRoom = (q: Pt) => s.opened || q.x < DIVIDE_X;
   return [
     ...[...SCONCES, ...ARCH_LIGHTS, ...PORTAL_LIGHTS].filter(inRoom).map((q) => ({ x: q.x, y: q.y + 0.6, r: DEN_LIGHT.torch })),
-    ...braziers(p, s).map((q) => ({ ...q, r: DEN_LIGHT.brazier })),
+    ...braziers(p, s).map((q) => ({ ...q, r: LAMPS.includes(q) ? DEN_LIGHT.lamp : DEN_LIGHT.brazier })),
+    { ...p.floor.pool, r: DEN_LIGHT.pool }, // (the healing water's own glow)
     ...LANTERNS.map((q) => ({ ...q, r: DEN_LIGHT.lantern })),
     { ...p.floor.altar, r: DEN_LIGHT.altar },
     ...(s.opened && s.repaired ? [{ x: 23, y: 11, r: DEN_LIGHT.tavern }] : []),

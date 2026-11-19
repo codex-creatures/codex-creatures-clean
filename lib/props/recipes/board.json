@@ -60,7 +60,9 @@
           "tint": "#b09078"
         },
         "front": {
-          "colour": "#7a4c30"
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#ffffff"
         }
       }
     },
@@ -222,7 +224,9 @@
           "colour": "#33363f"
         },
         "front": {
-          "colour": "#4a4e5a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffe4"
         }
       }
     },
@@ -248,7 +252,9 @@
           "colour": "#33363f"
         },
         "front": {
-          "colour": "#4a4e5a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffe4"
         }
       }
     },
@@ -274,7 +280,9 @@
           "colour": "#33363f"
         },
         "front": {
-          "colour": "#4a4e5a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffe4"
         }
       }
     },
@@ -300,7 +308,9 @@
           "colour": "#33363f"
         },
         "front": {
-          "colour": "#4a4e5a"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffe4"
         }
       }
     },

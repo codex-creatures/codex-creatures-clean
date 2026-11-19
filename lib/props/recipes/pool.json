@@ -41,7 +41,9 @@
           "colour": "#1c2228"
         },
         "top": {
-          "colour": "#232a31"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#848e7c"
         },
         "inner": {
           "colour": "#0d2a33"
@@ -82,10 +84,14 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#4a4744"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffefad"
         },
         "top": {
-          "colour": "#6e6a66"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -103,10 +109,14 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#45423f"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffdfa0"
         },
         "top": {
-          "colour": "#66625e"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffef"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -127,7 +137,9 @@
           "colour": "#4f4b48"
         },
         "top": {
-          "colour": "#75716c"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -164,7 +176,9 @@
           "colour": "#3f4448"
         },
         "top": {
-          "colour": "#5e6468"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -182,10 +196,14 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#4a4744"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffefad"
         },
         "top": {
-          "colour": "#6e6a66"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -222,7 +240,9 @@
           "colour": "#45423f"
         },
         "top": {
-          "colour": "#66625e"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffef"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -259,7 +279,9 @@
           "colour": "#4f4b48"
         },
         "top": {
-          "colour": "#75716c"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -277,10 +299,14 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#3f4448"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#eee5b7"
         },
         "top": {
-          "colour": "#5e6468"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -317,7 +343,9 @@
           "colour": "#4a4744"
         },
         "top": {
-          "colour": "#6e6a66"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -354,7 +382,9 @@
           "colour": "#45423f"
         },
         "top": {
-          "colour": "#66625e"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffef"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -375,7 +405,9 @@
           "colour": "#4f4b48"
         },
         "top": {
-          "colour": "#75716c"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -396,7 +428,9 @@
           "colour": "#3f4448"
         },
         "top": {
-          "colour": "#5e6468"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -417,7 +451,9 @@
           "colour": "#4a4744"
         },
         "top": {
-          "colour": "#6e6a66"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -451,10 +487,14 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#45423f"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffdfa0"
         },
         "top": {
-          "colour": "#66625e"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffef"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -470,7 +510,9 @@
       "sides": 7,
       "faces": {
         "top": {
-          "colour": "#4f6d34"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#527d4a"
         },
         "side": {
           "colour": "#4a6330"
@@ -488,10 +530,14 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#4f4b48"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#fffdb7"
         },
         "top": {
-          "colour": "#75716c"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -512,7 +558,9 @@
           "colour": "#3f4448"
         },
         "top": {
-          "colour": "#5e6468"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -546,10 +594,14 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#4a4744"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffefad"
         },
         "top": {
-          "colour": "#6e6a66"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -570,7 +622,9 @@
           "colour": "#45423f"
         },
         "top": {
-          "colour": "#66625e"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffef"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -588,10 +642,14 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#4f4b48"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#fffdb7"
         },
         "top": {
-          "colour": "#75716c"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -609,10 +667,14 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#3f4448"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#eee5b7"
         },
         "top": {
-          "colour": "#5e6468"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -630,10 +692,14 @@
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#4a4744"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffefad"
         },
         "top": {
-          "colour": "#6e6a66"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2826"
@@ -648,7 +714,9 @@
       "sides": 8,
       "faces": {
         "top": {
-          "colour": "#33592a"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#35663b"
         },
         "side": {
           "colour": "#284a21"
@@ -663,7 +731,9 @@
       "sides": 8,
       "faces": {
         "top": {
-          "colour": "#41702f"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#448142"
         },
         "side": {
           "colour": "#284a21"
@@ -678,7 +748,9 @@
       "sides": 8,
       "faces": {
         "top": {
-          "colour": "#284a21"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#2a552f"
         },
         "side": {
           "colour": "#284a21"
@@ -693,7 +765,9 @@
       "sides": 8,
       "faces": {
         "top": {
-          "colour": "#4f8238"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#52964f"
         },
         "side": {
           "colour": "#284a21"
@@ -708,7 +782,9 @@
       "sides": 8,
       "faces": {
         "top": {
-          "colour": "#33592a"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#35663b"
         },
         "side": {
           "colour": "#284a21"
@@ -723,7 +799,9 @@
       "sides": 8,
       "faces": {
         "top": {
-          "colour": "#41702f"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#448142"
         },
         "side": {
           "colour": "#284a21"
@@ -738,7 +816,9 @@
       "sides": 8,
       "faces": {
         "top": {
-          "colour": "#284a21"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#2a552f"
         },
         "side": {
           "colour": "#284a21"
@@ -753,7 +833,9 @@
       "sides": 8,
       "faces": {
         "top": {
-          "colour": "#4f8238"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#52964f"
         },
         "side": {
           "colour": "#284a21"
@@ -768,7 +850,9 @@
       "sides": 8,
       "faces": {
         "top": {
-          "colour": "#33592a"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#35663b"
         },
         "side": {
           "colour": "#284a21"
@@ -1234,7 +1318,9 @@
       "sides": 9,
       "faces": {
         "top": {
-          "colour": "#5a9444"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#5eaa60"
         },
         "side": {
           "colour": "#2f5a2a"
@@ -1250,7 +1336,9 @@
       "sides": 9,
       "faces": {
         "top": {
-          "colour": "#6aa84f"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#6ec170"
         },
         "side": {
           "colour": "#2f5a2a"
@@ -1266,7 +1354,9 @@
       "sides": 9,
       "faces": {
         "top": {
-          "colour": "#6aa84f"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#6ec170"
         },
         "side": {
           "colour": "#2f5a2a"
@@ -1377,7 +1467,9 @@
       "sides": 10,
       "faces": {
         "top": {
-          "colour": "#3f6a3a"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#417a52"
         },
         "side": {
           "colour": "#2f5a2a"
@@ -1392,7 +1484,9 @@
       "sides": 10,
       "faces": {
         "top": {
-          "colour": "#3f6a3a"
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#417a52"
         },
         "side": {
           "colour": "#2f5a2a"

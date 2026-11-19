@@ -130,6 +130,13 @@ Until it's saved, a recipe's changes are a draft in that browser only: on anothe
 - **The review lab** (`/lab/propreview`; `?drafts` shows the builder's unsaved drafts): every recipe on the Den's
   floor, lit (the Den's key light, ambient and your torch; your torch alone; or the game's flat look), walked round as
   the torchbearer (stick, keys, tapping the floor) under the game's camera, close up or at the game's zoom.
+- **Scale** (the user, 2026-11-19): judge a prop by the Den's people, `NPC_U` (1.625 u) tall: "Klutz for scale" in
+  `/lab/propreview` stands him beside each. As built: the altar's soup about 1.4 (chest high), the cage 1.5, doors
+  about 1.6 to 1.75, eaves about 1.9 to 2.
+- **Shared materials** (the user, 2026-11-19): a face bigger than about 0.16 u each way isn't a flat colour but one of a
+  few shared textures, tinted to its colour: stone (`den3d/pit-top.png` [5, 24, 17, 62]), wood (`den3d/storehouse-front.png`
+  [2, 3, 30, 17]) and grain for moss, mud and straw (`den3d/parts/sand.png` [0, 0, 40, 40]). Near-black faces (insides,
+  shadows) and small parts (rivets, bars) stay flat.
 - **Outline** (a box's or cylinder's `outline`): a shell an art pixel bigger all round, drawn inside out in the
   darkest stone (#0e0f0c), so a dark pixel edges the part, as the Labyrinth's 3D things have (Props3D's hull).
 - **The altar** (`altar.json`; rebuilt 2026-11-19 from its drawing, den3d/altar.png, where the first recipe copied

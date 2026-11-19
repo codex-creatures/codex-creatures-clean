@@ -33,14 +33,14 @@ const GREEN = "#7fdc8a"; // the portal's
 export function Place({ s, tint, stretch, pitch = Math.PI / 3, caged, repaired, trainingPit, stoneReady, classic = false }: { s: Station; tint: () => THREE.Color; stretch: number; pitch?: number; caged?: string;
   repaired: boolean; trainingPit: boolean; stoneReady: boolean; classic?: boolean }) {
   const at: [number, number, number] = [s.x, 0, s.y];
-  const made = (id: string, against: "middle" | "north" | "west" = "middle") => {
+  const made = (id: string, against: "middle" | "north" | "west" = "middle", extra?: React.ReactNode) => {
     const r = classic ? null : recipeOf(id);
-    return r ? <Made r={r} s={s} against={against} tint={tint} pitch={pitch} stretch={stretch} /> : null;
+    return r ? <Made r={r} s={s} against={against} tint={tint} pitch={pitch} stretch={stretch}>{extra}</Made> : null;
   };
   switch (s.key) {
     case "shack": return made("shack", "north") ?? <Building at={at} d={s.d} art={BUILDINGS.shack} tint={tint} />;
     case "storehouse": return made("storehouse", "west") ?? <Building at={at} d={s.turn ? s.w : s.d} art={BUILDINGS.storehouse} tint={tint} turn={!!s.turn} />;
-    case "tavern": return (repaired ? made("tavern", "north") : null) ?? <Building at={at} d={s.d} art={BUILDINGS.tavern} broken={!repaired} tint={tint} />;
+    case "tavern": return (repaired ? made("tavern", "north", <Smoke at={CHIMNEY} />) : made("tavern-broken", "north")) ?? <Building at={at} d={s.d} art={BUILDINGS.tavern} broken={!repaired} tint={tint} />;
     case "board": return made("board", "north") ?? <OnWall s={s} pic={NOTES} tint={tint} backing={{ colour: "#5e432a", pad: 0.12 }} />;
     case "altar": return made("altar") ?? <Altar at={at} tint={tint} stretch={stretch} />;
     case "pool": return made("pool") ?? <Pool at={at} w={s.w} d={s.d} tint={tint} />;
@@ -58,20 +58,52 @@ export function Place({ s, tint, stretch, pitch = Math.PI / 3, caged, repaired, 
       return (
         <group>
           {cage ?? <group position={at}><Decor3D kind="cage" stretch={stretch} colour={tint} /></group>}
-          {art && <group position={at}><Upright src={art.src} x={0} y={0} w={Math.min(w, 0.75)} h={tall * stretch} below={cage ? -0.23 : -0.14} colour={tint} /></group>}
+          {art && <Breathe at={at}><Upright src={art.src} x={0} y={0} w={Math.min(w, 0.75)} h={tall * stretch} below={cage ? -0.23 : -0.14} colour={tint} /></Breathe>}
         </group>
       );
     }
-    case "arch": return <OnWall s={s} pic={ARCH} hole={ARCH_HOLE} tint={tint} />;
-    case "portal": return <Portal s={s} tint={tint} />;
-    case "rubble": return <Socket at={at} tint={tint} ready={stoneReady} />;
+    // (The arch and the portal from their recipes, standing out from the wall over their holes.)
+    case "arch": { const a = made("arch"); return a ? <><OnWall s={s} pic={ARCH_HOLE} tint={tint} />{a}</> : <OnWall s={s} pic={ARCH} hole={ARCH_HOLE} tint={tint} />; }
+    case "portal": return <Portal s={s} tint={tint} arch={made("portal")} />;
+    case "rubble": return <Socket at={at} tint={tint} ready={stoneReady} body={made("socket")} />;
   }
+}
+
+// ── Small movements (the user, 2026-11-19: "bringing it to life") ──
+// Smoke from the tavern's chimney (its top in tavern.json): puffs of a few art pixels rising, drifting east, growing and
+// fading, one after another.
+const CHIMNEY: [number, number, number] = [1.55, 3.1, -0.41];
+const PUFFS = 5, PUFF_S = 2.6; // puffs at once; seconds each rises
+function Smoke({ at }: { at: [number, number, number] }) {
+  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  useFrame(() => {
+    const t = performance.now() / 1000;
+    refs.current.forEach((m, i) => {
+      if (!m) return;
+      const k = ((t / PUFF_S + i / PUFFS) % 1), size = (4 + Math.round(k * 5)) / 48;
+      m.position.set(at[0] + k * 0.35 + 0.04 * Math.sin(t * 2 + i), at[1] + k * 1.1, at[2]);
+      m.scale.set(size, size, 1);
+      (m.material as THREE.MeshBasicMaterial).opacity = 0.5 * (1 - k) * Math.min(1, k * 6);
+    });
+  });
+  return <>{Array.from({ length: PUFFS }, (_, i) => (
+    <mesh key={i} ref={(m) => { refs.current[i] = m; }} raycast={() => null} position={at}>
+      <planeGeometry /><meshBasicMaterial color="#9a948c" transparent depthWrite={false} />
+    </mesh>
+  ))}</>;
+}
+// The caged creature breathing: a slow rise and fall of an art pixel.
+function Breathe({ at, children }: { at: [number, number, number]; children: React.ReactNode }) {
+  const g = useRef<THREE.Group>(null);
+  useFrame(() => { if (g.current) g.current.position.set(at[0], at[1] + (Math.sin(performance.now() / 700) > 0 ? 1 / 48 : 0), at[2]); });
+  return <group ref={g} position={at}>{children}</group>;
 }
 
 // A prop from its recipe, where its place is: in the middle of its footprint, or its back to the north wall (the
 // shack, the tavern, the board) or the west one (the storehouse, turned to face east into the room). Lit by the
 // Den's key light (Den3D's) and tinted by the light where it stands, as the old drawings were.
-function Made({ r, s, against, tint, pitch, stretch }: { r: Recipe; s: Station; against: "middle" | "north" | "west"; tint: () => THREE.Color; pitch: number; stretch: number }) {
+// `children`: anything that goes with it (the tavern's smoke), placed in the recipe's own units from its middle.
+function Made({ r, s, against, tint, pitch, stretch, children }: { r: Recipe; s: Station; against: "middle" | "north" | "west"; tint: () => THREE.Color; pitch: number; stretch: number; children?: React.ReactNode }) {
   const [, deep] = useMemo(() => recipeReach(r, { pitch, stretch }), [r, pitch, stretch]);
   const back = 0.02;
   const at: [number, number, number] = against === "north" ? [s.x, 0, s.y - s.d / 2 + deep + back]
@@ -79,6 +111,7 @@ function Made({ r, s, against, tint, pitch, stretch }: { r: Recipe; s: Station; 
   return (
     <group rotation={[0, against === "west" ? Math.PI / 2 : 0, 0]} position={against === "west" ? at : [0, 0, 0]}>
       <PropRecipe3D recipe={r} at={against === "west" ? [0, 0, 0] : at} pitch={pitch} stretch={stretch} tint={tint} lit />
+      {children && <group position={against === "west" ? [0, 0, 0] : at}>{children}</group>}
     </group>
   );
 }
@@ -157,13 +190,13 @@ function OnWall({ s, pic, tint, backing, hole }: { s: Station; pic: Pic; tint: (
 }
 // The PvP portal: the Labyrinth's way in mirrored, its arch green over its dark hole, a green swirl across its
 // mouth and its glow on the floor (the user, 2026-11-19).
-function Portal({ s, tint }: { s: Station; tint: () => THREE.Color }) {
+function Portal({ s, tint, arch }: { s: Station; tint: () => THREE.Color; arch?: React.ReactNode }) {
   const swirl = useRef<THREE.MeshBasicMaterial>(null);
   useFrame(() => { if (swirl.current) swirl.current.opacity = 0.55 + 0.15 * Math.sin(performance.now() / 420); });
   return (<>
     <mesh raycast={() => null} position={[s.x, 1.05, NOOK_N + 0.017]}><planeGeometry args={[1.95, 2.1]} />
       <meshBasicMaterial ref={swirl} color="#3f9a55" transparent opacity={0.6} depthWrite={false} /></mesh>
-    <OnWall s={s} pic={PORTAL_ARCH} hole={PORTAL_HOLE} tint={tint} />
+    {arch ? <><OnWall s={s} pic={PORTAL_HOLE} tint={tint} />{arch}</> : <OnWall s={s} pic={PORTAL_ARCH} hole={PORTAL_HOLE} tint={tint} />}
     <group position={[s.x, 0, s.y + 0.8]}><Glow colour={GREEN} radius={1.6} strength={0.35} /></group>
   </>);
 }
@@ -264,15 +297,15 @@ function StoneFrame({ w, d, tall, thick, tint, floor }: { w: number; d: number; 
 
 // ── The old wall's socket: a waist-high stone post with a hollow in its top, where Klutz will set the
 // Labyrinth Stone (glowing once you've the stone).
-function Socket({ at, tint, ready }: { at: [number, number, number]; tint: () => THREE.Color; ready: boolean }) {
+function Socket({ at, tint, ready, body }: { at: [number, number, number]; tint: () => THREE.Color; ready: boolean; body?: React.ReactNode }) {
   const stone = usePicture(PARTS.stone.src, tint, { repeat: [across(0.6, PARTS.stone), upFace(0.9, PARTS.stone)], see: false });
   const [cap, hollow] = useFlat(["#55544a", ready ? "#5fe0d0" : "#141210"], ready ? () => new THREE.Color(1, 1, 1) : tint);
   return (
-    <group position={at}>
-      <mesh material={[stone, stone, cap, cap, stone, stone]} position={[0, 0.45, 0]} raycast={() => null}><boxGeometry args={[0.6, 0.9, 0.6]} /></mesh>
+    <>{body}<group position={at}>
+      {!body && <mesh material={[stone, stone, cap, cap, stone, stone]} position={[0, 0.45, 0]} raycast={() => null}><boxGeometry args={[0.6, 0.9, 0.6]} /></mesh>}
       <mesh material={hollow} position={[0, 0.905, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}><circleGeometry args={[0.18, 10]} /></mesh>
       {ready && <Glow colour={SOUL} radius={1.2} strength={0.35} />}
-    </group>
+    </group></>
   );
 }
 

@@ -17,6 +17,10 @@ import { loaded, PROP_LEAN } from "@/components/Props3D";
 import { PropRecipe3D } from "@/components/PropRecipe3D";
 import { recipeReach, DENSITY, type Recipe } from "@/lib/props/recipe";
 import { walkTo, type Walk, type LightMode } from "./walk";
+import { Upright } from "@/components/WalkView3D";
+import { NPC_U } from "@/lib/world/objects";
+import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
+import { artFor } from "@/lib/sprites/art";
 
 export const GAP = 2;            // u between props, edge to edge
 const LEAN = 0.03;               // the rock's lean (decision 36)
@@ -40,16 +44,16 @@ export function spots(reach: [number, number][]): { x: number; z: number }[] {
 }
 
 
-export default function ReviewScene({ recipes, light, across, walk }: { recipes: Recipe[]; light: LightMode; across: number; walk: Walk }) {
+export default function ReviewScene({ recipes, light, across, walk, scale = false }: { recipes: Recipe[]; light: LightMode; across: number; walk: Walk; scale?: boolean }) {
   return (
     <Canvas resize={{ offsetSize: true }} orthographic flat gl={{ antialias: false }}
       style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
-      <Scene recipes={recipes} light={light} across={across} walk={walk} />
+      <Scene recipes={recipes} light={light} across={across} walk={walk} scale={scale} />
     </Canvas>
   );
 }
 
-function Scene({ recipes, light, across, walk }: { recipes: Recipe[]; light: LightMode; across: number; walk: Walk }) {
+function Scene({ recipes, light, across, walk, scale }: { recipes: Recipe[]; light: LightMode; across: number; walk: Walk; scale: boolean }) {
   const { size, setDpr } = useThree();
   const pitch = Math.PI / 3, stretch = uprightStretch(pitch);
   const pix = pixelScale("art", DENSITY, across, size.width, typeof window === "undefined" ? 1 : window.devicePixelRatio || 1);
@@ -74,9 +78,19 @@ function Scene({ recipes, light, across, walk }: { recipes: Recipe[]; light: Lig
       {recipes.map((r, i) => <PropRecipe3D key={r.id} recipe={r} at={[at[i].x, 0, 0]} pitch={pitch} stretch={stretch} lit={lit} tint={lit ? undefined : tint} />)}
       {light === "den" && <directionalLight color={LIGHTS.key.colour} intensity={LIGHTS.key.den} position={[...LIGHTS.key.at]} />}
       {lit && <ambientLight color={LIGHTS.ambient.colour} intensity={light === "den" ? LIGHTS.ambient.den : LIGHTS.ambient.torch} />}
+      {scale && recipes.map((r, i) => <ScaleKlutz key={`klutz:${r.id}`} x={at[i].x + reach[i][0] + 0.45} />)}
       <Hero me={me} walk={walk} recipes={recipes} reach={reach} at={at} lit={lit} />
     </>
   );
+}
+
+// Klutz standing at the front right of a prop, at his height in the Den (the Den's people are NPC_U tall), to judge its
+// size by (the user, 2026-11-19: a scale rule; world/art-pipeline.md §6.6).
+function ScaleKlutz({ x }: { x: number }) {
+  const art = CREATURE_SPRITES.klutz && artFor(CREATURE_SPRITES.klutz);
+  if (!art) return null;
+  const stretch = uprightStretch(Math.PI / 3), h = NPC_U * stretch, w = art.w * (NPC_U / art.h);
+  return <Upright src={art.src} x={x} y={0.3} w={w} h={h} below={0} colour={new THREE.Color(1, 1, 1)} />;
 }
 
 // The camera: the game's (orthographic, from the south, 60° down), following you, the rock's lean about it.

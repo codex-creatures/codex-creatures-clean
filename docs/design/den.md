@@ -78,6 +78,18 @@ placement (players could block themselves in). With it off, nothing changes.
   as the old Den's (about 3.3 × 2.2 of murky water, a ragged bank, mud, moss, reeds and bulrushes), and a new cage, 1 × 1
   and 1.5 high (a wooden plinth and posts, iron caps, round bars all round and over the top, straw; the creature on it).
   The braziers stand closer to the smaller altar and further out round the bigger pit (`BRAZIER_AT`, per place).
+  Round three (the user, 2026-11-19, "lets do these all"): the boarded-up tavern, the old wall's socket, the Labyrinth's
+  arch and the PvP portal are recipes too (`tavern-broken`, `socket`, `arch`, `portal`; the arches' pictures stand out
+  from the wall with their stones' thickness behind, over their holes); the bookcase and lectern stay the Labyrinth's
+  3D things. The bigger flat-colour faces wear shared textures (stone, wood, grain; world/art-pipeline.md §6.6).
+- **Light, shadows and life** (the user, 2026-11-19): a higher ambient light (`DEN_STONE` remember 0.48, the recipes'
+  key light brighter), standing lamps where it was darkest (`LAMPS`: along the walls and the south end, out of the
+  way, nothing can be moved onto one), and the healing pool's own glow. Every place, lamp, brazier and person has a
+  fixed shadow on the floor (the lights never move): a soft patch in three stepped bands, a little to the lower right,
+  buildings' thrown forward. Flames flicker, the tavern's chimney smokes, the caged creature breathes, and a place
+  lights up while a finger's on it (`PRESS_GLOW`).
+- **The camera turns a little** as the view slides (up to 6°, `TURN`), so the sides of things shift and the 3D shows,
+  and settles back square when it stops, so a still view keeps its pixels square.
 - **3D models** (the user, 2026-11-19, now the fallbacks for the props above): the Soul Altar (a two-tier plinth, a black cauldron with the horned
   skull, teal lanterns, the soul fire and its spirits), the healing pool (a ring of stones round its water and
   lily pads), the Pit (a stone frame, an iron grate) and the Sparring Pit (a low wall round sand, the dummy;

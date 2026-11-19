@@ -426,7 +426,9 @@
           "tint": "#e8ecf4"
         },
         "top": {
-          "colour": "#6a7590"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         },
         "bottom": {
           "colour": "#2a2f3a"

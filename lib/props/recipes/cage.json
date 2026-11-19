@@ -92,7 +92,9 @@
           "colour": "#2e2e4a"
         },
         "top": {
-          "colour": "#4a4a6e"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#fffaff"
         }
       }
     },
@@ -108,7 +110,9 @@
           "colour": "#2e2e4a"
         },
         "top": {
-          "colour": "#4a4a6e"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#fffaff"
         }
       }
     },
@@ -188,7 +192,9 @@
           "colour": "#6a6a8a"
         },
         "top": {
-          "colour": "#9a9ab8"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#ffffff"
         }
       }
     },
@@ -257,7 +263,9 @@
       "four": true,
       "faces": {
         "side": {
-          "colour": "#4a4a68"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#fffaff"
         },
         "top": {
           "colour": "#6a6a8a"
@@ -276,7 +284,9 @@
       "four": true,
       "faces": {
         "side": {
-          "colour": "#4a4a68"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#fffaff"
         },
         "top": {
           "colour": "#6a6a8a"
@@ -295,7 +305,9 @@
       "four": true,
       "faces": {
         "side": {
-          "colour": "#4a4a68"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#fffaff"
         },
         "top": {
           "colour": "#6a6a8a"
@@ -314,7 +326,9 @@
       "four": true,
       "faces": {
         "side": {
-          "colour": "#4a4a68"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#fffaff"
         },
         "top": {
           "colour": "#6a6a8a"
@@ -333,7 +347,9 @@
       "four": true,
       "faces": {
         "side": {
-          "colour": "#4a4a68"
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62],
+          "tint": "#fffaff"
         },
         "top": {
           "colour": "#6a6a8a"
