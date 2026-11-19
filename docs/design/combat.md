@@ -258,7 +258,8 @@ power counts for less as attack grows.
   (was 3). A creature that loses a codex move it had learned can no longer use it.
 - **Rarity:** Common: Whiplash, Nibble, Crystal Armour, Poison Dart, Headbutt, Slap, Cleansing
   Water, Rock Toss (the user, 2026-11-20: Underkin's basic hit, ranged, 8 power, 20 energy, no effect; learned by
-  the Underkin creatures; the name is Claude's). Nibble: +10% each time in a row, up to 10 times (+100%; the
+  the Underkin creatures; the name is Claude's). Uncommon too: Blessed Bolt (the user, 2026-11-20: Divine's basic hit, ranged, 30 energy; 15
+  power 🧪; learned by the Divine creatures). Nibble: +10% each time in a row, up to 10 times (+100%; the
   user, 2026-11-20; it was 5, +50%). A move with no damage (Caltrops, Crystal Armour…) shows as Utility
   everywhere, never by the style it's filed under (`isUtility`; Caltrops showed as Magic). Uncommon: Nullifying Voice, Vampiric Bite, Caltrops, Ambush, Bolas Shot, Enfeeble, Razor
   Arrows. Rare: Smoke Bomb, Obsidian Arrows, Septic Shock, Mega Smash, Emulate, Voltage Surge, Flame

@@ -129,6 +129,11 @@ export const CODEX_MOVES_2026: Skill[] = [
   move("Claw", "melee", "beast", 10, 20, "common", undefined,
     ["moss_wolf", "dire_wolf", "ironhide", "cave_bat", "rust_beetle", "deep_angler", "hollow_matriarch", "flame_imp", "crystalback", "crystal_golem", "veilstalker", "rattlebones", "shambler", "storm_phoenix", "plague_rat", "dreadpox"],
     "A plain claw."),
+  // Divine's basic hit (the user, 2026-11-20: name, style, rarity and energy; the power is Claude's, a 30-energy
+  // plain hit's 15). A new player's Divine starter knows it.
+  move("Blessed Bolt", "ranged", "divine", 15, 30, "uncommon", undefined,
+    ["flicker_wisp", "veilstalker", "the_watcher", "void_serpent", "gleamling", "flame_imp"],
+    "A plain bolt of holy light."),
   // Underkin's basic hit (the user, 2026-11-20: a new player's Underkin starter knows it; the name is Claude's).
   move("Rock Toss", "ranged", "underkin", 8, 20, "common", undefined,
     ["cave_bat", "rust_beetle", "hollow_matriarch", "veilstalker", "deep_angler", "tunnel_wyrm"],

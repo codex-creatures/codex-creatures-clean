@@ -25,8 +25,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   the cage (`starterCreature`, Lv 3). It knows its style's three core moves and one move of its own (main)
   race, `STARTER_RACE_MOVE` (the user, 2026-11-20: that race's least damaging, least complicated attack, whatever
   its style): Beast Claw, Geo Flame Spit, Undead Nibble, Toxic Poison Dart, Humanoid Whiplash, Underkin Rock
-  Toss (made for it, 2026-11-20). ❓ Divine has no basic attack (its only one is the Epic Smite; Dark Seal is Undead
-  now): the user will make one. Till then a creature whose first race is Divine gets its second race's. It keeps it whatever its species could learn from a codex (a gift;
+  Toss (made for it, 2026-11-20), Divine Blessed Bolt (the user's, 2026-11-20: ranged, Uncommon, 30 energy; 15
+  power 🧪, Claude's). It keeps it whatever its species could learn from a codex (a gift;
   codexes still follow their learners). Releasing a creature gives nothing. A captured creature joins
   your creatures (the starter is also the first free pick at the Labyrinth's entrance).
 - ✅ **Ascension** (see below): give up creatures of a kind at the Soul Altar to raise one a rarity.

@@ -557,10 +557,9 @@ export const moveOf = (c: CreatureTemplate, name: string): Skill => c.skills.fin
 // A new player's starter is given a move of its own race (lib/creatures/starter.ts; the user, 2026-11-20): the
 // least damaging, least complicated attack of that race, whatever its style, so it learns its race and that its
 // race's moves hit harder from it (the match bonus). A gift, kept whatever its species could learn from a codex
-// (codexes still follow their learners). Divine has no basic attack yet (the user will make one): a creature whose
-// first race is Divine gets its second race's.
+// (codexes still follow their learners). (A race with none listed would give its creature its second race's.)
 export const STARTER_RACE_MOVE: Partial<Record<RaceV2, string>> = {
-  beast: "Claw", geo: "Flame Spit", undead: "Nibble", toxic: "Poison Dart", humanoid: "Whiplash", underkin: "Rock Toss",
+  beast: "Claw", geo: "Flame Spit", undead: "Nibble", toxic: "Poison Dart", humanoid: "Whiplash", underkin: "Rock Toss", divine: "Blessed Bolt",
 };
 export const starterRaceMove = (c: { id: string }): string | undefined =>
   (SPECIES_RACES[c.id] ?? []).map((r) => STARTER_RACE_MOVE[r]).find((m) => m !== undefined);

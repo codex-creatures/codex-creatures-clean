@@ -18,8 +18,8 @@ const has = (f: Combatant, id: string) => f.statuses.some((s) => s.id === id);
 afterEach(() => vi.restoreAllMocks());
 
 describe("the 2026-11 codex moves: who, what rarity, where they come from", () => {
-  it("all 36 are special-move codexes, each with learners, a rarity and a short description", () => {
-    expect(CODEX_MOVES_2026).toHaveLength(36);
+  it("all 37 are special-move codexes, each with learners, a rarity and a short description", () => {
+    expect(CODEX_MOVES_2026).toHaveLength(37);
     for (const m of CODEX_MOVES_2026) {
       expect(SPECIAL_MOVES).toContain(m);
       expect(MOVE_BY_NAME[m.name], m.name).toBe(m);
