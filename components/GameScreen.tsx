@@ -41,7 +41,8 @@ export default function GameScreen({ children }: { children: React.ReactNode }) 
   const show = started || !needsTitle(path, false);
   return (
     <div className="game-shell">
-      <div className="game-screen">
+      {/* (No press-and-hold menu anywhere in the game, the user 2026-11-19, except in a text box: holding picks things up.) */}
+      <div className="game-screen" onContextMenu={(e) => { if (!(e.target as HTMLElement).closest("input, textarea, select, [contenteditable]")) e.preventDefault(); }}>
         <div className="screen-scale" style={scale === 1 ? undefined
           : { width: `calc(100% / ${scale})`, height: `calc(100% / ${scale})`, transform: `scale(${scale})` }}>
           <div className="screen-body">{show ? children : null}</div>
