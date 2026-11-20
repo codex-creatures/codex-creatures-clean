@@ -411,10 +411,12 @@ function rewardLook(r: CampaignReward) {
     : r.crate === "gear" ? "/sprites/walk/decor/barrels.png" : r.crate === "codex" ? "/sprites/props/bookcase3d/front.png" : "/sprites/den/crate.png";
   // On a crate, what's inside: a plank for materials, a potion for supplies.
   const inside = "crate" in r && r.crate === "materials" ? "/sprites/items/materials/planks.png" : "crate" in r && r.crate === "supplies" ? "/sprites/items/potion.png" : null;
+  // The Gear Barrel: its weapons (the 3D barrel's own) stick up out of it (the user, 2026-11-20: a barrel of gear).
+  const back = "crate" in r && r.crate === "gear" ? "/sprites/props/barrel3d/items.png" : null;
   const tint = "gold" in r || "goldKey" in r ? "#FFCC4D" : "scrolls" in r ? "#4EA1FF" : "enchanted" in r ? RARITY_COLORS[r.rarity].text : "crate" in r ? RARITY_COLORS[r.hi].text : "#c9a46a";
   const label = "gold" in r ? r.gold.toLocaleString() : "scrolls" in r ? `×${r.scrolls}` : "crate" in r && r.crate !== "supplies" ? (r.lo === r.hi ? SHORT_RARITY[r.lo] : `${SHORT_RARITY[r.lo]}–${SHORT_RARITY[r.hi]}`)
     : "enchanted" in r ? SHORT_RARITY[r.rarity] : "";
-  return { art, inside, tint, label, gold: "gold" in r };
+  return { art, inside, back, tint, label, gold: "gold" in r };
 }
 const RewardBadge = ({ r, small, ready }: { r: CampaignReward; small?: boolean; ready?: boolean }) => <Badge {...rewardLook(r)} title={rewardText(r)} small={small} ready={ready} />;
 
@@ -431,13 +433,16 @@ function dailyLook(q: DailyQuest) {
 }
 
 // A reward's picture on a note: the art in a glow of its colour, its amount under it.
-function Badge({ art, inside, tint, label, gold, title, small, ready }: { art: string; inside: string | null; tint: string; label: string; gold: boolean; title: string; small?: boolean; ready?: boolean }) {
+function Badge({ art, inside, back, tint, label, gold, title, small, ready }: { art: string; inside: string | null; back?: string | null; tint: string; label: string; gold: boolean; title: string; small?: boolean; ready?: boolean }) {
   const size = small ? 22 : 40;
   return (
     <span className="reward-badge" title={title} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, flex: "none", width: small ? 24 : 58 }}>
       <span style={{ position: "relative", width: small ? 24 : 52, height: small ? 24 : 44, display: "flex", alignItems: "center", justifyContent: "center", background: small ? undefined : `radial-gradient(circle, ${tint}55, transparent 68%)` }}>
+        {/* (What sticks up out of it, behind it: the Gear Barrel's weapons.) */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={art} alt="" draggable={false} className={ready ? "reward-ready" : undefined} style={{ maxWidth: size + 6, maxHeight: size, imageRendering: "pixelated", filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.45))" }} />
+        {back && <img src={back} alt="" draggable={false} className={ready ? "reward-ready" : undefined} style={{ position: "absolute", left: "50%", top: small ? -2 : -6, width: small ? 18 : 34, marginLeft: small ? -9 : -17, imageRendering: "pixelated" }} />}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={art} alt="" draggable={false} className={ready ? "reward-ready" : undefined} style={{ position: "relative", marginTop: back ? (small ? 8 : 14) : 0, maxWidth: size + 6, maxHeight: back ? size * 0.7 : size, imageRendering: "pixelated", filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.45))" }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {inside && !small && <img src={inside} alt="" draggable={false} style={{ position: "absolute", right: 0, bottom: -2, width: 22, height: 22, imageRendering: "pixelated", filter: "drop-shadow(0 1px 0 rgba(0,0,0,0.6))" }} />}
       </span>
