@@ -2,7 +2,7 @@
  "encampment": [
   {
    "step": "entrance",
-   "screen": "← Den🌀 The Labyrinth500🔥 Dungeon Crawling📜 Speed ScrollBOSS · LV 5DUNGEON 1 OF 5ithe EncampmentFREE7 roomsFoes Lv 1–5Team of 3Camp🔒Cyclops🔒Hydra🐂Minotaur🔒Abyss🐾 Party 0/3🎒 Bindle 0/3Free pick-Team 10/5Team 20/5Team 30/5Your party (0/3)Tap up to 3More creatures make it easier — scan or summon more.Lv 4 Cave GoblinUnderkinLv 4 Dust SpriteGeoLv 4 Moss WolfBeast🔥 Enter the Encampment (free · 10 left)?",
+   "screen": "← Den🌀 The Labyrinth500🔥 Dungeon Crawling📜 Speed ScrollBOSS · LV 5DUNGEON 1 OF 5ithe EncampmentFREE7 roomsFoes Lv 1–5Team of 3Camp🔒Cyclops🔒Hydra🔒Minotaur🔒Abyss🐾 Party 0/3🎒 Bindle 0/3Free pick-Team 10/5Team 20/5Team 30/5Your party (0/3)Tap up to 3More creatures make it easier — scan or summon more.Lv 4 Cave GoblinUnderkinLv 4 Dust SpriteGeoLv 4 Moss WolfBeast🔥 Enter the Encampment (free · 10 left)?",
    "save": {
     "gold": 500,
     "creatures": [
@@ -19,7 +19,7 @@
   },
   {
    "step": "party picked",
-   "screen": "← Den🌀 The Labyrinth500🔥 Dungeon Crawling📜 Speed ScrollBOSS · LV 5DUNGEON 1 OF 5ithe EncampmentFREE7 roomsFoes Lv 1–5Team of 3Camp🔒Cyclops🔒Hydra🐂Minotaur🔒Abyss🐾 Party 1/3🎒 Bindle 0/3Free pick-Team 10/5Team 20/5Team 30/5Your party (1/3)Tap up to 3More creatures make it easier — scan or summon more.Lv 4 Cave GoblinUnderkin1Lv 4 Dust SpriteGeoLv 4 Moss WolfBeast⛺ Enter the Encampment (free · 10 left)?",
+   "screen": "← Den🌀 The Labyrinth500🔥 Dungeon Crawling📜 Speed ScrollBOSS · LV 5DUNGEON 1 OF 5ithe EncampmentFREE7 roomsFoes Lv 1–5Team of 3Camp🔒Cyclops🔒Hydra🔒Minotaur🔒Abyss🐾 Party 1/3🎒 Bindle 0/3Free pick-Team 10/5Team 20/5Team 30/5Your party (1/3)Tap up to 3More creatures make it easier — scan or summon more.Lv 4 Cave GoblinUnderkin1Lv 4 Dust SpriteGeoLv 4 Moss WolfBeast⛺ Enter the Encampment (free · 10 left)?",
    "save": {
     "gold": 500,
     "creatures": [
@@ -353,7 +353,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "8873fe51cb355d376e88f6c3a7f3ad7c90e832b4"
+    "hash": "fdcc1f91eb60df809f71133ef22fe6e3a8e8b384"
    }
   },
   {
@@ -394,7 +394,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "8fd5810d2abc532348eb589dbd2fac8b0bf137f5"
+    "hash": "cd15b24311ee0c1f190bb9bc31d35a48b5f80f4a"
    }
   },
   {
@@ -436,7 +436,7 @@
       "18 gold"
      ]
     },
-    "hash": "53c5eaa2827864c4a0a7c5357b212907ec60d3fb"
+    "hash": "ece2dbc68b6d9b12e97e6fcfb14001ce9bfdd85b"
    }
   },
   {
@@ -478,7 +478,7 @@
       "18 gold"
      ]
     },
-    "hash": "53c5eaa2827864c4a0a7c5357b212907ec60d3fb"
+    "hash": "ece2dbc68b6d9b12e97e6fcfb14001ce9bfdd85b"
    }
   },
   {
@@ -520,7 +520,7 @@
       "18 gold"
      ]
     },
-    "hash": "686a3087507e02686000cd7db03340569961b3e1"
+    "hash": "694bb1c5b7075811eab1140f037fca422cda4ce5"
    }
   },
   {
@@ -562,7 +562,7 @@
       "18 gold"
      ]
     },
-    "hash": "eddbdd78ea8dad5a28603432f85573510e59bf7f"
+    "hash": "eadd9e658427aac5582874cd1cb73ce9c5c6cf61"
    }
   },
   {
@@ -604,7 +604,7 @@
       "18 gold"
      ]
     },
-    "hash": "a9c626650f74258ec8c4029d17b055c445c34448"
+    "hash": "99d67992b7f147a509458d29cf73e34093540272"
    }
   },
   {
@@ -646,7 +646,7 @@
       "18 gold"
      ]
     },
-    "hash": "b8d7c7c35b73c0445bfed44937e2e923f71f4d98"
+    "hash": "79a3c21bd36c31d3575edce76e8a41c946c5635e"
    }
   },
   {
@@ -689,7 +689,7 @@
       "11 gold"
      ]
     },
-    "hash": "a8b06f290366ae7b30c95ab5b0d48629d5130656"
+    "hash": "0113f53632b45609308400e06775a835e7026f3b"
    }
   },
   {
@@ -732,7 +732,7 @@
       "11 gold"
      ]
     },
-    "hash": "f2ab642f45ee023c3f91ad74b4cc64f4648a36d3"
+    "hash": "802685cf62a8aa9b0425436f0891c0a91a349d7f"
    }
   },
   {
@@ -775,7 +775,7 @@
       "11 gold"
      ]
     },
-    "hash": "c0abd1dec95a6e43b00bd5145927c5e048dcc2ec"
+    "hash": "b51c3fb97488a8945fc38006984d754e404571a4"
    }
   },
   {
@@ -818,7 +818,7 @@
       "11 gold"
      ]
     },
-    "hash": "cf753dc763db7fa011856f12effbb9338397c0ad"
+    "hash": "6be8779d9985a0015cf32aeed6bb9919ed544b4f"
    }
   },
   {
@@ -861,7 +861,7 @@
       "11 gold"
      ]
     },
-    "hash": "1d597e1f3bb1fd230cf09b195bcc352f65be0f0d"
+    "hash": "ee9eceabc6a6aafa5c89f371df9bf9ed34e511a8"
    }
   },
   {
@@ -905,7 +905,7 @@
       "12 gold"
      ]
     },
-    "hash": "097d5f543ae45eece469522d5ed212af2bf460bc"
+    "hash": "bf3c8489bb1959ab732549fdca2313d44a484a39"
    }
   },
   {
@@ -949,7 +949,7 @@
       "12 gold"
      ]
     },
-    "hash": "a203d0d3a9e707f8f2c90c04ac86dfb0f14a2a3d"
+    "hash": "a9999b3f4ea1763cc35773e2a8ad1ca9d98453b6"
    }
   },
   {
@@ -993,7 +993,7 @@
       "12 gold"
      ]
     },
-    "hash": "dad281c0476dcdac88783afd6f9b9c10e00122c2"
+    "hash": "53e4130728a5d870e6485e270d3b54bc27f223ca"
    }
   },
   {
@@ -1037,7 +1037,7 @@
       "12 gold"
      ]
     },
-    "hash": "2eb2f1ab1669bf6db5430ded15925490c62597a3"
+    "hash": "555c519ffb5e00bc8d3a0409e868690a854b6581"
    }
   },
   {
@@ -1081,7 +1081,7 @@
       "12 gold"
      ]
     },
-    "hash": "80a60f3d10c539c0587164dd7d5f2f2b548d1411"
+    "hash": "bc16eb65b65abe474fe694e1b004c7582a3e3d9b"
    }
   },
   {
@@ -1126,7 +1126,7 @@
       "14 gold"
      ]
     },
-    "hash": "0a8d832dd80d245b018f84fd655d149b12e82549"
+    "hash": "eccc110b805c9c2f563db6a6477f42207952e547"
    }
   },
   {
@@ -1171,7 +1171,7 @@
       "14 gold"
      ]
     },
-    "hash": "3c7b76d0445aeebdd3d7071211e29958fd0803dc"
+    "hash": "c156762c4f3ac5d0caf875854835a020729f7b5b"
    }
   },
   {
@@ -1216,7 +1216,7 @@
       "14 gold"
      ]
     },
-    "hash": "7606b5e5f7b81b68589cb7a1a2e10bbc0c602a09"
+    "hash": "f01e725a5a41f47f75941b973e0ca1ad120f03e5"
    }
   },
   {
@@ -1261,7 +1261,7 @@
       "14 gold"
      ]
     },
-    "hash": "cae521c9f66e65dc88e7df5dfe7485837a87d6e0"
+    "hash": "72418f475431a98f397a77fbfae5911cde69e7e3"
    }
   },
   {
@@ -1306,7 +1306,7 @@
       "14 gold"
      ]
     },
-    "hash": "52d5e4028a6c3c8f8d101b62e9ae98bc28832d95"
+    "hash": "97cbd91b37aee49b1e6dc6be95922132da27dc14"
    }
   },
   {
@@ -1352,7 +1352,7 @@
       "19 gold"
      ]
     },
-    "hash": "e34c6ffc37a9d0b4bff2797776bff5e80cd250e2"
+    "hash": "4ba71cd2c15fee6f80ad12c176d80dcf397d772f"
    }
   },
   {
@@ -1398,7 +1398,7 @@
       "19 gold"
      ]
     },
-    "hash": "3507c7cb1176ea750e7c2e7f9bd998acb7ec0e15"
+    "hash": "a43d2a2629dc0891b587be0e987e42a2c86b355f"
    }
   },
   {
@@ -1444,7 +1444,7 @@
       "19 gold"
      ]
     },
-    "hash": "590d70082444c055ae9a2067027c43f26bc5440b"
+    "hash": "1ba41f42f8a641aa00ea9a94fe3a7137c4aee07d"
    }
   },
   {
@@ -1490,7 +1490,7 @@
       "19 gold"
      ]
     },
-    "hash": "77db7ad53d76977da1658b9960c54a113cd97057"
+    "hash": "d108a5497e91cf397742d9c5b1c763a9b4c8fe9c"
    }
   },
   {
@@ -1536,7 +1536,7 @@
       "19 gold"
      ]
     },
-    "hash": "77db7ad53d76977da1658b9960c54a113cd97057"
+    "hash": "d108a5497e91cf397742d9c5b1c763a9b4c8fe9c"
    }
   },
   {
@@ -1582,7 +1582,7 @@
       "19 gold"
      ]
     },
-    "hash": "77db7ad53d76977da1658b9960c54a113cd97057"
+    "hash": "d108a5497e91cf397742d9c5b1c763a9b4c8fe9c"
    }
   },
   {
@@ -1631,7 +1631,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "9e32e6ca30e347986fabb17b0784df76a8bb9d0e"
+    "hash": "0cf58522d99a9ed8a92f8ba2fcf43c8c170a13cb"
    }
   },
   {
@@ -1652,7 +1652,7 @@
     },
     "bag": [],
     "run": null,
-    "hash": "f92993c3589378a13993496572c7741bdb5b6d8a"
+    "hash": "9d241227a2d034cbcc445cecdad21f9b13d073a0"
    }
   }
  ],
