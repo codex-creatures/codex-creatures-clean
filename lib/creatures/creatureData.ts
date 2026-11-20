@@ -326,13 +326,17 @@ export const BOSS_MOVES: Skill[] = [
     desc: "A poison cloud for 3 rounds: your creature on the field, and any that come in while it hangs there, are poisoned (2.5% of max HP a round, for 20 rounds). It doesn't poison a creature that's already poisoned." },
   // The Minotaur (lib/combat/bossAi.ts MINOTAUR): a quick and a heavy blow, the
   // charge (it lowers its horns one round, and the next it fells whoever stands in
-  // front of it) and the sweep (a hit that knocks your creature aside for another).
+  // front of it), the kick (a hit that knocks your creature aside for another) and
+  // Water Body (it washes off venom, poison, bleed and burns). The user, 2026-11-21:
+  // the charge and Water Body every 7 rounds at most, the kick every other round.
   { name: "Horn Jab",      damage: 12, energyCost: 25, type: "melee",  dmgType: "pierce" },
   { name: "Labrys Cleave", damage: 22, energyCost: 45, type: "melee",  dmgType: "force"  },
-  { name: "Horn Charge",   damage: 30, energyCost: 30, type: "melee",  dmgType: "force", effect: { kind: "charge", kill: true },
+  { name: "Horn Charge",   damage: 30, energyCost: 30, type: "melee",  dmgType: "force", effect: { kind: "charge", kill: true }, cooldown: 7,
     desc: "It lowers its horns for a round. Next round it charges: whoever is in front of it then falls, whatever its health. Choose who stands there." },
-  { name: "Sweeping Horns", damage: 14, energyCost: 35, type: "melee", dmgType: "force", effect: { kind: "sweep" },
-    desc: "A hit, then your creature is knocked aside: a random teammate takes its place." },
+  { name: "Kick",          damage: 14, energyCost: 35, type: "melee",  dmgType: "force", effect: { kind: "sweep" }, cooldown: 2,
+    desc: "A kick, then your creature is knocked aside: a random teammate takes its place." },
+  { name: "Water Body",    damage: 0,  energyCost: 20, type: "magic",  dmgType: "arcane", self: true, effect: { kind: "cleanse" }, cooldown: 7,
+    desc: "Water runs over it: it's washed clean of venom, poison, bleed and burns." },
 ];
 
 export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
@@ -470,7 +474,7 @@ export const BOSS_PARTS: CreatureTemplate[] = [
     flavour: "The middle head. Its eyes glow, and its whispers hurt." },
   // The Minotaur (its own labyrinth's boss): one huge fighter against your five.
   { id: "minotaur", name: "Minotaur", rarity: "legendary", baseHp: 750, boss: true, cls: "melee", proficiency: NO_PROF,
-    skills: bossMoves("Horn Jab", "Labrys Cleave", "Horn Charge", "Sweeping Horns"),
+    skills: bossMoves("Horn Jab", "Labrys Cleave", "Horn Charge", "Kick", "Water Body"),
     flavour: "Bull-headed and walls-high, it knows every turn of its maze. When it lowers its horns, someone falls." },
   // The first quest's thief (lib/quest.ts): the guided first fight.
   { id: "baby_cyclops", name: "Baby Cyclops", rarity: "rare", baseHp: 76, boss: true, cls: "melee", proficiency: NO_PROF,

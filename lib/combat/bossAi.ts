@@ -31,12 +31,14 @@
 //
 // The Minotaur (dungeon 4, the first fought 5 against 5; the user, 2026-11-21):
 // one fighter against your five.
-// - Horn Charge, at random (CHARGE_CHANCE a round, not two in a row): it lowers
-//   its horns one round (shown), and the next it charges: whoever is in front of
-//   it then falls, whatever its health (battle.ts: a charge with kill). Swapping
-//   doesn't dodge it; it picks who takes it.
-// - Sweeping Horns (SWEEP_CHANCE): a hit, then your creature is knocked aside and
-//   a random teammate comes in (which may leave the wrong one in front of a charge).
+// The user, 2026-11-21 (after playing it): each round, the first of these it can do:
+// - Wound up: it charges: whoever is in front of it falls, whatever its health
+//   (battle.ts: a charge with kill). Swapping doesn't dodge it; it picks who takes it.
+// - Water Body, when venom, poison, bleed or a burn is on it (7-round cooldown).
+// - Horn Charge, from round 2, whenever it's off its 7-round cooldown: it lowers its
+//   horns one round (a warning on screen), and charges the next.
+// - Kick (2-round cooldown, so every other round): a hit, then your creature is knocked
+//   aside and a random teammate comes in (which may leave the wrong one in front of a charge).
 // - Otherwise a quick or a heavy blow.
 
 import type { BattleAction, BattleEvent, BattleSide, BattleState, Combatant, GroundEffect, SideKey } from "./battle";
@@ -69,9 +71,9 @@ export const HYDRA = {
   HEAVY_CHANCE: 0.5,   // a head's heavy move vs its quick one
 };
 export const MINOTAUR = {
-  CHARGE_CHANCE: 0.25, // each round (from round 2, and never right after a charge), the chance it lowers its horns
-  SWEEP_CHANCE: 0.25,  // …otherwise, the chance of Sweeping Horns (when you've someone to knock in)
-  HEAVY_CHANCE: 0.5,   // …otherwise its heavy blow vs its quick one
+  CHARGE_FROM: 2,      // the first round it may lower its horns
+  WASHES: ["venom", "poison", "bleed", "burn"], // what sends it to Water Body
+  HEAVY_CHANCE: 0.5,   // its heavy blow vs its quick one
 };
 const HEAD_MOVES: Record<string, [quick: string, heavy: string]> = {
   "Fang Head": ["Snap", "Rending Bite"],
@@ -98,7 +100,7 @@ export function bossSetup(side: BattleSide, kind: BossKind) {
 }
 
 const crippled = (f: Combatant) => f.statuses.some((s) => s.id === "cripple");
-const canUse = (f: Combatant, name: string) => f.skills.some((s) => s.name === name && s.energyCost <= f.energy);
+const canUse = (f: Combatant, name: string) => f.skills.some((s) => s.name === name && s.energyCost <= f.energy) && (f.cooldowns?.[name] ?? 0) <= 0;
 const attack = (name: string): BattleAction => ({ kind: "attack", skillName: name });
 
 // First of the named moves it can afford, or rest.
@@ -124,13 +126,16 @@ export function bossActions(state: BattleState, key: SideKey): { index: number; 
       case "Minotaur": {
         const woundUp = me.statuses.some((s) => s.id === "charged");
         const benched = foe.team.some((f, i) => i !== foe.active && f.hp > 0);
-        const r2 = Math.random();
+        const fouled = me.statuses.some((s) => MINOTAUR.WASHES.includes(s.id));
         if (woundUp) action = attack("Horn Charge");
-        else if (state.round >= 2 && state.round > (side.boss!.horns ?? -9) + 2 && r < MINOTAUR.CHARGE_CHANCE && canUse(me, "Horn Charge")) {
-          side.boss!.horns = state.round; // (a round of something else after each charge, before the next)
+        else if (fouled && canUse(me, "Water Body")) action = attack("Water Body");
+        else if (state.round >= MINOTAUR.CHARGE_FROM && canUse(me, "Horn Charge")) {
+          side.boss!.horns = state.round;
           action = attack("Horn Charge");
-        } else if (benched && r < MINOTAUR.CHARGE_CHANCE + MINOTAUR.SWEEP_CHANCE && canUse(me, "Sweeping Horns")) action = attack("Sweeping Horns");
-        else action = r2 < MINOTAUR.HEAVY_CHANCE ? firstAffordable(me, "Labrys Cleave", "Horn Jab") : firstAffordable(me, "Horn Jab");
+        } else if (benched && canUse(me, "Kick")) action = attack("Kick");
+        // (A fight saved before the kick: its old Sweeping Horns, at the old odds.)
+        else if (benched && r < 0.25 && canUse(me, "Sweeping Horns")) action = attack("Sweeping Horns");
+        else action = Math.random() < MINOTAUR.HEAVY_CHANCE ? firstAffordable(me, "Labrys Cleave", "Horn Jab") : firstAffordable(me, "Horn Jab");
         break;
       }
       case "Cyclops":

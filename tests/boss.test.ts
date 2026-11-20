@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, sendInReplacement, currentAgility, fieldOf, type BattleState } from "../lib/combat/battle";
 import { effectiveAgil, calcDamage, setCombatRules, LIVE_RULES } from "../lib/combat/engine";
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
-import { CYCLOPS, HYDRA, MINOTAUR } from "../lib/combat/bossAi";
+import { CYCLOPS, HYDRA } from "../lib/combat/bossAi";
 import { bossTeam, cyclopsTeam } from "../lib/creatures/bosses";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, MOVE_BY_NAME } from "../lib/creatures/creatureData";
@@ -292,7 +292,7 @@ describe("the Minotaur", () => {
     expect(front.hp).toBe(0);
   });
 
-  it("never lowers its horns in round 1, nor straight after a charge", () => {
+  it("never lowers its horns in round 1, then again only after its 7-round cooldown", () => {
     const s = minotaur();
     const dice = vi.spyOn(Math, "random").mockReturnValue(0.01);
     const winds: number[] = [];
@@ -304,16 +304,41 @@ describe("the Minotaur", () => {
     }
     dice.mockRestore();
     expect(winds[0]).toBeGreaterThanOrEqual(2);
-    for (let i = 1; i < winds.length; i++) expect(winds[i] - winds[i - 1]).toBeGreaterThanOrEqual(3);
+    for (let i = 1; i < winds.length; i++) expect(winds[i] - winds[i - 1]).toBeGreaterThanOrEqual(8); // (the charge, then 7 rounds)
   });
 
-  it("Sweeping Horns knocks your creature aside for a random teammate", () => {
+  it("washes off venom with Water Body, then not again for 7 rounds (the user, 2026-11-21)", () => {
     const s = minotaur();
-    // r = 0.3: past the charge's chance, inside the sweep's; then a teammate picked.
-    const dice = vi.spyOn(Math, "random").mockReturnValue(MINOTAUR.CHARGE_CHANCE + 0.05);
+    const m = s.sides.B.team[0];
+    m.statuses.push({ id: "venom", rounds: 5, dmg: 10 });
+    resolveRound(s, { A: jab, B: pass });
+    expect(s.log.some((e) => e.type === "effect" && e.side === "B" && e.text.includes("Water Body"))).toBe(true);
+    expect(m.statuses.some((st) => st.id === "venom")).toBe(false);
+    m.statuses.push({ id: "venom", rounds: 5, dmg: 10 });
+    const at = s.log.length;
+    resolveRound(s, { A: jab, B: pass });
+    expect(s.log.slice(at).some((e) => e.type === "effect" && e.side === "B" && e.text.includes("Water Body"))).toBe(false);
+  });
+
+  it("kicks every other round when it isn't charging", () => {
+    const s = minotaur();
+    const kicks: number[] = [];
+    for (let r = 1; r <= 5; r++) {
+      const at = s.log.length;
+      resolveRound(s, { A: jab, B: pass });
+      if (s.log.slice(at).some((e) => e.type === "attack" && e.side === "B" && e.skill.name === "Kick")) kicks.push(r);
+      for (const k of [...s.needsReplacement]) sendInReplacement(s, k, s.sides[k].team.findIndex((f) => f.hp > 0));
+    }
+    // Round 1 a kick; 2 and 3 the horns and the charge; then a kick again.
+    expect(kicks).toEqual([1, 4]);
+  });
+
+  it("its Kick knocks your creature aside for a random teammate", () => {
+    const s = minotaur();
+    const dice = vi.spyOn(Math, "random").mockReturnValue(0.3); // (round 1: no charge yet, so the kick; then a teammate picked)
     resolveRound(s, { A: jab, B: pass });
     dice.mockRestore();
-    expect(s.log.some((e) => e.type === "attack" && e.side === "B" && e.skill.name === "Sweeping Horns")).toBe(true);
+    expect(s.log.some((e) => e.type === "attack" && e.side === "B" && e.skill.name === "Kick")).toBe(true);
     expect(s.sides.A.active).not.toBe(0);
     expect(s.log.some((e) => e.type === "swap" && e.side === "A")).toBe(true);
   });

@@ -130,7 +130,8 @@ export default function BossStage({ side, fx, you, infos, target, onTarget, clou
       {you}
 
       {cloud > 0 && <div className="boss-cloud-tag pixel-font">☠️ Poison cloud · {cloud}</div>}
-      {horns && <div className="boss-cloud-tag pixel-font">🐂 Charging next round</div>}
+      {/* (The user, 2026-11-21: say plainly what the lowered horns mean. Below the move's own note at the top.) */}
+      {horns && <div className="boss-clue pixel-font" style={{ top: 46, fontSize: 13 }}>🐂 The Minotaur charges up a huge swing! Next round it fells whoever stands in front of it. Choose who that is.</div>}
       {clue && <div key={`clue-${fx!.id}`} className="boss-clue pixel-font">{clue}</div>}
     </div>
   );
