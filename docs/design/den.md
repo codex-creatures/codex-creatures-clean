@@ -216,7 +216,7 @@ fields optional with defaults.
    the Den the shelf swaps to the upgraded art once it's the crooked bookcase or better.
 9. **Visitors** (after the repair). ⚠️ The per-run roll below was replaced on 2026-11-16 by visitors on the clock (decision 47, the 📌 block at the end of this item, now ✅); it's kept as the record of what came before. On returning home from each run, roll a merchant (12%), a
    librarian (8%), the creature collector (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
-   guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still one of them, at 12:8:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and over their head (their name: tap them to trade), and they stroll round the tavern's room with a walk cycle, as Klutz does round the Den (`VISITOR_PATH` in lib/den/scene.ts; walks: PixMiniMax, 2026-11-03). They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
+   guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still one of them, at 12:8:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in (and you haven't bought all they brought: `visitorNews`, the user 2026-11-21), a ❗ shows at the Den's doorway and over their head (their name: tap them to trade), and they stroll round the tavern's room with a walk cycle, as Klutz does round the Den (`VISITOR_PATH` in lib/den/scene.ts; walks: PixMiniMax, 2026-11-03). They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
    (The creature trader is left out for now.)
    ✅ **The Sparring Pit and the Training Pit** (the user, 2026-11-03; lib/trainingPit.ts, `/training`).
    The **Sparring Pit**, a bed of tan sand in a ring of grey stones, with a straw dummy (`den/sparring-pit-3.png`), is yours as
@@ -278,7 +278,8 @@ fields optional with defaults.
        level 6 (1, 2, 4, 7, 12) and an essence crystal at levels 9 and 10: the totals above, each level
        dearer than the last at the merchant's prices. An upgrade takes two taps (the second pays).
    - **Odds start at 5% each** (merchant, librarian, Enchantress; the collector's away) and the tavern upgrades
-     them: tapping the tavern shows sending for a visitor and the upgrades, a row per visitor,
+     them: tapping the tavern shows a card per visitor (the user, 2026-11-21: their picture, tapped to trade while
+     they're in; upgrade level and chance; the next level's materials; Send and Upgrade, each a second tap to pay),
      +1% a level, 10 levels (15% at most), paid in materials, dearer each level. 🧪 Testing cost
      (the user's pick of the slowest pace, 2026-11-16): about 120 planks, 45 nails, 85 metal bars,
      26 stone and 2 essence crystals per visitor, planks and nails first, metal bars, then stone and
@@ -292,7 +293,7 @@ fields optional with defaults.
 On the quest board's Daily Quests tab, above the Hydra quest. **Two a day, a primary and a
 secondary, the same for everyone** (picked from the date), new at **local midnight**. Only what you
 do that day counts; finish one, then claim its reward once. A ❗ on the board in the Den while one's
-ready to claim. Plays offline. ✅ (the user, 2026-11-06) Coming into the Den, a small popup lists
+ready to claim; tapping the board then opens on today's quests (unless the campaign has something too: the user, 2026-11-21). Plays offline. ✅ (the user, 2026-11-06) Coming into the Den, a small popup lists
 today's quests not yet claimed, with their rewards and progress (`openQuests`,
 components/DailyPopup.tsx): once a day per visit to the site, so again at midnight's new quests;
 not during Klutz's tour or before your first creature. A tap anywhere closes it.

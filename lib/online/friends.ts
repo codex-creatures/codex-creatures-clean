@@ -58,3 +58,10 @@ export async function removeFriend(client: SupabaseClient, me: string, friendId:
     return false;
   }
 }
+
+// Friends who've just come online (the user, 2026-11-21: a line at the top says so). Only once you're in
+// the lobby yourself (your own id in both), so whoever was already on when you joined doesn't count.
+export function cameOnline(prev: Set<string> | null, next: Set<string>, me: string | null, friends: Friend[]): Friend[] {
+  if (!me || !prev?.has(me) || !next.has(me)) return [];
+  return friends.filter((f) => f.id !== me && next.has(f.id) && !prev.has(f.id));
+}

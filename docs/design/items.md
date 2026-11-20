@@ -178,9 +178,14 @@ to do there (Bounty in a duel, with no gold) just does nothing.
 
   ⚠️ The plan (roadmap, 2026-11-20) also had the bookcase's schematics from scans: left out for now, as it
   changes the global registry's rules (`npm run registry:rules` and Supabase). Ask before adding it.
+- ✅ **Codex prices** (the user, 2026-11-21, `CODEX_PRICES`): a librarian sells a codex by its rarity:
+  Common 100, Uncommon 250, Rare 500, Epic 750 (a race codex counts as Epic), Legendary 2,500 gold. Selling
+  one pays half (50 / 125 / 250 / 375 / 1,250).
+- ✅ **Selling consumables** (the user, 2026-11-21): potions, XP scrolls and tools sell from the Inventory
+  too (Sell mode, or the item's window), for what a merchant pays (`isSellableConsumable`, `findPrice`).
 - ✅ **Selling codexes** (the user, 2026-11-12; was throwing out, for no gold, since 2026-10-25): tap a
   codex on the bookcase, then Sell and Yes, for what a merchant pays (`codexSellPrice`: half a
-  librarian's price, `MERCHANT_BUYBACK`; so 100 gold for most, 250 for a race or Epic codex). It
+  librarian's price, `MERCHANT_BUYBACK`). It
   counts towards the daily selling quest. Merchants in the Labyrinth and at the tavern pay the same.
 - 📌 More schematics and furniture later, e.g. a fireplace in the Den for faster healing.
 - ❓ A 10-item battle bag and bags for Klutz have been mentioned, but neither is designed.

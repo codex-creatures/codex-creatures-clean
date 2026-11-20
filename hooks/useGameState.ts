@@ -10,7 +10,7 @@ import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, isRetiredMove, KLUTZ, CREATURE_TEMPLATES, renamedMove, replaceRetired, REUSED_NAMES, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
-import { findPrice } from "@/lib/scanReveal";
+import { findPrice, isSellableConsumable } from "@/lib/scanReveal";
 import { clearDungeon, loadDungeon, saveDungeon, altarMended, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, POTIONS, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, retiredCodexMove } from "@/lib/drops";
 import type { Rarity } from "@/lib/items/budgets";
@@ -837,7 +837,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   // ── Sell helpers ──────────────────────────────────────
   const sellableInView = useMemo(
-    () => filteredInventory.filter((d) => isSellableItem(d) && !lockedIds.has(d.id)),
+    () => filteredInventory.filter((d) => (isSellableItem(d) || isSellableConsumable(d)) && !lockedIds.has(d.id)),
     [filteredInventory, lockedIds]
   );
 
@@ -845,6 +845,7 @@ export function useGameState(initialTab: TabKey = "all") {
     let total = 0;
     for (const id of selectedForSale) {
       const d = inventory.find((x) => x.id === id);
+      if (d && isSellableConsumable(d)) { total += findPrice(d, () => 0); continue; } // (potions, scrolls, tools: what a merchant pays)
       if (!d || !isSellableItem(d)) continue;
       total += computeSellGold({
         drop: d as any,
@@ -1273,7 +1274,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   function sellOne(id: string) {
     const d = inventory.find((x) => x.id === id);
-    if (!d || !isSellableItem(d) || lockedIds.has(id)) return;
+    if (!d || !(isSellableItem(d) || isSellableConsumable(d)) || lockedIds.has(id)) return;
     setGold((g) => g + crateSellValue(d));
     countDaily("sell", crateSellValue(d));
     setInventory((prev) => prev.filter((x) => x.id !== id));

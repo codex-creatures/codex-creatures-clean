@@ -12,6 +12,7 @@ import { computeSellGold } from "@/lib/items/economy/sell";
 import { findCreatureTemplate, KLUTZ } from "@/lib/creatures/creatureData";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import ItemDetailModal from "./ItemDetailModal";
+import { findPrice, isSellableConsumable } from "@/lib/scanReveal";
 import ScrollTargetPicker, { type ScrollReader } from "./ScrollTargetPicker";
 import CreatureDetailModal from "./CreatureDetailModal";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
@@ -144,9 +145,12 @@ export default function InventoryList({
     setOpenCreatureId(creatureList[(creatureIndex + by + creatureList.length) % creatureList.length].id);
   };
 
+  // Gear, and potions, scrolls and tools, unless worn, packed or favourited.
+  const canSell = (d: Drop) => (isSellableItem(d) || isSellableConsumable(d)) && !lockedIds.has(d.id);
+
   function handleRowClick(d: Drop) {
     if (sellMode) {
-      if (isSellableItem(d) && !lockedIds.has(d.id)) onToggleSelectItem(d.id);
+      if (canSell(d)) onToggleSelectItem(d.id);
       return;
     }
     if (isCardDrop(d)) {
@@ -260,7 +264,7 @@ export default function InventoryList({
             return owner ? `on ${creatureNameById.get(owner) ?? "creature"}` : undefined;
           }}
           sellMode={sellMode}
-          sellable={(d) => isSellableItem(d) && !lockedIds.has(d.id)}
+          sellable={canSell}
           selected={selectedForSale}
           onOpen={handleRowClick}
         /></div>
@@ -276,12 +280,12 @@ export default function InventoryList({
           const isCreature = d.dropType === "creature";
           const isCard     = d.dropType === "card";
           const isFav      = favoriteIds.has(d.id);
-          const sellable   = isSellableItem(d) && !lockedIds.has(d.id);
+          const sellable   = canSell(d);
           const ownerId    = equippedOn.get(d.id);
           const loadout    = isCreature ? equipment[d.id] : undefined;
           const isSelected = selectedForSale.has(d.id);
           const sellVal    = (sellMode && sellable)
-            ? computeSellGold({ drop: d as any, getStatCapForDrop: (drop: any, statKey: string) => getStatCapForDrop(drop, statKey) ?? 0 })
+            ? isSellableConsumable(d) ? findPrice(d, () => 0) : computeSellGold({ drop: d as any, getStatCapForDrop: (drop: any, statKey: string) => getStatCapForDrop(drop, statKey) ?? 0 })
             : 0;
 
           return (

@@ -668,7 +668,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   const perfect = perfectionistBonus(me, { move: sk.name, hits: run });
   if (perfect > 1) tags.push(`Perfectionist: +${Math.round((perfect - 1) * 100)}% (×${run} in a row)`);
   if (fx?.kind === "precise") tags.push(`${Math.round(fx.hitChance * 100)}% to hit · always precise`);
-  if (fx?.kind === "cripple") tags.push(`${Math.round(fx.chance * 100)}% to cripple: slower, ${Math.round(CRIPPLE.stumble * 100)}% to lose each attack`);
+  if (fx?.kind === "cripple") tags.push(`${Math.round(fx.chance * 100)}% to cripple: slower, ${Math.round(CRIPPLE.stumble * 100)}% to lose an attack (less each time)`);
   if (fx?.kind === "dash") {
     tags.push(myAgil * (1 + fx.agilityBonus) > theirAgil ? "First Strike!" : "too slow to strike first");
   }

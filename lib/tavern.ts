@@ -116,6 +116,15 @@ export const guestOf = (t: TavernQuest, who: Visitor, now = Date.now()): Guest |
   return isIn(g, now) ? g : undefined;
 };
 export const tavernVisitors = (t: TavernQuest, now = Date.now()): Visitor[] => VISITORS.filter((v) => guestOf(t, v, now));
+// Whether a visitor still has news for you (their ❗ in the Den): not once you've
+// bought all they brought (the user, 2026-11-21). One with no stock (the
+// Enchantress) always has.
+export function visitorNews(t: TavernQuest, who: Visitor, now = Date.now()): boolean {
+  const g = guestOf(t, who, now);
+  if (!g) return false;
+  const stock = [...(g.wares ?? []).map((w) => w.key), ...(g.offers ?? [])];
+  return stock.length === 0 || stock.some((k) => !g.bought?.includes(k));
+}
 
 // A save from before the clock: its one visitor becomes a guest staying the
 // runs they had left. (The old fields go.)

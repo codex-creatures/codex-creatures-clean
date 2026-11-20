@@ -84,7 +84,7 @@ function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: De
 // annex: what stands in the tavern's room, placed with RoomSpot (shown once
 // the rubble's open). A tap on something there marked data-href opens that
 // page (the tavern, its visitor, the pit, the portal); the bare floor does nothing.
-export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, boardNews = false, upgraded = false, crateNews = false, cageNews = false, annex }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; boardNews?: boolean; upgraded?: boolean; crateNews?: boolean; cageNews?: boolean; annex?: ReactNode }) {
+export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, boardNews = false, upgraded = false, crateNews = false, cageNews = false, annex }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; boardNews?: boolean | "daily"; upgraded?: boolean; crateNews?: boolean; cageNews?: boolean; annex?: ReactNode }) {
   const opened = rubble === "open";
   // The whole picture (layout units): the Den, and the tavern's room up and to its right once it's open.
   const dx = opened ? ANNEX_DX : 0, dy = opened ? ANNEX_DY : 0;
@@ -358,7 +358,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     if (!id) return;
     const spot = spotOf(id);
     if (id === OBJ.tavern && opened) showAnnex();
-    else if (spot.href) router.push(spot.href);
+    else if (spot.href) router.push(id === OBJ.quests && boardNews === "daily" ? "/board?tab=daily" : spot.href);
     else setNotice(spot);
   }
 

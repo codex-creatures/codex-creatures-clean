@@ -7,6 +7,10 @@ import { SCHEMATICS, BOOKCASE_CROOKED_COST, shelfFromOld, bookcaseSize, TOOLS, t
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
 import { createDen, mergeRects, strollAt, OBJ, W, H, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "../lib/den/scene";
+import { visitorNews } from "../lib/tavern";
+import { codexPrice, CODEX_PRICES, codexSellPrice } from "../lib/dungeon/run";
+import { codexRarityOf } from "../lib/drops";
+import { MOVE_BY_NAME } from "../lib/creatures/creatureData";
 
 describe("the tavern questline: Klutz's quest", () => {
   const due = (levels: number[], klutz: number, done = true, t = {}) => tavernQuestDue(t, done, levels, klutz);
@@ -442,5 +446,34 @@ describe("the tavern's visitor strolling round its room", () => {
     expect(bad).toEqual([]);
     expect(walked).toBe(true);
     expect(turned.size).toBe(2); // they face both ways
+  });
+});
+
+describe("a visitor's ❗ (the user, 2026-11-21)", () => {
+  it("goes once you've bought everything they brought; the Enchantress (no stock) keeps hers", () => {
+    const at = 5 * VISITOR_WINDOW + 1000;
+    let t = callVisitor({}, "librarian", Math.random, false, at);
+    expect(visitorNews(t, "librarian", at)).toBe(true);
+    const offers = guestOf(t, "librarian", at)!.offers!;
+    expect(offers.length).toBeGreaterThan(0);
+    for (const m of offers.slice(0, -1)) t = buyFromVisitor(t, "librarian", m, at);
+    expect(visitorNews(t, "librarian", at)).toBe(true);
+    t = buyFromVisitor(t, "librarian", offers[offers.length - 1], at);
+    expect(visitorNews(t, "librarian", at)).toBe(false);
+    let m = callVisitor({}, "merchant", Math.random, false, at);
+    for (const w of guestOf(m, "merchant", at)!.wares!) m = buyFromVisitor(m, "merchant", w.key, at);
+    expect(visitorNews(m, "merchant", at)).toBe(false);
+    expect(visitorNews(callVisitor({}, "enchantress", Math.random, false, at), "enchantress", at)).toBe(true);
+    expect(visitorNews({}, "merchant", at)).toBe(false);
+  });
+});
+
+describe("codex prices by rarity (the user, 2026-11-21)", () => {
+  it("Common 100, Uncommon 250, Rare 500, Epic 750, Legendary 2,500; selling pays half", () => {
+    expect(CODEX_PRICES).toEqual({ common: 100, uncommon: 250, rare: 500, epic: 750, legendary: 2500 });
+    for (const name of Object.keys(MOVE_BY_NAME)) {
+      expect(codexPrice(name)).toBe(CODEX_PRICES[codexRarityOf(name)]);
+      expect(codexSellPrice(name)).toBe(Math.floor(codexPrice(name) / 2));
+    }
   });
 });

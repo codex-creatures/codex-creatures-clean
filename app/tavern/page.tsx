@@ -20,6 +20,8 @@ import Help from "@/components/Help";
 import PixelSprite, { MaterialIcon } from "@/components/PixelSprite";
 import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
+import { COLLECTOR, ENCHANTRESS, LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
+import type { Sprite } from "@/lib/sprites/pixels";
 import { useState } from "react";
 import { MATERIALS } from "@/lib/items/materials";
 import { MAX_UPGRADE, REPAIR_COST, SUMMON_PRICE, UPGRADE_COSTS, VISITORS, canRepair, canUpgrade, guestOf, repairNeeds, tavernVisitors, upgradeCost, upgradeLevel, visitorChance, type Visitor } from "@/lib/tavern";
@@ -29,6 +31,10 @@ import { REROLL_GOLD } from "@/lib/enchantress";
 const MUTED = "rgba(255,255,255,0.5)";
 const VISITOR_NAME: Record<Visitor, string> = { merchant: "merchant", librarian: "librarian", collector: "creature collector", enchantress: "Enchantress" };
 const VISITOR_LABEL: Record<Visitor, string> = { merchant: "Merchant", librarian: "Librarian", collector: "Collector", enchantress: "Enchantress" };
+const VISITOR_SPRITE: Record<Visitor, Sprite> = { merchant: MERCHANT, librarian: LIBRARIAN, collector: COLLECTOR, enchantress: ENCHANTRESS };
+const PIC: React.CSSProperties = { width: 64, height: 80, display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden" };
+const LINE: React.CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+const BTN: React.CSSProperties = { minHeight: 40, height: 40, width: "100%", minWidth: 0, padding: "0 4px", whiteSpace: "nowrap", overflow: "hidden", fontSize: 13 };
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 // What every level of a visitor's upgrade comes to (for the "?").
 const UPGRADE_TOTAL = UPGRADE_COSTS.reduce<Record<string, number>>((n, c) => { for (const [k, v] of Object.entries(c)) n[k] = (n[k] ?? 0) + (v ?? 0); return n; }, {});
@@ -97,54 +103,46 @@ export default function TavernPage() {
 
         {/* Who's in: one line, cut to fit. */}
         {t.repaired && <p style={{ fontSize: 13, color: MUTED, margin: "10px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{visitors.length
-          ? <>In the room: {visitors.map((v) => VISITOR_NAME[v]).join(", ")}. Tap them there.</>
+          ? <>In the room: {visitors.map((v) => VISITOR_NAME[v]).join(", ")}. Tap them to trade.</>
           : <>Nobody&apos;s in. Travellers drop in now and then.</>}</p>}
 
-        {/* Sending for someone: a second tap pays (and sends one of the same kind who's in on their way).
-            Two a row, under their label, so they fit a phone. */}
-        {t.repaired && <div style={{ marginTop: 10, fontSize: 12, color: MUTED }}>Send for:</div>}
+        {/* A card per visitor (the user, 2026-11-21: pictures, not plain rows), each the same fixed frame:
+            their picture (tap it to trade while they're in), name, upgrade level and chance, the next
+            level's materials (have/need), and two buttons of a fixed size, Send for and Upgrade, each
+            paying on a second tap (only the words change, so nothing moves). */}
         {t.repaired && (
-          <div style={{ marginTop: 4, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 6 }}>
+          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
             {VISITORS.map((who) => {
-              const on = summoning === who;
+              const level = upgradeLevel(t, who), cost = upgradeCost(t, who), here = !!guestOf(t, who);
+              const sending = summoning === who, raising = upgrading === who;
+              const pic = <PixelSprite sprite={VISITOR_SPRITE[who]} scale={1} style={{ maxWidth: "100%", maxHeight: 60, width: "auto", height: "auto" }} />;
               return (
-                <button key={who} className="chip" disabled={game.gold < SUMMON_PRICE}
-                  onClick={() => { if (!on) { setSummoning(who); return; } setSummoning(null); game.summonTavernVisitor(who); }}
-                  style={{ minHeight: 44, minWidth: 0, background: on ? "#6e1f18" : undefined }}>
-                  {on ? <>Pay <Coin /> {SUMMON_PRICE}?</> : <>{guestOf(t, who) ? `A new ${who}` : VISITOR_LABEL[who]} <Coin /> {SUMMON_PRICE}</>}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Upgrades: a fixed row per visitor (name, level and chance; the next
-            level's materials, have/need; the button). A second tap pays. */}
-        {t.repaired && <div style={{ marginTop: 12, fontSize: 12, color: MUTED }}>Upgrades (each visitor&apos;s chance every half hour):</div>}
-        {t.repaired && (
-          <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 6 }}>
-            {VISITORS.map((who) => {
-              const level = upgradeLevel(t, who), cost = upgradeCost(t, who), on = upgrading === who;
-              return (
-                <div key={who} style={{ display: "flex", alignItems: "center", gap: 8, background: "#12131a", padding: "4px 8px", minHeight: 52 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {VISITOR_LABEL[who]} <span style={{ color: MUTED }}>Lv {level}/{MAX_UPGRADE} · {pct(visitorChance(t, who))}</span>
-                    </div>
-                    {/* (Each icon and its have/need kept on one line: they used to wrap, and the
-                        numbers fell out of sight below the row.) */}
-                    <div style={{ fontSize: 12, height: 22, display: "flex", alignItems: "center", gap: 8, overflow: "hidden", whiteSpace: "nowrap" }}>
+                <div key={who} style={{ display: "grid", gridTemplateColumns: "64px minmax(0, 1fr) 100px", alignItems: "center", gap: 8, background: "#12131a",
+                  border: `1px solid ${here ? "#3f9a5a" : "#2a2b36"}`, padding: 6, height: 96, boxSizing: "border-box" }}>
+                  {here ? <Link href={`/visitor?v=${who}`} aria-label={`Trade with the ${VISITOR_NAME[who]}`} style={PIC}>{pic}</Link> : <div style={{ ...PIC, opacity: 0.45, filter: "grayscale(1)" }}>{pic}</div>}
+                  <div style={{ minWidth: 0, display: "grid", gap: 3 }}>
+                    <div className="pixel-font" style={{ ...LINE, fontSize: 14, color: "#f1d9a0" }}>{VISITOR_LABEL[who]}</div>
+                    <div style={{ ...LINE, fontSize: 12 }}><span style={{ color: "#f1d9a0" }}>Lv {level}/{MAX_UPGRADE}</span><span style={{ color: MUTED }}> · {pct(visitorChance(t, who))} · </span><span style={{ color: here ? "#7CFC9A" : MUTED }}>{here ? "In now" : "Away"}</span></div>
+                    {/* (Each icon and its have/need kept on one line.) */}
+                    <div style={{ ...LINE, fontSize: 12, height: 22, display: "flex", alignItems: "center", gap: 6 }}>
                       {cost ? (Object.entries(cost) as [MaterialKey, number][]).map(([k, need]) => {
                         const have = countMaterial(game.materials, k);
                         return <span key={k} title={`${MATERIALS[k].name}: you have ${have}, it takes ${need}`} style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, color: have >= need ? "#5ee08a" : "#ff8a80" }}><MaterialIcon k={k} />{have}/{need}</span>;
                       }) : <span style={{ color: MUTED }}>Fully upgraded</span>}
                     </div>
                   </div>
-                  <button className="chip" disabled={!canUpgrade(t, who, game.materials)}
-                    onClick={() => { if (!on) { setUpgrading(who); return; } setUpgrading(null); game.upgradeTavernVisitor(who); }}
-                    style={{ minHeight: 44, flexShrink: 0, width: 92, background: on ? "#6e1f18" : undefined, opacity: cost && !canUpgrade(t, who, game.materials) ? 0.45 : 1 }}>
-                    {!cost ? "Max" : on ? "Upgrade?" : `+1% · Lv ${level + 1}`}
-                  </button>
+                  <div style={{ display: "grid", gap: 4 }}>
+                    <button className="chip" disabled={game.gold < SUMMON_PRICE} title={here ? `Send this ${VISITOR_NAME[who]} away for a new one` : `Send for the ${VISITOR_NAME[who]}`}
+                      onClick={() => { setUpgrading(null); if (!sending) { setSummoning(who); return; } setSummoning(null); game.summonTavernVisitor(who); }}
+                      style={{ ...BTN, background: sending ? "#6e1f18" : undefined }}>
+                      {sending ? <>Pay <Coin /> {SUMMON_PRICE}?</> : <>{here ? "New" : "Send"} <Coin /> {SUMMON_PRICE}</>}
+                    </button>
+                    <button className="chip" disabled={!canUpgrade(t, who, game.materials)}
+                      onClick={() => { setSummoning(null); if (!raising) { setUpgrading(who); return; } setUpgrading(null); game.upgradeTavernVisitor(who); }}
+                      style={{ ...BTN, background: raising ? "#6e1f18" : undefined, opacity: cost && !canUpgrade(t, who, game.materials) ? 0.45 : 1 }}>
+                      {!cost ? "Max" : raising ? "Upgrade?" : "⬆️ +1%"}
+                    </button>
+                  </div>
                 </div>
               );
             })}

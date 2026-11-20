@@ -134,6 +134,8 @@ account, kept entirely apart from Vouchee.
     board shows the list, with 🟢 for who's in the game now (Realtime presence, "lobby"), ✕ to
     remove, and ⚔️ Duel for those who are on. Duel shows the options (size, rarity, level,
     scale), with how many of your creatures fit (greyed if you can't fill it).
+    ✅ When a friend comes into the game, a green line across the top says so, wherever you are
+    (the user, 2026-11-21; components/FriendOnline.tsx, `cameOnline`): not for those already on as you join.
   - **Invites:** the challenge pops up wherever the friend is in the game
     (components/DuelInbox.tsx), with Accept / No. It lapses after 60 s (`INVITE_SECONDS`).
   - **The steps** (the user, 2026-11-01): bring your team (**20 s**, `PICK_SECONDS`; time out and

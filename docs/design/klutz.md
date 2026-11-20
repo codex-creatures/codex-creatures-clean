@@ -11,8 +11,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ **Expeditions (v2)** (the user, 2026-11-14, after the Klutz audit; built 2026-11-14, lib/klutz.ts). Sims in the
   audit (claude.ai doc "Klutz audit"): a keen player's month gives about 7 Epic creatures and a first Legendary for
   13% of players; a struggling player (no Cyclops kill) gets Rare creatures and Rare gear, no Epics.
-  - **Where:** a dungeon you've beaten the boss of (the Encampment from the start): `KLUTZ_DESTS`. Each costs half
-    your entry fee (`destCost`; the Encampment is free) and sets the best rarity (Encampment Rare, Cyclops Epic,
+  - **Where:** a dungeon you've beaten the boss of (the Encampment from the start): `KLUTZ_DESTS`. Each costs your
+    entry fee (`destCost`, the user 2026-11-21: was half; the Encampment is always free) and sets the best rarity (Encampment Rare, Cyclops Epic,
     Hydra and Abyss Legendary; the Abyss rolls a rarity up 30% of the time), how many levels tougher its creatures
     are (0 to +3) and how many strike first (10% to 40%: they use their style's first-strike move, so a glass cannon
     takes chip damage). 🧪 Those numbers are Claude's.

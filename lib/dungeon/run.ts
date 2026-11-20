@@ -23,7 +23,7 @@ import type { ItemKey } from "../items/ceilings";
 import type { ArmorKey, ArmorSlot } from "../items/armor";
 import { ITEM_META } from "../items/metadata";
 import { ARMOR_META, wornArmor } from "../items/armor";
-import { CREATURES_BY_RARITY, CREATURE_BY_ID, MOVE_BY_NAME, MOVE_SLOTS, RACE_MOVES, canLearnFromCodex, isRetiredMove, type CreatureProficiency, type CreatureTemplate, type Skill } from "../creatures/creatureData";
+import { CREATURES_BY_RARITY, CREATURE_BY_ID, MOVE_BY_NAME, MOVE_SLOTS, canLearnFromCodex, isRetiredMove, type CreatureProficiency, type CreatureTemplate, type Skill } from "../creatures/creatureData";
 import { raceOfMove } from "../combat/raceChart";
 import { RARITY_WEIGHTS } from "../items/budgets";
 import { coreMove } from "../creatures/raceKitsV2";
@@ -543,7 +543,6 @@ export const UPGRADE_CHANCE = 0.05;   // easy fight: one enemy item is a tier hi
 export const ENEMY_DROP_CHANCE = 0.2;  // any enemy: one of its items (at random) drops if you win
 export const CHEST_DROPS = 3;
 export const CHEST_CODEX_CHANCE = 0.1; // a chest holds a codex (instead of one of its drops)
-export const CODEX_PRICE = 500;       // wandering librarians sell codexes
 export const LIBRARIAN_OFFERS = 3;
 export const MERCHANT_SCROLL_CHANCE = 0.2; // a wandering merchant also has an XP scroll
 export const SCROLL_PRICE = 200;
@@ -641,9 +640,10 @@ export function rollBookcases(rng: Rng = Math.random): Room[] {
 }
 // (World version 14) The codex tucked in a bookcase against a wall (place.ts SHELF_CODEX of them): one, at CODEX_ODDS.
 export const shelfCodex = (rng: Rng = Math.random) => codexDrop(randomCodexOfRarity(weighted(CODEX_ODDS, rng), rng));
-export const LEARNABLE_CODEX_PRICE = 200; // a librarian's codex any creature can read, or a race-kit move's (Claude's draft, 2026-10-26; older race codexes: CODEX_PRICE)
-// (Impale, the Epic special move, costs what the older race codexes do.)
-export const codexPrice = (move: string) => (RACE_MOVES.some((m) => m.name === move) || MOVE_BY_NAME[move]?.codexRarity === "epic" || MOVE_BY_NAME[move]?.codexRarity === "legendary" ? CODEX_PRICE : LEARNABLE_CODEX_PRICE);
+// A librarian's codex, by its rarity (the user, 2026-11-21: up from 200, or 500 for a race, Epic or
+// Legendary one, as quests brought in a lot of gold). A race codex counts as Epic (codexRarityOf).
+export const CODEX_PRICES: Record<Rarity, number> = { common: 100, uncommon: 250, rare: 500, epic: 750, legendary: 2500 };
+export const codexPrice = (move: string) => CODEX_PRICES[codexRarityOf(move)];
 export const STOREHOUSE_GUARD = 0.35;
 export const STOREHOUSE_MATERIALS: [number, number] = [3, 5];
 export const STOREHOUSE_POTIONS: [number, number] = [1, 2];

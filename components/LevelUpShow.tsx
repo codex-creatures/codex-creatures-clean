@@ -7,7 +7,7 @@
 //    each with a green +N beside it.
 // Tap to skip ahead; Next / Continue goes on to the next creature.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 import { useEscape } from "@/hooks/useEscape";
 import { buzz } from "@/lib/haptics";
@@ -34,6 +34,8 @@ const ease = (t: number) => 1 - (1 - Math.min(1, Math.max(0, t))) ** 3;
 export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDone: () => void }) {
   const [n, setN] = useState(0);
   const [t, setT] = useState(0);      // ms into this creature's show
+  // Tapped to skip: the clock stays at the end (it used to run on and pull the show back mid-way, so a tap flickered).
+  const skipped = useRef(false);
   const u = ups[n];
   const levels = u ? u.to - u.from : 0;
   const barEnd = INTRO + PER_LEVEL * levels;
@@ -46,8 +48,9 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
     const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const start = performance.now();
     let raf = 0;
+    skipped.current = false;
     const tick = (now: number) => {
-      const e = reduced ? end : now - start; // (reduced motion: straight to the end)
+      const e = reduced || skipped.current ? end : now - start; // (reduced motion: straight to the end)
       setT(e);
       if (e < end) raf = requestAnimationFrame(tick);
     };
@@ -56,7 +59,7 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
   }, [n, u, end]);
 
   const done = t >= end;
-  const next = () => { if (!done) { setT(end); return; } if (n + 1 < ups.length) { setN(n + 1); setT(0); } else onDone(); };
+  const next = () => { if (!done) { skipped.current = true; setT(end); return; } if (n + 1 < ups.length) { setN(n + 1); setT(0); } else onDone(); };
   useEscape(next); // Esc works like a tap: skip, then Next
 
   if (!u) return null;
@@ -101,8 +104,9 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
         </div>
 
         {/* What it gained. */}
-        {showStats && (
-          <div className="levelup-stats" style={{ display: "grid", gap: 4, textAlign: "left", padding: "8px 10px", background: "rgba(0,0,0,0.3)", border: "2px solid #2a2d38" }}>
+        {/* (Its room kept from the start, hidden, so the window doesn't grow and jump as it appears.) */}
+        {(
+          <div className={showStats ? "levelup-stats" : undefined} style={{ visibility: showStats ? "visible" : "hidden", display: "grid", gap: 4, textAlign: "left", padding: "8px 10px", background: "rgba(0,0,0,0.3)", border: "2px solid #2a2d38" }}>
             {rows.map((r) => {
               const pct = r.key === "hp" ? "" : "%";
               const gain = r.b - r.a;

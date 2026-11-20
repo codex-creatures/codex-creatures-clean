@@ -168,8 +168,8 @@ describe("sending Klutz (v2)", () => {
   const clears = { cyclops: 1, hydra: 0, abyss: 0 };
   it("each dungeon opens when you've beaten its boss, and costs half your entry fee (the Encampment is free)", () => {
     expect(destCost(0)).toBe(0);
-    expect(destCost(1)).toBe(ENTRY_FEES[1] / 2);
-    expect(destCost(2)).toBe(ENTRY_FEES[2] / 2);
+    expect(destCost(1)).toBe(ENTRY_FEES[1]);
+    expect(destCost(2)).toBe(ENTRY_FEES[2]);
     expect(destOpen(0, { cyclops: 0, hydra: 0, abyss: 0 })).toBe(true);
     expect(destOpen(1, clears)).toBe(true);
     expect(destOpen(2, clears)).toBe(false);

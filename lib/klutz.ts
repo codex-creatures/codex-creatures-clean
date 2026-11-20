@@ -97,7 +97,8 @@ export const KLUTZ_DESTS: Record<KlutzDest, { name: string; best: Rarity; levels
   2: { name: "The Hydra", best: "legendary", levelsUp: 2, firstStrike: 0.3, lift: 0 },
   3: { name: "The Abyss", best: "legendary", levelsUp: 3, firstStrike: 0.4, lift: 0.3 }, // lift: a roll goes up a rarity this often
 };
-export const destCost = (d: KlutzDest) => (d === 0 ? 0 : Math.round(ENTRY_FEES[d] / 2));
+// What sending him costs: your own entry fee (the user, 2026-11-21: it was half); the Encampment always free.
+export const destCost = (d: KlutzDest) => (d === 0 ? 0 : ENTRY_FEES[d]);
 // Which he can go to: the Encampment, and each dungeon whose boss you've beaten.
 export type BossClears = { cyclops: number; hydra: number; abyss: number };
 export const destOpen = (d: KlutzDest, c: BossClears) => d === 0 || (d === 1 && c.cyclops > 0) || (d === 2 && c.hydra > 0) || (d === 3 && c.abyss > 0);

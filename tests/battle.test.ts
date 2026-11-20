@@ -4,7 +4,7 @@ import { CREATURE_BY_ID as LIVE_BY_ID, MOVE_BY_NAME, PRE_V2_SPECIES, defaultMove
 const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 import { effectiveAgil } from "../lib/combat/engine";
 import { buildFighter } from "../lib/combat/loadout";
-import { createBattle, resolveRound, sendInReplacement, activeOf, isCrippled, currentAgility, CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS } from "../lib/combat/battle";
+import { createBattle, resolveRound, sendInReplacement, activeOf, isCrippled, currentAgility, stumbleChance, CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS } from "../lib/combat/battle";
 import { aiChooseSkill } from "../lib/combat/teamBattle";
 import { creatureTypeLabel } from "../lib/creatures/creatureType";
 
@@ -128,6 +128,23 @@ describe("move slots and learnable moves", () => {
     }
     expect(lost / tries).toBeGreaterThan(0.45);
     expect(lost / tries).toBeLessThan(0.55);
+  });
+
+  it("each stumble makes the next less likely: 50%, 40%, 30%… in the same fight (the user, 2026-11-21)", () => {
+    const s = createBattle([mv("crystal_golem", ["Jab"])], [mv("ironhide", ["Slash"])]);
+    const b = activeOf(s.sides.B);
+    expect([0, 1, 2, 3, 4, 5, 6].map((n) => { b.stumbles = n; return Math.round(stumbleChance(b) * 100); })).toEqual([50, 40, 30, 20, 10, 0, 0]);
+    b.stumbles = 0;
+    const real = Math.random;
+    Math.random = () => 0.35; // under 50% and 40%, not 30%
+    try {
+      for (let r = 0; r < 3; r++) {
+        b.statuses = [{ id: "cripple", rounds: CRIPPLE_ROUNDS }];
+        b.hp = b.maxHp;
+        resolveRound(s, { A: { kind: "attack", skillName: "Jab" }, B: { kind: "attack", skillName: "Slash" } });
+      }
+    } finally { Math.random = real; }
+    expect(b.stumbles).toBe(2);
   });
 
   it("a dash move doubles your agility this round only", () => {

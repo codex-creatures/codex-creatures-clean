@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { addFriend, fetchFriends, parseFriends, removeFriend } from "../lib/online/friends";
 import { othersOnline, parseInvite } from "../lib/online/duelChannel";
 import { parseBoard } from "../lib/leaderboard";
+import { cameOnline } from "../lib/online/friends";
 
 // A stand-in for the friends table: records what was asked.
 function table(error: unknown = null) {
@@ -61,5 +62,17 @@ describe("the count over the PvP portal", () => {
     expect(othersOnline(new Set(["me", "a", "b"]), "me")).toBe(2);
     expect(othersOnline(new Set(["me"]), "me")).toBe(0);
     expect(othersOnline(new Set(), "me")).toBe(0);
+  });
+});
+
+describe("a friend coming online (the user, 2026-11-21)", () => {
+  const ann = { id: "a", name: "Ann" }, bob = { id: "b", name: "Bob" };
+  it("names friends who join after you're in the lobby, not those already there or strangers", () => {
+    const s = (...ids: string[]) => new Set(ids);
+    expect(cameOnline(null, s("me", "a"), "me", [ann, bob])).toEqual([]);          // your first look: already on
+    expect(cameOnline(s("a"), s("me", "a"), "me", [ann, bob])).toEqual([]);        // (before you were in)
+    expect(cameOnline(s("me"), s("me", "a", "x"), "me", [ann, bob])).toEqual([ann]); // Ann comes on; x is a stranger
+    expect(cameOnline(s("me", "a"), s("me", "a"), "me", [ann])).toEqual([]);
+    expect(cameOnline(s("me"), s("me", "a"), null, [ann])).toEqual([]);              // signed out
   });
 });

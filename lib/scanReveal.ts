@@ -66,6 +66,11 @@ export function findPrice(d: Drop, gearValue: (d: Drop) => number): number {
   return merchantOffer(lootEntry(d.id), d, gearValue);
 }
 
+// A consumable the Inventory sells (the user, 2026-11-21: the consumables tab had no Sell): a potion, an
+// XP scroll or a tool, for what a merchant pays (findPrice). Not codexes (the bookcase sells those) or soul stones.
+export const isSellableConsumable = (d: Drop) =>
+  d.dropType === "item" && d.itemCategory === "consumable" && !d.codexMove && !d.material && !!(d.potion || d.scroll || d.tool);
+
 // What you can do with it: a creature or creature card let go, gold just
 // taken, anything with a price sold. Anything else is kept.
 export type RevealChoice = "sell" | "release" | "keep" | "gold";

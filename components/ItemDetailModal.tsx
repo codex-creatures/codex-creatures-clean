@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { isSellableItem } from "@/lib/types";
+import { findPrice, isSellableConsumable } from "@/lib/scanReveal";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
@@ -108,7 +109,7 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
   const touch = useRef<{ x: number; y: number } | null>(null);
   const stats = item.stats ?? {};
   const statDefs = item.itemCategory === "armor" ? ARMOR_STATS : WEAPON_STATS;
-  const sellValue = item.itemCategory !== "material"
+  const sellValue = isSellableConsumable(item) ? findPrice(item, () => 0) : item.itemCategory !== "material"
     ? computeSellGold({ drop: item as any, getStatCapForDrop: (d: any, k: string) => getStatCapForDrop(d, k) ?? 0 })
     : 0;
   const rarityColor = RARITY_COLORS[item.rarity]?.text ?? "white";
@@ -204,7 +205,7 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
         {/* (Kept in place, hidden, for things that don't sell: so nothing below moves.) */}
         {/* Sell: tap, then Yes. The box is the same height whichever it shows. */}
         <div style={{ display: "flex", gap: 8, alignItems: "stretch", height: 48, marginBottom: 20,
-          visibility: isSellableItem(item) ? "visible" : "hidden" }}>
+          visibility: isSellableItem(item) || isSellableConsumable(item) ? "visible" : "hidden" }}>
           {!onSell ? (
             <div style={{ ...sellBox, justifyContent: "space-between", padding: "0 14px" }}>
               <span style={{ fontSize: 14, opacity: 0.7 }}>Sell value</span>

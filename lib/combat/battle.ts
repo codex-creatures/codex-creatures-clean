@@ -53,7 +53,10 @@ const crippleRounds = (fx: { minRounds?: number; maxRounds?: number }) => {
   const min = fx.minRounds ?? CRIPPLE_ROUNDS, max = fx.maxRounds ?? CRIPPLE_ROUNDS_MAX;
   return min + Math.floor(Math.random() * (max - min + 1));
 };
-export const CRIPPLE = { stumble: 0.5 }; // chance a crippled creature loses its attack (no energy spent)
+// chance a crippled creature loses its attack (no energy spent): stumble the first time, then drop less
+// each time it has stumbled this fight (the user, 2026-11-21: 50%, 40%, 30%, 20%…, so a cripple can't lock it down).
+export const CRIPPLE = { stumble: 0.5, drop: 0.1 };
+export const stumbleChance = (f: Combatant) => Math.max(0, CRIPPLE.stumble - CRIPPLE.drop * (f.stumbles ?? 0));
 
 // Haste (from Dash Lash / Quick Bolt / Quickcast): extra agility for this
 // round's turn order only, so it can strike first. Nothing carries over.
@@ -272,7 +275,8 @@ export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: n
 // hidden: a boss creature that hasn't appeared yet (not shown on screen).
 // cooldowns: move name → rounds until it can be used again.
 // setUsed: its armour set's once-a-fight mechanic has been used.
-export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak; hidden?: boolean; cooldowns?: Record<string, number>; setUsed?: boolean };
+// stumbles: how often it has stumbled while crippled this fight (stumbleChance).
+export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak; hidden?: boolean; cooldowns?: Record<string, number>; setUsed?: boolean; stumbles?: number };
 
 export type BattleSide = {
   key: SideKey;
@@ -558,8 +562,9 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       continue;
     }
     // Crippled: it may stumble and lose this attack (no energy spent).
-    if (isCrippled(actor) && Math.random() < CRIPPLE.stumble) {
+    if (isCrippled(actor) && Math.random() < stumbleChance(actor)) {
       actor.streak = undefined;
+      actor.stumbles = (actor.stumbles ?? 0) + 1;
       state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: "is crippled and stumbles — it can't attack this round",
         hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "stumble" });
       continue;

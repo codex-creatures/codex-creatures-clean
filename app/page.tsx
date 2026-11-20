@@ -18,7 +18,7 @@ import { klutzStatus, pointsFree } from "@/lib/klutz";
 import { klutzFirstStep, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
 import { loadDungeon, bagSize, BINDLE, altarMended } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
-import { canBlast, headUp, tavernVisitors } from "@/lib/tavern";
+import { canBlast, headUp, tavernVisitors, visitorNews } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
 import { campaignUnseen, canClaimNext, loadCampaign, readCampaignCtx } from "@/lib/campaign";
 import { DAILY_ONLINE, dailyNews, todayDaily } from "@/lib/daily";
@@ -64,8 +64,10 @@ export default function Home() {
     || klutzFirstStep(game.quest, game.equipment[KLUTZ_DROP_ID], !!game.klutz.expedition || !!game.klutz.trips?.length) !== null); // (till his first trip)
   const rubble = game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut";
   const pit = hasPit(game.tavern) ? { ready: game.hydrated && game.trainingStatuses(now).some((x) => x.full) } : undefined;
-  const tavernNews = game.hydrated && tavernVisitors(game.tavern, now).length > 0;
-  const boardNews = game.hydrated && ((klutzHelping(game.quest) && (canClaimNext(loadCampaign(), readCampaignCtx()) || campaignUnseen(loadCampaign()))) || hydraStep(game.tavern, clears, deepClears) === "claim" || dailyNews(todayDaily(DAILY_ONLINE), !!game.tavern.repaired));
+  const tavernNews = game.hydrated && tavernVisitors(game.tavern, now).some((v) => visitorNews(game.tavern, v, now));
+  // (A daily quest to claim, and nothing on the campaign: the board opens on today's quests, where it is.)
+  const campaignNews = game.hydrated && ((klutzHelping(game.quest) && (canClaimNext(loadCampaign(), readCampaignCtx()) || campaignUnseen(loadCampaign()))) || hydraStep(game.tavern, clears, deepClears) === "claim");
+  const boardNews = campaignNews || (game.hydrated && dailyNews(todayDaily(DAILY_ONLINE), !!game.tavern.repaired) && "daily");
   const crateNews = game.hydrated && game.crate.length > 0;
   const cageNews = game.hydrated && game.caged.length > 0 && highlight !== OBJ.cage;
 

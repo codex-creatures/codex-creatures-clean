@@ -40,7 +40,7 @@ import { artFor } from "@/lib/sprites/art";
 import { COLLECTOR, ENCHANTRESS, LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import type { Sprite } from "@/lib/sprites/pixels";
 import { OBJ, type KlutzMode, type ObjId } from "@/lib/den/scene";
-import { tavernVisitors, type TavernQuest, type Visitor } from "@/lib/tavern";
+import { tavernVisitors, visitorNews, type TavernQuest, type Visitor } from "@/lib/tavern";
 import { VISITOR_HREF, type Rubble } from "@/components/DenRoom";
 import { useDenOptions } from "@/hooks/useNewDen";
 import { useOthersOnline } from "@/hooks/useOthersOnline";
@@ -71,9 +71,11 @@ const FIT_MS = 6;         // ms a frame spent working out the where-it-fits map 
 const FOOT_COLOURS = { fits: [120, 255, 150], no: [255, 80, 70] }; // 🧪 the footprint of a thing being moved
 const FIT_COLOURS = { fits: [90, 220, 120, 75], no: [230, 60, 50, 60] }; // 🧪 RGBA over the floor
 
+const DAILY_BOARD = "/board?tab=daily"; // (where the board opens when a daily quest is what's waiting)
+
 export type Den3DProps = {
   caged?: string; klutz: KlutzMode; klutzNews: boolean; highlight?: ObjId; rubble: Rubble; onBlast?: () => void;
-  tavern: TavernQuest; pit?: { ready: boolean }; tavernNews: boolean; boardNews: boolean; crateNews: boolean; cageNews: boolean;
+  tavern: TavernQuest; pit?: { ready: boolean }; tavernNews: boolean; boardNews: boolean | "daily"; crateNews: boolean; cageNews: boolean;
   shack?: boolean;       // Klutz's place still the broken-down shack (lib/klutz.ts): drawn so till it's repaired
   altarBroken?: boolean; // the Soul Altar not yet mended (lib/dungeon/run.ts altarMended): drawn cracked and cold
   options?: DenOptions;  // (the lab's; the game's are the player's own, from Settings)
@@ -152,7 +154,7 @@ export default function Den3D(p: Den3DProps) {
     if (p.klutz === "home" && CREATURE_SPRITES.klutz) out.push({ key: "klutz", label: "Klutz", href: "/klutz", sprite: CREATURE_SPRITES.klutz, route: routeLoop(KLUTZ_LOOP, blocked), speed: STROLL.klutz, lead: 0, news: p.klutzNews, tour: `den-${OBJ.klutz}`, faces: "right" });
     if (opened) {
       const who = tavernVisitors(p.tavern), route = routeLoop(VISITOR_LOOP, blocked), T = routeTime(route, STROLL.visitor);
-      who.forEach((v, i) => out.push({ key: v, label: VISITOR_LABEL[v], href: `${VISITOR_HREF}?v=${v}`, sprite: VISITOR_SPRITE[v], route, speed: STROLL.visitor, lead: (i * T) / who.length, news: true, faces: "left" }));
+      who.forEach((v, i) => out.push({ key: v, label: VISITOR_LABEL[v], href: `${VISITOR_HREF}?v=${v}`, sprite: VISITOR_SPRITE[v], route, speed: STROLL.visitor, lead: (i * T) / who.length, news: visitorNews(p.tavern, v), faces: "left" }));
     }
     return out;
   }, [p.klutz, p.klutzNews, opened, p.tavern, blocked]);
@@ -164,7 +166,7 @@ export default function Den3D(p: Den3DProps) {
 
   // What's waiting where (a ❗ on its name).
   const news = (s: Station) => (s.key === "shack" && (p.crateNews || (p.klutz !== "home" && p.klutzNews))) || (s.key === "cage" && p.cageNews)
-    || (s.key === "board" && p.boardNews) || (s.key === "tavern" && p.tavernNews) || (s.key === "training" && !!p.pit?.ready) || (s.key === "rubble" && p.rubble === "dynamite");
+    || (s.key === "board" && !!p.boardNews) || (s.key === "tavern" && p.tavernNews) || (s.key === "training" && !!p.pit?.ready) || (s.key === "rubble" && p.rubble === "dynamite");
 
   // ── Drag to look, pinch or scroll to zoom, tap to go in, hold to move ──
   // (Over the whole picture, its names included: a drag that starts on a name still looks round, and a tap
@@ -296,7 +298,7 @@ export default function Den3D(p: Den3DProps) {
   }
   function go(s: Station) {
     if (s.key === "rubble") setNotice(true);
-    else if (s.href) router.push(s.href);
+    else if (s.href) router.push(s.key === "board" && p.boardNews === "daily" ? DAILY_BOARD : s.href);
   }
   // Klutz sets the Labyrinth Stone in the wall's socket: the ground rumbles and the wall sinks away.
   function setTheStone() {

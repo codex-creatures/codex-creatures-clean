@@ -123,7 +123,7 @@ function TavernSell({ game, armed, setArmed }: { game: ReturnType<typeof useGame
         const gold = mat ? materialOffer(mat) : price.get(d.id) ?? 0;
         const on = armed === d.id;
         return (
-          <button className="chip" style={{ minHeight: 44, background: on ? "#6e1f18" : undefined }}
+          <button className="chip" style={{ ...ARMED_BTN, width: 128, background: on ? "#6e1f18" : undefined }}
             onClick={() => {
               if (!on) { setArmed(d.id); return; }
               if (mat) game.sellMaterialToTavern(mat);
@@ -140,6 +140,9 @@ function TavernSell({ game, armed, setArmed }: { game: ReturnType<typeof useGame
 // in the merchant's window; tap one, then Reroll (twice: the second tap pays an
 // essence stone and the gold). The line under it keeps its place: what you have,
 // or what the last reroll gave.
+// A button that asks twice (Sell?, Reroll?): a fixed width, so the words changing never moves what's beside it.
+const ARMED_BTN: React.CSSProperties = { minHeight: 44, whiteSpace: "nowrap", overflow: "hidden", justifyContent: "center", flexShrink: 0 };
+
 function EnchantressDesk({ game }: { game: ReturnType<typeof useGameState> }) {
   const [armed, setArmed] = useState<string | null>(null);
   const [got, setGot] = useState<CreatureOrItemDrop | null>(null);
@@ -158,7 +161,7 @@ function EnchantressDesk({ game }: { game: ReturnType<typeof useGameState> }) {
           if (!cost) return null;
           const on = armed === d.id;
           return (
-            <button className="chip" disabled={!canReroll(d, game.gold, game.materials)} style={{ minHeight: 44, background: on ? "#6e1f18" : undefined }}
+            <button className="chip" disabled={!canReroll(d, game.gold, game.materials)} style={{ ...ARMED_BTN, width: 176, background: on ? "#6e1f18" : undefined }}
               onClick={() => {
                 if (!on) { setArmed(d.id); return; }
                 setArmed(null);

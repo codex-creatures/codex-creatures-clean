@@ -38,7 +38,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   provisional in the original design, and there's no elemental type chart.
 - ✅ **Cripple** (the user, 2026-11-13; was 3 rounds and a 25% stumble): −50% agility for 3–5 rounds
   (`CRIPPLE_ROUNDS`–`CRIPPLE_ROUNDS_MAX`, or the move's own range: Enfeeble and the Cyclops's Stomp 3),
-  and a 50% chance each attack is lost (`CRIPPLE.stumble`, for every cripple, Stomp's too).
+  and a 50% chance each attack is lost (`CRIPPLE.stumble`, for every cripple, Stomp's too), 10 points less each time
+  that creature has stumbled in the fight: 50%, 40%, 30%, 20%, 10%, then no more (`CRIPPLE.drop`, `stumbleChance`;
+  the user, 2026-11-21).
 - ✅ **Learnable moves:** Cripple, Crippling Shot, Hobble Hex (15 power, 60 energy, a 50% chance to
   cripple). (Haste/Quickcast and the precise moves were retired 2026-11-12.)
 - ✅ **Race moves:** single-use codexes, learnable by that race (either of a creature's two), plus
@@ -266,7 +268,7 @@ power counts for less as attack grows.
   everywhere, never by the style it's filed under (`isUtility`; Caltrops showed as Magic). Uncommon: Nullifying Voice, Vampiric Bite, Caltrops, Ambush, Bolas Shot, Enfeeble, Razor
   Arrows. Rare: Smoke Bomb, Obsidian Arrows, Septic Shock, Mega Smash, Emulate, Voltage Surge, Flame
   Body, Haemorrhage, Soul Snatch, Bone Javelin. Epic: Smite, Implode, Fissure. ✅ Legendary (the v2
-  review): Choking Smog, Haunting Scream. Legendary codexes cost what Epic ones do at a librarian
+  review): Choking Smog, Haunting Scream. Legendary codexes cost 2,500 gold at a librarian
   (`codexPrice`), come from a library's bookcases 1 in 100 (`CODEX_ODDS`) and the other places
   every codex does, and are never on foes (no dungeon goes past Epic). The Choking Smog codexes
   found while it was Epic were taken back on load (the user, 2026-11-16; `dropTakenBack` in

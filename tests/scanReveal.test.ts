@@ -4,6 +4,8 @@ import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { POTIONS, SCROLL_PRICE, codexPrice } from "../lib/dungeon/run";
 import { TOOLS } from "../lib/items/materials";
 import type { Drop } from "../lib/types";
+import { isSellableConsumable } from "../lib/scanReveal";
+import { potionDrop, scrollDrop, codexDrop } from "../lib/drops";
 
 const drop = (x: Record<string, unknown>) => ({ id: "d", name: "Thing", rarity: "common", ...x }) as unknown as Drop;
 
@@ -97,5 +99,16 @@ describe("summoning from cards", () => {
       // Back to back: each stage starts as the last one ends.
       for (let i = 1; i < show.length; i++) expect(show[i].at).toBe(show[i - 1].at + show[i - 1].ms);
     }
+  });
+});
+
+describe("selling consumables from the Inventory (the user, 2026-11-21)", () => {
+  it("potions and XP scrolls sell, at what a merchant pays; codexes and gear go their own ways", () => {
+    for (const d of [potionDrop(), scrollDrop()]) {
+      expect(isSellableConsumable(d)).toBe(true);
+      expect(findPrice(d, () => 0)).toBeGreaterThan(0);
+    }
+    expect(isSellableConsumable(codexDrop("Cripple"))).toBe(false);
+    expect(isSellableConsumable({ dropType: "item", itemCategory: "weapon", id: "w", name: "Sword", rarity: "common" } as Drop)).toBe(false);
   });
 });

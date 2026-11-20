@@ -4,7 +4,7 @@
 // the Bookcase and the Inventory's Codex tab. Each is a book on the shelf;
 // tap one to see it in the box on top: its title (and race, for a race
 // codex), then the move it teaches (CodexMove). Teach shows your creatures,
-// greyed out where one can't learn it; tap one to teach it (if its move
+// with their levels, greyed out where one can't learn it; tap one to teach it (if its move
 // slots are full, you pick a move for it to forget). The codex is used up.
 // Sell gets rid of one you don't want (after a Yes), for what a merchant pays, to free the shelf.
 // The box on top keeps its size whatever's picked, so nothing moves.
@@ -19,6 +19,7 @@ import { sortByRarity } from "./TileGrid";
 import { NAME } from "./ContainerLoot";
 import type { CreatureOrItemDrop, Drop } from "@/lib/types";
 import { codexSellPrice } from "@/lib/dungeon/run";
+import { clampLevel } from "@/lib/creatures/levels";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
@@ -145,7 +146,8 @@ export default function CodexShelf({ inventory, size, teach, onSell }: { invento
                           opacity: no ? 0.4 : 1, filter: no ? "grayscale(1)" : undefined }}>
                         <PixelSprite sprite={creatureSprite(x.creatureId)} scale={1.5} style={{ maxWidth: "100%", maxHeight: 48, width: "auto", height: "auto" }} />
                         <span style={{ ...NAME, color: rc.text }}>{x.name}</span>
-                        <span style={{ fontSize: 10, color: MUTED, visibility: no ? "visible" : "hidden" }}>{no ?? "-"}</span>
+                        {/* Its level (the user, 2026-11-21), or why it can't learn it. */}
+                        <span style={{ fontSize: 10, color: no ? MUTED : GOLD }}>{no ?? `Lv ${clampLevel(x.level)}`}</span>
                       </button>
                     );
                   })}
