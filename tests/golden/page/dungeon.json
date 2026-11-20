@@ -1541,7 +1541,7 @@
   },
   {
    "step": "the haul",
-   "screen": "← Den🌀 The Encampment574Cave Goblin levelled up!Lv 4Lv 5ContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
+   "screen": "← Den🌀 The Encampment574Cave Goblin levelled up!Lv 4Lv 5Health62+2Melee4%+1%Magic1%+0%Agility3%+2%🛡️Melee Def0%+1%🔰Ranged Def1%+1%ContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
    "save": {
     "gold": 574,
     "creatures": [
@@ -1587,7 +1587,7 @@
   },
   {
    "step": "haul: took all",
-   "screen": "← Den🌀 The Encampment651Cave Goblin levelled up!Lv 4Lv 5ContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 0 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (0)Empty now.Cages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to DenThe chief's chest✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3🔒🔒🔒🔒🔒🔒🔒Done",
+   "screen": "← Den🌀 The Encampment651Cave Goblin levelled up!Lv 4Lv 5Health62+2Melee4%+1%Magic1%+0%Agility3%+2%🛡️Melee Def0%+1%🔰Ranged Def1%+1%ContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 0 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (0)Empty now.Cages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to DenThe chief's chest✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3🔒🔒🔒🔒🔒🔒🔒Done",
    "save": {
     "gold": 651,
     "creatures": [
