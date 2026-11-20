@@ -58,6 +58,29 @@ interesting situations, real decisions, progression and surprises, not feel they
 
 ### 📌 Decided, not built
 
+- 📌 **Den progression: things in the Den grow in stages, each its own 3D look** (the user, 2026-11-20; a sim
+  of the costs, scans, runs and Klutz's trips, in the commit that added this). Not built yet. Dungeon gates are
+  "that dungeon or harder". The Minotaur is still to come (players reach the Hydra in about 4–5 hours).
+  - **Bookcase** (codexes it holds; cost to reach the stage; its schematic):
+
+    | Stage | Holds | Cost | Schematic (where from; a trader's price) |
+    |---|---|---|---|
+    | 1 Shelf | 5 | start | — |
+    | 2 Crooked | 15 | 7 planks, 4 nails | none |
+    | 3 Sturdy | 30 | 25 planks, 15 nails, 5 metal bars | Epic: Encampment+ chests, scans; 2,000g. The old-wall campaign reward (the Crooked Bookcase Schematic) becomes this one |
+    | 4 Carved | 50 | 25 planks, 15 nails, 10 bars, 2 Stone, 1 Essence crystal, 1,000g | Legendary: Cyclops+ chests (mini boss, boss), scans; 5,000g |
+    | 5 Gilded | 75 | 25 planks, 25 nails, 20 bars, 5 Essence crystals, 2 Divinity Crystals | Legendary: Hydra+ chests, scans; 10,000g |
+    | 6 Enchanted | 100 | 25 Essence crystals, 4 Divinity Crystals | Legendary: scans only, a barcode's first-ever scan only; not sold |
+
+    Wandering traders sell the next schematic after the first upgrade. Old saves land on the stage at or above
+    their size (10 → Crooked; 20, 25, 30 → Sturdy): nobody loses space.
+  - **Divinity Crystal:** a new Legendary material: every Legendary material drop is one (1% of material drops).
+  - **The Soul Altar** starts broken: no summoning from cards and no ascension (Code Caches open at the scanner)
+    until the gem the Encampment's chief (the Baby Cyclops) drops the first time he's beaten. Saves that have
+    beaten him have a working altar.
+  - **Klutz's Den** starts as a broken-down shack, his crate 10; repaired for 20 planks and 10 nails, it's
+    today's cabin with a crate of 30, then the gold upgrades (+10 each, to 80) as now. Saves with the cabin keep it.
+
 - 🧪 **The new Den** (decision 50, the user, 2026-11-18): built behind Settings → New Den, off by default,
   to play-test; its art (Den walls, the shack, the storehouse, the tavern, the altar, the pits, the board,
   the portal) is stand-ins or samples till approved. Then it replaces the old Den.
