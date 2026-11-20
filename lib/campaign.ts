@@ -25,7 +25,8 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { ARMOR_KEYS, ARMOR_SLOTS, wornArmor } from "./items/armor";
 import { CHEST_ENCHANT, enchanted, enchantOf } from "./items/enchantments";
-import { SCHEMATICS, materialBundle, materialDrop, toolDrop } from "./items/materials";
+import { MATERIALS, SCHEMATICS, materialBundle, materialDrop, shelfFromOld, toolDrop, type MaterialKey } from "./items/materials";
+import { STORAGE_V, boxTier, storageFromOld, type CappedBox } from "./items/storage";
 import { BINDLE } from "./dungeon/run";
 import { SKILL_KEYS, type KlutzState } from "./klutz";
 import { calibrating, readFirstScans, CALIBRATION_SCANS } from "./firstScans";
@@ -65,6 +66,10 @@ export type CampaignCtx = {
   blasted: boolean;       // the rubble's blown open
   repaired: boolean;      // the tavern's repaired
   blueprints: number;     // schematics built
+  shelf: number;          // the bookcase's stage (1-4: lib/items/materials.ts BOOKCASE_STAGES)
+  cage: number;           // the cage's level (1-3)
+  boxes: number[];        // the weapon and armour boxes' stages (0-4 each: lib/items/storage.ts)
+  pitSlots: number;       // the Training Pit's slots (0: not built)
   bagUpgraded: boolean;   // your bag holds more than the bindle you start with
 };
 
@@ -122,6 +127,10 @@ export function campaignCtx(save: Obj): CampaignCtx {
     blueprints: (save.shelf === undefined ? (num(save.bookcase) >= 2 ? 1 : 0) : Math.max(0, num(save.shelf) - 2)) + Math.max(0, num(save.cage) - 1)
       + (Array.isArray(save.storage) ? save.storage.length : 0) + (tavern.pit ? 1 : 0) + Math.max(0, num(tavern.slots) - 1),
     bagUpgraded: num(meta.bagSize) > BINDLE,
+    shelf: typeof save.shelf === "number" ? save.shelf : save.inventory === undefined && save.scanCounts === undefined ? 1 : shelfFromOld(save.bookcase), // (as the game reads it: useGameState)
+    cage: Math.max(1, num(save.cage)),
+    boxes: (() => { const big = save.storageV === STORAGE_V ? (Array.isArray(save.storage) ? save.storage as CappedBox[] : []) : storageFromOld(Array.isArray(save.storage) ? save.storage as CappedBox[] : []); return [boxTier("weapon", big), boxTier("armor", big)]; })(),
+    pitSlots: tavern.pit ? Math.max(1, num(tavern.slots)) : 0,
   };
 }
 
@@ -155,6 +164,7 @@ export type CampaignReward =
   | { enchanted: "weapon" | "armour"; rarity: Rarity }
   | { weapon: Rarity } // a weapon of this rarity, not enchanted
   | { essence: number } // essence crystals (the user, 2026-11-20: from the Hydra's chapter on, for the Den's upgrades)
+  | { material: MaterialKey; n: number } // a stack of a material (the Den's upgrade quests: some of the cost back)
   | { bookcasePlans: true };
 
 // (The codex reward is a bookcase, not a crate: the user, 2026-11-16. The gear one's a barrel, to be drawn.)
@@ -169,6 +179,7 @@ export function rewardText(r: CampaignReward): string {
   if ("enchanted" in r) return `An enchanted ${RARITY_WORD[r.rarity]} ${r.enchanted}`;
   if ("weapon" in r) return `A ${RARITY_WORD[r.weapon]} weapon`;
   if ("essence" in r) return r.essence === 1 ? "An essence crystal" : `${r.essence} essence crystals`;
+  if ("material" in r) return `${MATERIALS[r.material].name} ×${r.n}`;
   return SCHEMATICS.crooked_bookcase.name; // (the sturdy bookcase's, since 2026-11-20)
 }
 
@@ -197,6 +208,7 @@ export function rollCampaignReward(r: CampaignReward, rng: Rng = Math.random): D
   if ("scrolls" in r) return Array.from({ length: r.scrolls }, () => scrollDrop());
   if ("goldKey" in r) return [toolDrop("gold_key")];
   if ("essence" in r) return [materialDrop("essence", r.essence)];
+  if ("material" in r) return [materialDrop(r.material, r.n)];
   if ("enchanted" in r) return [enchantedPiece(r.enchanted, r.rarity, rng)];
   if ("weapon" in r) { const key = ITEM_KEYS[Math.floor(rng() * ITEM_KEYS.length)]; return [weaponDrop(key, r.weapon, "", rollItemStats(key, r.weapon, rng).stats)]; }
   if (!("crate" in r)) return [];
@@ -231,6 +243,7 @@ const gold = (n: number): CampaignReward => ({ gold: n });
 const scrolls = (n: number): CampaignReward => ({ scrolls: n });
 const crate = (kind: CrateKind, lo: Rarity, hi: Rarity, n = 3): CampaignReward => ({ crate: kind, lo, hi, n });
 const essence = (n: number): CampaignReward => ({ essence: n });
+const mat = (material: MaterialKey, n: number): CampaignReward => ({ material, n });
 const supplies: CampaignReward = { crate: "supplies", lo: "common", hi: "rare", n: SUPPLIES };
 
 // Quest makers, one per kind of quest (the id carries the number, so each is unique).
@@ -262,6 +275,7 @@ export const CHAPTERS: Chapter[] = [
     q.once("kit", "Put a weapon and all three armour pieces on a creature", "/pit", (c) => c.fullyEquipped, { weapon: "rare" }), // (100 gold till 2026-11-20)
     q.fights(5, gold(100)),
     q.cards(3, gold(100)),
+    q.once("crooked", "Build the crooked bookcase", "/bookcase", (c) => c.shelf >= 2, mat("planks", 5)),
     q.level(5, scrolls(1)),
     q.once("camp", "Beat the Encampment", "/dungeon", (c) => c.wins.camp > 0, crate("gear", "uncommon", "rare")),
   ] },
@@ -276,6 +290,8 @@ export const CHAPTERS: Chapter[] = [
     q.kfind("rare", scrolls(1)),
     q.fights(25, scrolls(1)),
     q.once("set", "Get an armour set bonus on a creature", "/pit", (c) => c.setBonus, gold(250)),
+    q.once("iron-cage", "Build the iron cage (its schematic: mini bosses' chests)", "/cage", (c) => c.cage >= 2, mat("metal_bars", 5)),
+    q.once("rack", "Build a weapon or armour rack (a box to 60)", "/chest", (c) => Math.max(...c.boxes) >= 1, mat("nails", 6)),
     q.gold(1000, crate("materials", "common", "uncommon")),
     q.clean(0, "the Encampment", gold(300)),
     // (Was "Blow open the rubble": in the new Den the Labyrinth Stone moves the old wall. Its id kept: saves have claimed it.)
@@ -290,12 +306,14 @@ export const CHAPTERS: Chapter[] = [
     q.once("tavern", "Fix up the tavern", "/tavern", (c) => c.repaired, { goldKey: true }),
     q.once("effective", "Win a fight using only effective moves", "/dungeon", (c) => tallied(c, "effective") > 0, gold(400)),
     q.summon("uncommon", supplies),
+    q.once("sturdy", "Build the sturdy bookcase", "/bookcase", (c) => c.shelf >= 3, mat("metal_bars", 3)),
     q.scan(50, essence(2)), // (500 gold till 2026-11-20)
     q.bestiary(15, scrolls(1)),
     q.once("bag", "Get a bigger bag", "/bag", (c) => c.bagUpgraded, gold(500)),
     q.spar(3, scrolls(2)),
     q.kfind("epic", crate("materials", "rare", "epic")),
     q.worn("epic", gold(500)),
+    q.once("box75", "Get a weapon or armour box to 75", "/chest", (c) => Math.max(...c.boxes) >= 2, mat("essence_stones", 2)),
     q.fights(100, crate("codex", "uncommon", "rare", 2)),
     q.once("gold-key", "Open a golden chest with a Gold Key", "/dungeon", (c) => tallied(c, "goldchest") > 0, crate("gear", "rare", "epic")),
     q.gold(5000, scrolls(2)),
@@ -308,8 +326,12 @@ export const CHAPTERS: Chapter[] = [
     q.klutz(10, crate("materials", "rare", "epic")),
     { id: "visitors", task: "Have every visitor call at the tavern", go: "/tavern", goal: VISITORS.length, progress: (c) => VISITORS.filter((v) => tallied(c, `visit:${v}`) > 0).length, reward: scrolls(2) },
     q.summon("rare", supplies),
+    q.once("training-pit", "Build the Training Pit (the Hydra quest's plans)", "/training", (c) => c.pitSlots >= 1, essence(2)),
     { id: "blueprints3", task: "Build 3 schematics", go: "/chest", goal: 3, progress: (c) => c.blueprints, reward: crate("materials", "rare", "epic") },
     q.explorer(20, essence(3)), // (2,000 gold till 2026-11-20)
+    q.once("reinforced-cage", "Build the reinforced cage", "/cage", (c) => c.cage >= 3, essence(1)),
+    q.once("box85", "Get a weapon or armour box to 85", "/chest", (c) => Math.max(...c.boxes) >= 3, mat("essence_stones", 3)),
+    q.once("pit2", "Widen the Training Pit to 2 slots", "/training", (c) => c.pitSlots >= 2, essence(2)),
     q.spar(10, scrolls(3)),
     q.level(20, crate("gear", "epic", "epic")),
     q.gold(15000, scrolls(3)),
@@ -322,7 +344,10 @@ export const CHAPTERS: Chapter[] = [
     q.klutz(15, scrolls(3)),
     q.summon("epic", crate("codex", "epic", "epic", 2)),
     q.kfind("legendary", crate("materials", "epic", "legendary")),
+    q.once("carved", "Build the carved bookcase", "/bookcase", (c) => c.shelf >= 4, essence(1)),
     q.worn("legendary", essence(4)), // (5,000 gold till 2026-11-20)
+    q.once("box100", "Get both the weapon and the armour box to 100", "/chest", (c) => Math.min(...c.boxes) >= 4, essence(3)),
+    q.once("pit3", "Widen the Training Pit to 3 slots", "/training", (c) => c.pitSlots >= 3, essence(4)),
     q.scan(250, essence(4)), // (5,000 gold till 2026-11-20)
     q.bestiary(35, crate("gear", "epic", "legendary")),
     q.explorer(30, crate("gear", "epic", "legendary")),
@@ -346,11 +371,21 @@ export const CAMPAIGN = CHAPTERS.flatMap((ch, chapter) => ch.quests.map((quest) 
 export type CampaignState = { claimed?: number; tally?: Record<string, number>; drank?: string | number; v?: number; looked?: boolean };
 // 2 (2026-11-20): "Do an Encampment run" came in first. A save from before that had claimed some counts it
 // as claimed too (they're past it: its 50 gold isn't owed), so every claim stays on the quest it was.
-export const CAMPAIGN_V = 2;
+// 3 (2026-11-21): the Den's upgrade quests came in among the others. Again every claim stays on its quest: the
+// new claim count runs to the last quest claimed in the old list, so any new ones before it count as claimed.
+export const CAMPAIGN_V = 3;
+// The quest lists as they were, by id (CAMPAIGN_V 2's: the list before the upgrade quests).
+const QUESTS_V2 = ["camp-run", "scan3", "bestiary3", "klutz-out", "kit", "fights5", "cards3", "level5", "camp",
+  "calibrate", "explorer5", "codex", "buy", "summon-common", "cages3", "rare-weapon", "kfind-rare", "fights25", "set", "gold1000", "clean0", "rubble", "cyclops",
+  "klutz5", "level10", "enchanted-weapon", "skills", "tavern", "effective", "summon-uncommon", "scan50", "bestiary15", "bag", "spar3", "kfind-epic", "wear-epic", "fights100", "gold-key", "gold5000", "clean1", "level15", "hydra",
+  "enchanted-armour", "klutz10", "visitors", "summon-rare", "blueprints3", "explorer20", "spar10", "level20", "gold15000", "fights250", "clean2", "abyss",
+  "level25", "klutz15", "summon-epic", "kfind-legendary", "wear-legendary", "scan250", "bestiary35", "explorer30", "gold50000", "clean3", "level30", "klutz20", "summon-legendary", "klutz25", "klutz30"];
 export function upToDate(s: CampaignState): CampaignState {
   if ((s.v ?? 1) >= CAMPAIGN_V) return s;
-  const claimed = Math.floor(s.claimed ?? 0);
-  return { ...s, v: CAMPAIGN_V, ...(claimed > 0 ? { claimed: claimed + 1 } : {}) };
+  let claimed = Math.floor(s.claimed ?? 0);
+  if ((s.v ?? 1) < 2 && claimed > 0) claimed += 1;
+  if (claimed > 0) claimed = CAMPAIGN.findIndex((q) => q.id === QUESTS_V2[Math.min(claimed, QUESTS_V2.length) - 1]) + 1;
+  return { ...s, v: CAMPAIGN_V, ...(claimed > 0 ? { claimed } : {}) };
 }
 
 export const questDone = (quest: CampaignQuest, c: CampaignCtx) => quest.progress(c) >= quest.goal;

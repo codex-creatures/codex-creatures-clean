@@ -123,6 +123,38 @@ describe("progress and claiming", () => {
     expect(upToDate({ claimed: 3, v: CAMPAIGN_V }).claimed).toBe(3);
   });
 
+  it("the Den's upgrade quests came in among the others (CAMPAIGN_V 3); every claim stays on the quest it was", () => {
+    const at = (id: string) => CAMPAIGN.findIndex((q) => q.id === id);
+    // Claimed up to the 3 cards (v2's 7th): next is the crooked bookcase, new just after it.
+    expect(nextQuest(upToDate({ claimed: 7, v: 2 }))!.id).toBe("crooked");
+    // Claimed up to "Beat the Encampment" (v2's 9th): the crooked bookcase before it counts as claimed.
+    expect(claimedCount(upToDate({ claimed: 9, v: 2 }))).toBe(at("camp") + 1);
+    // Claimed the Hydra (v2's 42nd): every new quest up to it is past.
+    expect(nextQuest(upToDate({ claimed: 42, v: 2 }))!.id).toBe("enchanted-armour");
+    // Everything claimed stays everything claimed; and a v1 save goes through both.
+    expect(nextQuest(upToDate({ claimed: 69, v: 2 }))).toBeUndefined();
+    expect(nextQuest(upToDate({ claimed: 2 }))!.id).toBe("klutz-out");
+  });
+
+  it("the upgrade quests read the Den as it is, and give some of the cost back (essence crystals higher up)", () => {
+    const at = (id: string) => CAMPAIGN.find((q) => q.id === id)!;
+    expect(questDone(at("crooked"), ctx({ shelf: 2 }))).toBe(true);
+    expect(questDone(at("carved"), ctx({ shelf: 3 }))).toBe(false);
+    expect(questDone(at("rack"), ctx({ boxes: [0, 1] }))).toBe(true);
+    expect(questDone(at("box100"), ctx({ boxes: [4, 3] }))).toBe(false);
+    expect(questDone(at("box100"), ctx({ boxes: [4, 4] }))).toBe(true);
+    expect(questDone(at("reinforced-cage"), ctx({ cage: 3 }))).toBe(true);
+    expect(questDone(at("pit3"), ctx({ pitSlots: 2 }))).toBe(false);
+    expect(at("crooked").reward).toEqual({ material: "planks", n: 5 });
+    expect(rewardText(at("iron-cage").reward)).toBe("Metal bars ×5");
+    expect(rollCampaignReward(at("box75").reward)).toMatchObject([{ material: "essence_stones", qty: 2 }]);
+    for (const id of ["training-pit", "reinforced-cage", "pit2", "carved", "box100", "pit3"]) expect("essence" in at(id).reward, id).toBe(true);
+    // A save from before the stages: its bookcase and boxes on the new stages.
+    const old = campaignCtx({ inventory: [], scanCounts: {}, bookcase: 3, storage: ["weapon"] });
+    expect(old.shelf).toBe(3);
+    expect(old.boxes).toEqual([2, 0]);
+  });
+
   it("the chapter you're on is the next quest's; with everything claimed, the last", () => {
     expect(currentChapter({})).toBe(0);
     expect(currentChapter({ claimed: CHAPTERS[0].quests.length })).toBe(1);

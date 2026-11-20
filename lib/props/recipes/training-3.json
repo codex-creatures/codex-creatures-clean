@@ -27,7 +27,7 @@
     {
       "id": "wall",
       "kind": "box",
-      "at": [-0.3, 0, 2.3],
+      "at": [-0.15, 0, 2.3],
       "size": [4.6, 0.458333, 0.3],
       "four": true,
       "outline": true,
