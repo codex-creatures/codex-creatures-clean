@@ -230,18 +230,20 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     `HydraBody` in components/BossStage.tsx). The heads' names and health sit in a row above it.
 - ✅ **The Minotaur** (its own dungeon's boss; the user's spec, 2026-11-21; `MINOTAUR` in lib/combat/bossAi.ts,
   `MINOTAUR_PARTS` in lib/creatures/bosses.ts). Lv 20, no race, one fighter against your five.
-  - Each round it does the first of these it can (the user, 2026-11-21, after playing it: harder but fairer):
-  - **Horn Charge:** from round 2, whenever it's off its **7-round cooldown** (counted from the charge), it lowers its
+  - Each round it rolls one of its moves, all equally likely (`MINOTAUR.ROLL`), and **rolls again if that one's on
+    cooldown or would do nothing** (the user, 2026-11-21, after playing it: harder but fairer, still random):
+  - **Horn Charge:** from round 2, with a **7-round cooldown** (counted from the charge), it lowers its
     horns, and a warning says so ("The Minotaur charges up a huge swing! Next round it fells whoever stands in front
     of it"). Next round it charges, and **whoever is in front of it then falls, whatever its
     health**: no armour set, brace or dodge saves it (a Mega Smash-style charge with `kill`). Swapping doesn't dodge
     it; it picks who takes it. (Fear or a stumble delays it.)
-  - **Water Body** (7-round cooldown), first of all when venom, poison, bleed or a burn is on it: it's washed
+  - **Water Body** (7-round cooldown; only rolled with venom, poison, bleed or a burn on it): it's washed
     clean (Rabid Bite's venom was too strong against it; it also breaks up its moves).
-  - **Kick** (2-round cooldown, so every other round; was Sweeping Horns at 25%): a hit, then your creature is
+  - **Kick** (2-round cooldown, so never two rounds running; only with someone on your bench; was Sweeping
+    Horns): a hit, then your creature is
     knocked aside and a random teammate comes in (a seal doesn't hold), which may leave the wrong one in front of a
     charge.
-  - Otherwise Labrys Cleave (heavy) or Horn Jab (quick).
+  - **Labrys Cleave** (heavy) or **Horn Jab** (quick).
   - 🧪 Its numbers are Claude's, set by sim (50 fights each: 5 random creatures Lv 20, the Hard AI, which doesn't
     play the charge round as a person would): 5 Epics in Epic gear beat it about half the time, losing about 4 of
     their 5 (the Hydra, 3 Epics Lv 16 in Epic gear: about two thirds). Its HP went up 25% after the first sim (80%).

@@ -311,7 +311,9 @@ describe("the Minotaur", () => {
     const s = minotaur();
     const m = s.sides.B.team[0];
     m.statuses.push({ id: "venom", rounds: 5, dmg: 10 });
+    const dice = vi.spyOn(Math, "random").mockReturnValue(0.3); // (round 1, venom on it: Kick, Water Body, Cleave, Jab; 0.3 is Water Body)
     resolveRound(s, { A: jab, B: pass });
+    dice.mockRestore();
     expect(s.log.some((e) => e.type === "effect" && e.side === "B" && e.text.includes("Water Body"))).toBe(true);
     expect(m.statuses.some((st) => st.id === "venom")).toBe(false);
     m.statuses.push({ id: "venom", rounds: 5, dmg: 10 });
@@ -320,17 +322,32 @@ describe("the Minotaur", () => {
     expect(s.log.slice(at).some((e) => e.type === "effect" && e.side === "B" && e.text.includes("Water Body"))).toBe(false);
   });
 
-  it("kicks every other round when it isn't charging", () => {
-    const s = minotaur();
-    const kicks: number[] = [];
-    for (let r = 1; r <= 5; r++) {
-      const at = s.log.length;
-      resolveRound(s, { A: jab, B: pass });
-      if (s.log.slice(at).some((e) => e.type === "attack" && e.side === "B" && e.skill.name === "Kick")) kicks.push(r);
-      for (const k of [...s.needsReplacement]) sendInReplacement(s, k, s.sides[k].team.findIndex((f) => f.hp > 0));
+  it("rolls its moves at random, rolling again for one on cooldown (the user, 2026-11-21)", () => {
+    const used: Record<string, number[]> = {};
+    for (let fight = 0; fight < 20; fight++) {
+      const s = minotaur();
+      const m = s.sides.B.team[0];
+      const seen: Record<string, number[]> = {};
+      for (let r = 1; r <= 30 && !s.winner; r++) {
+        if (r % 4 === 0) m.statuses.push({ id: "venom", rounds: 3, dmg: 1 }); // (now and then, something to wash off)
+        const at = s.log.length;
+        resolveRound(s, { A: jab, B: pass });
+        for (const e of s.log.slice(at)) {
+          const name = e.type === "attack" && e.side === "B" ? e.skill.name : e.type === "effect" && e.side === "B" && e.text.startsWith("lowers its horns") ? "horns"
+            : e.type === "effect" && e.side === "B" && e.text.includes("Water Body") ? "Water Body" : undefined;
+          if (name) (seen[name] ??= []).push(r);
+        }
+        for (const k of [...s.needsReplacement]) sendInReplacement(s, k, s.sides[k].team.findIndex((f) => f.hp > 0));
+      }
+      const gaps = (xs: number[] = []) => xs.slice(1).map((x, i) => x - xs[i]);
+      for (const g of gaps(seen.Kick)) expect(g).toBeGreaterThanOrEqual(2);
+      for (const g of gaps(seen.horns)) expect(g).toBeGreaterThanOrEqual(8);
+      for (const g of gaps(seen["Water Body"])) expect(g).toBeGreaterThanOrEqual(7);
+      for (const [k, v] of Object.entries(seen)) (used[k] ??= []).push(...v);
     }
-    // Round 1 a kick; 2 and 3 the horns and the charge; then a kick again.
-    expect(kicks).toEqual([1, 4]);
+    // …and it isn't a fixed pattern: every move turns up, and the horns don't always come in round 2.
+    for (const k of ["Kick", "horns", "Water Body", "Labrys Cleave", "Horn Jab"]) expect(used[k]?.length).toBeGreaterThan(0);
+    expect(used.horns.some((r) => r > 2 && r < 10)).toBe(true);
   });
 
   it("its Kick knocks your creature aside for a random teammate", () => {

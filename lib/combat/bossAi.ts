@@ -31,15 +31,16 @@
 //
 // The Minotaur (dungeon 4, the first fought 5 against 5; the user, 2026-11-21):
 // one fighter against your five.
-// The user, 2026-11-21 (after playing it): each round, the first of these it can do:
-// - Wound up: it charges: whoever is in front of it falls, whatever its health
-//   (battle.ts: a charge with kill). Swapping doesn't dodge it; it picks who takes it.
-// - Water Body, when venom, poison, bleed or a burn is on it (7-round cooldown).
-// - Horn Charge, from round 2, whenever it's off its 7-round cooldown: it lowers its
-//   horns one round (a warning on screen), and charges the next.
-// - Kick (2-round cooldown, so every other round): a hit, then your creature is knocked
-//   aside and a random teammate comes in (which may leave the wrong one in front of a charge).
-// - Otherwise a quick or a heavy blow.
+// The user, 2026-11-21 (after playing it): wound up, it charges: whoever is in front
+// of it falls, whatever its health (battle.ts: a charge with kill); swapping doesn't
+// dodge it, it picks who takes it. Otherwise it rolls one of its moves (MINOTAUR.ROLL),
+// and rolls again if that one's on cooldown or would do nothing:
+// - Horn Charge (from round 2; 7-round cooldown): it lowers its horns one round (a
+//   warning on screen), and charges the next.
+// - Kick (2-round cooldown; only with someone on your bench): a hit, then your creature
+//   is knocked aside and a random teammate comes in (maybe the wrong one for a charge).
+// - Water Body (7-round cooldown; only with venom, poison, bleed or a burn on it).
+// - Labrys Cleave (heavy) or Horn Jab (quick).
 
 import type { BattleAction, BattleEvent, BattleSide, BattleState, Combatant, GroundEffect, SideKey } from "./battle";
 
@@ -72,8 +73,9 @@ export const HYDRA = {
 };
 export const MINOTAUR = {
   CHARGE_FROM: 2,      // the first round it may lower its horns
-  WASHES: ["venom", "poison", "bleed", "burn"], // what sends it to Water Body
-  HEAVY_CHANCE: 0.5,   // its heavy blow vs its quick one
+  WASHES: ["venom", "poison", "bleed", "burn"], // what Water Body washes off (and it's only rolled with one on it)
+  // 🧪 each move's weight in the roll (one it can't use is rolled again: the same as leaving it out)
+  ROLL: [["Horn Charge", 1], ["Kick", 1], ["Water Body", 1], ["Labrys Cleave", 1], ["Horn Jab", 1]] as [string, number][],
 };
 const HEAD_MOVES: Record<string, [quick: string, heavy: string]> = {
   "Fang Head": ["Snap", "Rending Bite"],
@@ -127,15 +129,18 @@ export function bossActions(state: BattleState, key: SideKey): { index: number; 
         const woundUp = me.statuses.some((s) => s.id === "charged");
         const benched = foe.team.some((f, i) => i !== foe.active && f.hp > 0);
         const fouled = me.statuses.some((s) => MINOTAUR.WASHES.includes(s.id));
+        // What it could roll now. (A fight saved before the kick has its old Sweeping Horns in its place.)
+        const could = (name: string) => canUse(me, name) && (name === "Horn Charge" ? state.round >= MINOTAUR.CHARGE_FROM
+          : name === "Kick" || name === "Sweeping Horns" ? benched : name === "Water Body" ? fouled : true);
+        const pool = MINOTAUR.ROLL.map(([n, w]) => [n === "Kick" && !me.skills.some((s) => s.name === "Kick") ? "Sweeping Horns" : n, w] as [string, number]).filter(([n]) => could(n));
+        let pick = r * pool.reduce((t, [, w]) => t + w, 0);
+        const rolled = pool.find(([, w]) => (pick -= w) < 0)?.[0] ?? pool[pool.length - 1]?.[0];
         if (woundUp) action = attack("Horn Charge");
-        else if (fouled && canUse(me, "Water Body")) action = attack("Water Body");
-        else if (state.round >= MINOTAUR.CHARGE_FROM && canUse(me, "Horn Charge")) {
-          side.boss!.horns = state.round;
-          action = attack("Horn Charge");
-        } else if (benched && canUse(me, "Kick")) action = attack("Kick");
-        // (A fight saved before the kick: its old Sweeping Horns, at the old odds.)
-        else if (benched && r < 0.25 && canUse(me, "Sweeping Horns")) action = attack("Sweeping Horns");
-        else action = Math.random() < MINOTAUR.HEAVY_CHANCE ? firstAffordable(me, "Labrys Cleave", "Horn Jab") : firstAffordable(me, "Horn Jab");
+        else if (!rolled) action = { kind: "pass" };
+        else {
+          if (rolled === "Horn Charge") side.boss!.horns = state.round;
+          action = attack(rolled);
+        }
         break;
       }
       case "Cyclops":
