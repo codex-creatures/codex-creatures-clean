@@ -2,9 +2,9 @@
 // The tavern questline (docs/design.md §9), stage by stage. Built so far:
 // 1. Klutz's quest. Once any of your creatures is Lv QUEST_CREATURE_LEVEL
 //    and Klutz is Lv QUEST_KLUTZ_LEVEL (only won hunts give him XP, so his
-//    level is the record of having hunted), he has news (a ❗), unless he's
-//    out hunting: then it waits until he's home. Talking to him gives the
-//    quest, once.
+//    level is the record of having hunted), it's yours, once: home or out
+//    hunting (the user, 2026-11-20: waiting till he was home meant a busy
+//    Klutz never gave it). He tells you about it, and the board's step says.
 // 2. The storehouse. From then until you've got the dynamite, each run's
 //    first large room is a Storehouse, marked on the scroll from the start,
 //    with the dynamite among its crates (lib/dungeon/map.ts: rollMap). Taking
@@ -260,10 +260,10 @@ export function materialOffer(key: MaterialKey): number {
 // What the repair takes.
 export const REPAIR_COST: Materials = { metal_bars: 5, planks: 20, nails: 5 };
 
-// Is Klutz's quest waiting for you to talk to him? firstQuestDone: his box is
-// back and he's helping (lib/quest.ts: klutzHelping).
-export function tavernQuestDue(t: TavernQuest, firstQuestDone: boolean, creatureLevels: number[], klutzLevel: number, klutzAway: boolean): boolean {
-  return firstQuestDone && !t.accepted && !klutzAway
+// Is Klutz's quest due (and so given, hooks/useGameState.ts)? firstQuestDone:
+// his box is back and he's helping (lib/quest.ts: klutzHelping).
+export function tavernQuestDue(t: TavernQuest, firstQuestDone: boolean, creatureLevels: number[], klutzLevel: number): boolean {
+  return firstQuestDone && !t.accepted
     && klutzLevel >= QUEST_KLUTZ_LEVEL && creatureLevels.some((l) => l >= QUEST_CREATURE_LEVEL);
 }
 

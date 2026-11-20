@@ -152,8 +152,10 @@ fields optional with defaults.
 
 1. ✅ **Klutz's quest.** It unlocks once any creature reaches Lv 6 **and** Klutz is Lv 2 or more
    (either order). Only won hunts give him XP and a first catch takes him to Lv 2, so his level
-   is the record of having hunted, and old saves work too. While he's out, the quest waits until
-   he's home. Then a "!" shows over him; talking to him gives the quest, once.
+   is the record of having hunted, and old saves work too. Then the quest is yours straight away,
+   once, whether he's home or out hunting (the user, 2026-11-20: it used to wait till he was home and
+   talked to, so a Klutz always out never gave it). His page tells you about it, and the board's step
+   (`rubble`) says to find the stone in a storehouse: Cyclops runs and deeper (the Encampment has no large room).
    ✅ **The Labyrinth Stone** (the user, 2026-11-19): what Klutz wants is the Labyrinth Stone, old magic that
    makes the Labyrinth's walls move, where it was dynamite (the same find, in the same place; the save keeps
    the name `dynamite`, so whoever had the dynamite has the stone). In the new Den he sets it in the old wall's
@@ -389,7 +391,7 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
 | Chapter | Quests, in order (reward) |
 |---|---|
 | 1 The Encampment | Do an Encampment run (50g; first since 2026-11-20, the user: `CAMPAIGN_V` 2 shifts older saves' claims past it) · Scan 3 (50g) · 3 in the Bestiary (50g) · Send Klutz hunting (scroll) · A creature fully kitted (100g) · Win 5 fights (100g) · Collect 3 cards (100g) · A creature Lv 5 (scroll) · **Beat the Encampment** (Gear Crate, Uncommon–Rare ×3) |
-| 2 The Cyclops | Calibrate the scanner (150g) · Explorer Lv 5 (scroll) · Learn a codex move (150g) · Buy from a merchant (150g) · Summon a Common (Supplies) · Open 3 camp cages (200g) · A Rare+ weapon on (250g) · Klutz brings home Rare+ gear (scroll) · Win 25 fights (scroll) · A set bonus (250g) · 1,000 gold saved (Materials, Common–Uncommon) · The Encampment without a potion (300g) · Open the old wall in the Den (bookcase schematic) · **Beat the Cyclops** (enchanted Epic weapon) |
+| 2 The Cyclops | Calibrate the scanner (150g) · Explorer Lv 5 (scroll) · Learn a codex move (150g) · Buy from a merchant (150g) · Summon a Common (Supplies) · Open 3 camp cages (200g) · A Rare+ weapon on (250g) · Klutz brings home Rare+ gear (scroll) · Win 25 fights (scroll) · A set bonus (250g) · 1,000 gold saved (Materials, Common–Uncommon) · The Encampment without a potion (300g) · Find the Labyrinth Stone and open the old wall (bookcase schematic) · **Beat the Cyclops** (enchanted Epic weapon) |
 | 3 The Hydra | Klutz Lv 5 (scroll) · A creature Lv 10 (Materials, Uncommon–Rare) · An enchanted weapon on (300g) · Every Klutz skill levelled (300g) · Fix up the tavern (Gold Key) · A win with only effective moves (400g) · Summon an Uncommon (Supplies) · Scan 50 (500g) · 15 in the Bestiary (scroll) · A bigger bag (500g) · 3 Sparring Pit levels (2 scrolls) · Klutz brings home Epic+ gear (Materials, Rare–Epic) · An Epic+ item on (500g) · Win 100 fights (Codex Crate, Uncommon–Rare ×2) · Open a golden chest (Gear, Rare–Epic) · 5,000 gold (2 scrolls) · The Cyclops without a potion (1,000g) · A creature Lv 15 (Gear, Rare–Epic) · **Beat the Hydra** (enchanted Epic armour) |
 | 4 The Abyss | An enchanted armour piece on (1,000g) · Klutz Lv 10 (Materials, Rare–Epic) · Every visitor calls (2 scrolls) · Summon a Rare (Supplies) · Build 3 schematics (Materials, Rare–Epic) · Explorer Lv 20 (2,000g) · 10 Sparring Pit levels (3 scrolls) · A creature Lv 20 (Gear, Epic) · 15,000 gold (3 scrolls) · Win 250 fights (Codex, Rare–Epic ×2) · The Hydra without a potion (Gear, Epic) · **Beat the Abyss** (enchanted Legendary weapon) |
 | 5 Legend | A creature Lv 25 · Klutz Lv 15 · Summon an Epic · Klutz brings home Legendary gear · A Legendary item on · Scan 250 · 35 in the Bestiary (all) · Explorer Lv 30 · 50,000 gold · The Abyss without a potion · A creature Lv 30 · Klutz Lv 20 · Summon a Legendary · Klutz Lv 25 · Klutz Lv 30 (crates Epic–Legendary, scrolls, enchanted Legendary gear) |

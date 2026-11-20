@@ -269,7 +269,7 @@ export const CHAPTERS: Chapter[] = [
     q.gold(1000, crate("materials", "common", "uncommon")),
     q.clean(0, "the Encampment", gold(300)),
     // (Was "Blow open the rubble": in the new Den the Labyrinth Stone moves the old wall. Its id kept: saves have claimed it.)
-    q.once("rubble", "Open the old wall in the Den", "/", (c) => c.blasted, { bookcasePlans: true }),
+    q.once("rubble", "Find the Labyrinth Stone (a storehouse, Cyclops runs on) and open the Den's old wall", "/dungeon", (c) => c.blasted, { bookcasePlans: true }),
     q.once("cyclops", "Beat the Cyclops", "/dungeon", (c) => c.wins.cyclops > 0, { enchanted: "weapon", rarity: "epic" }),
   ] },
   { name: "The Hydra", quests: [

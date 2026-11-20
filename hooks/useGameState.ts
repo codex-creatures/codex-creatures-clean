@@ -477,12 +477,13 @@ export function useGameState(initialTab: TabKey = "all") {
   const klutzIsAway = () => { const ex = klutz.expedition; return !!ex && !ex.collected && Date.now() < ex.endsAt; };
 
   // ── The tavern questline (lib/tavern.ts) ──────────────
-  // Klutz's quest is waiting (a ❗ over him) once a creature's Lv 6 and he's Lv 2
-  // (and he's home: back from a trip once it's collected).
-  const tavernDue = tavernQuestDue(tavern, klutzHelping(quest),
-    inventory.filter(isCreatureDrop).map((d) => clampLevel((d as CreatureOrItemDrop).level)), clampLevel(klutz.level),
-    !!klutz.expedition && !klutz.expedition.collected);
-  const acceptTavernQuest = () => setTavern(updateTavern((t) => ({ ...t, accepted: true })));
+  // Klutz's quest is yours once a creature's Lv 6 and he's Lv 2, whether he's
+  // home or out: it goes straight on (his page and the board say what to do).
+  const tavernDue = hydrated && tavernQuestDue(tavern, klutzHelping(quest),
+    inventory.filter(isCreatureDrop).map((d) => clampLevel((d as CreatureOrItemDrop).level)), clampLevel(klutz.level));
+  // (Saved, not just derived: the Labyrinth reads it for the storehouse. Once only: then it's accepted.)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { if (tavernDue) setTavern(updateTavern((t) => ({ ...t, accepted: true }))); }, [tavernDue]);
   const blastRubble = () => setTavern(updateTavern(blast));
   const openRubbleForTesting = () => setTavern(updateTavern(forceOpen)); // the altar's testing tools
   // …and a visitor now: the merchant, the librarian, the collector and the Enchantress, in turn.
@@ -1331,7 +1332,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, findBookPlans, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, upgradeTavernVisitor, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, findBookPlans, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, upgradeTavernVisitor, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

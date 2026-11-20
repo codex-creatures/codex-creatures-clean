@@ -552,16 +552,10 @@ function QuestTalk({ game, first, onKit, onHunt }: { game: ReturnType<typeof use
       <button className="pixel-btn" onClick={onHunt}>🌀 To the Hunt tab</button>);
   }
   // The tavern questline (lib/tavern.ts): Klutz wants the Labyrinth Stone for the wall (the dynamite, till 2026-11-19).
-  if (game.tavernDue) {
-    return say(
-      <>&ldquo;You&apos;re getting tough! See the Den&apos;s right-hand wall? I reckon there&apos;s a whole room behind it.
-        Find me a <b>Labyrinth Stone</b>: old magic that makes the walls down there move. Try a <b>storehouse</b>.&rdquo;</>,
-      <button className="pixel-btn" onClick={game.acceptTavernQuest}>&ldquo;I&apos;ll find one.&rdquo;</button>,
-    );
-  }
   if (game.tavern.accepted && !game.tavern.dynamite) {
     return say(
-      <>&ldquo;The <b>storehouse</b>&apos;s marked on your scroll. The Labyrinth Stone&apos;s in there somewhere!&rdquo;</>,
+      <>&ldquo;You&apos;re getting tough! See the Den&apos;s old wall? I reckon there&apos;s a whole room behind it.
+        Find me a <b>Labyrinth Stone</b>: old magic that makes the walls move. Not in the Encampment: past it, in the <b>Cyclops</b>&apos;s runs and deeper, there&apos;s a <b>storehouse</b> marked on your scroll.&rdquo;</>,
       <Link href="/dungeon" className="pixel-btn">🌀 To the Labyrinth</Link>,
     );
   }

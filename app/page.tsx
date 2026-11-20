@@ -60,7 +60,7 @@ export default function Home() {
   // What the Den shows (either Den): where Klutz is, the rubble, the tavern's pit, and what's waiting where.
   const caged = (game.caged[0] as { creatureId?: string } | undefined)?.creatureId;
   const klutzAt = !game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home";
-  const klutzNews = game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0)
+  const klutzNews = game.hydrated && (klutzHasNews(game.quest) || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0)
     || klutzFirstStep(game.quest, game.equipment[KLUTZ_DROP_ID], !!game.klutz.expedition || !!game.klutz.trips?.length) !== null); // (till his first trip)
   const rubble = game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut";
   const pit = hasPit(game.tavern) ? { ready: game.hydrated && !!game.trainingStatus(now)?.full } : undefined;

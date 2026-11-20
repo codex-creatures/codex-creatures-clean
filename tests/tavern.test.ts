@@ -9,7 +9,7 @@ import type { Drop } from "../lib/types";
 import { createDen, mergeRects, strollAt, OBJ, W, H, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "../lib/den/scene";
 
 describe("the tavern questline: Klutz's quest", () => {
-  const due = (levels: number[], klutz: number, away = false, done = true, t = {}) => tavernQuestDue(t, done, levels, klutz, away);
+  const due = (levels: number[], klutz: number, done = true, t = {}) => tavernQuestDue(t, done, levels, klutz);
 
   it("needs a Lv 6 creature and Klutz at Lv 2, in either order", () => {
     expect(QUEST_CREATURE_LEVEL).toBe(6);
@@ -20,13 +20,12 @@ describe("the tavern questline: Klutz's quest", () => {
     expect(due([9], 4)).toBe(true);
   });
 
-  it("waits while he's out hunting, and until his box quest is done", () => {
-    expect(due([6], 2, true)).toBe(false);
-    expect(due([6], 2, false, false)).toBe(false);
+  it("waits until his box quest is done (not until he's home: the user, 2026-11-20)", () => {
+    expect(due([6], 2, false)).toBe(false);
   });
 
   it("is given once", () => {
-    expect(due([6], 2, false, true, { accepted: true })).toBe(false);
+    expect(due([6], 2, true, { accepted: true })).toBe(false);
   });
 
   it("wants the storehouse from accepting it until the dynamite is yours", () => {
