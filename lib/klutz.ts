@@ -80,6 +80,10 @@ export const PACK_UPGRADE_PRICES = [500, 750, 1000, 1500, 2000, 2500, 3000, 4000
 export const CHEST_START = 30;                // his chest at home
 export const CHEST_STEP = 10;                 // …each upgrade
 export const CHEST_PRICES = [500, 1000, 2000, 3000, 5000];
+// His shack (the user, 2026-11-20: Klutz's Den starts broken down): its crate holds SHACK_CHEST until it's repaired
+// (SHACK_REPAIR, from your materials) into his cabin, CHEST_START; then the gold upgrades. New games start in it.
+export const SHACK_CHEST = 10;
+export const SHACK_REPAIR = { planks: 20, nails: 10 } as const;
 export const SKILL_MAX = 10;
 export const SKILL_STEP = 0.03;               // Armourer, Scavenger, Scholar: an extra find's chance a level, each window
 export const TRAP_STEP = 0.02;                // Trapping: catch chance a level
@@ -192,6 +196,7 @@ export type KlutzState = {
   traits?: KlutzTraits;  // (v2) his traits (missing = none)
   packs?: number;        // (v2) pack upgrades sewn on (+1 slot each; missing = none)
   chestUps?: number;     // (v2) his chest's upgrades (missing = none)
+  shack?: boolean;       // still the broken-down shack, not yet repaired (missing: the cabin, as every save before it)
   dest?: KlutzDest;      // (v2) where you last sent him (the picker remembers it)
   trips?: KlutzTrip[];   // his trips, newest first, TRIP_LOG at most (missing: none recorded yet: tripLog reads the last one)
 };
@@ -287,8 +292,16 @@ export const catchChance = (r: Rarity, trapping = 0) => Math.min(1, CATCH_CHANCE
 export const packSize = (k: KlutzState) => Math.min(PACK_MAX, PACK_START + (k.traits?.pack ? PACK_TRAIT.slots : 0) + (k.packs ?? 0));
 export const packUpgradePrice = (k: KlutzState) => PACK_UPGRADE_PRICES[Math.min(PACK_UPGRADE_PRICES.length - 1, k.packs ?? 0)];
 
-export const chestSize = (k: KlutzState) => CHEST_START + CHEST_STEP * (k.chestUps ?? 0);
-export const chestUpgradePrice = (k: KlutzState) => CHEST_PRICES[k.chestUps ?? 0]; // undefined: fully built
+export const chestSize = (k: KlutzState) => (k.shack ? SHACK_CHEST : CHEST_START + CHEST_STEP * (k.chestUps ?? 0));
+export const chestUpgradePrice = (k: KlutzState) => (k.shack ? undefined : CHEST_PRICES[k.chestUps ?? 0]); // undefined: fully built (or still the shack)
+// A new game's Klutz: in his shack.
+export const NEW_KLUTZ: KlutzState = { shack: true };
+// The shack repaired: his cabin.
+export function repairShack(k: KlutzState): KlutzState {
+  const rest = { ...k };
+  delete rest.shack;
+  return rest;
+}
 // His traits: what he's picked, the picks his level has given him, and picking one.
 export const traitsPicked = (k: KlutzState): TraitKey[] => TRAIT_KEYS.filter((t) => k.traits?.picked?.includes(t) || (t === "pack" && !!k.traits?.pack));
 export const traitPicks = (k: KlutzState) => TRAIT_LEVELS.filter((l) => clampLevel(k.level) >= l).length;

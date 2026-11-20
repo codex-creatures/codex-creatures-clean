@@ -134,3 +134,16 @@ describe("Klutz's trip, told as a story", () => {
     expect(text).not.toContain("skip to the end");
   });
 });
+
+describe("repairing Klutz's shack", () => {
+  afterEach(() => { act(() => root.unmount()); host.remove(); });
+  it("his Crate tab repairs it with your planks and nails: his crate holds 30", async () => {
+    await open("", { klutz: { level: 6, trips: [trip], shack: true }, materials: { planks: 25, nails: 10 } });
+    expect(host.textContent).toContain("0/10");
+    await tap([...host.querySelectorAll("button")].find((b) => b.textContent?.includes("Repair his shack")));
+    const saved = JSON.parse(localStorage.getItem(SAVE_KEY)!);
+    expect(saved.klutz.shack).toBeUndefined();
+    expect(saved.materials).toMatchObject({ planks: 5, nails: 0 });
+    expect(host.textContent).toContain("0/30");
+  });
+});

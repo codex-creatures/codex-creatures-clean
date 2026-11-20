@@ -97,7 +97,7 @@ export default function Home() {
             sink as the save came in, every time you came home.) */}
         {newDen ? game.hydrated && (
           <Den3D caged={caged} klutz={klutzAt} klutzNews={klutzNews} highlight={highlight} rubble={rubble} onBlast={game.blastRubble}
-            tavern={game.tavern} pit={pit} tavernNews={tavernNews} boardNews={boardNews} crateNews={crateNews} cageNews={cageNews} />
+            tavern={game.tavern} pit={pit} tavernNews={tavernNews} boardNews={boardNews} crateNews={crateNews} cageNews={cageNews} shack={!!game.klutz.shack} />
         ) : newDen === false && (
           <DenRoom caged={caged} klutz={klutzAt} klutzNews={klutzNews} backpack={backpack} highlight={highlight}
             rubble={rubble} onBlast={game.blastRubble} tavernNews={tavernNews} boardNews={boardNews} upgraded={game.bookcase >= 2}

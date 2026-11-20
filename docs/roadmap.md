@@ -78,7 +78,7 @@ interesting situations, real decisions, progression and surprises, not feel they
   - **The Soul Altar** starts broken: no summoning from cards and no ascension (Code Caches open at the scanner)
     until the gem the Encampment's chief (the Baby Cyclops) drops the first time he's beaten. Saves that have
     beaten him have a working altar.
-  - **Klutz's Den** starts as a broken-down shack, his crate 10; repaired for 20 planks and 10 nails, it's
+  - ✅ **Klutz's Den** (built 2026-11-20; its broken look a sample to approve) starts as a broken-down shack, his crate 10; repaired for 20 planks and 10 nails, it's
     today's cabin with a crate of 30, then the gold upgrades (+10 each, to 80) as now. Saves with the cabin keep it.
 
 - 🧪 **The new Den** (decision 50, the user, 2026-11-18): built behind Settings → New Den, off by default,

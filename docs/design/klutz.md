@@ -33,7 +33,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     is its price, it cost 1,000 gold) and **Pack Upgrades** (+1 each; in 5% of chests, and 20% of merchants' carts at
     500 rising to 4,000: `KLUTZ_PACK_PRICES`), sewn on from his Skills tab: it shows his pack's slots (all 20, the
     ones still to sew on dashed) and the upgrades you hold; tap one and a new slot pops in (the user, 2026-11-14).
-  - **His chest** (the crate) takes codexes, potions and gear; materials go straight to your tally. It holds 30
+  - **His chest** (the crate) takes codexes, potions and gear; materials go straight to your tally. ✅ A new game starts with his place a
+    broken-down **shack** (the user, 2026-11-20; `shack`, `SHACK_CHEST`): the crate holds 10 and there are no gold
+    upgrades until it's repaired for 20 planks and 10 nails (`SHACK_REPAIR`, the Crate tab's 🔨 button) into his
+    cabin, drawn in the 3D Den from the sample recipe `shack-broken` till then. Saves from before it have the cabin. The cabin holds 30
     (`CHEST_START`), +10 an upgrade for 500 to 5,000 gold; full, he won't set off (a trip can overfill it). Keeping
     things from it needs room (the user, 2026-11-17): each goes only into a box with space, a codex only while
     the bookcase has room, and the rest stay in the crate with the reason shown (`roomFor`, lib/items/storage.ts).

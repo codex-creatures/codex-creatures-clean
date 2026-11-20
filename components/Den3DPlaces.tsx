@@ -30,15 +30,16 @@ const GREEN = "#7fdc8a"; // the portal's
 // for their old drawings: the altar, the pool, the pits, the board and the buildings (the tavern once it's repaired).
 // Without its recipe (one that won't read), a place keeps its old drawing.
 // `classic`: the old drawings, never the recipes (the prop builder's "what the game draws now", to compare).
-export function Place({ s, tint, stretch, pitch = Math.PI / 3, caged, repaired, trainingPit, stoneReady, classic = false }: { s: Station; tint: () => THREE.Color; stretch: number; pitch?: number; caged?: string;
-  repaired: boolean; trainingPit: boolean; stoneReady: boolean; classic?: boolean }) {
+export function Place({ s, tint, stretch, pitch = Math.PI / 3, caged, repaired, trainingPit, stoneReady, shack = false, classic = false }: { s: Station; tint: () => THREE.Color; stretch: number; pitch?: number; caged?: string;
+  repaired: boolean; trainingPit: boolean; stoneReady: boolean; shack?: boolean; classic?: boolean }) {
   const at: [number, number, number] = [s.x, 0, s.y];
   const made = (id: string, against: "middle" | "north" | "west" = "middle", extra?: React.ReactNode) => {
     const r = classic ? null : recipeOf(id);
     return r ? <Made r={r} s={s} against={against} tint={tint} pitch={pitch} stretch={stretch}>{extra}</Made> : null;
   };
   switch (s.key) {
-    case "shack": return made("shack", "north") ?? <Building at={at} d={s.d} art={BUILDINGS.shack} tint={tint} />;
+    // (Klutz's: broken down till it's repaired, the user, 2026-11-20; its recipe a sample, lib/props/recipes/shack-broken.json.)
+    case "shack": return (shack ? made("shack-broken", "north") ?? made("shack", "north") : made("shack", "north")) ?? <Building at={at} d={s.d} art={BUILDINGS.shack} tint={tint} />;
     case "storehouse": return made("storehouse", "west") ?? <Building at={at} d={s.turn ? s.w : s.d} art={BUILDINGS.storehouse} tint={tint} turn={!!s.turn} />;
     case "tavern": return (repaired ? made("tavern", "north", <Smoke at={CHIMNEY} />) : made("tavern-broken", "north")) ?? <Building at={at} d={s.d} art={BUILDINGS.tavern} broken={!repaired} tint={tint} />;
     case "board": return made("board", "north") ?? <OnWall s={s} pic={NOTES} tint={tint} backing={{ colour: "#5e432a", pad: 0.12 }} />;

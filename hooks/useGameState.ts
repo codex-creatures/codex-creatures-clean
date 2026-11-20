@@ -14,7 +14,7 @@ import { findPrice } from "@/lib/scanReveal";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, POTIONS, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, retiredCodexMove } from "@/lib/drops";
 import type { Rarity } from "@/lib/items/budgets";
-import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, sendBlock, klutzStatus, drinkPotion, destCost, spendSkill, canPickTrait, pickTrait, selectiveOpen, cageFilterOpen, chestUpgradePrice, packSize, PACK_TRAIT, PACK_MAX, type KlutzState, type KlutzDest, type SkillKey, type TraitKey, type BossClears, type SendBlock } from "@/lib/klutz";
+import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, sendBlock, klutzStatus, drinkPotion, destCost, spendSkill, canPickTrait, pickTrait, selectiveOpen, cageFilterOpen, chestUpgradePrice, repairShack, NEW_KLUTZ, SHACK_REPAIR, packSize, PACK_TRAIT, PACK_MAX, type KlutzState, type KlutzDest, type SkillKey, type TraitKey, type BossClears, type SendBlock } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { endTour } from "@/lib/tour";
 import { canReroll, reroll, rerollCost, REROLL_ESSENCE } from "@/lib/enchantress";
@@ -273,6 +273,7 @@ export function useGameState(initialTab: TabKey = "all") {
     const saved = loadSave(); // includes Klutz
     setInventory(saved?.inventory ?? []);
     setFavoriteIds(new Set(saved?.favoriteIds ?? []));
+    if (!saved) setKlutz({ ...NEW_KLUTZ }); // (no save at all: a new game, Klutz in his shack)
     if (saved) {
       setGold(saved.gold);
       setScanCounts(saved.scanCounts);
@@ -599,6 +600,13 @@ export function useGameState(initialTab: TabKey = "all") {
     const price = chestUpgradePrice(klutz);
     if (price === undefined || !spendGold(price)) return false;
     setKlutz((k) => ({ ...k, chestUps: (k.chestUps ?? 0) + 1 }));
+    return true;
+  }
+  // His shack repaired into his cabin, from your materials (SHACK_REPAIR): his crate grows to CHEST_START.
+  function repairKlutzShack(): boolean {
+    if (!klutz.shack || !canAfford(materials, SHACK_REPAIR)) return false;
+    setMaterials((m) => addMaterials(m, Object.fromEntries(Object.entries(SHACK_REPAIR).map(([k, n]) => [k, -n]))));
+    setKlutz(repairShack);
     return true;
   }
   // A Pack Upgrade (a merchant's, or a chest's find) sewn onto his pack: +1 slot. From your Inventory or your bag.
@@ -1277,7 +1285,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setGold(0);
     setScanCounts({});
     setFavoriteIds(new Set());
-    setKlutz({});
+    setKlutz({ ...NEW_KLUTZ });
     setQuest({ ...NEW_QUEST });
     setSeen([]);
     setDeathsSinceScan(0);
@@ -1334,6 +1342,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, upgradeBookcase, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, ascendCreature, ascendAway, ascendBusy, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, pickKlutzTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, healKlutz, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, pickKlutzTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, repairKlutzShack, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, healKlutz, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

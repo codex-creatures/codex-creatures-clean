@@ -326,7 +326,7 @@ export type Station = { key: StationKey; obj?: Exclude<ObjId, 0>; label: string;
 // the tavern has its pit, as the old room had: lib/trainingPit.ts hasPit). Room 1: the shack in the hall's
 // top-left corner, the storehouse along the west wall, the Bestiary in the nook, the Labyrinth's tunnel, and
 // what you can move. Room 2: the tavern in the hall's top-right corner and the PvP portal's tunnel.
-export type DenState = { opened: boolean; pit: boolean; trainingPit: boolean; repaired: boolean };
+export type DenState = { opened: boolean; pit: boolean; trainingPit: boolean; repaired: boolean; shack?: boolean }; // shack: Klutz's not yet repaired (its look only)
 export function stations(s: DenState, p: Placed = placed(undefined, s.opened)): Station[] {
   const back = (face: number, d: number) => face + d / 2; // a thing standing against a north wall: its y
   const floorAt = (k: FloorKey) => ({ ...p.floor[k], ...FLOOR_SIZE[k], room: (p.floor[k].x < DIVIDE_X ? 1 : 2) as 1 | 2 });

@@ -395,3 +395,21 @@ describe("a potion for Klutz in the pool (the user, 2026-11-20)", () => {
     expect(full.level).toBe(3);
   });
 });
+
+import { SHACK_CHEST, SHACK_REPAIR, NEW_KLUTZ, repairShack, chestUpgradePrice } from "../lib/klutz";
+describe("Klutz's shack (the user, 2026-11-20)", () => {
+  it("a new game's Klutz is in his shack: a small crate, no gold upgrades till it's repaired", () => {
+    expect(chestSize(NEW_KLUTZ)).toBe(SHACK_CHEST);
+    expect(chestUpgradePrice(NEW_KLUTZ)).toBeUndefined();
+    const cabin = repairShack({ ...NEW_KLUTZ, level: 4 });
+    expect(cabin.shack).toBeUndefined();
+    expect(cabin.level).toBe(4);
+    expect(chestSize(cabin)).toBe(CHEST_START);
+    expect(chestUpgradePrice(cabin)).toBe(500);
+    expect(SHACK_REPAIR).toEqual({ planks: 20, nails: 10 });
+  });
+  it("an old save (no shack field) keeps his cabin and its upgrades", () => {
+    expect(chestSize({})).toBe(CHEST_START);
+    expect(chestSize({ chestUps: 2 })).toBe(CHEST_START + 20);
+  });
+});

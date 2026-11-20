@@ -24,7 +24,7 @@ import Link from "next/link";
 import { useEscape } from "@/hooks/useEscape";
 import { startTour, TOUR_CHOICES } from "@/lib/tour";
 import DenFrame from "@/components/DenFrame";
-import PixelSprite, { creatureSprite, PotionIcon } from "@/components/PixelSprite";
+import PixelSprite, { creatureSprite, PotionIcon, MaterialIcon } from "@/components/PixelSprite";
 import { POTIONS } from "@/lib/dungeon/run";
 import { LevelBar } from "@/components/CreatureDetailModal";
 import CodeCache from "@/components/CodeCache";
@@ -46,7 +46,7 @@ import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/items/budgets";
 import {
   klutzStatus, pointsFree, HEAL_MS_PER_HP, CAPTURE_XP, FIND_XP, XP_SHARE, HUNT_BELOW, HUNT_ABOVE, FIND_EVERY_MS, FIND_MIX, SKILL_EVERY_MS, findChance, NOTHING_STEP, GEAR_DROP_CHANCE, HOME_AT, SEND_AT,
-  KLUTZ_DESTS, destCost, destOpen, bestRarity, packSize, chestSize, chestUpgradePrice, skillPointsFree, skillLevel, skillChance, catchChance, readyAt,
+  KLUTZ_DESTS, destCost, destOpen, bestRarity, packSize, chestSize, chestUpgradePrice, SHACK_REPAIR, CHEST_START, skillPointsFree, skillLevel, skillChance, catchChance, readyAt,
   SKILL_KEYS, SKILL_MAX, PACK_TRAIT, PACK_MAX, TRAIT_LEVELS, traitsPicked, traitPicks, nextTraitLevel, canPickTrait,
   type Expedition, type KlutzDest, type SkillKey, type SendBlock, type TraitKey,
 } from "@/lib/klutz";
@@ -402,6 +402,7 @@ function PackPanel({ game, packs }: { game: Game; packs: number }) {
 // ── Crate: its size, its upgrade, and what's in it ──
 function ChestTab({ game }: { game: Game }) {
   const k = game.klutz, size = chestSize(k), price = chestUpgradePrice(k), n = game.crate.length;
+  const canRepair = (game.materials.planks ?? 0) >= SHACK_REPAIR.planks && (game.materials.nails ?? 0) >= SHACK_REPAIR.nails;
   return (
     <div className="stone-panel" style={{ marginTop: 10 }}>
       <div className="pixel-font" style={{ fontSize: 18, color: GOLD }}>His crate · {n}/{size}</div>
@@ -412,7 +413,12 @@ function ChestTab({ game }: { game: Game }) {
         {n >= size ? "Full: he won't set off until there's room. A trip can fill it past the top." : "Codexes, potions and gear he brings home wait here. Materials go straight to your tally."}
       </p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {price !== undefined
+        {/* Still his shack: repaired with materials first (lib/klutz.ts SHACK_REPAIR), then the gold upgrades. */}
+        {k.shack
+          ? <button className="pixel-btn" disabled={!canRepair} onClick={game.repairKlutzShack} title={`Repair his shack: his crate holds ${CHEST_START}`}>
+              🔨 Repair his shack · {SHACK_REPAIR.planks} 🪵 {SHACK_REPAIR.nails} 📌
+            </button>
+          : price !== undefined
           ? <button className="pixel-btn" disabled={game.gold < price} onClick={game.upgradeKlutzChest}>Bigger crate · <Coin /> {price}</button>
           : <span style={{ fontSize: 13, color: MUTED, alignSelf: "center" }}>Fully built.</span>}
       </div>

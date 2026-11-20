@@ -11,6 +11,7 @@ import pit from "./pit.json";
 import pool from "./pool.json";
 import portal from "./portal.json";
 import shack from "./shack.json";
+import shackBroken from "./shack-broken.json";
 import socket from "./socket.json";
 import sparring from "./sparring.json";
 import storehouse from "./storehouse.json";
@@ -18,4 +19,4 @@ import tavern from "./tavern.json";
 import tavernBroken from "./tavern-broken.json";
 import training from "./training.json";
 
-export const RECIPE_FILES: Record<string, unknown> = { altar, arch, board, cage, pit, pool, portal, shack, socket, sparring, storehouse, tavern, "tavern-broken": tavernBroken, training };
+export const RECIPE_FILES: Record<string, unknown> = { altar, arch, board, cage, pit, pool, portal, shack, "shack-broken": shackBroken, socket, sparring, storehouse, tavern, "tavern-broken": tavernBroken, training };
