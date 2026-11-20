@@ -120,15 +120,17 @@ to do there (Bounty in a duel, with no gold) just does nothing.
   any box is at 50 or more. A scan for a full box is kept as a sealed Code Cache at the altar (even
   in Looting mode), and a cache for a full box won't open until there's room. The altar holds 9
   caches (`CACHE_LIMIT`): with 9 waiting, every scan says "Scan Failed / Code Cache Full".
-  ✅ **Storage schematics** (2026-10-25): the merchant's Weapon and Armour Storage Schematics
-  (`weapon_storage`, `armor_storage`) build that box up to 75 (`BIG_BOX_CAP`; consumables stay at
-  50). Built from the Inventory (a panel above the list) for 10 planks, 10 nails, 1 stone.
-  The save remembers which boxes are built (`storage`, optional, default none).
-  ✅ **Reinforced storage schematics** (the user, 2026-11-13): once a box's first schematic is built,
-  the merchant's same 20% roll offers its second one instead (`weapon_storage_2`, `armor_storage_2`,
-  Legendary) for 4,000 gold (`STORAGE_PLAN_2_PRICE`). Built the same way, for 10 metal bars, 5 stone and
-  2 essence crystals: that box holds 100 (`BIGGER_BOX_CAP`). In the save a box built twice is in
-  `storage` twice (`boxTier`; older saves read as before).
+  ✅ **Storage in stages** (the user, 2026-11-20; it was two schematics, 75 then 100, since 2026-10-25 and
+  2026-11-13): the weapon and armour boxes each grow 50 → 60 → 75 → 85 → 100 (`BOX_CAPS`,
+  lib/items/storage.ts), a schematic for each stage, found (you have to find it) and dearer each time, the last
+  with essence crystals: the Rack (10 planks, 5 nails), Storage (15 planks, 10 nails, 3 metal bars), Iron
+  Storage (10 nails, 10 bars, 3 stone) and Reinforced Storage (15 bars, 5 stone, 2 essence crystals)
+  Schematics (`weapon_storage_1`, `weapon_storage`, `weapon_storage_3`, `weapon_storage_2`; the armour
+  ones the same). Room past 100 is to be bought for real money (📌 not built or designed); consumables stay
+  at 50. Built from the Inventory (a panel above the list, components/PlanBuild.tsx); a plan builds its own
+  stage, so one held from before can skip a stage. Where they're found: the Den's ladders, below.
+  The save counts each box's stages in `storage` (`boxTier`); `storageV` 2 marks a save in stages, and an older
+  one's boxes move onto them as it loads (built once, 75, is stage 2; twice, 100, stage 4: `storageFromOld`).
 - ✅ **Bags:** you start with a Bindle (3 slots, `BINDLE`). The Rugged Backpack (5, `BACKPACK`) is
   found three ways, until you've got it (the user, 2026-10-20): the first Cyclops's chest; every
   wandering merchant's cart, Labyrinth or tavern, for 1,000 gold (`BACKPACK_PRICE`; it takes one of
@@ -143,13 +145,39 @@ to do there (Bounty in a duel, with no gold) just does nothing.
   swapped in), brings a knocked-out creature back with 50% HP (`REVIVE_HP`). One bag slot. 500 gold at
   the merchant (25% of carts); also in 20% of mini-boss chests (`MINIBOSS_REVIVAL`) and 50% of boss
   chests (`BOSS_REVIVAL`).
-- ✅ **Schematics:** the Crooked Bookcase raises the bookcase from 10 to 20 codexes. It comes only
-  from the tavern questline (§9, step 8) and costs 10 planks + 5 nails (`crooked_bookcase`,
-  lib/items/materials.ts). (It was an epic drop for 20 planks + 10 nails, holding 25; a bookcase
-  built then keeps its 25: `BOOKCASE_LEVELS`.)
-  ✅ **Iron-bound bookcase** (the user, 2026-11-13): the crooked bookcase builds up again, with no
-  schematic, for 10 metal bars, 5 stone and 2 essence crystals (`BOOKCASE_UPGRADE_COST`): it holds 30
-  (`BOOKCASE_REINFORCED`, level 4). It keeps the crooked bookcase's art for now.
+- ✅ **The bookcase in stages** (the user, 2026-11-20; it stops at 50, as there aren't that many codexes yet):
+  the old shelf 5, the crooked bookcase 15 (7 planks, 4 nails, no schematic), the sturdy bookcase 30 (its
+  schematic, `crooked_bookcase` by its old key: 25 planks, 15 nails, 5 metal bars) and the carved bookcase 50
+  (`carved_bookcase`: 25 planks, 15 nails, 10 bars, 2 stone, 1 essence crystal and 1,000 gold)
+  (`BOOKCASE_STAGES`, saved as `shelf`). The campaign's reward for the rubble is the sturdy one's plan.
+  A save from before lands on the stage at or above its size: the broken shelf of 10 → crooked (15); 20, 25
+  or 30 → sturdy (30) (`shelfFromOld`). (Before: 10, the Crooked Bookcase Schematic to 20, an iron-bound
+  build to 30.)
+- ✅ **The cage in stages:** 1, the iron cage 3 (the Iron Cage Schematic, 10 metal bars), the reinforced cage 5
+  (the user, 2026-11-20: the Reinforced Cage Schematic, 25 metal bars and 2 essence crystals; from the Hydra on,
+  or 3,000 gold) (`CAGE_LEVELS`).
+- ✅ **The Training Pit's slots:** [den.md](den.md) §9, step 8 (the pits).
+- ✅ **The Den's ladders of schematics** (lib/items/plans.ts; the user, 2026-11-20). Each thing's stages are a
+  ladder, a schematic a stage. Only the next one you need turns up, and none on a ladder while you're holding one
+  of its plans: in chests (a chest room's, a mini boss's, a boss's; none in the Encampment) and on wandering
+  merchants' carts (each ladder's plan on 20% of carts, `STORAGE_PLAN_CHANCE`). 🧪 Claude's numbers
+  (`PLAN_FINDS`, `PLAN_PRICES`), but the reinforced cage's (the user's):
+
+  | Plan | From | Chest room | Mini boss | Boss | Merchant |
+  |---|---|---|---|---|---|
+  | Iron Cage | Cyclops | — | 20% | — | not sold |
+  | Reinforced Cage | Hydra | — | 20% | 20% | 3,000 |
+  | Weapon / Armour Rack (60) | Cyclops | 5% | 10% | — | 1,000 |
+  | Weapon / Armour Storage (75) | Cyclops | 3% | 10% | — | 2,000 |
+  | Iron Storage (85) | Cyclops | — | 10% | 10% | 3,000 |
+  | Reinforced Storage (100) | Hydra | — | 10% | 15% | 4,000 |
+  | Sturdy Bookcase (once the crooked one's built) | Cyclops | 5% | 10% | — | 2,000 |
+  | Carved Bookcase | Cyclops | — | 10% | 15% | 5,000 |
+  | Pit Extension (2 slots; once the Training Pit's built) | Hydra | — | 10% | 20% | 4,000 |
+  | Grand Pit (3 slots) | Abyss | — | 10% | 20% | 8,000 |
+
+  ⚠️ The plan (roadmap, 2026-11-20) also had the bookcase's schematics from scans: left out for now, as it
+  changes the global registry's rules (`npm run registry:rules` and Supabase). Ask before adding it.
 - ✅ **Selling codexes** (the user, 2026-11-12; was throwing out, for no gold, since 2026-10-25): tap a
   codex on the bookcase, then Sell and Yes, for what a merchant pays (`codexSellPrice`: half a
   librarian's price, `MERCHANT_BUYBACK`; so 100 gold for most, 250 for a race or Epic codex). It

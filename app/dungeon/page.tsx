@@ -45,6 +45,7 @@ import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
+import { planFinds } from "@/lib/items/plans";
 import { cornerCrateFind, squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, fightEnemies, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, floorRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { countCampaign, drankOn, noteDrank, onlyEffective } from "@/lib/campaign";
@@ -411,7 +412,9 @@ export default function DungeonPage() {
     if (Math.random() < CHEST_CODEX_CHANCE) drops[drops.length - 1] = codexDrop(randomCodexMove());
     // (Where people wander, now and then a locator on top: people.ts LOCATOR_FIND.)
     const sack = [...capSack([...drops.map((d): SackItem => (d.dropType === "reward" ? { gold: d.amount } : { gear: d })), ...toolFinds(CHEST_TOOLS)]),
-      ...(loadDungeon().run?.walk?.people ? locatorFinds() : [])];
+      ...(loadDungeon().run?.walk?.people ? locatorFinds() : []),
+      // …and the Den's schematics you want next, now and then (lib/items/plans.ts; none in the Encampment).
+      ...planFinds("chest", dungeonOf(loadDungeon().run ?? {}), game.wantedPlans())];
     updateRun((r) => (r.current ? { ...r, current: { ...r.current, sack, opened: true, done: true } } : r));
     setLootOpen(true);
   }
@@ -981,7 +984,7 @@ export default function DungeonPage() {
     else if ((c.kind === "stash" || c.kind === "bookcase" || (c.kind === "campfire" && c.sack)) && !c.opened) openSack(); // (a library's broken bookcase, a campfire's stash: world version 9)
     else if (c.kind === "library" && c.lectern) track("librarian_locator"); // (its lectern finds the librarian)
     else if (c.kind === "treasure" && !c.done) takeTreasure(c);
-    else if ((c.kind === "storehouse" || c.kind === "library") && !hasFight(c) && c.sack && !c.opened) openSack();
+    else if ((c.kind === "storehouse" || c.kind === "stockroom" || c.kind === "library") && !hasFight(c) && c.sack && !c.opened) openSack();
     // Someone to talk to, or a pool or a deck to use: the room's window, as in a room.
     else if (["pool", "merchant", "witch", "librarian", "cards", "library"].includes(c.kind)) setWalkPanel(true);
   }
@@ -1218,7 +1221,9 @@ export default function DungeonPage() {
     // though never from the Encampment's chief).
     // (A golden chest: GOLDEN_DROPS weapons and armour, Rare or better, instead.)
     if (room.golden) sack.push(...goldenDrops(dungeonOf(r)).map((d): SackItem => ({ gear: d })));
-    else if (miniboss) sack.push(...minibossExtras(Math.random, game.wantsCagePlan() && dungeonOf(r) !== 0));
+    else if (miniboss) sack.push(...minibossExtras(Math.random));
+    // The Den's schematics you want next, now and then (lib/items/plans.ts: the cage's, the boxes', the bookcase's, the pit's).
+    if (!room.golden && (miniboss || room.kind === "boss")) sack.push(...planFinds(room.kind === "boss" ? "boss" : "miniboss", dungeonOf(r), game.wantedPlans()));
     // Mini boss and boss chests sometimes hold an XP scroll.
     if (!room.golden && Math.random() < (room.kind === "boss" ? BOSS_SCROLL_CHANCE : miniboss ? MINIBOSS_SCROLL_CHANCE : 0)) sack.push({ gear: scrollDrop() });
     // …and a boss's chest sometimes a Revival Elixir (a mini boss's: minibossExtras).
@@ -1439,7 +1444,7 @@ export default function DungeonPage() {
     <RoomScreen
       run={run} room={run.current} notes={notes} byId={byId}
       gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-      clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={() => openDeck()} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.heldStoragePlans()} klutzPacks={game.klutz.packs ?? 0} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite} onLectern={() => track("librarian_locator")}
+      clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={() => openDeck()} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.wantedPlans()} klutzPacks={game.klutz.packs ?? 0} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite} onLectern={() => track("librarian_locator")}
       bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
       onUseBag={(i) => { setBagStart(i); setSheet("bag"); }}
     />
@@ -1499,7 +1504,7 @@ export default function DungeonPage() {
               : run.current?.container && run.current.done && !run.current.opened ? openSack
               : run.current?.quest === "thief" && run.current.done && !run.current.boxTaken ? takeBox
               : run.current?.kind === "stash" && !run.current.opened ? openSack
-              : (run.current?.kind === "storehouse" || run.current?.kind === "library") && !hasFight(run.current) && run.current.sack && !run.current.opened ? openSack
+              : (run.current?.kind === "storehouse" || run.current?.kind === "stockroom" || run.current?.kind === "library") && !hasFight(run.current) && run.current.sack && !run.current.opened ? openSack
               : undefined}
             onFight={canFight ? () => startFight(run) : undefined}
             onEnemies={enemyIds.length > 0 ? () => setCardsOpen(true) : undefined} /></div>
@@ -1522,7 +1527,7 @@ export default function DungeonPage() {
             return (
               <LootWindow
                 name={lootFrom === "bookcase" ? "The bookcase" : c.quest === "club" ? "On the floor" : c.kind === "chest" ? "The chest" : c.container === "strongbox" ? "The strongbox" : c.container === "chest" ? "The rickety chest" : c.kind === "stash" ? "The stash"
-                  : c.kind === "library" ? "The shelves" : c.kind === "storehouse" ? "The stores" : "The sack"}
+                  : c.kind === "library" ? "The shelves" : c.kind === "storehouse" || c.kind === "stockroom" ? "The stores" : "The sack"}
                 sprite={lootFrom === "bookcase" ? BOOKCASE_LOOT : c.quest === "club" ? WEAPON_SPRITES.klutz_club : c.kind === "chest" ? TREASURE_CHEST_OPEN : c.container === "strongbox" ? STRONGBOX_OPEN : c.container === "chest" ? RICKETY_CHEST_OPEN : BURLAP_SACK_OPEN}
                 items={c.sack ?? []} bag={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))}
                 slots={bagSize(lab.meta)} bagName={bagName(lab.meta)}

@@ -4,17 +4,22 @@
 // home even into a full box (it can go over), but you can't go back into
 // the Labyrinth until every box has space again. A scan for a full box is
 // kept as a Code Cache at the altar instead, and opens once there's room.
-// The weapon and armour boxes can be built bigger (BIG_BOX_CAP, then
-// BIGGER_BOX_CAP) from the merchant's storage schematics; `big` is the boxes
-// you've built up, each once for every time it's been built up (so a box
-// built twice is in it twice: older saves, built once, read as they were).
+// The weapon and armour boxes are built bigger in stages (BOX_CAPS: 50, 60, 75,
+// 85, 100; the user, 2026-11-20), a storage schematic for each (lib/items/plans.ts);
+// past 100 is to be bought (not built). `big` is the boxes you've built up, each
+// once for every stage (so a box at 75 is in it twice). Saves from before the
+// stages had two (75, 100): STORAGE_V marks a save in stages, and storageFromOld
+// moves an older one onto them.
 
 import type { Drop } from "../types";
 
 export const BOX_CAP = 50;
-export const BIG_BOX_CAP = 75;
-export const BIGGER_BOX_CAP = 100; // the second storage schematics (the user, 2026-11-13)
-const BOX_CAPS = [BOX_CAP, BIG_BOX_CAP, BIGGER_BOX_CAP];
+export const BOX_CAPS = [BOX_CAP, 60, 75, 85, 100];
+export const STORAGE_V = 2;
+// An older save's boxes: built once was 75 (stage 2), twice 100 (stage 4).
+export function storageFromOld(big: readonly CappedBox[]): CappedBox[] {
+  return CAPPED_BOXES.flatMap((b) => { const n = big.filter((x) => x === b).length; return Array<CappedBox>(n >= 2 ? 4 : n === 1 ? 2 : 0).fill(b); });
+}
 export const CAPPED_BOXES = ["weapon", "armor", "consumable"] as const;
 export type CappedBox = (typeof CAPPED_BOXES)[number];
 export const BOX_NAMES: Record<CappedBox, string> = { weapon: "weapons", armor: "armour", consumable: "consumables" };

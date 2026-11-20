@@ -342,6 +342,13 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   shared out at random as the run's made with at least one left empty (migrate.ts `withCrates`,
   `Room.crates`). Walk up to search each, once (`Room.searched`): what's in it comes out to take, or a
   line says there's nothing worth having ("Rotten straw and rat droppings…").
+  **Stockrooms** (world version 18, the user, 2026-11-20: "a room with odds to spawn as a mini storehouse"):
+  an ordinary room, 6 in 100 (`WALK_ROOM_MIX`: from dens 45 → 41 and stashes 10 → 8; 🧪), never guarded. Its
+  stores (`STOCKROOM_MATERIALS` 2–3 material stacks at a storehouse's rarities, a potion, now and then a
+  weapon, torch or clairvoyance scroll) are in a small rickety chest (`crate:<room>:0`: all but the materials)
+  and `STOCK_CRATES` 2–3 stacked crates and barrels against its walls (`stacked-crates`: the materials,
+  shared out as a storehouse's), each searched once. Its candles are a lived-in room's. The stacked crates are
+  three of the Materials Crate, two side by side and one across them (components/Decor3D.tsx `stack`).
   **Tucked-away corners** (world version 16): `CORNER_GROUP` 35% of a room's corners (two walls meeting,
   more than `CORNER_DOOR_GAP` 3 panels from every doorway; `CORNER_MOST` 2 a room; not the entrance or the
   boss's) hold a small group of the lab's decor suiting the room (`CORNER_THEMES`: bones and a nest in

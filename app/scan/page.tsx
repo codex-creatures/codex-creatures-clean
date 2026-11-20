@@ -18,7 +18,7 @@ import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { CreatureArt } from "@/components/CreaturePortrait";
 import { playerXpToNext, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import type { Rarity } from "@/lib/types";
-import { BOX_CAP, BIG_BOX_CAP, BIGGER_BOX_CAP, BOX_NAMES, fitInBoxes, type CappedBox } from "@/lib/items/storage";
+import { BOX_CAP, BOX_CAPS, BOX_NAMES, fitInBoxes, type CappedBox } from "@/lib/items/storage";
 import { onlineClient, onlineConfig } from "@/lib/online/client";
 import { testingToolsAllowed } from "@/lib/online/admin";
 import { findLine, newFinds, type NewFind } from "@/lib/scanReveal";
@@ -254,7 +254,7 @@ export default function ScanPage() {
               <ul>
                 <li><b>Looting:</b> it opens straight away. What&apos;s inside goes to your things, and the window shows your latest {WINDOW_COLS * WINDOW_ROWS} finds until you leave the scanner.</li>
                 <li><b>Storage:</b> the cache waits in the window to open later.</li>
-                <li>A find with no room in your Inventory (a box of weapons, armour or consumables at {BOX_CAP}, or {BIG_BOX_CAP} and then {BIGGER_BOX_CAP} once built bigger) waits as a cache too, until you make room.</li>
+                <li>A find with no room in your Inventory (a box of weapons, armour or consumables at {BOX_CAP}, or up to {BOX_CAPS[BOX_CAPS.length - 1]} for weapons and armour once built bigger) waits as a cache too, until you make room.</li>
                 <li>The scanner holds <b>{CACHE_LIMIT}</b> caches. With {CACHE_LIMIT} waiting, scans fail: open some first.</li>
                 {onlineConfig.ok && <li>No connection? A barcode new to you waits <b>sealed</b> 🔒 (it takes a space), and opens once you&apos;re back online: what every barcode holds is kept online, the same for every player.</li>}
                 <li>Tap a cache to open it, or open them all.</li>

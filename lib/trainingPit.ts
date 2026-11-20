@@ -14,7 +14,9 @@
 // level while you're away. A creature in the pit is away training: it can't
 // fight until you take it out, and it keeps what it's earned (a full bar
 // levels it up as it leaves).
-// Saved with the tavern (lib/tavern.ts: pit, plans, training, trainedXp).
+// The Training Pit grows to PIT_SLOTS creatures at once (the user, 2026-11-20), a schematic a slot
+// (lib/items/plans.ts: pit_slot_2, pit_slot_3), each training on its own clock.
+// Saved with the tavern (lib/tavern.ts: pit, plans, training, more, slots, trainedXp).
 
 import { MAX_LEVEL, addXp, clampLevel, xpToNext, type Progress } from "./creatures/levels";
 import { addMaterials, canAfford, countMaterial, type MaterialKey, type Materials } from "./items/materials";
@@ -70,17 +72,37 @@ export function hoursToLevel(p: Progress, since: string, now = Date.now(), rate 
   return Math.max(0, (room - earned) / rate);
 }
 
-// Putting a creature in (the pit's empty), Level up (the bar's full: the
+// Who's in it: the first in `training` (as saves always had it), the others in `more`.
+export type Trainee = { id: string; since: string };
+export const PIT_SLOTS = 3;
+export const pitSlots = (t: TavernQuest) => (t.pit ? Math.min(PIT_SLOTS, Math.max(1, t.slots ?? 1)) : 1);
+export const trainees = (t: TavernQuest): Trainee[] => [...(t.training ? [t.training] : []), ...(t.more ?? [])];
+const withTrainees = (t: TavernQuest, list: Trainee[]): TavernQuest => {
+  const out: TavernQuest = { ...t, training: list[0], more: list.length > 1 ? list.slice(1) : undefined };
+  if (!out.training) delete out.training;
+  if (!out.more) delete out.more;
+  return out;
+};
+export const traineeOf = (t: TavernQuest, id: string) => trainees(t).find((x) => x.id === id);
+// A schematic's slots built (none past PIT_SLOTS, and only on the Training Pit).
+export const buildSlots = (t: TavernQuest, slots: number): TavernQuest => (t.pit ? { ...t, slots: Math.min(PIT_SLOTS, Math.max(pitSlots(t), slots)) } : t);
+
+// Putting a creature in (a slot's free), Level up (its bar's full: the
 // level's banked and training starts over) and taking it out.
-export const canTrain = (t: TavernQuest) => hasPit(t) && !t.training;
+export const canTrain = (t: TavernQuest) => hasPit(t) && trainees(t).length < pitSlots(t);
 export const startTraining = (t: TavernQuest, id: string, now = Date.now()): TavernQuest =>
-  (canTrain(t) ? { ...t, training: { id, since: new Date(now).toISOString() } } : t);
-export const restartTraining = (t: TavernQuest, now = Date.now()): TavernQuest =>
-  (t.training ? { ...t, training: { ...t.training, since: new Date(now).toISOString() } } : t);
-export const stopTraining = (t: TavernQuest): TavernQuest => ({ ...t, training: undefined });
+  (canTrain(t) && !traineeOf(t, id) ? withTrainees(t, [...trainees(t), { id, since: new Date(now).toISOString() }]) : t);
+// Started again from now: the one named, or (no id) everyone in it.
+export const restartTraining = (t: TavernQuest, now = Date.now(), id?: string): TavernQuest =>
+  withTrainees(t, trainees(t).map((x) => (id === undefined || x.id === id ? { ...x, since: new Date(now).toISOString() } : x)));
+// Out: the one named (no id: the first, as when the pit held one).
+export const stopTraining = (t: TavernQuest, id?: string): TavernQuest => {
+  const out = id ?? trainees(t)[0]?.id;
+  return withTrainees(t, trainees(t).filter((x) => x.id !== out));
+};
 // The pit's lifetime tally: XP banked out of it (levelled up, taken out, or before a scroll).
 export const logTrained = (t: TavernQuest, xp: number): TavernQuest => (xp > 0 ? { ...t, trainedXp: (t.trainedXp ?? 0) + xp } : t);
 export const lifetimeXp = (t: TavernQuest) => t.trainedXp ?? 0;
 
-// Who's in the pit (to keep it out of fights).
-export const trainingId = (t: TavernQuest | undefined) => (t && hasPit(t) ? t.training?.id : undefined);
+// Who's in the pit (to keep them out of fights).
+export const trainingIds = (t: TavernQuest | undefined): string[] => (t && hasPit(t) ? trainees(t).map((x) => x.id) : []);

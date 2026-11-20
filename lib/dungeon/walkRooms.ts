@@ -76,7 +76,7 @@ export function fightSack(room: Room, rng: Rng = Math.random): SackItem[] {
     drops.push(p.slot === "weapon" ? weaponDrop(p.key as ItemKey, p.rarity, "", p.stats) : armorDrop(p.key as ArmorKey, p.rarity, "", droppedPieceStats(p, slot), slot));
   }
   const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
-  if (room.kind === "encampment") sack.push(...minibossExtras(rng, false));
+  if (room.kind === "encampment") sack.push(...minibossExtras(rng));
   return sack;
 }
 

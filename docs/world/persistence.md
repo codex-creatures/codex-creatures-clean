@@ -131,7 +131,7 @@ Moved here word for word from world-spec.md on 2026-11-09 (the original is in [a
 Distilled on 2026-11-09 from world-spec §8 (kept word for word in
 [archive/2026-11-09/world-spec.md](../archive/2026-11-09/world-spec.md), §8). A walkable run's
 version is `walk.v`; the newest this client understands is `WALK_V` (lib/world/version.ts, now
-**17**), and new runs are placed at `PLACED_V` (lib/world/place.ts, 17). **v3 onward, each version
+**18**), and new runs are placed at `PLACED_V` (lib/world/place.ts, 18). **v3 onward, each version
 is a new generator for new runs only: nothing migrates to it, so a run's rooms never change.** Only
 v0 → v1 → v2 are migrations.
 
@@ -155,8 +155,9 @@ v0 → v1 → v2 are migrations.
 | 15 | the user (2026-11-15) | some tables turned end-on (`rot: 1`, refused below v15 and on anything but a table) |
 | 16 | the user (2026-11-15) | an unguarded storehouse's crates and barrels (`crate:<room>:<n>`; `Room.crates`, `Room.searched`), groups of decor in tucked-away corners (`decor:<room>:<g>:<k>`), the boss's standing torches (`brazier:<room>:<pair>:<side>`, lit in turn; saved lit in `walk.lit`); all refused below v16 |
 | 17 | the user (2026-11-17) | no nests in rooms' corners (`CORNER_THEMES_V17`: crates and pots in their place); a corner crate carries `search: true` (refused below v17 and on anything but `crates`), searched once (`Room.boxesSearched`), now and then holding one material bundle or consumable (`cornerCrateFind`) |
+| 18 | the user (2026-11-20) | stockrooms: an ordinary room ("stockroom", `WALK_ROOM_MIX`) with a rickety chest (`crate:<room>:0`, all its stores but the materials) and 2–3 stacked crates (`stacked-crates`, refused below v18) and barrels sharing its materials (`withCrates`) |
 
-**Pinned, so old versions can't drift:** v3 (tests/placeV3.test.ts), v4–v16 (tests/placeV4Pinned.test.ts,
+**Pinned, so old versions can't drift:** v3 (tests/placeV3.test.ts), v4–v17 (tests/placeV4Pinned.test.ts,
 saved runs in tests/fixtures/pins/), each fixture's `tests/golden/walk/<fixture>.placed.json`, and the
 phase-0/1 goldens. **Before changing placement rules, pin the current version; new rules mean a new
 world version.**

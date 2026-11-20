@@ -3,7 +3,7 @@ import { slowIt } from "./slow";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, MERCHANT_MATERIALS, type DungeonRun } from "../lib/dungeon/run";
 import { hasBookPlans, tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitors, guestOf, onTheClock, windowOf, VISITORS, VISITOR_WINDOW, visitorChance, upgradeVisitor, upgradeCost, upgradeLevel, canUpgrade, UPGRADE_COSTS, UPGRADE_STEP, MAX_UPGRADE, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, merchantCalls, tavernWares, summonVisitor, SUMMON_PRICE, TAVERN_MATERIAL_PRICES, type TavernQuest, headUp } from "../lib/tavern";
-import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
+import { SCHEMATICS, BOOKCASE_CROOKED_COST, shelfFromOld, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
 import { createDen, mergeRects, strollAt, OBJ, W, H, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "../lib/den/scene";
@@ -137,30 +137,35 @@ describe("the tavern questline: the Cyclops Head and the bookcase", () => {
     expect(headUp({ blasted: true, mounted: true }, 0)).toBe(true); // handed in before the campaign
   });
 
-  it("the bookcase schematic: the campaign's reward for the rubble, or the old bounty's", () => {
+  it("the bookcase schematic (the sturdy one's): the campaign's reward for the rubble, or the old bounty's", () => {
     expect(tavernPlan(repaired, 1)).toBe(false);
     // The campaign's reward for the rubble: the plans, found in the broken tavern.
     const found = { ...repaired, bookPlans: true };
     expect(tavernPlan(found, 1)).toBe(true);
-    expect(tavernPlan(found, BOOKCASE_BUILT)).toBe(false); // already built
-    expect(tavernPlan(found, 2)).toBe(false);              // an old save's crooked bookcase
+    expect(tavernPlan(found, 2)).toBe(true);  // the crooked bookcase: the sturdy one's next
+    expect(tavernPlan(found, 3)).toBe(false); // already built
     // A head handed in for the old bounty paid the plans, and they're kept.
     const old = { ...repaired, bounty: true, mounted: true };
     expect(hasBookPlans(old)).toBe(true);
     expect(tavernPlan(old, 1)).toBe(true);
   });
 
-  it("the crooked bookcase: 10 planks and 5 nails for 20 slots; an old save's keeps 25", () => {
-    expect(SCHEMATICS.crooked_bookcase.cost).toEqual({ planks: 10, nails: 5 });
-    expect(bookcaseSize(1)).toBe(10);
-    expect(bookcaseSize(BOOKCASE_BUILT)).toBe(20);
-    expect(bookcaseSize(2)).toBe(25);
-    expect(bookcaseSize()).toBe(10);
+  it("the bookcase in stages: 5, 15, 30, 50 (the user, 2026-11-20); an old save lands at or above its size", () => {
+    expect([1, 2, 3, 4].map(bookcaseSize)).toEqual([5, 15, 30, 50]);
+    expect(bookcaseSize()).toBe(5);
+    expect(bookcaseSize(9)).toBe(50);
+    expect(BOOKCASE_CROOKED_COST).toEqual({ planks: 7, nails: 4 });
+    expect(SCHEMATICS.crooked_bookcase.cost).toEqual({ planks: 25, nails: 15, metal_bars: 5 });
+    expect(SCHEMATICS.carved_bookcase).toMatchObject({ cost: { planks: 25, nails: 15, metal_bars: 10, essence_stones: 2, essence: 1 }, gold: 1000 });
+    // The old levels: 1 the broken shelf (10) → crooked (15); 2–4 (25, 20, 30) → sturdy (30). Nobody loses room.
+    expect(bookcaseSize(shelfFromOld(1))).toBe(15);
+    expect(bookcaseSize(shelfFromOld(undefined))).toBe(15);
+    for (const old of [2, 3, 4]) expect(bookcaseSize(shelfFromOld(old))).toBe(30);
   });
 
   it("the bookcase schematic no longer turns up in the Labyrinth", () => {
     for (let i = 0; i < 400; i++) {
-      expect(minibossExtras(Math.random, true).some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic === "crooked_bookcase")).toBe(false);
+      expect(minibossExtras(Math.random).some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic === "crooked_bookcase")).toBe(false);
       const r = makeRoom("storehouse", Math.random, 8);
       expect((r.sack ?? []).some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic)).toBe(false);
     }

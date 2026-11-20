@@ -150,9 +150,9 @@ describe("people who wander", () => {
 });
 
 describe("a library's broken bookcases", () => {
-  // (World version 10, the user's play-test, 2026-11-11: one stood in front of a tunnel. Seed 4's library has a door in its top wall.)
+  // (World version 10, the user's play-test, 2026-11-11: one stood in front of a tunnel. Seed 11's library has a door in its top wall: seed 4's, till the stockroom joined the room mix, 2026-11-20.)
   it("stand clear of the library's doorways", () => {
-    const run = cyclops(4), walk = run.walk!;
+    const run = cyclops(11), walk = run.walk!;
     expect(walk.v).toBeGreaterThanOrEqual(10);
     const plan = layoutFloorplan(walk.layout);
     const { placed } = placeWalk(walk, run.map, dungeonOf(run), (id) => walkRoom(run, id));

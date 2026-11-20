@@ -73,9 +73,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     user: UI first, art and its place in the room later).
   - Trips planned before v2 keep their own rules (fights with a find each) and still hand over what they held.
   - His gear is locked while he's away.
-- ✅ **The cage** holds 1. The **Iron Cage Schematic** (rare) is in a mini boss's chest 20% of the
-  time until you have one (at home or in your bag) or have built it; with 10 metal bars it builds
-  the iron cage, which holds 3 (`CAGE_LEVELS`, lib/items/materials.ts). Catches that don't fit are
+- ✅ **The cage** holds 1, then 3 (the iron cage) and 5 (the reinforced cage), each from a schematic
+  ([items.md](items.md): the cage in stages, and where the plans turn up). Catches that don't fit are
   let go (he keeps their gear).
 - ✅ **Neutral** (decided 2026-10-20): Klutz hunts alone and can't swap, so he was outside the
   triangle (+25% when a move of his countered, `NEUTRAL_COUNTER`). In Combat V2 he has **no race**,

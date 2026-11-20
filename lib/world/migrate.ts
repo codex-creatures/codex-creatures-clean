@@ -62,6 +62,7 @@ const SHELVES_V = 14;        // (bookcases against walls, and a storehouse's fin
 const TURNED_V = 15;         // (a table turned end-on: the first thing that turns)
 const SEARCH_V = 17;         // (a corner crate to search)
 const CORNERS_V = 16;        // (a storehouse's crates, groups of decor in corners, the boss's standing torches)
+const STOCK_V = 18;          // (a stockroom's stacked crates)
 const CORNER_DEFS = new Set(["store-crates", "store-barrels", "standing-torch", "barrels", "crates", "fallen-pillar", "skull", "nest", "pots"]);
 const FINDS = new Set(["dynamite", "backpack"]);
 
@@ -93,6 +94,7 @@ export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null
     if (p.deck !== undefined && (p.def !== "table" || p.deck !== true || v < DECKS_V)) return `${p.id}: a deck of cards it can't have`;
     if (((p.def === "bookcase" && p.id.startsWith("shelf:")) || FINDS.has(p.def)) && v < SHELVES_V) return `${p.id}: a ${p.def} in a world version ${v} run`;
     if (CORNER_DEFS.has(p.def) && v < CORNERS_V) return `${p.id}: a ${p.def} in a world version ${v} run`;
+    if (p.def === "stacked-crates" && v < STOCK_V) return `${p.id}: a ${p.def} in a world version ${v} run`;
     if (p.codex !== undefined && (p.def !== "bookcase" || p.codex !== true || v < SHELVES_V)) return `${p.id}: a codex it can't have`;
     if (p.search !== undefined && (p.def !== "crates" || p.search !== true || v < SEARCH_V)) return `${p.id}: a search it can't have`;
     if (!whole(p.sx) || !whole(p.sy)) return `${p.id}: subcells aren't whole numbers`;
@@ -260,19 +262,31 @@ export function newWalkRun(run: DungeonRun): DungeonRun {
 // room (Room.packOnFloor) till you pick it up.
 // (World version 16) An unguarded storehouse's stores shared out among its crates and barrels, at random,
 // some left with nothing (CRATES_EMPTY at least): each crate's on its room (Room.crates), searched one by one.
+// (World version 18) A stockroom's: its chest (its rickety chest, the first placed) holds all but the materials;
+// the materials are shared out among its crates and barrels the same way.
 export const CRATES_EMPTY = 1;
 function withCrates(run: DungeonRun): DungeonRun {
   const walk = run.walk;
   if (!walk) return run;
-  const by = new Map<string, number>();
-  for (const i of walk.placed ?? []) if (i.id.startsWith("crate:") && walk.rooms[i.room]) by.set(i.room, (by.get(i.room) ?? 0) + 1);
+  const by = new Map<string, number>(), chestOf = new Map<string, number>();
+  for (const i of walk.placed ?? []) if (i.id.startsWith("crate:") && walk.rooms[i.room]) {
+    if (i.def === "rickety-chest") chestOf.set(i.room, Number(i.id.slice(i.id.lastIndexOf(":") + 1)));
+    by.set(i.room, (by.get(i.room) ?? 0) + 1);
+  }
   if (by.size === 0) return run;
   const rooms = { ...walk.rooms };
   for (const [id, n] of by) {
     const r = rooms[id], rng = passRng(walk.seed, id, 66), crates: SackItem[][] = Array.from({ length: n }, () => []);
-    const full = Math.max(1, n - CRATES_EMPTY - Math.floor(rng() * 2)); // (the rest hold nothing)
-    for (const item of r.sack ?? []) crates[Math.floor(rng() * full)].push(item);
-    for (let k = n - 1; k > 0; k--) { const j = Math.floor(rng() * (k + 1)); [crates[k], crates[j]] = [crates[j], crates[k]]; }
+    const chest = chestOf.get(id), sack = r.sack ?? [];
+    const isMat = (x: SackItem) => "gear" in x && x.gear.dropType === "item" && !!x.gear.material;
+    // (A stockroom: its chest takes what isn't a material, and is left out of the sharing and the shuffle.)
+    // (Only its chest placed, no crate: the chest holds everything.)
+    const alone = chest !== undefined && n === 1;
+    const share = chest === undefined || alone ? sack : sack.filter(isMat), bins = alone ? [chest!] : Array.from({ length: n }, (_, k) => k).filter((k) => k !== chest);
+    if (chest !== undefined && !alone) crates[chest] = sack.filter((x) => !isMat(x));
+    const full = Math.max(1, bins.length - CRATES_EMPTY - Math.floor(rng() * 2)); // (the rest hold nothing)
+    for (const item of share) crates[bins[Math.floor(rng() * full)]].push(item);
+    for (let k = bins.length - 1; k > 0; k--) { const j = Math.floor(rng() * (k + 1)); [crates[bins[k]], crates[bins[j]]] = [crates[bins[j]], crates[bins[k]]]; }
     rooms[id] = { ...r, sack: [], crates };
   }
   return { ...run, walk: { ...walk, rooms } };

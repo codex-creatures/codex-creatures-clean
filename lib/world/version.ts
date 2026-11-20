@@ -38,7 +38,10 @@
 //    standing torches lining the way to the boss (`brazier:<room>:<pair>:<side>`) (the user, 2026-11-15): new runs only.
 // 17: no nests in rooms' corners (the user, 2026-11-17: they don't fit), and the crates in rooms' corners can be
 //    searched, sometimes holding one material or consumable (`search: true`; Room.boxesSearched): new runs only.
-export const WALK_V = 17;
+// 18: stockrooms (the user, 2026-11-20: a room with odds of being a small storehouse): a rickety chest
+//    (`crate:<room>:0`, holding its potion and any find) and stacked crates and barrels holding its materials
+//    (`stacked-crates`), searched one by one as a storehouse's: new runs only.
+export const WALK_V = 18;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

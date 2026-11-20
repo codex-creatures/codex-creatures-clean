@@ -14,9 +14,9 @@ import { PropRecipe3D } from "./PropRecipe3D";
 import { recipeOf, openCage } from "@/lib/props/recipes/load";
 
 const GAME = "/sprites/props/decor3d";
-export type Decor3DKind = "barrel" | "barrels" | "crates" | "pots" | "dynamite" | "lectern" | "cage";
+export type Decor3DKind = "barrel" | "barrels" | "crates" | "stack" | "pots" | "dynamite" | "lectern" | "cage";
 // Each one's size against the flat picture it replaces (the first drafts came out small beside them).
-const SIZE: Partial<Record<Decor3DKind, number>> = { pots: 1.45, dynamite: 1.7 };
+const SIZE: Partial<Record<Decor3DKind, number>> = { pots: 1.45, dynamite: 1.7, stack: 0.85 };
 
 const tex = (src: string, repeat?: [number, number]) => {
   if (!repeat) return loaded(src);
@@ -51,6 +51,13 @@ function Piece({ kind, stretch, colour, open }: { kind: Decor3DKind; stretch: nu
       <Crate inside="materials" open={false} colour={colour} outline edges />
       <group position={[0.1, 0.79, -0.05]} rotation={[0, 0.35, 0]} scale={0.8}><Crate inside="materials" open={false} colour={colour} outline edges /></group>
     </>);
+  // (World version 18) A stockroom's stacked crates (the user, 2026-11-20): two side by side and a third across
+  // them; searched, the top one stands open, bare.
+  if (kind === "stack") return (<>
+    <group position={[-0.3, 0, 0.02]}><Crate inside="materials" open={false} colour={colour} outline edges /></group>
+    <group position={[0.32, 0, -0.04]} rotation={[0, -0.12, 0]}><Crate inside="materials" open={false} colour={colour} outline edges /></group>
+    <group position={[0.02, 0.79, -0.02]} rotation={[0, 0.2, 0]} scale={0.85}><Crate inside="materials" open={open} colour={colour} outline edges empty={open} /></group>
+  </>);
   if (kind === "pots") return <Pots colour={colour} />;
   if (kind === "dynamite") return <Dynamite colour={colour} />;
   if (kind === "lectern") return <Lectern colour={colour} />;

@@ -71,7 +71,7 @@ export default function VisitorPage() {
             {trade === "buy" ? (
               <>
                 <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 6px" }}>&ldquo;One of each, friend. It all goes in your Inventory.&rdquo;</p>
-                <MerchantCart wares={waresFor(guest.wares ?? [], loadDungeon().meta, game.heldStoragePlans(), game.klutz.packs ?? 0)} bought={guest.bought} gold={game.gold} bagUsed={0} bagSlots={99} stacks={[]} onBuy={(ws) => ws.forEach(game.buyTavernWare)} />
+                <MerchantCart wares={waresFor(guest.wares ?? [], loadDungeon().meta, game.wantedPlans(), game.klutz.packs ?? 0)} bought={guest.bought} gold={game.gold} bagUsed={0} bagSlots={99} stacks={[]} onBuy={(ws) => ws.forEach(game.buyTavernWare)} />
               </>
             ) : (
               <>

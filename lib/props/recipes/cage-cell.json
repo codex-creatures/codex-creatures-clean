@@ -1,0 +1,431 @@
+{
+  "format": 1,
+  "id": "cage-cell",
+  "name": "Cage: the old cell (holds 1)",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/walk/cage.png",
+    "foot": [24, 44]
+  },
+  "parts": [
+    {
+      "id": "plinth",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [0.92, 0.115, 0.92],
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#a0786e"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#b88c80"
+        }
+      }
+    },
+    {
+      "id": "plinth-top",
+      "kind": "box",
+      "at": [0, 0.115, 0],
+      "size": [0.828, 0.076666, 0.828],
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#8c6458"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#a87a6c"
+        }
+      }
+    },
+    {
+      "id": "straw",
+      "kind": "box",
+      "at": [0, 0.191666, 0],
+      "size": [0.7544, 0.019166, 0.7544],
+      "faces": {
+        "top": {
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#a88a48"
+        },
+        "*": {
+          "colour": "#6a5428"
+        }
+      }
+    },
+    {
+      "id": "post",
+      "kind": "box",
+      "at": [0.3956, 0.191666, 0.3956],
+      "size": [0.115, 1.104, 0.115],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a6458"
+        },
+        "top": {
+          "colour": "#6a4038"
+        }
+      }
+    },
+    {
+      "id": "post-cap",
+      "kind": "box",
+      "at": [0.3956, 1.295666, 0.3956],
+      "size": [0.153334, 0.095834, 0.153334],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a7450"
+        }
+      }
+    },
+    {
+      "id": "post-foot",
+      "kind": "box",
+      "at": [0.3956, 0.191666, 0.3956],
+      "size": [0.153334, 0.076666, 0.153334],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a7450"
+        }
+      }
+    },
+    {
+      "id": "rail-low",
+      "kind": "box",
+      "at": [0, 0.191666, 0.3956],
+      "size": [0.736, 0.0575, 0.0575],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a7450"
+        }
+      }
+    },
+    {
+      "id": "rail-top",
+      "kind": "box",
+      "at": [0, 1.238166, 0.3956],
+      "size": [0.736, 0.0575, 0.0575],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a7450"
+        }
+      }
+    },
+    {
+      "id": "strap",
+      "kind": "box",
+      "at": [0, 1.295666, 0],
+      "size": [0.7912, 0.0575, 0.076666],
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a7450"
+        }
+      }
+    },
+    {
+      "id": "top-bar-w2",
+      "kind": "box",
+      "at": [-0.276, 1.295666, 0],
+      "size": [0.038334, 0.038334, 0.7728],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a7450"
+        }
+      }
+    },
+    {
+      "id": "top-bar-e2",
+      "kind": "box",
+      "at": [0.276, 1.295666, 0],
+      "size": [0.038334, 0.038334, 0.7728],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a7450"
+        }
+      }
+    },
+    {
+      "id": "bar-1",
+      "kind": "cylinder",
+      "at": [-0.276, 0.249166, 0.3956],
+      "size": [0.0575, 0.989, 0.0575],
+      "sides": 6,
+      "four": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#8a6a48"
+        },
+        "top": {
+          "colour": "#6a4a2a"
+        },
+        "bottom": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "bar-2",
+      "kind": "cylinder",
+      "at": [-0.138, 0.249166, 0.3956],
+      "size": [0.0575, 0.989, 0.0575],
+      "sides": 6,
+      "four": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#8a6a48"
+        },
+        "top": {
+          "colour": "#6a4a2a"
+        },
+        "bottom": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "bar-3",
+      "kind": "cylinder",
+      "at": [0, 0.249166, 0.3956],
+      "size": [0.0575, 0.989, 0.0575],
+      "sides": 6,
+      "four": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#8a6a48"
+        },
+        "top": {
+          "colour": "#6a4a2a"
+        },
+        "bottom": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "bar-4",
+      "kind": "cylinder",
+      "at": [0.138, 0.249166, 0.3956],
+      "size": [0.0575, 0.989, 0.0575],
+      "sides": 6,
+      "four": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#8a6a48"
+        },
+        "top": {
+          "colour": "#6a4a2a"
+        },
+        "bottom": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "bar-5",
+      "kind": "cylinder",
+      "at": [0.276, 0.249166, 0.3956],
+      "size": [0.0575, 0.989, 0.0575],
+      "sides": 6,
+      "four": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#8a6a48"
+        },
+        "top": {
+          "colour": "#6a4a2a"
+        },
+        "bottom": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "lock",
+      "kind": "box",
+      "at": [0, 0.5704, 0.4186],
+      "size": [0.134166, 0.153334, 0.038334],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#b49a5a"
+        },
+        "front": {
+          "colour": "#d0b878"
+        }
+      }
+    },
+    {
+      "id": "hinge",
+      "kind": "box",
+      "at": [-0.3312, 0.874, 0.4186],
+      "size": [0.076666, 0.076666, 0.038334],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a7450"
+        }
+      }
+    },
+    {
+      "id": "hinge-2",
+      "kind": "box",
+      "at": [-0.3312, 0.276, 0.4186],
+      "size": [0.076666, 0.076666, 0.038334],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a7450"
+        }
+      }
+    },
+    {
+      "id": "rope-00",
+      "kind": "box",
+      "at": [0.3956, 0.92, 0.3956],
+      "size": [0.1656, 0.0552, 0.1656],
+      "faces": {
+        "*": {
+          "colour": "#b49a5a"
+        },
+        "top": {
+          "colour": "#d0b878"
+        }
+      }
+    },
+    {
+      "id": "rope-01",
+      "kind": "box",
+      "at": [0.3956, 0.92, -0.3956],
+      "size": [0.1656, 0.0552, 0.1656],
+      "faces": {
+        "*": {
+          "colour": "#b49a5a"
+        },
+        "top": {
+          "colour": "#d0b878"
+        }
+      }
+    },
+    {
+      "id": "rope-10",
+      "kind": "box",
+      "at": [-0.3956, 0.92, 0.3956],
+      "size": [0.1656, 0.0552, 0.1656],
+      "faces": {
+        "*": {
+          "colour": "#b49a5a"
+        },
+        "top": {
+          "colour": "#d0b878"
+        }
+      }
+    },
+    {
+      "id": "rope-11",
+      "kind": "box",
+      "at": [-0.3956, 0.92, -0.3956],
+      "size": [0.1656, 0.0552, 0.1656],
+      "faces": {
+        "*": {
+          "colour": "#b49a5a"
+        },
+        "top": {
+          "colour": "#d0b878"
+        }
+      }
+    }
+  ]
+}

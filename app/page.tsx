@@ -63,7 +63,7 @@ export default function Home() {
   const klutzNews = game.hydrated && (klutzHasNews(game.quest) || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0)
     || klutzFirstStep(game.quest, game.equipment[KLUTZ_DROP_ID], !!game.klutz.expedition || !!game.klutz.trips?.length) !== null); // (till his first trip)
   const rubble = game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut";
-  const pit = hasPit(game.tavern) ? { ready: game.hydrated && !!game.trainingStatus(now)?.full } : undefined;
+  const pit = hasPit(game.tavern) ? { ready: game.hydrated && game.trainingStatuses(now).some((x) => x.full) } : undefined;
   const tavernNews = game.hydrated && tavernVisitors(game.tavern, now).length > 0;
   const boardNews = game.hydrated && ((klutzHelping(game.quest) && (canClaimNext(loadCampaign(), readCampaignCtx()) || campaignUnseen(loadCampaign()))) || hydraStep(game.tavern, clears, deepClears) === "claim" || dailyNews(todayDaily(DAILY_ONLINE), !!game.tavern.repaired));
   const crateNews = game.hydrated && game.crate.length > 0;

@@ -67,48 +67,78 @@ export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity
                        desc: "Use it in the Labyrinth: your scroll shows where the librarian is, for the rest of the run." },
 };
 
-export type SchematicKey = "crooked_bookcase" | "iron_cage" | "weapon_storage" | "armor_storage" | "weapon_storage_2" | "armor_storage_2";
-export const SCHEMATICS: Record<SchematicKey, { name: string; rarity: Rarity; cost: Partial<Record<MaterialKey, number>>; desc: string }> = {
-  crooked_bookcase: { name: "Crooked Bookcase Schematic", rarity: "epic", cost: { planks: 10, nails: 5 },
-                      desc: "Plans for a taller, leaning bookcase: it holds 20 codexes instead of 10." },
+// The Den's upgrades come from schematics, each building one stage (the user, 2026-11-20: Den
+// progression, roadmap.md; lib/items/plans.ts has where each is found and what a merchant asks for it).
+// A plan builds its stage outright: one held from before (a save's weapon_storage, say) can skip a stage.
+// gold: paid on top of the materials (the carved bookcase).
+export type SchematicKey = "crooked_bookcase" | "carved_bookcase" | "iron_cage" | "reinforced_cage"
+  | "weapon_storage_1" | "weapon_storage" | "weapon_storage_3" | "weapon_storage_2"
+  | "armor_storage_1" | "armor_storage" | "armor_storage_3" | "armor_storage_2"
+  | "pit_slot_2" | "pit_slot_3";
+export const SCHEMATICS: Record<SchematicKey, { name: string; rarity: Rarity; cost: Partial<Record<MaterialKey, number>>; gold?: number; desc: string }> = {
+  // The bookcase (BOOKCASE_STAGES). The key crooked_bookcase is the Sturdy Bookcase's plan since 2026-11-20 (saves
+  // and the campaign's reward for the rubble hold it): the crooked bookcase takes no plan now (BOOKCASE_CROOKED_COST).
+  crooked_bookcase: { name: "Sturdy Bookcase Schematic", rarity: "epic", cost: { planks: 25, nails: 15, metal_bars: 5 },
+                      desc: "Plans for a sturdy bookcase: it holds 30 codexes." },
+  carved_bookcase:  { name: "Carved Bookcase Schematic", rarity: "legendary", cost: { planks: 25, nails: 15, metal_bars: 10, essence_stones: 2, essence: 1 }, gold: 1000,
+                      desc: "Plans for a carved bookcase: it holds 50 codexes." },
+  // The cage (CAGE_LEVELS).
   iron_cage:        { name: "Iron Cage Schematic", rarity: "rare", cost: { metal_bars: 10 },
                       desc: "Plans for a bigger cage: it holds 3 creatures instead of 1." },
-  // The merchant's storage schematics (STORAGE_PLAN_PRICE): each box 50 → 75 (lib/items/storage.ts).
-  weapon_storage:   { name: "Weapon Storage Schematic", rarity: "epic", cost: { planks: 10, nails: 10, essence_stones: 1 },
-                      desc: "Plans for a bigger weapon box: it holds 75 weapons instead of 50." },
-  armor_storage:    { name: "Armour Storage Schematic", rarity: "epic", cost: { planks: 10, nails: 10, essence_stones: 1 },
-                      desc: "Plans for a bigger armour box: it holds 75 pieces instead of 50." },
-  // …and the second ones (the user, 2026-11-13): once the first is built, the merchant offers these
-  // instead, dearer (STORAGE_PLAN_2_PRICE), and they take rarer materials: each box 75 → 100.
-  weapon_storage_2: { name: "Reinforced Weapon Storage Schematic", rarity: "legendary", cost: { metal_bars: 10, essence_stones: 5, essence: 2 },
-                      desc: "Plans for an iron-bound weapon box: it holds 100 weapons instead of 75." },
-  armor_storage_2:  { name: "Reinforced Armour Storage Schematic", rarity: "legendary", cost: { metal_bars: 10, essence_stones: 5, essence: 2 },
-                      desc: "Plans for an iron-bound armour box: it holds 100 pieces instead of 75." },
+  reinforced_cage:  { name: "Reinforced Cage Schematic", rarity: "legendary", cost: { metal_bars: 25, essence: 2 },
+                      desc: "Plans for a reinforced cage: it holds 5 creatures instead of 3." },
+  // The weapon and armour boxes (lib/items/storage.ts BOX_CAPS): 50 → 60 → 75 → 85 → 100, dearer each time, the
+  // last with essence crystals (the user, 2026-11-20). The keys weapon_storage (75) and weapon_storage_2 (100) are
+  // the merchant's two plans from before; _1 and _3 came in between.
+  weapon_storage_1: { name: "Weapon Rack Schematic", rarity: "rare", cost: { planks: 10, nails: 5 },
+                      desc: "Plans for a weapon rack: your weapon box holds 60." },
+  weapon_storage:   { name: "Weapon Storage Schematic", rarity: "epic", cost: { planks: 15, nails: 10, metal_bars: 3 },
+                      desc: "Plans for a bigger weapon box: it holds 75." },
+  weapon_storage_3: { name: "Iron Weapon Storage Schematic", rarity: "epic", cost: { nails: 10, metal_bars: 10, essence_stones: 3 },
+                      desc: "Plans for an iron weapon box: it holds 85." },
+  weapon_storage_2: { name: "Reinforced Weapon Storage Schematic", rarity: "legendary", cost: { metal_bars: 15, essence_stones: 5, essence: 2 },
+                      desc: "Plans for an iron-bound weapon box: it holds 100." },
+  armor_storage_1:  { name: "Armour Rack Schematic", rarity: "rare", cost: { planks: 10, nails: 5 },
+                      desc: "Plans for an armour rack: your armour box holds 60." },
+  armor_storage:    { name: "Armour Storage Schematic", rarity: "epic", cost: { planks: 15, nails: 10, metal_bars: 3 },
+                      desc: "Plans for a bigger armour box: it holds 75." },
+  armor_storage_3:  { name: "Iron Armour Storage Schematic", rarity: "epic", cost: { nails: 10, metal_bars: 10, essence_stones: 3 },
+                      desc: "Plans for an iron armour box: it holds 85." },
+  armor_storage_2:  { name: "Reinforced Armour Storage Schematic", rarity: "legendary", cost: { metal_bars: 15, essence_stones: 5, essence: 2 },
+                      desc: "Plans for an iron-bound armour box: it holds 100." },
+  // The Training Pit's slots (lib/trainingPit.ts PIT_SLOTS): built on the Training Pit (🧪 Claude's costs, 2026-11-20).
+  pit_slot_2:       { name: "Pit Extension Schematic", rarity: "epic", cost: { planks: 15, nails: 10, metal_bars: 20, essence_stones: 10, essence: 3 },
+                      desc: "Plans to widen the Training Pit: two creatures train at once." },
+  pit_slot_3:       { name: "Grand Pit Schematic", rarity: "legendary", cost: { planks: 20, nails: 15, metal_bars: 30, essence_stones: 15, essence: 6 },
+                      desc: "Plans for a grand Training Pit: three creatures train at once." },
 };
-// Which box each storage schematic makes bigger, and to which size (STORAGE_TIER: 1, then 2).
-export const STORAGE_PLANS = { weapon_storage: "weapon", armor_storage: "armor", weapon_storage_2: "weapon", armor_storage_2: "armor" } as const;
+// Which box each storage schematic makes bigger, and to which tier (lib/items/storage.ts BOX_CAPS).
+export const STORAGE_PLANS = {
+  weapon_storage_1: "weapon", weapon_storage: "weapon", weapon_storage_3: "weapon", weapon_storage_2: "weapon",
+  armor_storage_1: "armor", armor_storage: "armor", armor_storage_3: "armor", armor_storage_2: "armor",
+} as const;
 export type StoragePlan = keyof typeof STORAGE_PLANS;
-export const STORAGE_TIER: Record<StoragePlan, number> = { weapon_storage: 1, armor_storage: 1, weapon_storage_2: 2, armor_storage_2: 2 };
-// The second plan for the box a first one's for (the merchant offers it once the first is built).
-export const NEXT_STORAGE_PLAN: Partial<Record<StoragePlan, StoragePlan>> = { weapon_storage: "weapon_storage_2", armor_storage: "armor_storage_2" };
+export const STORAGE_TIER: Record<StoragePlan, number> = {
+  weapon_storage_1: 1, weapon_storage: 2, weapon_storage_3: 3, weapon_storage_2: 4,
+  armor_storage_1: 1, armor_storage: 2, armor_storage_3: 3, armor_storage_2: 4,
+};
+export const isStoragePlan = (k: string | undefined): k is StoragePlan => !!k && k in STORAGE_PLANS;
 
-// The cage: how many creatures it holds at each level. 1: the cell you start
-// with; 2: built from the Iron Cage Schematic (a mini boss's chest, until
-// you've found one: CAGE_PLAN_CHANCE in lib/dungeon/run.ts).
-export const CAGE_LEVELS = [1, 3];
+// The cage: how many creatures it holds at each level. 1: the cell you start with; 2: the iron cage (the Iron
+// Cage Schematic); 3: the reinforced cage (the user, 2026-11-20: its schematic from the Hydra on, or 3,000 gold).
+export const CAGE_LEVELS = [1, 3, 5];
 export const cageSize = (level = 1) => CAGE_LEVELS[Math.min(CAGE_LEVELS.length, Math.max(1, level)) - 1];
 
-// The bookcase: how many codexes it holds at each level. 1: the broken shelf
-// you start with; 3: the crooked bookcase (BOOKCASE_BUILT), from the tavern's
-// schematic. 2 is the crooked bookcase as built before the tavern questline:
-// those saves keep their 25. Level 2 or more is the crooked bookcase.
-// 4: the iron-bound bookcase (BOOKCASE_REINFORCED, the user, 2026-11-13), built
-// on the crooked one with rarer materials (BOOKCASE_UPGRADE_COST), no schematic.
-export const BOOKCASE_LEVELS = [10, 25, 20, 30];
-export const BOOKCASE_BUILT = 3;
-export const BOOKCASE_REINFORCED = 4;
-export const BOOKCASE_UPGRADE_COST: Partial<Record<MaterialKey, number>> = { metal_bars: 10, essence_stones: 5, essence: 2 };
-export const bookcaseSize = (level = 1) => BOOKCASE_LEVELS[Math.min(BOOKCASE_LEVELS.length, Math.max(1, level)) - 1];
+// The bookcase in stages (the user, 2026-11-20; it stops at 50: there aren't that many codexes yet), saved as
+// `shelf`: 1 the shelf you start with, 2 the crooked bookcase (materials only: BOOKCASE_CROOKED_COST), 3 the
+// sturdy one (its schematic: the campaign's reward for the rubble, chests, merchants), 4 the carved one.
+export const BOOKCASE_STAGES = [5, 15, 30, 50];
+export const BOOKCASE_NAMES = ["Old shelf", "Crooked bookcase", "Sturdy bookcase", "Carved bookcase"];
+export const BOOKCASE_CROOKED_COST: Partial<Record<MaterialKey, number>> = { planks: 7, nails: 4 };
+export const bookcaseSize = (stage = 1) => BOOKCASE_STAGES[Math.min(BOOKCASE_STAGES.length, Math.max(1, stage)) - 1];
+// A save from before the stages (its `bookcase` level: 1 the broken shelf of 10, 2–4 the crooked or iron-bound
+// bookcase of 20–30) lands on the stage at or above its size: nobody loses room.
+export const shelfFromOld = (bookcase: unknown) => (typeof bookcase === "number" && bookcase >= 2 ? 3 : 2);
 
 const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();

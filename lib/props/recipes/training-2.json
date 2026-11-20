@@ -1,0 +1,462 @@
+{
+  "format": 1,
+  "id": "training-2",
+  "name": "Training Pit: 2 slots",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den/training-pit.png",
+    "foot": [112, 140]
+  },
+  "parts": [
+    {
+      "id": "sand",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [4.2, 0.03, 4.2],
+      "faces": {
+        "top": {
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#b0a690"
+        },
+        "*": {
+          "colour": "#7a6a4a"
+        }
+      }
+    },
+    {
+      "id": "wall",
+      "kind": "box",
+      "at": [-0.3, 0, 2.3],
+      "size": [4.6, 0.458333, 0.3],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-bricks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#a3a8b4"
+        },
+        "top": {
+          "src": "/sprites/den3d/parts/stone-bricks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#8a8f9b"
+        },
+        "bottom": {
+          "colour": "#24262b"
+        }
+      }
+    },
+    {
+      "id": "shaft-1",
+      "kind": "box",
+      "at": [-2.3, 0.458333, 2.3],
+      "size": [0.0625, 0.458333, 0.0625],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "shaft-1b",
+      "kind": "box",
+      "at": [-1.84, 0.458333, 2.3],
+      "size": [0.0625, 0.458333, 0.0625],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "spear-1",
+      "kind": "cylinder",
+      "at": [-2.3, 0.916666, 2.3],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      }
+    },
+    {
+      "id": "spear-1b",
+      "kind": "cylinder",
+      "at": [-1.84, 0.916666, 2.3],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      }
+    },
+    {
+      "id": "shaft-2",
+      "kind": "box",
+      "at": [-1.38, 0.458333, 2.3],
+      "size": [0.0625, 0.458333, 0.0625],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "shaft-2b",
+      "kind": "box",
+      "at": [-0.92, 0.458333, 2.3],
+      "size": [0.0625, 0.458333, 0.0625],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "spear-2",
+      "kind": "cylinder",
+      "at": [-1.38, 0.916666, 2.3],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      }
+    },
+    {
+      "id": "spear-2b",
+      "kind": "cylinder",
+      "at": [-0.92, 0.916666, 2.3],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      }
+    },
+    {
+      "id": "shaft-3",
+      "kind": "box",
+      "at": [-0.46, 0.458333, 2.3],
+      "size": [0.0625, 0.458333, 0.0625],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "shaft-3b",
+      "kind": "box",
+      "at": [0, 0.458333, 2.3],
+      "size": [0.0625, 0.458333, 0.0625],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "spear-3",
+      "kind": "cylinder",
+      "at": [-0.46, 0.916666, 2.3],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      }
+    },
+    {
+      "id": "spear-3b",
+      "kind": "cylinder",
+      "at": [0, 0.916666, 2.3],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      }
+    },
+    {
+      "id": "shaft-4",
+      "kind": "box",
+      "at": [0.46, 0.458333, 2.3],
+      "size": [0.0625, 0.458333, 0.0625],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "shaft-4b",
+      "kind": "box",
+      "at": [0.92, 0.458333, 2.3],
+      "size": [0.0625, 0.458333, 0.0625],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "spear-4",
+      "kind": "cylinder",
+      "at": [0.46, 0.916666, 2.3],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      }
+    },
+    {
+      "id": "spear-4b",
+      "kind": "cylinder",
+      "at": [0.92, 0.916666, 2.3],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      }
+    },
+    {
+      "id": "shaft-5",
+      "kind": "box",
+      "at": [1.38, 0.458333, 2.3],
+      "size": [0.0625, 0.458333, 0.0625],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "shaft-5b",
+      "kind": "box",
+      "at": [1.84, 0.458333, 2.3],
+      "size": [0.0625, 0.458333, 0.0625],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        }
+      }
+    },
+    {
+      "id": "spear-5",
+      "kind": "cylinder",
+      "at": [1.38, 0.916666, 2.3],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      }
+    },
+    {
+      "id": "spear-5b",
+      "kind": "cylinder",
+      "at": [1.84, 0.916666, 2.3],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      }
+    },
+    {
+      "id": "dummy",
+      "kind": "sprite",
+      "at": [-0.8, 0.03, -0.1],
+      "size": [0.53125, 0.991667],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/dummy.png",
+          "crop": [0, 0, 30, 56],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "dummy-2",
+      "kind": "sprite",
+      "at": [0.8, 0.03, -0.1],
+      "size": [0.53125, 0.991667],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/dummy.png",
+          "crop": [0, 0, 30, 56],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "rack-post-l",
+      "kind": "box",
+      "at": [-0.32, 0.03, -1.6],
+      "size": [0.08, 0.7, 0.08],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        }
+      }
+    },
+    {
+      "id": "rack-post-r",
+      "kind": "box",
+      "at": [0.32, 0.03, -1.6],
+      "size": [0.08, 0.7, 0.08],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#7a5634"
+        }
+      }
+    },
+    {
+      "id": "rack-bar",
+      "kind": "box",
+      "at": [0, 0.6, -1.6],
+      "size": [0.76, 0.06, 0.06],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#9a7450"
+        }
+      }
+    },
+    {
+      "id": "rack-staff-0",
+      "kind": "box",
+      "at": [-0.18, 0.03, -1.55],
+      "size": [0.04, 0.72, 0.04],
+      "faces": {
+        "*": {
+          "colour": "#5a3a24"
+        }
+      },
+      "turn": [8, 0, 0]
+    },
+    {
+      "id": "rack-staff-1",
+      "kind": "box",
+      "at": [0, 0.03, -1.55],
+      "size": [0.04, 0.72, 0.04],
+      "faces": {
+        "*": {
+          "colour": "#8a8e9c"
+        }
+      },
+      "turn": [8, 0, 0]
+    },
+    {
+      "id": "rack-staff-2",
+      "kind": "box",
+      "at": [0.18, 0.03, -1.55],
+      "size": [0.04, 0.72, 0.04],
+      "faces": {
+        "*": {
+          "colour": "#5a3a24"
+        }
+      },
+      "turn": [8, 0, 0]
+    }
+  ]
+}

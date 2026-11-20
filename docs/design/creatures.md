@@ -24,7 +24,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   (`/altar?summon=<id>`). The summoning plays out (the user, 2026-11-02; components/SummonShow.tsx): the 3 cards are
   set on the Soul Altar, whirl up into a whirlwind that climbs the rarity colours like a Code Cache
   (`summonStages`, lib/scanReveal.ts) to the creature's, then burst into it. Tap to skip.
-- ✅ **Cage:** holds 1 creature (`CAGE_SIZE`; upgrades later). A new game's first creature waits in
+- ✅ **Cage:** holds 1 creature, then 3 and 5 as it's built up ([items.md](items.md): the cage in stages). A new game's first creature waits in
   the cage (`starterCreature`, Lv 3). It knows its style's three core moves and one move of its own (main)
   race, `STARTER_RACE_MOVE` (the user, 2026-11-20: that race's least damaging, least complicated attack, whatever
   its style): Beast Claw, Geo Flame Spit, Undead Nibble, Toxic Poison Dart, Humanoid Whiplash, Underkin Rock

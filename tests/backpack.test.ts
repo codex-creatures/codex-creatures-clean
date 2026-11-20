@@ -11,7 +11,7 @@ describe("the rugged backpack, until you've got one", () => {
     for (let i = 1; i < 50; i++) {
       const w = rollWares(seeded(i), true);
       expect(w[0]).toMatchObject({ key: "backpack", price: BACKPACK_PRICE });
-      expect(w.length).toBeLessThanOrEqual(MERCHANT_SLOTS);
+      expect(waresFor(w, {}).length).toBeLessThanOrEqual(MERCHANT_SLOTS);
       expect(rollWares(seeded(i)).some((x) => "backpack" in x)).toBe(false);
     }
     expect(makeRoom("merchant", seeded(3), Infinity, 1, true).wares?.[0].key).toBe("backpack");
@@ -19,7 +19,7 @@ describe("the rugged backpack, until you've got one", () => {
 
   it("drops off a cart rolled before you found it elsewhere", () => {
     const w = rollWares(seeded(7), true);
-    expect(waresFor(w, {}).length).toBe(w.length);
+    expect(waresFor(w, {}).length).toBe(w.filter((x) => !("schematic" in x)).length); // (no plan wanted here)
     expect(waresFor(w, { bagSize: BACKPACK }).some((x) => "backpack" in x)).toBe(false);
   });
 

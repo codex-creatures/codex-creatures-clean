@@ -3,7 +3,7 @@ import {
   stowDrop, needsSlot, rareLeftBehind, wipedOut, lootIdOf, BINDLE, startRun,
   type DungeonMeta, type DungeonRun,
 } from "../lib/dungeon/run";
-import { materialDrop, addMaterials, canAfford, countMaterial, SCHEMATICS } from "../lib/items/materials";
+import { materialDrop, addMaterials, canAfford, countMaterial, SCHEMATICS, BOOKCASE_CROOKED_COST } from "../lib/items/materials";
 import { weaponDrop, potionDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
 
@@ -15,13 +15,13 @@ describe("materials", () => {
     let m = addMaterials({}, { planks: 15 });
     m = addMaterials(m, { planks: 12, nails: 10 });
     expect(countMaterial(m, "planks")).toBe(27);
-    const cost = SCHEMATICS.crooked_bookcase.cost;
+    const cost = BOOKCASE_CROOKED_COST;
     expect(canAfford(m, cost)).toBe(true);
     const build = () => (m = addMaterials(m, Object.fromEntries(Object.entries(cost).map(([k, n]) => [k, -n!]))));
     build();
-    expect(m).toEqual({ planks: 17, nails: 5 });
+    expect(m).toEqual({ planks: 20, nails: 6 });
     build();
-    expect(m).toEqual({ planks: 7, nails: 0 });
+    expect(m).toEqual({ planks: 13, nails: 2 });
     expect(canAfford(m, cost)).toBe(false);
   });
 

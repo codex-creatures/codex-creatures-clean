@@ -25,7 +25,7 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { ARMOR_KEYS, ARMOR_SLOTS, wornArmor } from "./items/armor";
 import { CHEST_ENCHANT, enchanted, enchantOf } from "./items/enchantments";
-import { materialBundle, toolDrop } from "./items/materials";
+import { SCHEMATICS, materialBundle, materialDrop, toolDrop } from "./items/materials";
 import { BINDLE } from "./dungeon/run";
 import { SKILL_KEYS, type KlutzState } from "./klutz";
 import { calibrating, readFirstScans, CALIBRATION_SCANS } from "./firstScans";
@@ -117,7 +117,10 @@ export function campaignCtx(save: Obj): CampaignCtx {
     campRuns: num(meta.campRuns),
     blasted: !!tavern.blasted,
     repaired: !!tavern.repaired,
-    blueprints: (num(save.bookcase) >= 2 ? 1 : 0) + (num(save.cage) >= 2 ? 1 : 0) + (Array.isArray(save.storage) ? save.storage.length : 0) + (tavern.pit ? 1 : 0),
+    // (Schematics built: the bookcase's sturdy and carved stages (a save from before the stages: its old one), the
+    // cage's, the boxes' stages, the Training Pit and its slots.)
+    blueprints: (save.shelf === undefined ? (num(save.bookcase) >= 2 ? 1 : 0) : Math.max(0, num(save.shelf) - 2)) + Math.max(0, num(save.cage) - 1)
+      + (Array.isArray(save.storage) ? save.storage.length : 0) + (tavern.pit ? 1 : 0) + Math.max(0, num(tavern.slots) - 1),
     bagUpgraded: num(meta.bagSize) > BINDLE,
   };
 }
@@ -151,6 +154,7 @@ export type CampaignReward =
   | { goldKey: true }
   | { enchanted: "weapon" | "armour"; rarity: Rarity }
   | { weapon: Rarity } // a weapon of this rarity, not enchanted
+  | { essence: number } // essence crystals (the user, 2026-11-20: from the Hydra's chapter on, for the Den's upgrades)
   | { bookcasePlans: true };
 
 // (The codex reward is a bookcase, not a crate: the user, 2026-11-16. The gear one's a barrel, to be drawn.)
@@ -164,7 +168,8 @@ export function rewardText(r: CampaignReward): string {
   if ("goldKey" in r) return "A Gold Key";
   if ("enchanted" in r) return `An enchanted ${RARITY_WORD[r.rarity]} ${r.enchanted}`;
   if ("weapon" in r) return `A ${RARITY_WORD[r.weapon]} weapon`;
-  return "The Crooked Bookcase Schematic";
+  if ("essence" in r) return r.essence === 1 ? "An essence crystal" : `${r.essence} essence crystals`;
+  return SCHEMATICS.crooked_bookcase.name; // (the sturdy bookcase's, since 2026-11-20)
 }
 
 // The bookcase's plans when you have them already (or the bookcase is built): gold instead.
@@ -191,6 +196,7 @@ function enchantedPiece(kind: "weapon" | "armour", rarity: Rarity, rng: Rng): Dr
 export function rollCampaignReward(r: CampaignReward, rng: Rng = Math.random): Drop[] {
   if ("scrolls" in r) return Array.from({ length: r.scrolls }, () => scrollDrop());
   if ("goldKey" in r) return [toolDrop("gold_key")];
+  if ("essence" in r) return [materialDrop("essence", r.essence)];
   if ("enchanted" in r) return [enchantedPiece(r.enchanted, r.rarity, rng)];
   if ("weapon" in r) { const key = ITEM_KEYS[Math.floor(rng() * ITEM_KEYS.length)]; return [weaponDrop(key, r.weapon, "", rollItemStats(key, r.weapon, rng).stats)]; }
   if (!("crate" in r)) return [];
@@ -224,6 +230,7 @@ const flag = (b: boolean) => (b ? 1 : 0);
 const gold = (n: number): CampaignReward => ({ gold: n });
 const scrolls = (n: number): CampaignReward => ({ scrolls: n });
 const crate = (kind: CrateKind, lo: Rarity, hi: Rarity, n = 3): CampaignReward => ({ crate: kind, lo, hi, n });
+const essence = (n: number): CampaignReward => ({ essence: n });
 const supplies: CampaignReward = { crate: "supplies", lo: "common", hi: "rare", n: SUPPLIES };
 
 // Quest makers, one per kind of quest (the id carries the number, so each is unique).
@@ -279,11 +286,11 @@ export const CHAPTERS: Chapter[] = [
     q.klutz(5, scrolls(1)),
     q.level(10, crate("materials", "uncommon", "rare")),
     q.once("enchanted-weapon", "Put an enchanted weapon on a creature", "/pit", (c) => c.enchantedWeapon, gold(300)),
-    q.once("skills", "Give every one of Klutz's skills a level", "/klutz", (c) => c.klutzSkills >= SKILL_KEYS.length, gold(300)),
+    q.once("skills", "Give every one of Klutz's skills a level", "/klutz", (c) => c.klutzSkills >= SKILL_KEYS.length, essence(1)), // (300 gold till 2026-11-20)
     q.once("tavern", "Fix up the tavern", "/tavern", (c) => c.repaired, { goldKey: true }),
     q.once("effective", "Win a fight using only effective moves", "/dungeon", (c) => tallied(c, "effective") > 0, gold(400)),
     q.summon("uncommon", supplies),
-    q.scan(50, gold(500)),
+    q.scan(50, essence(2)), // (500 gold till 2026-11-20)
     q.bestiary(15, scrolls(1)),
     q.once("bag", "Get a bigger bag", "/bag", (c) => c.bagUpgraded, gold(500)),
     q.spar(3, scrolls(2)),
@@ -292,17 +299,17 @@ export const CHAPTERS: Chapter[] = [
     q.fights(100, crate("codex", "uncommon", "rare", 2)),
     q.once("gold-key", "Open a golden chest with a Gold Key", "/dungeon", (c) => tallied(c, "goldchest") > 0, crate("gear", "rare", "epic")),
     q.gold(5000, scrolls(2)),
-    q.clean(1, "the Cyclops", gold(1000)),
+    q.clean(1, "the Cyclops", essence(2)), // (1,000 gold till 2026-11-20)
     q.level(15, crate("gear", "rare", "epic")),
     q.once("hydra", "Beat the Hydra", "/dungeon", (c) => c.wins.hydra > 0, { enchanted: "armour", rarity: "epic" }),
   ] },
   { name: "The Abyss", quests: [
-    q.once("enchanted-armour", "Put an enchanted armour piece on a creature", "/pit", (c) => c.enchantedArmour, gold(1000)),
+    q.once("enchanted-armour", "Put an enchanted armour piece on a creature", "/pit", (c) => c.enchantedArmour, essence(2)), // (1,000 gold till 2026-11-20)
     q.klutz(10, crate("materials", "rare", "epic")),
     { id: "visitors", task: "Have every visitor call at the tavern", go: "/tavern", goal: VISITORS.length, progress: (c) => VISITORS.filter((v) => tallied(c, `visit:${v}`) > 0).length, reward: scrolls(2) },
     q.summon("rare", supplies),
     { id: "blueprints3", task: "Build 3 schematics", go: "/chest", goal: 3, progress: (c) => c.blueprints, reward: crate("materials", "rare", "epic") },
-    q.explorer(20, gold(2000)),
+    q.explorer(20, essence(3)), // (2,000 gold till 2026-11-20)
     q.spar(10, scrolls(3)),
     q.level(20, crate("gear", "epic", "epic")),
     q.gold(15000, scrolls(3)),
@@ -315,8 +322,8 @@ export const CHAPTERS: Chapter[] = [
     q.klutz(15, scrolls(3)),
     q.summon("epic", crate("codex", "epic", "epic", 2)),
     q.kfind("legendary", crate("materials", "epic", "legendary")),
-    q.worn("legendary", gold(5000)),
-    q.scan(250, gold(5000)),
+    q.worn("legendary", essence(4)), // (5,000 gold till 2026-11-20)
+    q.scan(250, essence(4)), // (5,000 gold till 2026-11-20)
     q.bestiary(35, crate("gear", "epic", "legendary")),
     q.explorer(30, crate("gear", "epic", "legendary")),
     q.gold(50000, scrolls(5)),

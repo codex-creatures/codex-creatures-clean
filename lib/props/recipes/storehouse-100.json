@@ -1,0 +1,548 @@
+{
+  "format": 1,
+  "id": "storehouse-100",
+  "name": "Storehouse: stone and iron (100)",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den3d/storehouse-front.png",
+    "foot": [82, 47]
+  },
+  "parts": [
+    {
+      "id": "footing",
+      "kind": "box",
+      "at": [0.55, 0, 0],
+      "size": [4.7, 0.3, 2.4],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48]
+        },
+        "top": {
+          "src": "/sprites/den3d/pit-top.png",
+          "crop": [5, 24, 17, 62]
+        }
+      },
+      "outline": true
+    },
+    {
+      "id": "stud--0.5-0.5",
+      "kind": "box",
+      "at": [-0.5, 0.48, 1.19],
+      "size": [0.06, 0.06, 0.03],
+      "faces": {
+        "*": {
+          "colour": "#9a9ab8"
+        }
+      }
+    },
+    {
+      "id": "stud--0.5-1.3",
+      "kind": "box",
+      "at": [-0.5, 1.28, 1.19],
+      "size": [0.06, 0.06, 0.03],
+      "faces": {
+        "*": {
+          "colour": "#9a9ab8"
+        }
+      }
+    },
+    {
+      "id": "stud--0.04-0.5",
+      "kind": "box",
+      "at": [-0.04, 0.48, 1.19],
+      "size": [0.06, 0.06, 0.03],
+      "faces": {
+        "*": {
+          "colour": "#9a9ab8"
+        }
+      }
+    },
+    {
+      "id": "stud--0.04-1.3",
+      "kind": "box",
+      "at": [-0.04, 1.28, 1.19],
+      "size": [0.06, 0.06, 0.03],
+      "faces": {
+        "*": {
+          "colour": "#9a9ab8"
+        }
+      }
+    },
+    {
+      "id": "stud-0.42-0.5",
+      "kind": "box",
+      "at": [0.42, 0.48, 1.19],
+      "size": [0.06, 0.06, 0.03],
+      "faces": {
+        "*": {
+          "colour": "#9a9ab8"
+        }
+      }
+    },
+    {
+      "id": "stud-0.42-1.3",
+      "kind": "box",
+      "at": [0.42, 1.28, 1.19],
+      "size": [0.06, 0.06, 0.03],
+      "faces": {
+        "*": {
+          "colour": "#9a9ab8"
+        }
+      }
+    },
+    {
+      "id": "body",
+      "kind": "box",
+      "at": [0, 0.3, 0],
+      "size": [3.416667, 2, 2.21],
+      "outline": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [0, 0, 164, 48],
+          "fit": "fill"
+        },
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [130, 2, 26, 34],
+          "fit": "tile"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#bba79c"
+        },
+        "bottom": {
+          "colour": "#1a120c"
+        }
+      }
+    },
+    {
+      "id": "beam",
+      "kind": "box",
+      "at": [1.6283, 0.3, 1.025],
+      "size": [0.083333, 2, 0.083333],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "beam-back",
+      "kind": "box",
+      "at": [1.6283, 0.3, -1.025],
+      "size": [0.083333, 2, 0.083333],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "beam-2",
+      "kind": "box",
+      "at": [-1.628333, 0.3, 1.025],
+      "size": [0.083333, 2, 0.083333],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "beam-2-back",
+      "kind": "box",
+      "at": [-1.628333, 0.3, -1.025],
+      "size": [0.083333, 2, 0.083333],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "door-post",
+      "kind": "box",
+      "at": [-0.6458, 0.3, 1.145],
+      "size": [0.145833, 1.9167, 0.104167],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "door-post-2",
+      "kind": "box",
+      "at": [0.5625, 0.3, 1.145],
+      "size": [0.145833, 1.9167, 0.104167],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "lintel",
+      "kind": "box",
+      "at": [-0.0417, 2.05, 1.145],
+      "size": [1.375, 0.166667, 0.125],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "barrel",
+      "kind": "cylinder",
+      "at": [-1.0625, 0.3, 1.405],
+      "size": [0.416667, 0.583333, 0.416667],
+      "sides": 10,
+      "taper": 0.9,
+      "outline": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#ffffff"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#ffffff"
+        }
+      }
+    },
+    {
+      "id": "barrel-band",
+      "kind": "cylinder",
+      "at": [-1.0625, 0.68, 1.405],
+      "size": [0.4, 0.0625, 0.4],
+      "sides": 10,
+      "faces": {
+        "side": {
+          "colour": "#2a2a30"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#ffffff"
+        }
+      }
+    },
+    {
+      "id": "sack",
+      "kind": "sprite",
+      "at": [-1.375, 0.3, 1.325],
+      "size": [0.375, 0.583333],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [20, 18, 16, 28],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "roof",
+      "kind": "wedge",
+      "at": [0, 2.26, 0],
+      "size": [3.6167, 0.75, 2.41],
+      "outline": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/storehouse-roof.png",
+          "crop": [60, 30, 24, 24],
+          "fit": "tile"
+        },
+        "back": {
+          "src": "/sprites/den3d/storehouse-roof.png",
+          "crop": [60, 30, 24, 24],
+          "fit": "tile",
+          "tint": "#b8a890"
+        },
+        "left": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [130, 2, 26, 34],
+          "fit": "tile"
+        },
+        "right": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [130, 2, 26, 34],
+          "fit": "tile"
+        },
+        "bottom": {
+          "colour": "#1e140c"
+        }
+      }
+    },
+    {
+      "id": "fascia",
+      "kind": "box",
+      "at": [0, 2.2, 1.185],
+      "size": [3.6167, 0.104167, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#24170e"
+        },
+        "top": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "soffit",
+      "kind": "box",
+      "at": [0, 2.14, 1.125],
+      "size": [3.6167, 0.0625, 0.104167],
+      "faces": {
+        "*": {
+          "colour": "#0e0a07"
+        }
+      }
+    },
+    {
+      "id": "ridge",
+      "kind": "box",
+      "at": [0, 2.95, 0],
+      "size": [3.6967, 0.104167, 0.145833],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a3018"
+        },
+        "top": {
+          "colour": "#6a4a28"
+        }
+      }
+    },
+    {
+      "id": "rack-post-l",
+      "kind": "box",
+      "at": [1, 0.445, 1.36],
+      "size": [0.07, 0.8, 0.07],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#6a4a2a"
+        }
+      }
+    },
+    {
+      "id": "rack-post-r",
+      "kind": "box",
+      "at": [1.44, 0.445, 1.36],
+      "size": [0.07, 0.8, 0.07],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#6a4a2a"
+        }
+      }
+    },
+    {
+      "id": "rack-bar",
+      "kind": "box",
+      "at": [1.22, 1.08, 1.36],
+      "size": [0.54, 0.06, 0.06],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#8a6a48"
+        }
+      }
+    },
+    {
+      "id": "rack-sword",
+      "kind": "sprite",
+      "at": [1.12, 0.5, 1.4],
+      "size": [0.42, 0.62],
+      "faces": {
+        "front": {
+          "src": "/sprites/items/void_scythe.png",
+          "crop": [0, 0, 64, 64],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "rack-shield",
+      "kind": "sprite",
+      "at": [1.36, 0.5, 1.42],
+      "size": [0.36, 0.36],
+      "faces": {
+        "front": {
+          "src": "/sprites/items/ironfang_guard.png",
+          "crop": [0, 0, 64, 64],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "lean-body",
+      "kind": "box",
+      "at": [2.3, 0.3, 0.2],
+      "size": [1.1, 1.3, 1.6],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [130, 2, 26, 34]
+        },
+        "front": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [130, 2, 26, 34]
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17]
+        },
+        "bottom": {
+          "colour": "#1a120c"
+        }
+      },
+      "outline": true
+    },
+    {
+      "id": "lean-roof",
+      "kind": "box",
+      "at": [2.3, 1.6, 0.25],
+      "size": [1.25, 0.08, 1.8],
+      "faces": {
+        "*": {
+          "colour": "#24170e"
+        },
+        "top": {
+          "src": "/sprites/den3d/storehouse-roof.png",
+          "crop": [60, 30, 24, 24]
+        }
+      },
+      "turn": [0, 0, -8]
+    },
+    {
+      "id": "lean-door",
+      "kind": "box",
+      "at": [2.3, 0.3, 1.01],
+      "size": [0.6, 1, 0.04],
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [2, 3, 30, 17],
+          "tint": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "band-0.5-0",
+      "kind": "box",
+      "at": [-1.6283, 0.8, 1.025],
+      "size": [0.13, 0.1, 0.13],
+      "faces": {
+        "*": {
+          "colour": "#2e2e3a"
+        },
+        "top": {
+          "colour": "#55557a"
+        }
+      }
+    },
+    {
+      "id": "band-0.5-1",
+      "kind": "box",
+      "at": [1.6283, 0.8, 1.025],
+      "size": [0.13, 0.1, 0.13],
+      "faces": {
+        "*": {
+          "colour": "#2e2e3a"
+        },
+        "top": {
+          "colour": "#55557a"
+        }
+      }
+    },
+    {
+      "id": "band-1.4-0",
+      "kind": "box",
+      "at": [-1.6283, 1.7, 1.025],
+      "size": [0.13, 0.1, 0.13],
+      "faces": {
+        "*": {
+          "colour": "#2e2e3a"
+        },
+        "top": {
+          "colour": "#55557a"
+        }
+      }
+    },
+    {
+      "id": "band-1.4-1",
+      "kind": "box",
+      "at": [1.6283, 1.7, 1.025],
+      "size": [0.13, 0.1, 0.13],
+      "faces": {
+        "*": {
+          "colour": "#2e2e3a"
+        },
+        "top": {
+          "colour": "#55557a"
+        }
+      }
+    },
+    {
+      "id": "door-band-1",
+      "kind": "box",
+      "at": [-0.04, 0.8, 1.17],
+      "size": [1.2, 0.07, 0.03],
+      "faces": {
+        "*": {
+          "colour": "#2e2e3a"
+        },
+        "top": {
+          "colour": "#55557a"
+        }
+      }
+    },
+    {
+      "id": "door-band-2",
+      "kind": "box",
+      "at": [-0.04, 1.6, 1.17],
+      "size": [1.2, 0.07, 0.03],
+      "faces": {
+        "*": {
+          "colour": "#2e2e3a"
+        },
+        "top": {
+          "colour": "#55557a"
+        }
+      }
+    }
+  ]
+}

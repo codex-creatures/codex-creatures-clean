@@ -46,7 +46,7 @@ import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
 import Glyph from "./Glyph";
 import { loadTavern } from "@/lib/tavern";
-import { trainingId } from "@/lib/trainingPit";
+import { trainingIds } from "@/lib/trainingPit";
 
 // Fighters face each other: yours (on the left) look right, theirs look left.
 // Most art faces left, so yours is mirrored; art drawn facing right is the other way round.
@@ -127,7 +127,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // (withAway: it is, marked away, for a picker to show greyed out).
 export function loadOwnedCreatures(atLevel?: number, scaleUp = true, withAway = false): OwnedCreature[] {
   const save = loadSave();
-  const away = trainingId(loadTavern());
+  const away = new Set(trainingIds(loadTavern()));
   const inv = save?.inventory ?? [];
   const teams = readTeams(save?.teams);
   const favs = new Set(hasTeams(teams) ? teams.flat() : save?.favoriteIds ?? []);
@@ -137,7 +137,7 @@ export function loadOwnedCreatures(atLevel?: number, scaleUp = true, withAway = 
   const list: OwnedCreature[] = [];
   for (const d of inv.filter(isCreatureDrop)) {
     const t = findCreatureTemplate(d.creatureId, d.name);
-    if (!t || (d.id === away && !withAway)) continue;
+    if (!t || (away.has(d.id) && !withAway)) continue;
     const w = items.get(equipment[d.id]?.weaponId ?? "");
     const pieces = armorPieces(equipment[d.id], (id) => items.get(id));
     const worn = pieces.filter((p): p is CreatureOrItemDrop => !!p);
@@ -152,7 +152,7 @@ export function loadOwnedCreatures(atLevel?: number, scaleUp = true, withAway = 
       weaponRarity: w?.rarity, armorRarity: a?.rarity,
       fighter: fighterFor(atLevel ? { ...d, level: duelLevel(d.level ?? 1, { level: atLevel, scaleUp }) } : d, t, w?.stats, pieces, equipment[d.id]?.moves, w?.itemKey, w),
       gear: [w, ...worn].filter((g): g is CreatureOrItemDrop => !!g).map((g) => ({ name: g.name, rarity: g.rarity })),
-      ...(d.id === away ? { away: true } : {}),
+      ...(away.has(d.id) ? { away: true } : {}),
     });
   }
   return list.sort((x, y) =>

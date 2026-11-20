@@ -2,8 +2,8 @@
 // app/training/page.tsx
 // The pit in the tavern's room (lib/trainingPit.ts): the Sparring Pit, there
 // once the rubble's open, then the Training Pit built over it from the Hydra
-// quest's plans. One creature at a time trains in it, a level at a time: its
-// bar fills in real time and waits, full, until you tap Level up.
+// quest's plans, which schematics widen to PIT_SLOTS creatures (lib/items/plans.ts). Each
+// trains a level at a time: its bar fills in real time and waits, full, until you tap Level up.
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -18,7 +18,8 @@ import { MAX_LEVEL } from "@/lib/creatures/levels";
 import { loadDungeon } from "@/lib/dungeon/run";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isCreatureDrop, type CreatureOrItemDrop } from "@/lib/types";
-import { SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, canBuildPit, hasPit, lifetimeXp, pitNeeds, pitRate } from "@/lib/trainingPit";
+import { PIT_SLOTS, SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, canBuildPit, canTrain, hasPit, lifetimeXp, pitNeeds, pitRate, pitSlots } from "@/lib/trainingPit";
+import PlanBuild, { heldOf } from "@/components/PlanBuild";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
@@ -54,11 +55,13 @@ export default function TrainingPage() {
     );
   }
 
-  const status = game.trainingStatus(now);
+  const statuses = game.trainingStatuses(now);
+  const slots = pitSlots(t);
+  const slotPlan = heldOf(game.inventory, slots < 2 ? ["pit_slot_2", "pit_slot_3"] : slots < 3 ? ["pit_slot_3"] : [])[0];
   const rate = pitRate(t);
   const needs = pitNeeds(game.materials);
   const pickable = (game.inventory.filter(isCreatureDrop) as CreatureOrItemDrop[])
-    .filter((c) => (c.level ?? 1) < MAX_LEVEL && !onRun.includes(c.id))
+    .filter((c) => (c.level ?? 1) < MAX_LEVEL && !onRun.includes(c.id) && !statuses.some((x) => x.creature.id === c.id))
     .sort((a, b) => (b.level ?? 1) - (a.level ?? 1) || a.name.localeCompare(b.name));
 
   return (
@@ -66,14 +69,15 @@ export default function TrainingPage() {
       <div className="stone-panel">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           <div className="pixel-font" style={{ fontSize: 17, color: GOLD }}>{name}</div>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, marginLeft: "auto" }}>{rate} XP/h</div>
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, marginLeft: "auto" }}>{rate} XP/h{slots > 1 ? ` · ${slots} slots` : ""}</div>
           <Help title={name}>
             <ul>
-              <li>Leave <b>one creature</b> here and it trains on its own: <b>{SPARRING_XP_PER_HOUR} XP an hour</b> in the Sparring Pit, <b>{TRAINING_XP_PER_HOUR}</b> in the Training Pit, even with the game shut.</li>
+              <li>Leave a creature here and it trains on its own: <b>{SPARRING_XP_PER_HOUR} XP an hour</b> in the Sparring Pit, <b>{TRAINING_XP_PER_HOUR}</b> in the Training Pit, even with the game shut.</li>
               <li>It stops when its XP bar is full. Come back and tap <b>Level up</b> to bank the level, and it trains on to the next.</li>
               <li>While it&apos;s here it&apos;s <b>away training</b>: it can&apos;t go in the Labyrinth or duel. Take it out any time; it keeps the XP it&apos;s earned.</li>
               <li><b>Lifetime</b>: all the XP the pit has trained into your creatures.</li>
               <li>The <b>Training Pit</b>&apos;s plans come from the <b>Hydra quest</b> on the quest board, once you&apos;ve beaten the Cyclops.</li>
+              <li>Schematics from the deepest chests (or a merchant) widen the Training Pit, up to <b>{PIT_SLOTS}</b> creatures at once.</li>
             </ul>
           </Help>
         </div>
@@ -85,16 +89,16 @@ export default function TrainingPage() {
         </div>
         <div className="pixel-font" style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: GOLD, padding: "6px 8px", marginTop: 6, background: "rgba(0,0,0,0.25)" }}>
           <span style={{ color: MUTED }}>Lifetime</span>
-          <span>{(lifetimeXp(t) + (status?.earned ?? 0)).toLocaleString()} XP</span>
+          <span>{(lifetimeXp(t) + statuses.reduce((n, x) => n + x.earned, 0)).toLocaleString()} XP</span>
         </div>
 
-        {/* Someone's training: their bar, how long to go, Level up and Take out. */}
-        {status && (() => {
+        {/* Who's training: each one's bar, how long to go, Level up and Take out. */}
+        {statuses.map((status) => {
           const c = status.creature;
           return (
-            <div style={{ marginTop: 10 }}>
+            <div key={c.id} style={{ marginTop: 10 }}>
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <CreaturePortrait creatureId={c.creatureId} title={c.name} frame={{ width: 72, flex: "none" }} />
+                <CreaturePortrait creatureId={c.creatureId} title={c.name} frame={{ width: slots > 1 ? 56 : 72, flex: "none" }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="pixel-font" style={{ fontSize: 16, color: RARITY_COLORS[c.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
                   <LevelBar level={status.level} xp={status.xp + status.earned} />
@@ -103,18 +107,18 @@ export default function TrainingPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-                <button className={`pixel-btn${status.full ? " tutorial-pulse" : ""}`} style={{ flex: 1, minHeight: 44 }} disabled={!status.full} onClick={game.levelUpTraining}>⬆️ Level up</button>
-                <button className="pixel-btn" style={{ flex: 1, minHeight: 44 }} onClick={game.takeOutOfTraining}>Take out</button>
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                <button className={`pixel-btn${status.full ? " tutorial-pulse" : ""}`} style={{ flex: 1, minHeight: 44 }} disabled={!status.full} onClick={() => game.levelUpTraining(c.id)}>⬆️ Level up</button>
+                <button className="pixel-btn" style={{ flex: 1, minHeight: 44 }} onClick={() => game.takeOutOfTraining(c.id)}>Take out</button>
               </div>
             </div>
           );
-        })()}
+        })}
 
-        {/* Empty: pick who trains. */}
-        {!status && (
+        {/* A slot free: pick who trains. */}
+        {canTrain(t) && (
           <div style={{ marginTop: 10 }}>
-            <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>The pit&apos;s empty. Who trains?</p>
+            <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>{statuses.length === 0 ? "The pit's empty." : `${slots - statuses.length} of ${slots} slots free.`} Who trains?</p>
             {pickable.length === 0 ? <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>Nobody can train right now.</p> : (
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {pickable.map((c) => (
@@ -129,6 +133,14 @@ export default function TrainingPage() {
           </div>
         )}
       </div>
+
+      {/* A schematic to widen it (once it's the Training Pit). */}
+      {slotPlan && (
+        <div className="stone-panel" style={{ marginTop: 10 }}>
+          <PlanBuild plan={slotPlan.key} materials={game.materials} gold={game.gold} onBuild={() => game.buildSchematic(slotPlan.id)}
+            note={!t.pit ? "Build the Training Pit first." : undefined} />
+        </div>
+      )}
 
       {/* With the Hydra quest's plans: build the Training Pit over it. */}
       {t.plans && !t.pit && (

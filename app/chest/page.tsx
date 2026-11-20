@@ -17,9 +17,9 @@ import InventoryList from "@/components/InventoryList";
 import SellConfirmModal from "@/components/SellConfirmModal";
 import KlutzGear from "@/components/KlutzGear";
 import { klutzHelping } from "@/lib/quest";
-import { MaterialIcon } from "@/components/PixelSprite";
-import { MATERIALS, SCHEMATICS, STORAGE_PLANS, STORAGE_TIER, canAfford, countMaterial, type MaterialKey, type StoragePlan } from "@/lib/items/materials";
-import { BIG_BOX_CAP, BIGGER_BOX_CAP, BOX_NAMES } from "@/lib/items/storage";
+import { STORAGE_PLANS, STORAGE_TIER, type StoragePlan } from "@/lib/items/materials";
+import PlanBuild, { heldOf } from "@/components/PlanBuild";
+import { BOX_CAPS, BOX_NAMES, boxCap } from "@/lib/items/storage";
 
 type Part = "items" | "creatures";
 const PART_TABS: Record<Part, TabKey[]> = {
@@ -29,28 +29,15 @@ const PART_TABS: Record<Part, TabKey[]> = {
 const STORE_TABS: TabKey[] = ["weapons", "armor", "consumables"];
 const noChange = () => () => {}; // (the address doesn't change while the page is open)
 
-// A storage schematic you've got (from the merchant), to build here: the
-// box it's for holds BIG_BOX_CAP from then on (BIGGER_BOX_CAP, a second
-// schematic's). (One at a time: the first.)
+// The storage schematics you've got (a chest, or a merchant: lib/items/plans.ts), to build here: each takes
+// its box up a stage (lib/items/storage.ts BOX_CAPS: 50, 60, 75, 85, 100).
 function StorageBuild({ game }: { game: ReturnType<typeof useGameState> }) {
-  const plan = game.inventory.find((d) => d.dropType === "item" && d.schematic && d.schematic in STORAGE_PLANS);
-  if (!plan || plan.dropType !== "item") return null;
-  const key = plan.schematic as StoragePlan;
-  const cost = SCHEMATICS[key].cost;
+  const plans = heldOf(game.inventory, Object.keys(STORAGE_PLANS) as StoragePlan[]);
+  if (plans.length === 0) return null;
   return (
-    <div className="stone-panel" style={{ marginBottom: 10, padding: "8px 10px" }}>
-      <div style={{ fontSize: 13, color: "#d8d4c8" }}>📐 <b>{SCHEMATICS[key].name}</b>: your {BOX_NAMES[STORAGE_PLANS[key]]} box holds {STORAGE_TIER[key] > 1 ? BIGGER_BOX_CAP : BIG_BOX_CAP}.</div>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>
-        {(Object.entries(cost) as [MaterialKey, number][]).map(([k, n]) => {
-          const have = countMaterial(game.materials, k);
-          return (
-            <span key={k} className="pixel-font" style={{ fontSize: 13, color: have >= n ? "#5ee08a" : "#ff8a80" }}>
-              <MaterialIcon k={k} /> {have}/{n} {MATERIALS[k].name.toLowerCase()}
-            </span>
-          );
-        })}
-        <button className="pixel-btn" disabled={!canAfford(game.materials, cost)} onClick={() => game.buildSchematic(plan.id)} style={{ marginLeft: "auto" }}>🔨 Build it</button>
-      </div>
+    <div className="stone-panel" style={{ marginBottom: 10, padding: "0 10px 8px" }}>
+      {plans.map((p) => <PlanBuild key={p.id} plan={p.key} materials={game.materials} gold={game.gold} onBuild={() => game.buildSchematic(p.id)}
+        note={boxCap(STORAGE_PLANS[p.key], game.storage) >= BOX_CAPS[STORAGE_TIER[p.key]] ? `Your ${BOX_NAMES[STORAGE_PLANS[p.key]]} box is bigger already.` : undefined} />)}
     </div>
   );
 }

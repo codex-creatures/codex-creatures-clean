@@ -7,7 +7,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 ## 9. The Den and economy
 
 - ✅ Places: Soul Altar (summoning and ascension, since 2026-11-18; scanning is the dock's 🔍 button), Labyrinth archway, quest board, Bestiary lectern, cage, pool,
-  Fight Pit, chest (Inventory), crates, bookcase (codexes; 10, or 20 upgraded), bindle/bag, merchant
+  Fight Pit, chest (Inventory), crates, bookcase (codexes: 5, 15, 30 or 50 as it's built up, [items.md](items.md)), bindle/bag, merchant
   stall, and a boarded-up Tavern.
 - ✅ **The Den's top bar** (the user, 2026-11-14): your explorer level as an XP bar, `Lv 3 [45 / 180] Lv 4`
   (MAX at Lv 30), where the title "Codex Creatures" was; then gold, creatures and items found, and ⚙️.
@@ -103,6 +103,13 @@ placement (players could block themselves in). With it off, the old Den, as it w
   lights up while a finger's on it (`PRESS_GLOW`).
 - **The camera turns a little** as the view slides (up to 6°, `TURN`), so the sides of things shift and the 3D shows,
   and settles back square when it stops, so a still view keeps its pixels square.
+- 🧪 **The upgrade stages in 3D** (the user, 2026-11-20: "3D models of each, the current as the baseline"; samples, to
+  approve in /lab/propbuilder and /lab/propreview before the Den draws them): recipes built from today's models by
+  scripts/den-stages.mjs: the cage's old cell (wood and rope) and reinforced cage (a size up, iron bands, more bars);
+  the Training Pit with 2 and 3 dummies (a weapon rack, then banners); the bookcase's old shelf, crooked, sturdy
+  (today's, taller) and carved (two wide, columns, a gilt crest), each taller than the last; the storehouse with a
+  weapon rack (60), a lean-to (75), iron bands (85) and a stone footing (100). The stockroom's stacked crates are in
+  /lab/props. The Den still draws one look for each till they're approved.
 - **3D models** (the user, 2026-11-19, now the fallbacks for the props above): the Soul Altar (a two-tier plinth, a black cauldron with the horned
   skull, teal lanterns, the soul fire and its spirits), the healing pool (a ring of stones round its water and
   lily pads), the Pit (a stone frame, an iron grate) and the Sparring Pit (a low wall round sand, the dummy;
@@ -202,13 +209,11 @@ fields optional with defaults.
    itself once the tavern's repaired and you've beaten the Cyclops (`headUp`; Claude's reading, as
    the head was the bounty's). It isn't an item, so it can't be sold, used, lost or doubled
    (placeholder: the Cyclops sprite on a plaque marked with the run).
-8. ✅ **Bookcase upgrade:** the existing Crooked Bookcase schematic, but the tavern is now the
-   **only** way to get it (since 2026-11-16 the campaign's reward for blowing open the rubble: found
-   in the broken tavern, `bookPlans`): it no longer drops from mini bosses, the Cyclops or storehouses. It costs
-   10 planks and 5 nails, is built separately, holds **20** codexes, and uses the user's upgraded
-   bookcase art (`den/bookcase-2.png`). (It was 20 planks + 10 nails for 25.) A save that already
-   built it keeps its 25 slots, and schematics already in a save stay buildable (now 20 slots).
-   In the Den the shelf swaps to the upgraded art once it's built.
+8. ✅ **Bookcase upgrade:** the campaign's reward for blowing open the rubble (found in the broken tavern,
+   `bookPlans`) is the bookcase's plans: the **Sturdy Bookcase Schematic** since 2026-11-20 (the bookcase in stages,
+   [items.md](items.md): it builds the crooked bookcase into the sturdy one, 30 codexes; the crooked bookcase itself
+   takes no plan). Before, it was the Crooked Bookcase Schematic, 10 planks and 5 nails for 20 (25 before that). In
+   the Den the shelf swaps to the upgraded art once it's the crooked bookcase or better.
 9. **Visitors** (after the repair). ⚠️ The per-run roll below was replaced on 2026-11-16 by visitors on the clock (decision 47, the 📌 block at the end of this item, now ✅); it's kept as the record of what came before. On returning home from each run, roll a merchant (12%), a
    librarian (8%), the creature collector (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
    guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still one of them, at 12:8:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and over their head (their name: tap them to trade), and they stroll round the tavern's room with a walk cycle, as Klutz does round the Den (`VISITOR_PATH` in lib/den/scene.ts; walks: PixMiniMax, 2026-11-03). They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
@@ -234,6 +239,12 @@ fields optional with defaults.
    room: taps there look past the Den's canvas for the pit) shows the pit's picture, its rate, the lifetime XP
    (plus what's training now), the creature in it, and with the plans, the schematic: the Training Pit's
    picture beside a column of material icons with have/need, "50 → 100 XP/h" and Build.
+   ✅ **More slots** (the user, 2026-11-20: up to 3, a big upgrade): the Training Pit widens to 2 creatures with the
+   **Pit Extension Schematic** (15 planks, 10 nails, 20 metal bars, 10 stone, 3 essence crystals) and to 3 with the
+   **Grand Pit Schematic** (20 planks, 15 nails, 30 bars, 15 stone, 6 essence crystals) (🧪 Claude's costs; where they're
+   found: [items.md](items.md), the Den's ladders). Each creature trains on its own clock, with its own Level up and Take
+   out; all of them are away training (`PIT_SLOTS`; saved as the tavern's `slots`, the first in `training` as before
+   and the others in `more`). No change to the XP rates.
    ✅ **Sending for one** (the user, 2026-11-03; `summonVisitor`, `SUMMON_PRICE`): at the repaired tavern, pay 500 gold for any visitor now, for 30 minutes (`SUMMON_STAY`; it was `VISITOR_STAY` runs before the clock), in place of one of the same kind who's in (a new one, new stock); the others stay. Two taps (the second pays). The tavern librarian's codexes are an inventory (components/LibrarianShelf.tsx): tap one to see its move in the box on top, and buy it there. The Labyrinth's librarian has the same shelf (your bag's room in place of the bookcase's).
    ⏸ **The creature collector** (away since 2026-11-18, the user: the Soul Altar's ascension is the better use for spare creatures; he's out of `VISITORS`, his code kept; as built, 2026-11-03; `lib/collector.ts`): a third visitor, dealing only in creatures (never cards). He buys a creature for `COLLECTOR_PRICES`: Common 50, Uncommon 100, Rare 250, Epic 600, Legendary 1,500 (🧪 Claude's proposal, the user's pick). Or he trades 3 creatures of one rarity, any species (`TRADE_UP_COUNT`), for a card of a random species one rarity up, freshly rolled; Legendaries can't be traded up. Not a creature in a team, in the pit or out on a run; a sold or traded creature's gear comes off and stays yours. His window: Sell / Trade up, a tab per rarity, tap creatures to pick them, then the button (Sell takes two taps). His art (the user's pick of 3 samples, 2026-11-03): a hooded figure in a cloak pinned with creature cards, holding up a glowing jar, with a walk cycle like the others (`npcs/collector.png`).
    ✅ **The Enchantress, visitors on the clock, and tavern upgrades** (the user, 2026-11-16, decision 47; built 2026-11-16; replaces the per-run roll above):
@@ -392,9 +403,9 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
 |---|---|
 | 1 The Encampment | Do an Encampment run (50g; first since 2026-11-20, the user: `CAMPAIGN_V` 2 shifts older saves' claims past it) · Scan 3 (50g) · 3 in the Bestiary (50g) · Send Klutz hunting (scroll) · A creature fully kitted (a Rare weapon, not enchanted; 100g till the user, 2026-11-20) · Win 5 fights (100g) · Collect 3 cards (100g) · A creature Lv 5 (scroll) · **Beat the Encampment** (Gear Crate, Uncommon–Rare ×3) |
 | 2 The Cyclops | Calibrate the scanner (150g) · Explorer Lv 5 (scroll) · Learn a codex move (150g) · Buy from a merchant (150g) · Summon a Common (Supplies) · Open 3 camp cages (200g) · A Rare+ weapon on (250g) · Klutz brings home Rare+ gear (scroll) · Win 25 fights (scroll) · A set bonus (250g) · 1,000 gold saved (Materials, Common–Uncommon) · The Encampment without a potion (300g) · Find the Labyrinth Stone and open the old wall (bookcase schematic) · **Beat the Cyclops** (enchanted Epic weapon) |
-| 3 The Hydra | Klutz Lv 5 (scroll) · A creature Lv 10 (Materials, Uncommon–Rare) · An enchanted weapon on (300g) · Every Klutz skill levelled (300g) · Fix up the tavern (Gold Key) · A win with only effective moves (400g) · Summon an Uncommon (Supplies) · Scan 50 (500g) · 15 in the Bestiary (scroll) · A bigger bag (500g) · 3 Sparring Pit levels (2 scrolls) · Klutz brings home Epic+ gear (Materials, Rare–Epic) · An Epic+ item on (500g) · Win 100 fights (Codex Crate, Uncommon–Rare ×2) · Open a golden chest (Gear, Rare–Epic) · 5,000 gold (2 scrolls) · The Cyclops without a potion (1,000g) · A creature Lv 15 (Gear, Rare–Epic) · **Beat the Hydra** (enchanted Epic armour) |
-| 4 The Abyss | An enchanted armour piece on (1,000g) · Klutz Lv 10 (Materials, Rare–Epic) · Every visitor calls (2 scrolls) · Summon a Rare (Supplies) · Build 3 schematics (Materials, Rare–Epic) · Explorer Lv 20 (2,000g) · 10 Sparring Pit levels (3 scrolls) · A creature Lv 20 (Gear, Epic) · 15,000 gold (3 scrolls) · Win 250 fights (Codex, Rare–Epic ×2) · The Hydra without a potion (Gear, Epic) · **Beat the Abyss** (enchanted Legendary weapon) |
-| 5 Legend | A creature Lv 25 · Klutz Lv 15 · Summon an Epic · Klutz brings home Legendary gear · A Legendary item on · Scan 250 · 35 in the Bestiary (all) · Explorer Lv 30 · 50,000 gold · The Abyss without a potion · A creature Lv 30 · Klutz Lv 20 · Summon a Legendary · Klutz Lv 25 · Klutz Lv 30 (crates Epic–Legendary, scrolls, enchanted Legendary gear) |
+| 3 The Hydra | Klutz Lv 5 (scroll) · A creature Lv 10 (Materials, Uncommon–Rare) · An enchanted weapon on (300g) · Every Klutz skill levelled (an essence crystal; 300g till 2026-11-20) · Fix up the tavern (Gold Key) · A win with only effective moves (400g) · Summon an Uncommon (Supplies) · Scan 50 (2 essence crystals; 500g) · 15 in the Bestiary (scroll) · A bigger bag (500g) · 3 Sparring Pit levels (2 scrolls) · Klutz brings home Epic+ gear (Materials, Rare–Epic) · An Epic+ item on (500g) · Win 100 fights (Codex Crate, Uncommon–Rare ×2) · Open a golden chest (Gear, Rare–Epic) · 5,000 gold (2 scrolls) · The Cyclops without a potion (2 essence crystals; 1,000g) · A creature Lv 15 (Gear, Rare–Epic) · **Beat the Hydra** (enchanted Epic armour) |
+| 4 The Abyss | An enchanted armour piece on (2 essence crystals; 1,000g) · Klutz Lv 10 (Materials, Rare–Epic) · Every visitor calls (2 scrolls) · Summon a Rare (Supplies) · Build 3 schematics (Materials, Rare–Epic) · Explorer Lv 20 (3 essence crystals; 2,000g) · 10 Sparring Pit levels (3 scrolls) · A creature Lv 20 (Gear, Epic) · 15,000 gold (3 scrolls) · Win 250 fights (Codex, Rare–Epic ×2) · The Hydra without a potion (Gear, Epic) · **Beat the Abyss** (enchanted Legendary weapon) |
+| 5 Legend | A creature Lv 25 · Klutz Lv 15 · Summon an Epic · Klutz brings home Legendary gear · A Legendary item on (4 essence crystals) · Scan 250 (4 essence crystals; each 5,000g till 2026-11-20) · 35 in the Bestiary (all) · Explorer Lv 30 · 50,000 gold · The Abyss without a potion · A creature Lv 30 · Klutz Lv 20 · Summon a Legendary · Klutz Lv 25 · Klutz Lv 30 (crates Epic–Legendary, scrolls, enchanted Legendary gear) |
 
 **The pacing model** (Claude, 2026-11-16; scripts not kept). Explorer XP is every fight's XP; a
 creature Lv 5 / 10 / 15 / 20 / 25 / 30 needs 399 / 1,567 / 3,654 / 6,847 / 11,334 / 17,302 XP, an

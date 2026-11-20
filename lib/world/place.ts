@@ -74,7 +74,7 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 17;         // the world version a new run is placed at (no corner nests, searchable corner crates; version.ts)
+export const PLACED_V = 18;         // the world version a new run is placed at (stockrooms; version.ts)
 // (v12) Tables (the user, 2026-11-11): the chance a room has one (rooms of these kinds, not the
 // entrance or the boss's), and that one has a candle on it. A cards room's deck stands on a table of its own. 🧪
 export const TABLE_CHANCE = 0.25;
@@ -86,6 +86,10 @@ export const TABLE_TURNED = 0.5;
 // (v16, the user, 2026-11-15) An unguarded storehouse's stores in STORE_CRATES crates and barrels round its
 // walls, searched one by one (migrate.ts withCrates shares its stores out, leaving some empty). 🧪
 export const STORE_CRATES: [number, number] = [4, 6];
+// (v18, the user, 2026-11-20) A stockroom's: its small chest (`crate:<room>:0`, a rickety chest holding its potion and
+// any find) and STOCK_CRATES stacked crates and barrels holding its materials, round its walls. 🧪
+export const STOCK_V = 18;
+export const STOCK_CRATES: [number, number] = [2, 3];
 // …a group of decor in a room's tucked-away corners (two walls meeting, CORNER_DOOR_GAP panels from every
 // doorway): CORNER_GROUP of such corners, CORNER_MOST a room, the pieces suiting the room (CORNER_THEMES). 🧪
 export const CORNER_GROUP = 0.35;
@@ -95,6 +99,7 @@ export const CORNER_THEMES: Record<string, string[][]> = {
   easy: [["skull", "nest"], ["skull", "pots"]], hard: [["skull", "nest"], ["skull", "skull"]], miniboss: [["skull", "pots"]],
   storehouse: [["barrels", "crates"], ["crates", "barrels", "pots"]], encampment: [["barrels", "crates"], ["barrels", "skull"]],
   merchant: [["barrels", "crates"]], library: [["crates", "pots"]], librarian: [["crates", "pots"]],
+  stockroom: [["crates", "barrels"]],
 };
 const CORNER_ANY = [["pots", "barrels"], ["pots", "skull"]];
 // …from world version 17 (the user, 2026-11-17): no nests (they don't fit), crates and pots in their place.
@@ -160,6 +165,7 @@ function featureOf(r: Room): { key: string; def: string } | null {
     // (A library has its librarian, or codexes lying about: never both.)
     case "library": return r.lectern ? { key: "lectern", def: "lectern" } : r.librarian ? { key: "librarian", def: "librarian" } : { key: "stores", def: "sack" };
     case "storehouse": return { key: "stores", def: "rickety-chest" };
+    case "stockroom": return { key: "stores", def: "rickety-chest" }; // (v18: drawn only if its own chest and crates couldn't be placed)
     default: return null;
   }
 }
@@ -736,15 +742,18 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
 
   // 6e. (v16) An unguarded storehouse's crates and barrels, against its walls (spotsIn leans them there),
   // off the doors and the kept paths and spots (the user, 2026-11-15).
+  // (v18) A stockroom's the same, smaller: its chest first, then its stacked crates and barrels.
   for (const id of v >= 16 ? parents : []) {
-    const r = room(id);
-    if (r?.kind !== "storehouse" || r.guarded || !r.sack) continue;
+    const r = room(id), stock = r?.kind === "stockroom" && v >= STOCK_V;
+    if (!r || (r.kind !== "storehouse" && !stock) || r.guarded || !r.sack) continue;
     const rng = passRng(walk.seed, id, CRATES_PASS), doors = fp.doors.filter((d) => d.room === id);
-    const want = STORE_CRATES[0] + Math.floor(rng() * (STORE_CRATES[1] - STORE_CRATES[0] + 1));
+    const [lo, hi] = stock ? STOCK_CRATES : STORE_CRATES;
+    const want = lo + Math.floor(rng() * (hi - lo + 1)) + (stock ? 1 : 0);
     const list = roomPanels(fp.rooms[id]).filter((p) => STEPS.some((s) => rock({ x: p.x + s.x, y: p.y + s.y }))
       && !doors.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < CANDLE_CLEAR));
     for (let n = 0; n < want && list.length; ) {
-      const p = list.splice(Math.floor(rng() * list.length), 1)[0], what = rng() < 0.5 ? "store-crates" : "store-barrels";
+      const p = list.splice(Math.floor(rng() * list.length), 1)[0];
+      const what = stock && n === 0 ? "rickety-chest" : rng() < 0.5 ? (stock ? "stacked-crates" : "store-crates") : "store-barrels";
       const d = objectDef(what), cid = `crate:${id}:${n}`;
       const at = spotsIn(fp, d, p).find((a) => tryAt(d, a, cid, id));
       if (!at) continue;

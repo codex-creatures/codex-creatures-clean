@@ -200,6 +200,8 @@ const DEFS: ObjectDef[] = [
   // (World version 16) A storehouse's crates and barrels, each searched once (the user, 2026-11-15), and the
   // standing torches lining the way to a boss (their own picture, 2026-11-16: WALK_STANDING_TORCH).
   def("store-crates", floorThing({ footprint: { w: 3, d: 3 }, kind: "interactable", height: 1.1, interact: usable("search") }), legacyVisual({ base: ref(WALK_DECOR.crates) }, { width: legacyU(WALK_DECOR.crates.size) })),
+  // (World version 18) A stockroom's stacked crates, searched once (the user, 2026-11-20): taller than a storehouse's.
+  def("stacked-crates", floorThing({ footprint: { w: 3, d: 3 }, kind: "interactable", height: 1.6, interact: usable("search") }), legacyVisual({ base: ref(WALK_DECOR.crates) }, { width: legacyU(WALK_DECOR.crates.size) })),
   def("store-barrels", floorThing({ footprint: { w: 3, d: 2 }, kind: "interactable", height: 0.9, interact: usable("search") }), legacyVisual({ base: ref(WALK_DECOR.barrels) }, { width: legacyU(WALK_DECOR.barrels.size) })),
   def("standing-torch", floorThing({ footprint: { w: 1, d: 1 }, kind: "light", height: 1.2, collision: "walk-over", light: { radius: CANDLE_RADIUS, colour: "#ffbe5a", flicker: true } }),
     legacyVisual({ out: ref(WALK_STANDING_TORCH), lit: ref(WALK_STANDING_TORCH) }, { width: legacyU(WALK_STANDING_TORCH.size) })),

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PIT_COST, SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, buildPit, canBuildPit, canTrain, claimPlans, hasPit, hoursToLevel, hydraStep, lifetimeXp, logTrained, pitRate, restartTraining, startTraining, stopTraining, trained, training, trainingId } from "../lib/trainingPit";
+import { PIT_COST, SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, buildPit, canBuildPit, canTrain, claimPlans, hasPit, hoursToLevel, hydraStep, lifetimeXp, logTrained, pitRate, restartTraining, startTraining, stopTraining, trained, training, trainingIds, buildSlots, pitSlots, PIT_SLOTS } from "../lib/trainingPit";
 import { MAX_LEVEL, xpToNext } from "../lib/creatures/levels";
 import { MATERIALS, materialBundle, SCHEMATICS } from "../lib/items/materials";
 import { MERCHANT_MATERIALS, merchantOffer, lootEntry, rollWares } from "../lib/dungeon/run";
@@ -16,7 +16,7 @@ describe("stone and essence stones", () => {
     expect(MATERIALS.essence_stones).toMatchObject({ name: "Stone", rarity: "rare" });
     expect(MATERIALS.essence).toMatchObject({ name: "Essence crystal", rarity: "epic" });
     // Stone's where the essence stone was: the storage plans and the merchants.
-    expect(SCHEMATICS.weapon_storage.cost.essence_stones).toBe(1);
+    expect(SCHEMATICS.weapon_storage_3.cost.essence_stones).toBe(3);
     expect(MERCHANT_MATERIALS.find((m) => m.material === "essence_stones")?.price).toBe(150);
     expect(TAVERN_MATERIAL_PRICES.essence_stones).toBe(300);
   });
@@ -92,14 +92,33 @@ describe("the Sparring Pit and the Training Pit", () => {
     expect(training({ level: MAX_LEVEL, xp: 0 }, since, at(99))).toEqual({ earned: 0, room: 0, full: false });
   });
 
-  it("holds one creature at a time; levelling up starts it over from now", () => {
+  it("holds one creature at a time till it's widened; levelling up starts it over from now", () => {
     expect(canTrain({})).toBe(false);                                // the room's not open
     const t = startTraining(open, "c1", at(0));
-    expect(trainingId(t)).toBe("c1");
+    expect(trainingIds(t)).toEqual(["c1"]);
     expect(startTraining(t, "c2")).toBe(t);                          // already in use
     expect(restartTraining(t, at(3)).training).toEqual({ id: "c1", since: new Date(at(3)).toISOString() });
-    expect(trainingId(stopTraining(t))).toBeUndefined();
-    expect(trainingId({ training: { id: "c1", since } })).toBeUndefined(); // (no pit, nobody in it)
+    expect(trainingIds(stopTraining(t))).toEqual([]);
+    expect(trainingIds({ training: { id: "c1", since } })).toEqual([]); // (no pit, nobody in it)
+  });
+
+  it("the Training Pit widens to 3 slots (the user, 2026-11-20), each on its own clock", () => {
+    expect(buildSlots(open, 2)).toBe(open);                          // (only on the Training Pit)
+    const pit: TavernQuest = { ...open, pit: true };
+    expect(pitSlots(pit)).toBe(1);
+    const wide = buildSlots(buildSlots(pit, 3), 2);                  // (never narrower again)
+    expect(pitSlots(wide)).toBe(PIT_SLOTS);
+    let t = startTraining(startTraining(startTraining(wide, "a", at(0)), "b", at(1)), "c", at(2));
+    expect(trainingIds(t)).toEqual(["a", "b", "c"]);
+    expect(canTrain(t)).toBe(false);
+    expect(startTraining(t, "d")).toBe(t);
+    t = restartTraining(t, at(5), "b");
+    expect(t.more?.[0]).toEqual({ id: "b", since: new Date(at(5)).toISOString() });
+    expect(t.training).toEqual({ id: "a", since: new Date(at(0)).toISOString() });
+    t = stopTraining(t, "a");                                        // the next moves up into the first slot
+    expect(t.training?.id).toBe("b");
+    expect(trainingIds(t)).toEqual(["b", "c"]);
+    expect(canTrain(t)).toBe(true);
   });
 });
 

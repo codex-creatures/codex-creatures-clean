@@ -25,7 +25,7 @@
 //   can still reach and haven't played). A library's lectern finds the librarian the same way.
 // - Half the campfires have a stash beside them (CAMPFIRE_STASH).
 
-import { makeRoom, hasFight, MERCHANT_SLOTS, type DungeonId, type Room, type RoomKind, type SackItem } from "./run";
+import { makeRoom, hasFight, type Ware, type DungeonId, type Room, type RoomKind, type SackItem } from "./run";
 import { isOpen, roomCentre, type Layout, type Progress } from "./layout";
 import { findPath, type CanStep } from "./walk";
 import { spawnOf, FOE_SPEED } from "./foes";
@@ -63,6 +63,12 @@ const between = (rng: Rng, [lo, hi]: [number, number]) => lo + rng() * (hi - lo)
 const inRect = (r: { x: number; y: number; w: number; h: number }, p: Pt) => p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
 
 // A room with creatures in it still to beat (its second den's too): people keep out.
+// A cart with its locator put in before its materials (the first thing a full cart loses).
+function withLocator(wares: Ware[], locator: Ware): Ware[] {
+  const at = wares.findIndex((w) => "material" in w);
+  return at < 0 ? [...wares, locator] : [...wares.slice(0, at), locator, ...wares.slice(at)];
+}
+
 export function hostile(id: string, room: (id: string) => Room | undefined): boolean {
   return [id, spawnOf(id)].some((k) => { const r = room(k); return !!r && hasFight(r) && !r.done; });
 }
@@ -92,8 +98,9 @@ export function rollPeople(map: DungeonMap, layout: Layout, plan: Floorplan, roo
     const id = `${PERSON}${kind}${kind === "witch" ? n : ""}`;
     const start = kind === "librarian" && library ? library : calm[Math.floor(rng() * calm.length)] ?? layout.start;
     const room = makeRoom(kind, rng, Infinity, dungeon, bindle);
-    // (The merchant's locator takes his cart's last slot if it's full.)
-    out[id] = kind === "merchant" ? { ...room, wares: [...(room.wares ?? []).slice(0, MERCHANT_SLOTS - 1), locatorWare(rng)] } : room;
+    // (The merchant's locator takes his cart's last slot if it's full: it goes in before the materials, and waresFor
+    // cuts the cart to MERCHANT_SLOTS from the end. Schematics he has that you don't want take no slot.)
+    out[id] = kind === "merchant" ? { ...room, wares: withLocator(room.wares ?? [], locatorWare(rng)) } : room;
     const mid = roomCentre(layout.rooms[start]);
     map.nodes[id] = { id, ...mid, kind, links: [], hidden: true };
     people.push({ id, kind, at: floorTile(plan, start, rng, mid), room: start });

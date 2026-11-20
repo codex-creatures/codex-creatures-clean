@@ -65,6 +65,8 @@ export type TavernQuest = {
   pit?: boolean;      // the Training Pit's built over the Sparring Pit, in the tavern's room (lib/trainingPit.ts)
   plans?: boolean;    // …its plans, claimed from the Hydra quest on the quest board
   training?: { id: string; since: string }; // …the creature in it, training since then (ISO time)
+  more?: { id: string; since: string }[];    // …and the others, once the Training Pit has more slots (lib/trainingPit.ts)
+  slots?: number;                             // the Training Pit's slots (missing: 1)
   trainedXp?: number; // …all the XP it has ever trained into creatures (banked; missing: 0)
 };
 // The Enchantress (lib/enchantress.ts) rerolls enchantments.
@@ -296,7 +298,8 @@ export const headUp = (t: TavernQuest, clears: number) => !!t.mounted || (!!t.re
 // shelf (level 1): the campaign's reward, or the old bounty's (the plans
 // weren't an item: the bookcase offers to build).
 export const hasBookPlans = (t: TavernQuest) => !!t.bookPlans || !!t.mounted;
-export const tavernPlan = (t: TavernQuest, bookcaseLevel: number) => hasBookPlans(t) && bookcaseLevel < 2;
+// (Its plans are the sturdy bookcase's since 2026-11-20: wanted till the bookcase is sturdy, its stage 3.)
+export const tavernPlan = (t: TavernQuest, shelf: number) => hasBookPlans(t) && shelf < 3;
 
 // ── Saved progress ───────────────────────────────────────────────────
 export const TAVERN_FIELD = "tavern";

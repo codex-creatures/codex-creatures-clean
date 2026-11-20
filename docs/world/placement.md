@@ -245,6 +245,11 @@ if it can't go. 6g, the boss room's standing torches: from its first door's insi
 `standOf`, every `BOSS_TORCH_STEP` panels from 2 in to 3 short, one `BOSS_TORCH_SIDE` panels to each side
 (`brazier:<room>:<pair>:<side>`), each left out if it can't go. The decor and torch definitions are
 refused below v16.
+v17, the user, 2026-11-17: no nests in rooms' corners (`CORNER_THEMES_V17`), and the corner crates searchable (`search: true`).
+v18, the user, 2026-11-20: 6e also lays out a stockroom's stores (the same pass, its own counts): its rickety chest
+first (`crate:<room>:0`), then `STOCK_CRATES` 2–3 `stacked-crates` or `store-barrels`; `withCrates` puts all but
+the materials in the chest and shares the materials among the rest. A stockroom also reserves a middle chest
+(`<room>:stores`), drawn only if its own chest and crates couldn't go. `stacked-crates` is refused below v18.
 
 ### Modules
 

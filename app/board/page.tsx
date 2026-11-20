@@ -311,8 +311,8 @@ function CampaignList() {
     if ("gold" in r) { game.addGold(r.gold); text = `+${r.gold.toLocaleString()} gold`; }
     // The bookcase's plans: already yours (or built), and it pays gold instead.
     else if ("bookcasePlans" in r) {
-      if (hasBookPlans(game.tavern) || game.bookcase >= 2) { game.addGold(PLANS_TAKEN_GOLD); text = `+${PLANS_TAKEN_GOLD} gold`; }
-      else { game.findBookPlans(); text = "The Crooked Bookcase Schematic"; }
+      if (hasBookPlans(game.tavern) || game.bookcase >= 3) { game.addGold(PLANS_TAKEN_GOLD); text = `+${PLANS_TAKEN_GOLD} gold`; }
+      else { game.findBookPlans(); text = rewardText(r); }
     }
     // Everything else: its box after, each "?" to open (or all at once), as Klutz's armoury box; one thing (the
     // Gold Key, an enchanted piece) goes straight in: the celebration showed it (the user, 2026-11-17).
@@ -408,15 +408,16 @@ function rewardLook(r: CampaignReward) {
   const art = "gold" in r ? "/sprites/items/gold.png" : "scrolls" in r ? "/sprites/items/xp_scroll.png" : "goldKey" in r ? "/sprites/items/tools/gold_key.png"
     : "enchanted" in r ? (r.enchanted === "weapon" ? "/sprites/items/void_scythe.png" : "/sprites/items/armor/chest_dragonscale_tunic.png")
     : "weapon" in r ? "/sprites/items/void_scythe.png"
+    : "essence" in r ? "/sprites/items/materials/essence.png"
     : "bookcasePlans" in r ? "/sprites/items/schematic.png"
     : r.crate === "gear" ? "/sprites/walk/decor/barrels.png" : r.crate === "codex" ? "/sprites/props/bookcase3d/front.png" : "/sprites/den/crate.png";
   // On a crate, what's inside: a plank for materials, a potion for supplies.
   const inside = "crate" in r && r.crate === "materials" ? "/sprites/items/materials/planks.png" : "crate" in r && r.crate === "supplies" ? "/sprites/items/potion.png" : null;
   // The Gear Barrel: its weapons (the 3D barrel's own) stick up out of it (the user, 2026-11-20: a barrel of gear).
   const back = "crate" in r && r.crate === "gear" ? "/sprites/props/barrel3d/items.png" : null;
-  const tint = "gold" in r || "goldKey" in r ? "#FFCC4D" : "scrolls" in r ? "#4EA1FF" : "enchanted" in r ? RARITY_COLORS[r.rarity].text : "weapon" in r ? RARITY_COLORS[r.weapon].text : "crate" in r ? RARITY_COLORS[r.hi].text : "#c9a46a";
+  const tint = "gold" in r || "goldKey" in r ? "#FFCC4D" : "scrolls" in r ? "#4EA1FF" : "enchanted" in r ? RARITY_COLORS[r.rarity].text : "weapon" in r ? RARITY_COLORS[r.weapon].text : "essence" in r ? RARITY_COLORS.epic.text : "crate" in r ? RARITY_COLORS[r.hi].text : "#c9a46a";
   const label = "gold" in r ? r.gold.toLocaleString() : "scrolls" in r ? `×${r.scrolls}` : "crate" in r && r.crate !== "supplies" ? (r.lo === r.hi ? SHORT_RARITY[r.lo] : `${SHORT_RARITY[r.lo]}–${SHORT_RARITY[r.hi]}`)
-    : "enchanted" in r ? SHORT_RARITY[r.rarity] : "weapon" in r ? SHORT_RARITY[r.weapon] : "";
+    : "enchanted" in r ? SHORT_RARITY[r.rarity] : "weapon" in r ? SHORT_RARITY[r.weapon] : "essence" in r ? `×${r.essence}` : "";
   return { art, inside, back, tint, label, gold: "gold" in r };
 }
 const RewardBadge = ({ r, small, ready }: { r: CampaignReward; small?: boolean; ready?: boolean }) => <Badge {...rewardLook(r)} title={rewardText(r)} small={small} ready={ready} />;

@@ -17,12 +17,12 @@ import { combatLine } from "@/lib/dungeon/runText";
 import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
 import { RoomIcon } from "@/components/DungeonMapView";
 import LibrarianShelf from "@/components/LibrarianShelf";
-import { type StoragePlan } from "@/lib/items/materials";
+import { type SchematicKey } from "@/lib/items/materials";
 import EncampmentPanel from "./EncampmentPanel";
 import WitchTable from "./WitchTable";
 
 export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, plans, klutzPacks, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell, onUseBag, onDynamite, onLectern }: {
-  plans: StoragePlan[]; // storage schematics you have or built (the merchant won't offer them)
+  plans: SchematicKey[]; // the Den's schematics you want next (the merchant offers only those: lib/items/plans.ts)
   onWitch: (g: Guess) => void; onWitchSit: () => void; onWitchLeave: () => void; onLook: () => void; onDynamite: () => void;
   onLectern?: () => void; // a walkable library's lectern (world version 9): find the librarian
   bagLooks: (SlotLook | null)[]; bagOffers: number[]; onSell: (bagIndex: number) => void; onUseBag: (bagIndex: number) => void;

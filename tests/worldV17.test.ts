@@ -14,9 +14,9 @@ const placed = (v: number, seed: number) => {
 };
 
 describe("world version 17", () => {
-  it("is the version new runs are placed at", () => {
-    expect(WALK_V).toBe(17);
-    expect(PLACED_V).toBe(17);
+  it("searchable corner crates from version 17 (new runs are placed at 18 since: tests/stockroom.test.ts)", () => {
+    expect(WALK_V).toBeGreaterThanOrEqual(17);
+    expect(PLACED_V).toBeGreaterThanOrEqual(17);
     expect(SEARCH_V).toBe(17);
   });
 

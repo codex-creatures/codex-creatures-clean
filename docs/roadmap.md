@@ -58,8 +58,8 @@ interesting situations, real decisions, progression and surprises, not feel they
 
 ### 📌 Decided, not built
 
-- 📌 **Den progression: things in the Den grow in stages, each its own 3D look** (the user, 2026-11-20; a sim
-  of the costs, scans, runs and Klutz's trips, in the commit that added this). Not built yet. Dungeon gates are
+- 🚧 **Den progression: things in the Den grow in stages, each its own 3D look** (the user, 2026-11-20; a sim
+  of the costs, scans, runs and Klutz's trips, in the commit that added this). Mostly built (below). Dungeon gates are
   "that dungeon or harder". The Minotaur is still to come (players reach the Hydra in about 4–5 hours).
   - **Bookcase** (codexes it holds; cost to reach the stage; its schematic):
 
@@ -75,29 +75,29 @@ interesting situations, real decisions, progression and surprises, not feel they
     their size (10 → Crooked; 20, 25, 30 → Sturdy): nobody loses space.
   - ⏸ **Divinity Crystal** (a Legendary material, every Legendary material drop): only the cut bookcase stages used
     it, so it waits till something needs it.
-  - **Cage** (the user, 2026-11-20): 1 → Iron 3 (as built: its schematic, 10 metal bars) → **Reinforced 5**: 25 metal
-    bars and 2 essence crystals (the user said "2 essence stone": Claude's reading, to confirm), from the Reinforced
-    Cage Schematic, in Hydra+ chests or sold for 3,000 gold.
-  - **Training Pit up to 3 slots** (the user, 2026-11-20: a big upgrade). ❓ Costs: Claude's proposal below.
-  - **Soul Altar: one upgrade** (more Code Cache room). More room past it will be bought for real money (not built,
-    not designed). ❓ How many and the cost: Claude's proposal below.
-  - **Klutz's Cabin:** more room past the gold upgrades. ❓ Claude's proposal below.
-  - **Inventory:** weapons and armour each top out at **100** (as built: 50 → 75 → 100 by two schematics), staged
-    like the bookcase; room past 100 will be bought for real money (not built). ❓ The stages: Claude's proposal below.
-  - **More materials** (the user, 2026-11-20): more loot containers (more stacks, and so more rare ones) and more
-    materials in the campaign's rewards. Not salvage, and Klutz's finds stay as they are. ❓ Tools taken into the
-    Labyrinth that open more finds (a crowbar for nailed-shut crates, a hammer to break tables and bookcases for
-    materials): the user's idea, not decided.
-  - 🧪 **Claude's proposal** (2026-11-20, to approve):
+  - ✅ **Built 2026-11-20** (the user: "build all"; the numbers Claude's but the cage's, 🧪): the bookcase in stages to
+    50 (the table above, stages 1–4: the scans' share of its schematics left out, below); the cage to 5 (the
+    Reinforced Cage, 25 metal bars and 2 essence crystals: the Epic ones, the user confirmed; Hydra+
+    chests or 3,000 gold); the Training Pit to 3 slots; the Inventory's weapon and armour boxes in four schematic
+    stages to 100 (60, 75, 85, 100, dearer each time, the last with essence crystals; past 100 to be bought, not
+    built); every schematic only the next one you need, from chests and merchants (lib/items/plans.ts); essence
+    crystals in the campaign's rewards from the Hydra's chapter on; stockrooms in the walkable Labyrinth (world
+    version 18). [design/items.md](design/items.md) (the Den's ladders), [design/den.md](design/den.md) §9,
+    [design/walkable-play.md](design/walkable-play.md). The 3D models of each stage are samples in the prop lab, for
+    approval before the Den uses them.
+  - ⚠️ **Not built:** the bookcase's schematics from scans (it changes the global registry's rules: ask first).
+  - ✗ **The Soul Altar's upgrade** (the user, 2026-11-20: not for now). More Code Cache room is to be bought for real
+    money (not designed).
+  - ❓ **Klutz's Cabin:** more crate room past the gold upgrades (80)? Claude's proposal, to answer: Lodge 100 (30
+    planks, 20 nails, 10 bars) → Hall 120 (20 bars, 8 stone, 2 essence crystals). His crate holds what he brings home
+    till you keep or sell it; full, he won't set off.
+  - **More materials** (the user, 2026-11-20): more loot containers (built: stockrooms) and materials in the campaign
+    (built: essence crystals). Not salvage, and Klutz's finds stay as they are. ❓ Tools taken into the Labyrinth that
+    open more finds (a crowbar for nailed-shut crates, a hammer to break tables and bookcases for materials): the
+    user's idea, not decided.
 
-    | Thing | Stages (cost each) |
-    |---|---|
-    | Training Pit | 1 slot (as built) → 2 slots: 15 planks, 10 nails, 20 bars, 10 Stone, 3 essence (Epic schematic, Hydra+ chests; 4,000g) → 3 slots: 20 planks, 15 nails, 30 bars, 15 Stone, 6 essence (Legendary schematic, Abyss chests; 8,000g) |
-    | Soul Altar | 9 → 15 Code Caches: 15 bars, 5 Stone, 1 essence, no schematic |
-    | Klutz's Cabin | after the gold upgrades (80): Lodge 100 (30 planks, 20 nails, 10 bars) → Hall 120 (20 bars, 8 Stone, 2 essence) |
-    | Inventory, weapons and armour each | 50 → 60 (10 planks, 10 nails) → 75 (the built first schematic: 10 planks, 10 nails, 1 Stone) → 85 (10 bars, 3 Stone) → 100 (the built second schematic: 10 bars, 5 Stone, 2 essence) |
-
-    The sim (2026-11-20, the game's own code; 150 walked runs a dungeon, every crate and chest opened; 50,000 scans):
+    The sim (2026-11-20, before stockrooms and the campaign's essence; the game's own code; 150 walked runs a dungeon,
+    every crate and chest opened; 50,000 scans):
 
     | Per run, full clear | Planks | Nails | Metal bars | Stone | Essence |
     |---|---|---|---|---|---|
@@ -108,7 +108,7 @@ interesting situations, real decisions, progression and surprises, not feel they
 
     Chests give about half of it, storehouses a quarter (they're rare: a third of large rooms), corner crates
     planks and nails only. Everything above plus the bookcase to 50 and the cage needs about 190 planks, 135
-    nails, 195 bars, 68 Stone and 22 essence (the tavern's upgrades about 360 / 135 / 255 / 78 / 6 more). An active
+    nails, 195 bars, 68 Stone and 22 essence (with the Soul Altar's upgrade, since dropped; the tavern's upgrades about 360 / 135 / 255 / 78 / 6 more). An active
     player (4 Hydra runs, Klutz 3 times and 10 scans a day) gets about 10 bars, 2 Stone and 0.5 essence a day:
     Stone and essence set the pace (about 35 and 45 days for these, without the tavern).
   - ✅ **The Soul Altar** (built 2026-11-20; its broken look a sample to approve) starts broken: no summoning from cards and no ascension (Code Caches open at the scanner)

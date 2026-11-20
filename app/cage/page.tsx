@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { klutzStatus } from "@/lib/klutz";
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
-import PixelSprite, { creatureSprite, MaterialIcon } from "@/components/PixelSprite";
+import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
 import RaceTag from "@/components/RaceTag";
 import SoulStoneTag from "@/components/SoulStoneTag";
 import { useGameState } from "@/hooks/useGameState";
@@ -22,7 +22,8 @@ import Glyph from "@/components/Glyph";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import Help from "@/components/Help";
-import { CAGE_LEVELS, MATERIALS, SCHEMATICS, canAfford, countMaterial, type MaterialKey } from "@/lib/items/materials";
+import { CAGE_LEVELS } from "@/lib/items/materials";
+import PlanBuild, { heldOf } from "@/components/PlanBuild";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -125,40 +126,26 @@ export default function CagePage() {
   );
 }
 
-// How many the cage holds, and building the iron cage once you've found its
-// schematic (a mini boss's chest).
+// How many the cage holds, and building it up from a schematic you've found: the iron cage (a mini boss's
+// chest), then the reinforced one (the Hydra's chests and deeper, or a merchant: lib/items/plans.ts).
+const CAGE_NAMES = ["Old cell", "Iron cage", "Reinforced cage"];
 function CageUpgrade({ game }: { game: ReturnType<typeof useGameState> }) {
-  const plan = game.cage < 2 ? (game.inventory.find((d) => d.dropType === "item" && d.schematic === "iron_cage") as CreatureOrItemDrop | undefined) : undefined;
-  const cost = SCHEMATICS.iron_cage.cost;
+  const plan = heldOf(game.inventory, game.cage < 2 ? ["iron_cage", "reinforced_cage"] : game.cage < 3 ? ["reinforced_cage"] : [])[0];
   return (
     <div className="stone-panel" style={{ marginBottom: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>
-          {game.cage >= 2 ? "Iron cage" : "Old cell"} · {game.caged.length}/{game.cageSize}
+          {CAGE_NAMES[Math.min(CAGE_NAMES.length, game.cage) - 1]} · {game.caged.length}/{game.cageSize}
         </div>
         <Help title="The cage">
           <ul>
             <li>Klutz&apos;s catches wait here. If it&apos;s full, he <b>lets them go</b> (and keeps their gear).</li>
-            <li>The <b>Iron Cage Schematic</b> (sometimes in a <b>mini boss&apos;s chest</b>) builds it up to <b>{CAGE_LEVELS[1]}</b>: {cost.metal_bars} metal bars.</li>
+            <li>The <b>Iron Cage Schematic</b> (sometimes in a <b>mini boss&apos;s chest</b>) builds it up to <b>{CAGE_LEVELS[1]}</b>.</li>
+            <li>Then the <b>Reinforced Cage Schematic</b> (chests from the <b>Hydra</b> on, or a merchant) builds it up to <b>{CAGE_LEVELS[2]}</b>.</li>
           </ul>
         </Help>
       </div>
-      {plan && (
-        <div style={{ marginTop: 10 }}>
-          <div style={{ fontSize: 13, color: "#d8d4c8" }}>📐 You have the <b>{plan.name}</b>.</div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "6px 0 8px" }}>
-            {(Object.entries(cost) as [MaterialKey, number][]).map(([k, n]) => {
-              const have = countMaterial(game.materials, k);
-              return (
-                <span key={k} className="pixel-font" style={{ fontSize: 13, color: have >= n ? "#5ee08a" : "#ff8a80" }}>
-                  <MaterialIcon k={k} /> {have}/{n} {MATERIALS[k].name.toLowerCase()}
-                </span>
-              );
-            })}
-          </div>
-          <button className="pixel-btn" disabled={!canAfford(game.materials, cost)} onClick={() => game.buildSchematic(plan.id)}>🔨 Build it</button>
-        </div>
-      )}
+      {plan && <PlanBuild plan={plan.key} materials={game.materials} gold={game.gold} onBuild={() => game.buildSchematic(plan.id)} />}
     </div>
   );
 }

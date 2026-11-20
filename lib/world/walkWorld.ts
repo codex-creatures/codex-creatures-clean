@@ -201,7 +201,8 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       out.push(thingOf({ key: id, room: id, x: Math.round(n.x), y: Math.round(n.y), def: "witch", open: false, inert: over }));
     }
     // A large room's stores (a library's codexes lying about, a storehouse's crates), till a guard's beaten.
-    if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !r.crates && !hasFight(r) && !r.container && !(r.kind === "library" && looted(r))) {
+    // (A stockroom whose chest and crates couldn't be placed: its stores in one chest, as an old storehouse's.)
+    if ((r.kind === "library" || r.kind === "storehouse" || r.kind === "stockroom") && r.sack && !r.crates && !hasFight(r) && !r.container && !(r.kind === "library" && looted(r))) {
       add("stores", { def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened, ...emptied(r) });
     }
     const guards = hasFight(r) || r.done ? fightContainer(r, dungeon) !== "sack" : false;

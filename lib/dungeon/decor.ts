@@ -42,6 +42,7 @@ export const THEMES: Partial<Record<RoomKind, DecorKind[]>> = {
   hard: ["skull", "skull", "nest"],
   miniboss: ["skull", "skull", "pots"],
   storehouse: ["barrels", "crates", "crates", "barrels"],
+  stockroom: ["crates", "barrels"],
   merchant: ["barrels", "crates"],
   encampment: ["barrels", "crates", "skull"],
   library: ["crates", "pots"],

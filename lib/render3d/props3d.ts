@@ -97,8 +97,8 @@ export const prop3dOf = (def: string): Prop3DKind | undefined => PROPS_3D[def];
 
 // The dungeon's props built in 3D by components/Decor3D.tsx (the user, 2026-11-17): a room's corner barrels,
 // crates and pots, a storehouse's barrels, Klutz's dynamite on a storehouse floor, a library's lectern, a camp's cages.
-export const DECOR_3D: Record<string, "barrel" | "barrels" | "crates" | "pots" | "dynamite" | "lectern" | "cage"> = {
-  barrels: "barrels", "store-barrels": "barrel", crates: "crates", pots: "pots", dynamite: "dynamite", lectern: "lectern", cage: "cage",
+export const DECOR_3D: Record<string, "barrel" | "barrels" | "crates" | "stack" | "pots" | "dynamite" | "lectern" | "cage"> = {
+  barrels: "barrels", "store-barrels": "barrel", crates: "crates", "stacked-crates": "stack", pots: "pots", dynamite: "dynamite", lectern: "lectern", cage: "cage",
 };
 // A room's corner barrels (the user, 2026-11-17: a single barrel and the pair): alone or two, by the thing's id
 // (the same every time you see it), about half each; a storehouse's are single barrels (each searched).

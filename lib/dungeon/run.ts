@@ -48,7 +48,8 @@ import { LEARNABLE_MOVES } from "../creatures/creatureData";
 import type { WalkRun } from "./walkRun";
 import { unsupportedRun } from "../world/version";
 import { enchanted, CHEST_ENCHANT } from "../items/enchantments";
-import { TOOLS, MATERIALS, SCHEMATICS, NEXT_STORAGE_PLAN, materialBundle, materialDrop, toolDrop, schematicDrop, type MaterialKey, type ToolKey, type StoragePlan } from "../items/materials";
+import { LADDERS, PLAN_PRICES, ladderOf, type Ladder } from "../items/plans";
+import { TOOLS, MATERIALS, SCHEMATICS, materialBundle, materialDrop, toolDrop, schematicDrop, type MaterialKey, type ToolKey, type SchematicKey } from "../items/materials";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -70,7 +71,8 @@ export const scrollLooksLeft = (run: { scrollLooks?: number }) => Math.max(0, SC
 
 export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "witch" | "boss" | "campfire" /* the walkable Labyrinth: half the pools share (campfire.ts) */
   | "encampment" | "library" | "storehouse" // (the large rooms: LARGE_MIX)
-  | "empty" | "bookcase"; // (the walkable Labyrinth from world version 9, decision 39: a small room with nothing in it; a library's broken bookcase)
+  | "empty" | "bookcase" // (the walkable Labyrinth from world version 9, decision 39: a small room with nothing in it; a library's broken bookcase)
+  | "stockroom"; // (the walkable Labyrinth from world version 18: a small storehouse, STOCKROOM_*)
 
 // ── The dungeons ─────────────────────────────────────────────────────
 // 0: the Encampment, a new player's first labyrinth (the user, 2026-10-27):
@@ -269,8 +271,10 @@ export const MYSTERY_MIX: [RoomKind, number][] = [
 // having rooms. Their shares went to dens (40 → 45) and a campfire share of 5
 // (on top of the half of pools drawn as campfires: layout.ts CAMPFIRE_SHARE);
 // a "?"'s witch, librarian and merchant (18) to dens, brutes and campfires, +6 each.
+// A stockroom now and then (the user, 2026-11-20: "a room with odds to spawn as a mini storehouse", for more
+// materials): 6 of the 100, from dens (45 → 41) and stashes (10 → 8). 🧪
 export const WALK_ROOM_MIX: [RoomKind, number][] = [
-  ["easy", 45], ["pool", 20], ["hard", 10], ["chest", 10], ["stash", 10], ["campfire", 5],
+  ["easy", 41], ["pool", 20], ["hard", 10], ["chest", 10], ["stash", 8], ["campfire", 5], ["stockroom", 6],
 ];
 // (No cards rooms since 2026-11-13, the user: a deck of cards lies on a table now and then instead,
 // place.ts TABLE_DECK. Their 5 went to chests.)
@@ -297,6 +301,7 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
   encampment: { name: "Encampment",        icon: "⛺" },
   library:   { name: "Library",            icon: "🏛️" },
   storehouse: { name: "Storehouse",        icon: "🏚️" },
+  stockroom: { name: "Stockroom",          icon: "📦" },
   empty:     { name: "Empty room",         icon: "🕸️" },
   bookcase:  { name: "Broken bookcase",    icon: "📚" },
 };
@@ -544,15 +549,13 @@ export const GOLDEN_RARITY = { rare: 65, epic: 30, legendary: 5 };
 export const GOLDEN_LEGENDARY_FROM: DungeonId = 2;
 export const GOLDEN_GOLD: [number, number] = [500, 1000];
 export const MINIBOSS_CLAIRVOYANCE = 0.1;
-export const CAGE_PLAN_CHANCE = 0.2; // …and the Iron Cage Schematic, until you've found one
-// cagePlan: you haven't got the cage schematic yet (nor built the cage).
-export function minibossExtras(rng: Rng = Math.random, cagePlan = false): SackItem[] {
+// (The Den's schematics, the cage's among them, are rolled on top: lib/items/plans.ts planFinds.)
+export function minibossExtras(rng: Rng = Math.random): SackItem[] {
   const potion = (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" });
   return [
     ...Array.from({ length: randInt(...MINIBOSS_POTIONS, rng) }, potion),
     ...(rng() < MINIBOSS_CLAIRVOYANCE ? [{ gear: toolDrop("clairvoyance") }] : []),
     ...(rng() < MINIBOSS_REVIVAL ? [{ gear: toolDrop("revival") }] : []),
-    ...(cagePlan && rng() < CAGE_PLAN_CHANCE ? [{ gear: schematicDrop("iron_cage") }] : []),
   ];
 }
 
@@ -628,6 +631,11 @@ export const STOREHOUSE_GUARD = 0.35;
 export const STOREHOUSE_MATERIALS: [number, number] = [3, 5];
 export const STOREHOUSE_POTIONS: [number, number] = [1, 2];
 export const STOREHOUSE_FINDS = { weapon: 0.15, flare: 0.3, clairvoyance: 0.08 };
+// A stockroom (the user, 2026-11-20): a small storehouse in an ordinary room, never guarded. Its material stacks
+// in stacked crates and barrels, and a small chest with a potion and now and then a find (world version 18:
+// lib/world/place.ts STOCK_CRATES; migrate.ts withCrates). Its materials as rare as a storehouse's. 🧪
+export const STOCKROOM_MATERIALS: [number, number] = [2, 3];
+export const STOCKROOM_FINDS = { weapon: 0.05, flare: 0.25, clairvoyance: 0.05 };
 // How rare a storehouse's materials are (out of 100).
 const STORE_RARITY: [Rarity, number][] = [["common", 50], ["uncommon", 30], ["rare", 15], ["epic", 5]];
 
@@ -636,9 +644,8 @@ const STORE_RARITY: [Rarity, number][] = [["common", 50], ["uncommon", 30], ["ra
 // 1. always both potions and a flare;
 // 2. rare wares, each rolled on its own: the rugged backpack until you've got
 //    it (always), or once you have, a backpack upgrade (BAG_UPGRADE_CHANCE);
-//    each storage schematic (STORAGE_PLAN_CHANCE, until you have it or built
-//    it; once it's built, its second one instead, at STORAGE_PLAN_2_PRICE:
-//    waresFor); a Revival Elixir (REVIVAL_CHANCE); an XP scroll
+//    a schematic for each of the Den's ladders (STORAGE_PLAN_CHANCE each: the
+//    one you need next, at its PLAN_PRICES, lib/items/plans.ts: waresFor); a Revival Elixir (REVIVAL_CHANCE); an XP scroll
 //    (MERCHANT_SCROLL_CHANCE) and a clairvoyance scroll (MERCHANT_CLAIRVOYANCE);
 // then materials fill what's left (one stack of each kind).
 // (Gear on the cart, the plan's step 3, isn't in yet.)
@@ -651,8 +658,6 @@ export const BAG_UPGRADE_PRICES = [1000, 1500, 2000, 2500, 3000];
 export const BAG_UPGRADE_CHANCE = 0.2;
 export const bagUpgradePrice = (size: number) => BAG_UPGRADE_PRICES[size - BACKPACK];
 export const STORAGE_PLAN_CHANCE = 0.2;
-export const STORAGE_PLAN_PRICE = 2000;
-export const STORAGE_PLAN_2_PRICE = 4000; // the second storage schematics (the user, 2026-11-13)
 // A Pack Upgrade for Klutz on the cart (the user, 2026-11-14), priced by how many he has (waresFor).
 export const KLUTZ_PACK_CHANCE = 0.2;
 export const KLUTZ_PACK_PRICES = [500, 750, 1000, 1500, 2000, 2500, 3000, 4000]; // (lib/klutz.ts PACK_UPGRADE_PRICES: the same)
@@ -680,7 +685,7 @@ export const MERCHANT_MATERIALS: { material: MaterialKey; qty: number; price: nu
 // bagUp: a backpack upgrade (its price is set by your bag's size when you see it).
 export type Ware = { key: string; price: number } & (
   | { potion: PotionKey } | { scroll: true } | { tool: ToolKey } | { material: MaterialKey; qty: number } | { backpack: true }
-  | { bagUp: true } | { schematic: StoragePlan });
+  | { bagUp: true } | { schematic: SchematicKey });
 // backpack: you're still on the bindle (the backpack's on the cart; once
 // you've got it, an upgrade may be instead).
 export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
@@ -691,38 +696,39 @@ export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
     { key: "flare", tool: "flare", price: TOOLS.flare.price },
   ];
   if (!backpack && rng() < BAG_UPGRADE_CHANCE) wares.push({ key: "bag_up", bagUp: true, price: BAG_UPGRADE_PRICES[0] });
-  for (const plan of Object.keys(NEXT_STORAGE_PLAN) as StoragePlan[]) // (a first one: waresFor offers its second)
-    if (rng() < STORAGE_PLAN_CHANCE) wares.push({ key: plan, schematic: plan, price: STORAGE_PLAN_PRICE });
+  // A schematic for each ladder (lib/items/plans.ts), its first plan standing for it: waresFor offers the one you need next.
+  for (const l of Object.keys(LADDERS) as Ladder[])
+    if (rng() < STORAGE_PLAN_CHANCE) wares.push({ key: LADDERS[l][0], schematic: LADDERS[l][0], price: PLAN_PRICES[LADDERS[l][0]] ?? 0 });
   if (rng() < REVIVAL_CHANCE) wares.push({ key: "revival", tool: "revival", price: TOOLS.revival.price });
   if (rng() < KLUTZ_PACK_CHANCE) wares.push({ key: "klutz_pack", tool: "klutz_pack", price: KLUTZ_PACK_PRICES[0] });
   if (rng() < MERCHANT_SCROLL_CHANCE) wares.push({ key: "scroll", scroll: true, price: SCROLL_PRICE });
   if (rng() < MERCHANT_CLAIRVOYANCE) wares.push({ key: "clairvoyance", tool: "clairvoyance", price: TOOLS.clairvoyance.price });
   const mats = MERCHANT_MATERIALS.filter((m) => m.chance === undefined || rng() < m.chance);
-  while (wares.length < MERCHANT_SLOTS && mats.length > 0) {
+  // (The schematics don't count: one you don't want isn't offered, so takes no space. waresFor cuts the cart to
+  // MERCHANT_SLOTS once they're gone, a wanted one pushing the last material off.)
+  while (wares.filter((w) => !("schematic" in w)).length < MERCHANT_SLOTS && mats.length > 0) {
     const m = mats.splice(Math.floor(rng() * mats.length), 1)[0];
     wares.push({ key: m.material, material: m.material, qty: m.qty, price: m.price });
   }
-  return wares.slice(0, MERCHANT_SLOTS);
+  return wares;
 }
 // What's on a cart for you: not the backpack once you've got one (a cart
 // rolled before you found it elsewhere); an upgrade only while the backpack
-// can grow, priced for your bag's size; not a storage schematic you already
-// have or have built, nor one you can't build yet (plans: those). A first
-// storage schematic you've built is offered as its second one, dearer.
+// can grow, priced for your bag's size; a schematic only as the next one you
+// want on its ladder (wanted: lib/items/plans.ts wantedPlans), at its price.
 // klutzPacks: the Pack Upgrades Klutz has had (a cart's is priced by them; none once his pack's full).
-export function waresFor(wares: Ware[], meta: { bagSize?: number }, plans: readonly StoragePlan[] = [], klutzPacks?: number): Ware[] {
+export function waresFor(wares: Ware[], meta: { bagSize?: number }, wanted: readonly SchematicKey[] = [], klutzPacks?: number): Ware[] {
   const size = bagSize(meta);
   return wares.flatMap((w): Ware[] => {
     if ("tool" in w && w.tool === "klutz_pack") return klutzPacks === undefined ? [w] : klutzPacks >= KLUTZ_PACK_PRICES.length ? [] : [{ ...w, price: KLUTZ_PACK_PRICES[klutzPacks] }];
     if ("backpack" in w) return onBindle(meta) ? [w] : [];
     if ("bagUp" in w) return size >= BACKPACK && size < BAG_MAX ? [{ ...w, price: bagUpgradePrice(size) }] : [];
     if ("schematic" in w) {
-      if (!plans.includes(w.schematic)) return [w];
-      const next = NEXT_STORAGE_PLAN[w.schematic];
-      return next && !plans.includes(next) ? [{ key: next, schematic: next, price: STORAGE_PLAN_2_PRICE }] : [];
+      const l = ladderOf(w.schematic), next = wanted.find((k) => ladderOf(k) === l), price = next && PLAN_PRICES[next];
+      return next && price ? [{ key: next, schematic: next, price }] : [];
     }
     return [w];
-  });
+  }).slice(0, MERCHANT_SLOTS);
 }
 // The thing a ware becomes once it's yours (undefined: it isn't a thing —
 // a potion goes in the bag as itself; the backpack and an upgrade make your
@@ -945,7 +951,7 @@ export type Room = {
   deckTaken?: boolean; // (world version 13) the deck of cards on this room's table has been turned over
   shelfSearched?: boolean; // (world version 14) the bookcase against this room's wall has been searched
   packOnFloor?: boolean;   // (world version 14) a storehouse: the rugged backpack lies on its floor, to pick up
-  crates?: SackItem[][];   // (world version 16) a storehouse: what's in each of its crates and barrels (`crate:<room>:<n>`)
+  crates?: SackItem[][];   // (world version 16) a storehouse: what's in each of its crates and barrels (`crate:<room>:<n>`; v18 a stockroom's too, its chest first)
   searched?: number[];     // …the ones searched
   boxesSearched?: string[]; // (world version 17) the crates in its corners searched (their ids, `decor:<room>:<g>:<k>`)
   deck?: string[];     // a deck of cards (a cards room's, or one on a table: world version 13): its DECK_CARDS creatures, rolled with the room so its glow shows the rarest (missing: rolled as you turn them over)
@@ -1154,6 +1160,16 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
       while (offers.length < Math.min(LIBRARY_BOOKS, books.length)) offers.push(books.splice(Math.floor(rng() * books.length), 1)[0]);
       return { kind, librarian: true, offers, bought: [], done: false };
     }
+    case "stockroom": {
+      const sack: SackItem[] = [
+        ...Array.from({ length: randInt(...STOCKROOM_MATERIALS, rng) }, () => ({ gear: materialBundle(weighted(STORE_RARITY, rng), rng) })),
+        { potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" },
+        ...(rng() < STOCKROOM_FINDS.weapon ? [{ gear: enchanted(weaponDrop(pick(ITEM_KEYS, rng), pickRarity("", "random")), CHEST_ENCHANT) }] : []),
+        ...(rng() < STOCKROOM_FINDS.flare ? [{ gear: toolDrop("flare") }] : []),
+        ...(rng() < STOCKROOM_FINDS.clairvoyance ? [{ gear: toolDrop("clairvoyance") }] : []),
+      ];
+      return { kind, sack, done: false };
+    }
     case "storehouse": {
       const sack: SackItem[] = [
         ...Array.from({ length: randInt(...STOREHOUSE_MATERIALS, rng) }, () => ({ gear: materialBundle(weighted(STORE_RARITY, rng), rng) })),
@@ -1320,7 +1336,7 @@ export function takeDynamite(run: DungeonRun): DungeonRun {
 // Rooms you can walk out of without doing anything (and the large rooms
 // with no fight waiting: a library, an unguarded storehouse, an encampment
 // that looks empty).
-const SKIPPABLE: RoomKind[] = ["pool", "campfire", "stash", "merchant", "librarian", "witch", "library", "storehouse", "encampment"];
+const SKIPPABLE: RoomKind[] = ["pool", "campfire", "stash", "merchant", "librarian", "witch", "library", "storehouse", "stockroom", "encampment"];
 
 // Can you take a tunnel out of here yet? Not until the room is dealt with.
 export const canMoveOn = (run: DungeonRun) =>

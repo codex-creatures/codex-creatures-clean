@@ -215,7 +215,7 @@ export const CANDLE_GROUP: Record<string, CandleGroup> = {
   entrance: "none", boss: "none", encampment: "none",
   easy: "fight", hard: "fight", miniboss: "fight",
   chest: "quiet", stash: "quiet", pool: "quiet", campfire: "quiet", cards: "quiet", treasure: "quiet",
-  merchant: "lived", librarian: "lived", library: "lived", witch: "lived", storehouse: "lived",
+  merchant: "lived", librarian: "lived", library: "lived", witch: "lived", storehouse: "lived", stockroom: "lived",
 };
 export const CANDLE_WEIGHT: Record<CandleGroup, number> = { none: 0, fight: 0.75, quiet: 1, lived: 1.25 }; // 🧪
 export const MOUNTED_LIT: Record<CandleGroup, number> = { none: 0, fight: 0.1, quiet: 0.25, lived: 0.6 }; // starts lit (the user, 2026-11-08) 🧪

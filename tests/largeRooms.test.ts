@@ -3,7 +3,7 @@ import { slowIt } from "./slow";
 import { rollMap, depths, routeLength, knownRooms, inSight, waysOn, LARGE_FROM, FLARE_RADIUS, SIGHT_RADIUS } from "../lib/dungeon/map";
 import {
   DUNGEONS, makeRoom, hasFight, canMoveOn, startRun, enemyFighter, rollWares, codexPrice, minibossExtras,
-  MERCHANT_SLOTS, ENCAMP_DRUNK_HP, LIBRARY_BOOKS, LARGE_MIX, CAGE_PLAN_CHANCE, type DungeonRun,
+  MERCHANT_SLOTS, ENCAMP_DRUNK_HP, LIBRARY_BOOKS, LARGE_MIX, type DungeonRun,
 } from "../lib/dungeon/run";
 import { SCHEMATICS, cageSize } from "../lib/items/materials";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
@@ -97,7 +97,8 @@ describe("the merchant and loot", () => {
   it("a merchant has up to 10 things: both potions and a flare, sometimes rare wares and scrolls, then every material (essence stones on some carts)", () => {
     let clair = 0;
     for (let i = 0; i < 500; i++) {
-      const w = rollWares();
+      // (The schematics aside: one you don't want isn't offered and takes no space, waresFor.)
+      const w = rollWares().filter((x) => !("schematic" in x));
       expect(w.length).toBeLessThanOrEqual(MERCHANT_SLOTS);
       expect(new Set(w.map((x) => x.key)).size).toBe(w.length);
       const others = w.filter((x) => !("material" in x)).length;
@@ -118,16 +119,10 @@ describe("the merchant and loot", () => {
     }
   });
 
-  it("a mini boss's chest holds the Iron Cage Schematic 20% of the time, until you've found it", () => {
-    const plan = (cagePlan: boolean) => minibossExtras(Math.random, cagePlan).some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic === "iron_cage");
-    let n = 0;
-    for (let i = 0; i < 2000; i++) {
-      if (plan(true)) n++;
-      expect(plan(false)).toBe(false);
-    }
-    expect(Math.abs(n / 2000 - CAGE_PLAN_CHANCE)).toBeLessThan(0.03);
-    expect([cageSize(1), cageSize(2), cageSize()]).toEqual([1, 3, 1]);
+  it("the cage holds 1, then 3 (iron), then 5 (reinforced); its plans are in tests/plans.test.ts", () => {
+    expect([cageSize(1), cageSize(2), cageSize(3), cageSize()]).toEqual([1, 3, 5, 1]);
     expect(SCHEMATICS.iron_cage.cost).toEqual({ metal_bars: 10 });
+    expect(SCHEMATICS.reinforced_cage.cost).toEqual({ metal_bars: 25, essence: 2 }); // (the user's, 2026-11-20)
   });
 });
 
