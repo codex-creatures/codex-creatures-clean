@@ -128,6 +128,35 @@ describe("the Soul Altar's Summon", () => {
     expect(inv.filter((d) => d.dropType === "card")).toHaveLength(0);
     expect(inv.filter((d) => d.dropType === "creature")).toHaveLength(1);
   });
+
+  // The user, 2026-11-20: a card's Summon button elsewhere comes straight to the
+  // summoning, on that creature's cards, with the 3 to use already picked.
+  it("opens straight on a creature's summoning from /altar?summon=, and swaps a card", async () => {
+    vi.resetModules();
+    const cards = [1, 2, 3, 4].map(() => makeCreatureDrop(CREATURE_BY_ID.moss_wolf, "card", "x"));
+    localStorage.clear();
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: cards, equipment: {}, gold: 0, caged: [], ...MENDED }));
+    window.history.replaceState(null, "", "/altar?summon=moss_wolf");
+    const Page = (await import("@/app/altar/page")).default;
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => { root.render(<Page />); });
+    window.history.replaceState(null, "", "/altar");
+    expect(host.textContent).toContain("Summon Moss Wolf");
+    const uses = () => [...host.querySelectorAll('button[aria-label="Use this card"]')] as HTMLButtonElement[];
+    expect(uses().map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "true", "true", "false"]);
+    await tap(uses()[1]);                                  // take the 2nd out…
+    expect(button("Summon a random")?.hasAttribute("disabled")).toBe(true);
+    await tap(uses()[3]);                                  // …and the 4th in
+    await tap(button("Summon a random"));
+    expect(host.textContent).toContain("Moss Wolf summoned!");
+    const left = saved().inventory.filter((d) => d.dropType === "card").map((d) => d.id);
+    expect(left).toEqual([cards[1].id]);
+    await tap(button("Carry on"));
+    await tap(button("Done"));
+    expect(host.querySelector('button[aria-label="Moss Wolf card, 1 held"]')).toBeTruthy();
+  });
 });
 
 describe("the Soul Altar, broken (the user, 2026-11-20)", () => {

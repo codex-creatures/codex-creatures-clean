@@ -42,7 +42,6 @@ type Props = {
   onReadScroll?: (creatureId: string, scrollId: string) => void;
   onSetSoulStone?: (creatureId: string, stoneId: string) => void; // set a loose soul stone in a creature
   gold?: number;                                                // (what replacing a stone costs is checked against it)
-  onSummon?: (cardIds: string[], keepId: string | null) => CreatureOrItemDrop;
   tabCounts: Record<GameTabKey, number>;
   activeTab: GameTabKey;
   onTabChange: (tab: GameTabKey) => void;
@@ -79,7 +78,7 @@ const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "m
 const TAB_LABELS: Partial<Record<GameTabKey, string>> = { roster: "★ Teams" };
 
 export default function InventoryList({
-  inventory, filteredInventory, equipment, equippedOn, lockedIds, onEquip, onSetMoves, onLearnCodex, onReadScroll, onSetSoulStone, gold = 0, onSummon,
+  inventory, filteredInventory, equipment, equippedOn, lockedIds, onEquip, onSetMoves, onLearnCodex, onReadScroll, onSetSoulStone, gold = 0,
   tabCounts, activeTab, onTabChange,
   favoriteIds, onToggleFavorite, teams, onToggleTeam, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
@@ -378,7 +377,6 @@ export default function InventoryList({
           key={openCard.id}
           card={openCard}
           sameKind={inventory.filter((d) => isCardDrop(d) && d.creatureId === openCard.creatureId) as CreatureOrItemDrop[]}
-          onSummon={onSummon}
           onClose={() => setOpenCard(null)}
         />
       )}

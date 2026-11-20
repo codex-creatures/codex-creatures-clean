@@ -9,7 +9,6 @@ import Link from "next/link";
 import { useGameState, type TabKey } from "@/hooks/useGameState";
 import DenFrame from "@/components/DenFrame";
 import InventoryList from "@/components/InventoryList";
-import RecentBattles from "@/components/RecentBattles";
 import { needsGearUp } from "@/lib/quest";
 
 type Part = "creatures" | "items";
@@ -89,7 +88,6 @@ export default function PitPage() {
       />
       </div>
 
-      <RecentBattles />
     </DenFrame>
   );
 }

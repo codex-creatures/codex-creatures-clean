@@ -55,6 +55,10 @@ export default function SummonShow({ t, cards, result, onDone, words = SUMMON_WO
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const wispRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const funnelRef = useRef<HTMLDivElement | null>(null);
+  const ringRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  // How fast the rings sway (turns a second), quicker each step up: read by the
+  // frame loop, so a step never restarts or jumps them (it used to remount them).
+  const swayRef = useRef(0.8);
 
   // The stages, then the burst.
   useEffect(() => {
@@ -70,7 +74,7 @@ export default function SummonShow({ t, cards, result, onDone, words = SUMMON_WO
     if (open) return;
     const whirlMs = summonMs(result) - SUMMON_PLACE_MS;
     const start = performance.now();
-    let raf = 0;
+    let raf = 0, sway = 0, last = start;
     const frame = (now: number) => {
       const ms = now - start;
       const u = Math.max(0, Math.min(1, (ms - SUMMON_PLACE_MS) / whirlMs));
@@ -94,6 +98,9 @@ export default function SummonShow({ t, cards, result, onDone, words = SUMMON_WO
         el.style.opacity = String(Math.min(1, u * 3) * (0.35 + 0.65 * Math.max(0, Math.sin(a))));
       });
       if (funnelRef.current) funnelRef.current.style.opacity = String(Math.min(1, u * 3));
+      sway += ((now - last) / 1000) * swayRef.current * Math.PI * 2;
+      last = now;
+      ringRefs.current.forEach((el, k) => { if (el) el.style.translate = `${Math.sin(sway - k * 0.9) * 7}px 0`; });
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -101,8 +108,13 @@ export default function SummonShow({ t, cards, result, onDone, words = SUMMON_WO
   }, [open, result, ring.length]);
 
   const now = stage >= 0 ? stages[Math.min(stage, stages.length - 1)] : undefined;
-  // Each step up a rarity gives a little nudge.
-  useEffect(() => { if (stage > 0 && !now?.pause) buzz("hit"); }, [stage, now?.pause]);
+  swayRef.current = now?.pause ? 0.4 : 0.8 + Math.max(0, stage) * 0.25;
+  // Each step up a rarity gives a little nudge, and the funnel a flare.
+  useEffect(() => {
+    if (stage <= 0 || now?.pause) return;
+    buzz("hit");
+    funnelRef.current?.animate?.([{ transform: "scale(1.35)", filter: "brightness(2.2)" }, { transform: "none", filter: "none" }], { duration: 300, easing: "ease-out" });
+  }, [stage, now?.pause]);
   const wind = !now || now.rarity === "common" ? FIRST_GLOW : RARITY_COLORS[now.rarity].text;
   const glow = RARITY_COLORS[result.rarity].text;
   const tier = revealTier(result.rarity);
@@ -110,7 +122,7 @@ export default function SummonShow({ t, cards, result, onDone, words = SUMMON_WO
 
   return (
     <div onClick={() => (open ? undefined : setOpen(true))}
-      style={{ position: "fixed", inset: 0, zIndex: 260, background: "radial-gradient(circle at 50% 35%, #141826 0%, #040509 70%)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "10cqh 12px 12px", overflow: "hidden" }}>
+      style={{ position: "fixed", inset: 0, zIndex: 260, background: "radial-gradient(circle at 50% 35%, #141826 0%, #040509 70%)", display: "flex", alignItems: "center", justifyContent: "center", padding: "12px", overflow: "hidden" }}>
       {open && <RevealFlash tier={tier} glow={glow} />}
 
       <div role="dialog" aria-label={open ? words.done : words.stirring} onClick={(e) => open && e.stopPropagation()}
@@ -125,13 +137,12 @@ export default function SummonShow({ t, cards, result, onDone, words = SUMMON_WO
           {!open ? (
             <div style={{ position: "absolute", left: "50%", top: ORBIT_Y, width: 0, height: 0 }}>
               {/* The whirlwind: rings widening up a funnel, swaying, in the stage's colour. */}
-              <div ref={funnelRef} aria-hidden key={stage} className={stage > 0 && !now?.pause ? "reveal-step" : undefined}
+              <div ref={funnelRef} aria-hidden
                 style={{ position: "absolute", left: 0, top: 0, opacity: 0, color: wind, transition: "color 0.15s", zIndex: 2 }}>
                 {Array.from({ length: RINGS }, (_, k) => {
                   const w = 34 + k * 22, h = 10 + k * 3;
-                  return <span key={k} className="summon-ring" style={{ position: "absolute", left: -w / 2, top: -(k * 30) - h / 2, width: w, height: h, borderRadius: "50%",
-                    border: "3px solid currentColor", borderTopColor: "transparent", boxShadow: "0 0 10px currentColor", opacity: 0.45 + k * 0.08,
-                    animationDelay: `${-k * 0.12}s`, animationDuration: now?.pause ? "1.2s" : `${0.6 - stage * 0.07}s` }} />;
+                  return <span key={k} ref={(el) => { ringRefs.current[k] = el; }} style={{ position: "absolute", left: -w / 2, top: -(k * 30) - h / 2, width: w, height: h, borderRadius: "50%",
+                    border: "3px solid currentColor", borderTopColor: "transparent", boxShadow: "0 0 10px currentColor", opacity: 0.45 + k * 0.08 }} />;
                 })}
                 <span style={{ position: "absolute", left: -60, top: -170, width: 120, height: 190, background: "radial-gradient(ellipse at 50% 60%, currentColor 0%, transparent 65%)", opacity: 0.25 }} />
                 {WISPS.map((_, i) => <span key={i} ref={(el) => { wispRefs.current[i] = el; }}

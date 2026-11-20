@@ -3,11 +3,13 @@
 // to app/scan): where creatures are made. You stand over the altar's soul fire
 // (AltarBackdrop) and choose, from two floating panels side by side:
 // - Spirit Summon: your creature cards, a binder of them; 3 of a creature
-//   summon it (components/CardModal.tsx, the whirlwind: SummonShow).
+//   summon it (components/altar/SummonRite.tsx, the whirlwind: SummonShow).
+//   A ready stack opens its summoning straight away, as does /altar?summon=<id>
+//   (a card's Summon button elsewhere); the others open the card (CardModal).
 // - Ascend: give up creatures of a kind to raise one of them a rarity
 //   (components/AscendRitual.tsx, lib/creatures/ascend.ts).
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useGameState } from "@/hooks/useGameState";
 import DenFrame from "@/components/DenFrame";
@@ -15,6 +17,7 @@ import CardGallery, { CardFace } from "@/components/CardGallery";
 import CardModal from "@/components/CardModal";
 import AscendRitual from "@/components/AscendRitual";
 import AltarBackdrop from "@/components/altar/AltarBackdrop";
+import SummonRite from "@/components/altar/SummonRite";
 import { CreatureArt } from "@/components/CreaturePortrait";
 import Help, { HelpSection } from "@/components/Help";
 import { isCardDrop, type CreatureOrItemDrop } from "@/lib/types";
@@ -33,7 +36,20 @@ export default function AltarPage() {
   // Broken till the Encampment's chief drops its gem (lib/dungeon/run.ts altarMended).
   const mended = !game.hydrated || altarMended(loadDungeon().meta);
   const [openCard, setOpenCard] = useState<CreatureOrItemDrop | null>(null);
+  const [rite, setRite] = useState<string | null>(null); // the creature being summoned (SummonRite)
   const cards = useMemo(() => game.inventory.filter(isCardDrop) as CreatureOrItemDrop[], [game.inventory]);
+  const kindOf = (id: string) => cards.filter((d) => d.creatureId === id);
+  // Its cards, fixed as the rite opens (summoning takes them out of the inventory mid-show).
+  const [riteCards, setRiteCards] = useState<CreatureOrItemDrop[]>([]);
+  function summonKind(id: string) { setOpenCard(null); setRiteCards(kindOf(id)); setRite(id); setPart("summon"); }
+
+  // Sent here to summon a creature's cards (?summon=<id>, CardModal elsewhere).
+  useEffect(() => {
+    if (!game.hydrated || !mended) return;
+    const id = new URLSearchParams(window.location.search).get("summon");
+    if (id && kindOf(id).length >= CARDS_TO_SUMMON) summonKind(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game.hydrated]);
   const creatures = useMemo(() => game.inventory.filter((d) => d.dropType === "creature") as CreatureOrItemDrop[], [game.inventory]);
 
   // What the panels say: summons you could do now, and creatures you could raise now.
@@ -80,17 +96,23 @@ export default function AltarPage() {
             </>
           )}
 
-          {part === "summon" && (
+          {part === "summon" && rite && (
+            <SummonRite key={rite} cards={riteCards} onSummon={game.summon} onDone={() => setRite(null)}
+              top={<><button className="chip pixel-font" onClick={() => setRite(null)} style={{ minHeight: 40, fontSize: 13, textTransform: "none", background: "rgba(10,14,18,0.7)" }}>← Cards</button>
+                <span className="pixel-font" style={{ flex: 1, textAlign: "center", color: "#7fd8ff", fontSize: 15, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Summon {riteCards[0]?.name}</span><AltarHelp /></>} />
+          )}
+
+          {part === "summon" && !rite && (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 8px 4px" }}>
                 {back}
                 <span className="pixel-font" style={{ flex: 1, textAlign: "center", color: "#7fd8ff", fontSize: 15 }}>Spirit Summon</span>
                 <AltarHelp />
               </div>
-              <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 8px 8px" }}>
+              <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", padding: "0 8px 8px" }}>
                 {cards.length === 0
                   ? <p style={{ margin: "8px 2px", fontSize: 14, color: MUTED }}>No creature cards yet. <Link href="/scan" style={{ color: "white", textDecoration: "underline" }}>Scan</Link> barcodes for them.</p>
-                  : <CardGallery cards={cards} onOpen={setOpenCard} />}
+                  : <CardGallery cards={cards} onOpen={(c) => (c.creatureId && kindOf(c.creatureId).length >= CARDS_TO_SUMMON ? summonKind(c.creatureId) : setOpenCard(c))} />}
               </div>
             </>
           )}
@@ -102,7 +124,7 @@ export default function AltarPage() {
       {openCard && (
         <CardModal key={openCard.id} card={openCard}
           sameKind={cards.filter((d) => d.creatureId === openCard.creatureId)}
-          onSummon={game.summon} onClose={() => setOpenCard(null)} />
+          onSummon={openCard.creatureId ? () => summonKind(openCard.creatureId!) : undefined} onClose={() => setOpenCard(null)} />
       )}
     </DenFrame>
   );

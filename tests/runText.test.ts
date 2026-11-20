@@ -19,8 +19,8 @@ describe("beatenTitle", () => {
 });
 
 describe("clearedLine", () => {
-  it("the Encampment: says the Cyclops opens only on the first camp clear", () => {
-    expect(clearedLine(run(0, 3), lab({}))).toBe("The chief goes down, and the camp is yours. You beat the Encampment on run 3! The Cyclops's way in is open now.");
+  it("the Encampment: says the gem and the Cyclops only on the first camp clear", () => {
+    expect(clearedLine(run(0, 3), lab({}))).toBe("The chief goes down, and the camp is yours. You beat the Encampment on run 3! He drops a glowing gem: the Soul Altar works again. The Cyclops's way in is open now.");
     expect(clearedLine(run(0, 3), lab({ campClears: 2 }))).toBe("The chief goes down, and the camp is yours. You beat the Encampment on run 3!");
   });
   it("the Hydra and the Warden", () => {

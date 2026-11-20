@@ -17,8 +17,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   move of its style in the empty fourth (the user, 2026-10-26: never in place of a starting move).
 - ✅ **Cards:** a card shows one specific rolled creature. Summon with 3 cards of a species
   (`CARDS_TO_SUMMON`) at the **Soul Altar** (app/altar, its Summon tab; the user, 2026-11-18: only
-  there, the Pit's and Inventory's card windows point to it): **choose** a card to get exactly that creature, or **random** for a fresh
-  roll. The summoning plays out (the user, 2026-11-02; components/SummonShow.tsx): the 3 cards are
+  there): **choose** a card to get exactly that creature, or **random** for a fresh
+  roll. Its summoning page (the user, 2026-11-20; components/altar/SummonRite.tsx) shows the 3
+  cards going in on top and every card of the kind below to swap them; a ready stack at the altar
+  opens it straight away, and a card window anywhere else has a Summon button that goes there
+  (`/altar?summon=<id>`). The summoning plays out (the user, 2026-11-02; components/SummonShow.tsx): the 3 cards are
   set on the Soul Altar, whirl up into a whirlwind that climbs the rarity colours like a Code Cache
   (`summonStages`, lib/scanReveal.ts) to the creature's, then burst into it. Tap to skip.
 - ✅ **Cage:** holds 1 creature (`CAGE_SIZE`; upgrades later). A new game's first creature waits in
