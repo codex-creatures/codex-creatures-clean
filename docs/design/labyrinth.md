@@ -240,7 +240,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   - 🧪 Its numbers are Claude's, set by sim (50 fights each: 5 random creatures Lv 20, the Hard AI, which doesn't
     play the charge round as a person would): 5 Epics in Epic gear beat it about half the time, losing about 4 of
     their 5 (the Hydra, 3 Epics Lv 16 in Epic gear: about two thirds). Its HP went up 25% after the first sim (80%).
-  - ⚠️ Art: a stand-in (Ironhide's) until the user picks one of the PixelLab samples in `art/minotaur-samples/`.
+  - ✅ Art (the user's pick, 2026-11-21): `public/sprites/creatures/minotaur.png`, sample 1 of `art/minotaur-samples/`, trimmed.
 - ✅ **Boss rewards:** the boss chest (10 rolls, plus a scroll chance) and the Rugged Backpack. The
   Hydra, the Minotaur and the Warden drop a strongbox.
 - ✅ Also Cyclops rewards: building the **Tavern** (via the tavern questline in §9, not gold), and

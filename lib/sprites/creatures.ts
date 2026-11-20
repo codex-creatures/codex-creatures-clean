@@ -139,7 +139,6 @@ for (const [id, [w, h]] of Object.entries(BACK_SIZES)) {
 export const fightSprite = (id: string, yours: boolean): Sprite | undefined =>
   (yours ? BACK_SPRITES[id] : undefined) ?? CREATURE_SPRITES[id];
 
-// The Minotaur (its own labyrinth's boss). ⚠️ A stand-in (Ironhide's art) until the
-// user approves its own PixelLab drawing: then it's public/sprites/creatures/minotaur.png.
-export const MINOTAUR_ART = "/sprites/creatures/ironhide.png";
-CREATURE_SPRITES.minotaur = withArt(["."], { src: MINOTAUR_ART, w: 122, h: 87 });
+// The Minotaur (its own labyrinth's boss; the user's pick of the samples, 2026-11-21: art/minotaur-samples/minotaur-1.png, trimmed).
+export const MINOTAUR_ART = "/sprites/creatures/minotaur.png";
+CREATURE_SPRITES.minotaur = withArt(["."], { src: MINOTAUR_ART, w: 116, h: 118 });
