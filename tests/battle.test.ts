@@ -130,7 +130,7 @@ describe("move slots and learnable moves", () => {
     expect(lost / tries).toBeLessThan(0.55);
   });
 
-  it("each stumble makes the next less likely: 50%, 40%, 30%… in the same fight (the user, 2026-11-21)", () => {
+  it("each stumble makes the next less likely: 50%, 40%, 30%…, till the cripple ends (the user, 2026-11-21)", () => {
     const s = createBattle([mv("crystal_golem", ["Jab"])], [mv("ironhide", ["Slash"])]);
     const b = activeOf(s.sides.B);
     expect([0, 1, 2, 3, 4, 5, 6].map((n) => { b.stumbles = n; return Math.round(stumbleChance(b) * 100); })).toEqual([50, 40, 30, 20, 10, 0, 0]);
@@ -145,6 +145,9 @@ describe("move slots and learnable moves", () => {
       }
     } finally { Math.random = real; }
     expect(b.stumbles).toBe(2);
+    b.statuses = [];
+    resolveRound(s, { A: { kind: "attack", skillName: "Jab" }, B: { kind: "attack", skillName: "Slash" } });
+    expect(stumbleChance(b)).toBe(0.5); // (the cripple's gone: the next one starts over)
   });
 
   it("a dash move doubles your agility this round only", () => {

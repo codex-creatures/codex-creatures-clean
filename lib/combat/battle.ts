@@ -54,7 +54,8 @@ const crippleRounds = (fx: { minRounds?: number; maxRounds?: number }) => {
   return min + Math.floor(Math.random() * (max - min + 1));
 };
 // chance a crippled creature loses its attack (no energy spent): stumble the first time, then drop less
-// each time it has stumbled this fight (the user, 2026-11-21: 50%, 40%, 30%, 20%…, so a cripple can't lock it down).
+// each time it has stumbled while crippled (the user, 2026-11-21: 50%, 40%, 30%, 20%…, so a cripple can't lock
+// it down); back to stumble once the cripple's gone (a re-cripple while it lasts doesn't reset it).
 export const CRIPPLE = { stumble: 0.5, drop: 0.1 };
 export const stumbleChance = (f: Combatant) => Math.max(0, CRIPPLE.stumble - CRIPPLE.drop * (f.stumbles ?? 0));
 
@@ -275,7 +276,7 @@ export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: n
 // hidden: a boss creature that hasn't appeared yet (not shown on screen).
 // cooldowns: move name → rounds until it can be used again.
 // setUsed: its armour set's once-a-fight mechanic has been used.
-// stumbles: how often it has stumbled while crippled this fight (stumbleChance).
+// stumbles: how often it has stumbled in this cripple (stumbleChance; cleared when the cripple ends).
 export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak; hidden?: boolean; cooldowns?: Record<string, number>; setUsed?: boolean; stumbles?: number };
 
 export type BattleSide = {
@@ -965,6 +966,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   for (const k of ["A", "B"] as SideKey[]) {
     for (const f of state.sides[k].team) {
       f.statuses = f.statuses.map((st) => ({ ...st, rounds: st.rounds - 1 })).filter((st) => st.rounds > 0);
+      if (f.stumbles && !isCrippled(f)) f.stumbles = undefined; // (the cripple's worn off or been cleansed: a new one starts at 50% again)
       if (f.cooldowns) f.cooldowns = Object.fromEntries(Object.entries(f.cooldowns).map(([m, r]) => [m, r - 1]).filter(([, r]) => (r as number) > 0));
     }
     // Clouds and gore last a few rounds.

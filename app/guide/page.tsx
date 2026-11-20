@@ -111,7 +111,7 @@ function Combat() {
         <li><b>Energy</b>: everyone starts on {MAX_ENERGY}. Moves cost energy; you get {ENERGY_REGEN} back after each attack, so energy never drops below {ENERGY_REGEN}. Every creature keeps at least one move of {STEADY_MAX_ENERGY} energy or less, so it can always attack: there&apos;s no resting.</li>
         <li><b>Moves</b>: every creature knows 3 core moves in each style it fights in: a light one, a heavy one and one that always goes first. It&apos;s born with its main style&apos;s 3, sometimes a rare 4th; codexes teach the rest.</li>
         <li><b>Precise hits</b>: {pct(PRECISE_CHANCE)} of hits are precise: they do {PRECISE_DAMAGE}× damage and ignore {pct(PRECISE_IGNORE)} of the defence.</li>
-        <li><b>Cripple</b>: for {CRIPPLE_ROUNDS}–{CRIPPLE_ROUNDS_MAX} rounds, −{pct(CRIPPLE_AGILITY_LOSS)} agility and a {pct(CRIPPLE.stumble)} chance to stumble and lose each attack (no energy spent), {pct(CRIPPLE.drop)} less each time it has stumbled that fight. <b>Haste</b>: double agility this round only, to strike first.</li>
+        <li><b>Cripple</b>: for {CRIPPLE_ROUNDS}–{CRIPPLE_ROUNDS_MAX} rounds, −{pct(CRIPPLE_AGILITY_LOSS)} agility and a {pct(CRIPPLE.stumble)} chance to stumble and lose each attack (no energy spent), {pct(CRIPPLE.drop)} less each time it stumbles, till the cripple ends. <b>Haste</b>: double agility this round only, to strike first.</li>
         <li><b>Stances</b> (the Cyclops&apos;s Eye floats): floating takes +10% from ranged, −10% from melee; entrenched the other way round.</li>
       </ul>
 

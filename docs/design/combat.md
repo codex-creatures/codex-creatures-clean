@@ -39,8 +39,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ **Cripple** (the user, 2026-11-13; was 3 rounds and a 25% stumble): −50% agility for 3–5 rounds
   (`CRIPPLE_ROUNDS`–`CRIPPLE_ROUNDS_MAX`, or the move's own range: Enfeeble and the Cyclops's Stomp 3),
   and a 50% chance each attack is lost (`CRIPPLE.stumble`, for every cripple, Stomp's too), 10 points less each time
-  that creature has stumbled in the fight: 50%, 40%, 30%, 20%, 10%, then no more (`CRIPPLE.drop`, `stumbleChance`;
-  the user, 2026-11-21).
+  it has stumbled while crippled: 50%, 40%, 30%, 20%, 10%, then no more, back to 50% once the cripple ends
+  (`CRIPPLE.drop`, `stumbleChance`; the user, 2026-11-21).
 - ✅ **Learnable moves:** Cripple, Crippling Shot, Hobble Hex (15 power, 60 energy, a 50% chance to
   cripple). (Haste/Quickcast and the precise moves were retired 2026-11-12.)
 - ✅ **Race moves:** single-use codexes, learnable by that race (either of a creature's two), plus
