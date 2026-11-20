@@ -105,7 +105,7 @@ export function useDropGeneration({
         onNoScans?.();
         return;
       }
-      const drops = [calibrationDrop(firstUsed, owned, code)].filter((d): d is Drop => d !== null);
+      const drops = [calibrationDrop(firstUsed, calibrated[0], owned, code)].filter((d): d is Drop => d !== null);
       onScanUsed?.(code);
       drops.forEach(onDrop);
       onScan?.(drops);

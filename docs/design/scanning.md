@@ -32,10 +32,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   (a save with no game in it, a new player's or one from Settings → Start new game, gets them: until 2026-11-20 it read
   as a save from before them and got none) (`CALIBRATION_SCANS`; 25 till the user, 2026-11-20: "that gives you 35 barcodes really, about right for your house when you start") **calibrate it** (a panel of his above the Scan button; once done he says
   you've still got N free scans, use them while you can: no time limit, just a nudge).
-  Two are gifts (the user, 2026-11-20; `CALIBRATION_GIFTS`, `calibrationDrop`): the 3rd is a Rare creature of a
-  species you've never had as a creature (a real one, not a card), so you've two for the Encampment, and the 6th a
-  Rare weapon, always enchanted. Klutz says so as he hands the scanner over, and that Code Caches give enchanted
-  gear 2.5× as often as chests (`SCAN_ENCHANT` 25% to `CHEST_ENCHANT` 10%, of Rare+ gear).
+  Two are gifts (the user, 2026-11-20; `CALIBRATION_GIFTS`, `calibrationDrop`): one of the 2nd–6th scans is a Rare
+  creature of a species you've never had as a creature (a real one, not a card), so you've two for the Encampment,
+  and one of the 7th–10th a Rare weapon, always enchanted. Which scan is luck (`giftSlot`, from the first barcode
+  calibrated with), and nothing says they're coming: it should feel lucky. Klutz does say, handing the scanner over,
+  that Code Caches give enchanted gear 2.5× as often as chests (`SCAN_ENCHANT` 25% to `CHEST_ENCHANT` 10%, of Rare+ gear).
   The others roll on the spot at the usual odds but nothing past Rare and no soul stone, and ask no
   registry (global or local) and records nothing, so they work offline too and, once calibrated,
   the same barcodes are new to you again and open from the registry with the usual rules. A

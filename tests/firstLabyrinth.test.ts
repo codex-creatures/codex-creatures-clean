@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { rollMap, routeLength, isAhead, waysOn, knownRooms, CAMP_STASH_MARKS } from "../lib/dungeon/map";
 import {
-  DUNGEONS, CAMP_ROUTE, CAMP_CHIEF_LEVEL, CAMP_CHIEF_HP, CAMP_CHIEF_HP_FIRST, firstCamp, CAMP_CHIEF_CLUB, CAMP_CAGES, CAMP_CAGE_LEVELS, CAMP_REPEAT_CHANCE, LABYRINTH_SCANS,
+  DUNGEONS, CAMP_ROUTE, CAMP_CHIEF_LEVEL, CAMP_CHIEF_HP, CAMP_CHIEF_CLUB, CAMP_CAGES, CAMP_CAGE_LEVELS, CAMP_REPEAT_CHANCE, LABYRINTH_SCANS,
   makeRoom, campCages, campRoomKind, labyrinthOpen, startRun, enterRoom, leaveRoom, endRun,
   type DungeonMeta, type DungeonRun,
 } from "../lib/dungeon/run";
-import { startWalkRun } from "../lib/dungeon/walkRun";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
 import { SPECIES_RACES } from "../lib/creatures/racesV2";
 
@@ -119,17 +118,6 @@ describe("the Encampment (the first labyrinth)", () => {
     const after = endRun({ meta: META, run });
     expect(after.meta.campClears).toBe(1);
     expect(after.meta.clears).toBe(0);
-  });
-
-  // The user, 2026-11-20: till he's first beaten, the chief's at half HP.
-  it("before its first win, the chief's at half HP", () => {
-    expect(CAMP_CHIEF_HP_FIRST).toBe(CAMP_CHIEF_HP / 2);
-    let run: DungeonRun = firstCamp(startRun(["a"], ["a"], {}, 1, Math.random, 0, false, false, campCages(true, [])));
-    while (run.path[run.path.length - 1] !== run.map.boss) run = enterRoom(leaveRoom(run), waysOn(run.map, run.path[run.path.length - 1])[0].id);
-    expect(run.current?.enemies?.[0]).toMatchObject({ creatureId: "baby_cyclops", hpMult: CAMP_CHIEF_HP_FIRST });
-    // …and walked round: its chief's room is made as the run starts.
-    const walked = firstCamp(startWalkRun(["a"], ["a"], {}, 1, campCages(true, [])));
-    expect(walked.walk!.rooms[walked.map.boss].enemies?.[0]).toMatchObject({ creatureId: "baby_cyclops", hpMult: CAMP_CHIEF_HP_FIRST });
   });
 
   it("the Labyrinth opens once you've beaten it, scanned LABYRINTH_SCANS barcodes, or beaten the Cyclops before", () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  CALIBRATION_GIFTS, calibrationDrop, CALIBRATION_SCANS, FIRST_SCANS, NEW_FIRST_SCANS, calibrating, calibrationLeft, calibrationRoll, firstScansLeft, readFirstScans, spendFirstScan,
+  giftSlot, calibrationDrop, CALIBRATION_SCANS, FIRST_SCANS, NEW_FIRST_SCANS, calibrating, calibrationLeft, calibrationRoll, firstScansLeft, readFirstScans, spendFirstScan,
 } from "../lib/firstScans";
 // (no React in it: called straight, under another name so the hooks lint leaves it be)
 import { useDropGeneration as dropGeneration } from "../hooks/useDropGeneration";
@@ -84,27 +84,41 @@ describe("scanning while calibrating", () => {
   });
 });
 
-// The user, 2026-11-20: the 3rd calibration scan's a Rare creature you've never had (a real one), and the 6th a Rare enchanted weapon.
+// The user, 2026-11-20: one of the 2nd–6th calibration scans is a Rare creature you've never had (a real one),
+// and one of the 7th–10th a Rare enchanted weapon; which, by luck (the first barcode), so it feels lucky.
 describe("calibration's two gifts", () => {
-  it("a new Rare creature, then a Rare enchanted weapon, on their scans", () => {
-    expect(CALIBRATION_GIFTS.creature).toBeLessThan(CALIBRATION_SCANS);
-    expect(CALIBRATION_GIFTS.weapon).toBeLessThan(CALIBRATION_SCANS);
+  it("land once each, in their ranges, wherever the first barcode puts them", () => {
+    const slots = new Set<string>();
+    for (let n = 0; n < 200; n++) {
+      const first = String(4006381333931 + n * 7919);
+      const c = giftSlot("creature", first), w = giftSlot("weapon", first);
+      expect(c).toBeGreaterThanOrEqual(1); expect(c).toBeLessThanOrEqual(5);
+      expect(w).toBeGreaterThanOrEqual(6); expect(w).toBeLessThan(CALIBRATION_SCANS);
+      slots.add(c + "," + w);
+    }
+    expect(slots.size).toBe(20); // every pairing turns up
+  });
+
+  it("a new Rare creature and a Rare enchanted weapon on their scans, and the usual finds on the rest", () => {
+    const first = "4006381333931";
     for (let seed = 1; seed <= 30; seed++) {
       const owned = new Set(["moss_wolf"]);
-      const c = calibrationDrop(CALIBRATION_GIFTS.creature, owned, "123456", seeded(seed)) as Drop & { creatureId: string };
+      const c = calibrationDrop(giftSlot("creature", first), first, owned, "123456", seeded(seed)) as Drop & { creatureId: string };
       expect(c).toMatchObject({ dropType: "creature", rarity: "rare" });
       expect(owned.has(c.creatureId)).toBe(false);
-      const w = calibrationDrop(CALIBRATION_GIFTS.weapon, owned, "123456", seeded(seed)) as Drop & { enchant?: unknown };
+      const w = calibrationDrop(giftSlot("weapon", first), first, owned, "123456", seeded(seed)) as Drop & { enchant?: unknown };
       expect(w).toMatchObject({ dropType: "item", itemCategory: "weapon", rarity: "rare" });
       expect(w.enchant).toBeTruthy();
     }
+    // The first scan's never a gift (it sets where they land).
+    expect(calibrationDrop(0, undefined, new Set(), "123456", () => 0)).not.toMatchObject({ dropType: "creature", rarity: "rare" });
   });
 
-  it("goes through the scanner on the right scan", async () => {
-    const drops: Drop[] = [];
+  it("goes through the scanner on its scan", async () => {
+    const first = "4006381333931", drops: Drop[] = [];
     const { generateDrop } = dropGeneration({ rollMode: "deterministic", scanCounts: {}, onDrop: (d) => drops.push(d), onScanCountUpdate: () => {},
-      canScanNew: () => true, calibrating: true, calibrated: [], firstUsed: CALIBRATION_GIFTS.creature, owned: new Set() });
-    await generateDrop("4006381333931");
+      canScanNew: () => true, calibrating: true, calibrated: [first], firstUsed: giftSlot("creature", first), owned: new Set() });
+    await generateDrop("5012345678900");
     expect(drops[0]).toMatchObject({ dropType: "creature", rarity: "rare" });
   });
 });

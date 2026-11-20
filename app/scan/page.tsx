@@ -218,7 +218,7 @@ export default function ScanPage() {
           <div style={{ minWidth: 0 }}>
             <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{game.calibrating ? <>🔧 Calibrating: {CALIBRATION_SCANS - calibrationLeft(game.firstScans)}/{CALIBRATION_SCANS}</> : <>✅ Calibrated!</>}</div>
             <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 0" }}>{game.calibrating
-              ? <>&ldquo;Here, have my scanner! It needs calibrating, so it&apos;s got {CALIBRATION_SCANS} free scans on it. Until then it finds nothing past Rare, but there&apos;s a <b>Rare creature</b> and a <b>Rare enchanted weapon</b> in there for you. And Code Caches are 2.5× likelier than chests to give enchanted gear!&rdquo;</>
+              ? <>&ldquo;Here, have my scanner! It needs calibrating, so it&apos;s got {CALIBRATION_SCANS} free scans on it. Until then it finds nothing past Rare. And Code Caches are 2.5× likelier than chests to give enchanted gear!&rdquo;</>
               : <>&ldquo;Oh wow, it&apos;s calibrated! You&apos;ve still got {game.firstLeft} free scans: use them while you can. Those barcodes open for real now.&rdquo;</>}</p>
           </div>
         </div>

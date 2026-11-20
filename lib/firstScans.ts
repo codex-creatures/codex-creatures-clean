@@ -11,6 +11,8 @@
 // Two of them are gifts (the user, 2026-11-20; CALIBRATION_GIFTS): a Rare
 // creature you've never had (a real one, not a card), so you've a second for
 // the Encampment, and a Rare enchanted weapon, a first taste of enchantments.
+// Which scans they land on is luck (giftSlot), and nothing says they're coming:
+// it should feel like you got lucky.
 //
 // Kept in the save as { used, codes }: first scans used, and the barcodes
 // read while calibrating (one barcode can't calibrate twice). Missing (a save
@@ -28,8 +30,17 @@ import { makeCreatureDrop } from "./creatures/summon";
 export const FIRST_SCANS = 35;     // (the user, 2026-11-20: 10 to calibrate, then 25 free; it was 25 and 25)
 export const CALIBRATION_SCANS = 10;
 export const CALIBRATION_TOP: Rarity = "rare";
-// Which calibration scans are the gifts (how many first scans were used before it: the 3rd and the 6th).
-export const CALIBRATION_GIFTS = { creature: 2, weapon: 5 } as const;
+// Where the gifts can land, as how many first scans were used before it: the
+// creature on the 2nd–6th scan, the weapon on the 7th–10th.
+export const CALIBRATION_GIFTS = { creature: [1, 5], weapon: [6, 9] } as const;
+// The scan a gift lands on, read off the first barcode you calibrated with, so
+// it's settled from then on (with nothing new in the save) but different for everyone.
+export function giftSlot(kind: keyof typeof CALIBRATION_GIFTS, firstCode: string): number {
+  const [lo, hi] = CALIBRATION_GIFTS[kind];
+  let h = kind === "creature" ? 7 : 13;
+  for (const ch of firstCode) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return lo + (h % (hi - lo + 1));
+}
 
 export type FirstScans = { used: number; codes: string[] };
 
@@ -65,16 +76,17 @@ export function calibrationRoll(rng: () => number = Math.random): BarcodeOutcome
   return rollFromRules({ ...REGISTRY_RULES, odds: CALIBRATION_ODDS, rarity }, rng);
 }
 
-// A calibration scan's find: the gift if it's one of CALIBRATION_GIFTS' scans,
-// else calibrationRoll. used: first scans used before this one; owned: the
-// species you've had as creatures (the gift's one you haven't, if there's any left).
-export function calibrationDrop(used: number, owned: ReadonlySet<string>, code: string, rng: () => number = Math.random): Drop | null {
+// A calibration scan's find: a gift if it's on its scan (giftSlot), else
+// calibrationRoll. used: first scans used before this one; firstCode: the first
+// barcode calibrated with (none yet: this is the first scan, never a gift);
+// owned: the species you've had as creatures (the gift's one you haven't, if any's left).
+export function calibrationDrop(used: number, firstCode: string | undefined, owned: ReadonlySet<string>, code: string, rng: () => number = Math.random): Drop | null {
   const pick = <T,>(xs: readonly T[]) => xs[Math.floor(rng() * xs.length)];
-  if (used === CALIBRATION_GIFTS.creature) {
+  if (firstCode && used === giftSlot("creature", firstCode)) {
     const rares = REGISTRY_RULES.creatures.rare;
     const fresh = rares.filter((id) => !owned.has(id));
     return makeCreatureDrop(CREATURE_BY_ID[pick(fresh.length ? fresh : rares)], "creature", code);
   }
-  if (used === CALIBRATION_GIFTS.weapon) return enchanted(weaponDrop(pick(REGISTRY_RULES.weapons) as ItemKey, "rare", code), 1, rng);
+  if (firstCode && used === giftSlot("weapon", firstCode)) return enchanted(weaponDrop(pick(REGISTRY_RULES.weapons) as ItemKey, "rare", code), 1, rng);
   return scanDrop(calibrationRoll(rng), code);
 }
