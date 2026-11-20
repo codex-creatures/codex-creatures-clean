@@ -88,7 +88,7 @@ interesting situations, real decisions, progression and surprises, not feel they
   - ⚠️ **Not built:** the bookcase's schematics from scans (it changes the global registry's rules: ask first).
   - ✗ **The Soul Altar's upgrade** (the user, 2026-11-20: not for now). More Code Cache room is to be bought for real
     money (not designed).
-  - ❓ **Klutz's Cabin:** more crate room past the gold upgrades (80)? Claude's proposal, to answer: Lodge 100 (30
+  - ⏸ **Klutz's Cabin:** more crate room past the gold upgrades (80): skipped for now (the user, 2026-11-20). Claude's proposal was Lodge 100 (30
     planks, 20 nails, 10 bars) → Hall 120 (20 bars, 8 stone, 2 essence crystals). His crate holds what he brings home
     till you keep or sell it; full, he won't set off.
   - **More materials** (the user, 2026-11-20): more loot containers (built: stockrooms) and materials in the campaign
