@@ -54,7 +54,8 @@ export default function PoolPage() {
           {level.desc} Creatures hurt in the Labyrinth soak here and get back
           <b> {Math.round(level.healPerHour * 100)}% of their health an hour</b>. Upgrades to the pool will come later.
         </p>
-        {HEAL_AT_HOME && <p style={{ fontSize: 12, color: "#f5c542", margin: "6px 0 0" }}>🧪 Testing: everyone comes home from the Labyrinth at full health for now.</p>}
+        {/* (The user, 2026-11-20: no testing label; it stays like this a while.) */}
+        {HEAL_AT_HOME && <p style={{ fontSize: 13, color: "#c8c4b8", margin: "6px 0 0" }}>Your creatures come home from the Labyrinth at full health.</p>}
       </div>
 
       {klutz.kind === "healing" && (
@@ -93,7 +94,7 @@ export default function PoolPage() {
               </div>
             );
           })}
-          <button className="chip" onClick={healAll} style={{ justifySelf: "start" }} title="A shortcut for playtesting">Testing: heal everyone now</button>
+          <button className="chip" onClick={healAll} style={{ justifySelf: "start" }} >Heal everyone now</button>
         </div>
       )}
     </DenFrame>

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  CALIBRATION_SCANS, FIRST_SCANS, NEW_FIRST_SCANS, calibrating, calibrationLeft, calibrationRoll, firstScansLeft, readFirstScans, spendFirstScan,
+  CALIBRATION_GIFTS, calibrationDrop, CALIBRATION_SCANS, FIRST_SCANS, NEW_FIRST_SCANS, calibrating, calibrationLeft, calibrationRoll, firstScansLeft, readFirstScans, spendFirstScan,
 } from "../lib/firstScans";
 // (no React in it: called straight, under another name so the hooks lint leaves it be)
 import { useDropGeneration as dropGeneration } from "../hooks/useDropGeneration";
@@ -81,6 +81,31 @@ describe("scanning while calibrating", () => {
     const { got, generateDrop } = scanner(["4006381333931"]);
     await generateDrop("4006381333931");
     expect(got).toEqual({ drops: [], used: [], counted: [], again: 1 });
+  });
+});
+
+// The user, 2026-11-20: the 3rd calibration scan's a Rare creature you've never had (a real one), and the 6th a Rare enchanted weapon.
+describe("calibration's two gifts", () => {
+  it("a new Rare creature, then a Rare enchanted weapon, on their scans", () => {
+    expect(CALIBRATION_GIFTS.creature).toBeLessThan(CALIBRATION_SCANS);
+    expect(CALIBRATION_GIFTS.weapon).toBeLessThan(CALIBRATION_SCANS);
+    for (let seed = 1; seed <= 30; seed++) {
+      const owned = new Set(["moss_wolf"]);
+      const c = calibrationDrop(CALIBRATION_GIFTS.creature, owned, "123456", seeded(seed)) as Drop & { creatureId: string };
+      expect(c).toMatchObject({ dropType: "creature", rarity: "rare" });
+      expect(owned.has(c.creatureId)).toBe(false);
+      const w = calibrationDrop(CALIBRATION_GIFTS.weapon, owned, "123456", seeded(seed)) as Drop & { enchant?: unknown };
+      expect(w).toMatchObject({ dropType: "item", itemCategory: "weapon", rarity: "rare" });
+      expect(w.enchant).toBeTruthy();
+    }
+  });
+
+  it("goes through the scanner on the right scan", async () => {
+    const drops: Drop[] = [];
+    const { generateDrop } = dropGeneration({ rollMode: "deterministic", scanCounts: {}, onDrop: (d) => drops.push(d), onScanCountUpdate: () => {},
+      canScanNew: () => true, calibrating: true, calibrated: [], firstUsed: CALIBRATION_GIFTS.creature, owned: new Set() });
+    await generateDrop("4006381333931");
+    expect(drops[0]).toMatchObject({ dropType: "creature", rarity: "rare" });
   });
 });
 

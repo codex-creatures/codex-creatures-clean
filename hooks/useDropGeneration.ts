@@ -1,7 +1,7 @@
 // hooks/useDropGeneration.ts
 import type { Drop } from "@/lib/types";
 import { lookupLocal, rollBarcodeOutcome, type Lookup } from "@/lib/barcodeRegistry";
-import { calibrationRoll } from "@/lib/firstScans";
+import { calibrationDrop } from "@/lib/firstScans";
 import { goldDrop } from "@/lib/drops";
 import { openBarcode, scanDrop, scanKeys, type Opened } from "@/lib/scanning";
 import { onlineClient } from "@/lib/online/client";
@@ -59,6 +59,8 @@ type UseDropGenerationArgs = {
   calibrating?: boolean;
   calibrated?: string[];
   onCalibratedAgain?: () => void;
+  firstUsed?: number;              // first scans used so far (which calibration scan this is: its gifts)
+  owned?: ReadonlySet<string>;     // species you've had as creatures (the gift creature's a new one)
 };
 
 export function useDropGeneration({
@@ -76,6 +78,8 @@ export function useDropGeneration({
   calibrating = false,
   calibrated = [],
   onCalibratedAgain,
+  firstUsed = 0,
+  owned = new Set(),
 }: UseDropGenerationArgs) {
   async function generateDrop(code: string) {
     if (!/^[0-9]{6,20}$/.test(code)) return;
@@ -101,7 +105,7 @@ export function useDropGeneration({
         onNoScans?.();
         return;
       }
-      const drops = [scanDrop(calibrationRoll(), code)].filter((d): d is Drop => d !== null);
+      const drops = [calibrationDrop(firstUsed, owned, code)].filter((d): d is Drop => d !== null);
       onScanUsed?.(code);
       drops.forEach(onDrop);
       onScan?.(drops);

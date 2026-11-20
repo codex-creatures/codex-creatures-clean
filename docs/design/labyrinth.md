@@ -32,7 +32,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     quest's thief, back "with a club this time and lots of HP"; `campChief`), Lv 5 (`CAMP_CHIEF_LEVEL`, Hard AI):
     Club Smash and Backhand, a Common maul (`CAMP_CHIEF_CLUB`: an average Common weapon's roll, the same every
     time; it can drop like any foe's gear), no armour, ×2 HP (`CAMP_CHIEF_HP`, ✅ the user, 2026-11-20) and %s of Claude's
-    (`CAMP_CHIEF_PROF`), no race (neutral, the user, 2026-11-20; till then he was Humanoid). 🧪 Sim (a lone Lv 5 Rare starter in Klutz's club and Common armour, Normal AI):
+    (`CAMP_CHIEF_PROF`), no race (neutral, the user, 2026-11-20; till then he was Humanoid). Till he's first beaten he's at half
+    that HP (`CAMP_CHIEF_HP_FIRST` ×1, `firstCamp`; the user, 2026-11-20: new players with one creature hit a wall at him). 🧪 Sim (a lone Lv 5 Rare starter in Klutz's club and Common armour, Normal AI):
     it wins 46% against him (about 194 HP), 52% against the Uncommon chief before him (about 123 HP). As a Rare he
     gives more XP than it did (42 to the Uncommon's 34 in the page test). His sprite carries his club (the user, 2026-11-20; PixelLab, an edit of the old one with the box: samples in art/cyclops-club/). He has a mini boss's chest (never the Iron Cage Schematic). Beaten the first time, it guards
     2 cages (`campCages`): each a Common or Uncommon (even odds), Lv 2–4, of no race your party
@@ -173,8 +174,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   - 🧪 Kept on for now (the user, 2026-10-20: healing after death "stays as it is now"; the other
     options, a slow pool 25%/h, a faster pool 50%/h or a quick heal to half then the pool, set
     aside). **It's a testing convenience, not the settled design** (the user, 2026-11-09): the game
-    labels it so ("🧪 Testing: everyone comes home from the Labyrinth at full health for now",
-    app/pool), and the pool above is what it switches back to.
+    no longer labels it as testing (the user, 2026-11-20: "it will stay like that for a while"; app/pool says
+    plainly that creatures come home at full health), and the pool above is what it switches back to.
 - ⏸ **Re-entry cooldown** as the anti-farming bar: set aside (the user, 2026-11-04). The gold fee
   is the bar, and that's enough for now. (Its cooldown potions were to come from the barcode
   merchant, since dropped.)

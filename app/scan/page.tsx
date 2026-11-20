@@ -100,6 +100,8 @@ export default function ScanPage() {
     onScanUsed:        (code) => { game.takeScanCharge(code); },
     calibrating:       rollMode !== "random" && game.calibrating,
     calibrated:        game.firstScans?.codes,
+    firstUsed:         game.firstScans?.used,
+    owned:             game.creaturesOwned,
     onCalibratedAgain: () => setNote(<>🔧 That one&apos;s calibrated already. Try another barcode.</>),
     onNoScans:         () => setNote(<><b style={{ color: "#ff8a80" }}>No scans left</b><br />The next one comes in {clockText(nextScanIn(game.scanCharges, Date.now()) ?? 0)}.</>),
     onSealed:          (rarity, need) => setNote(<>🔒 Something <b style={{ color: RARITY_COLORS[rarity]?.text, textTransform: "capitalize" }}>{rarity}</b> stirs in it. Come back at explorer level <b>{need}</b>.</>),
@@ -216,7 +218,7 @@ export default function ScanPage() {
           <div style={{ minWidth: 0 }}>
             <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{game.calibrating ? <>🔧 Calibrating: {CALIBRATION_SCANS - calibrationLeft(game.firstScans)}/{CALIBRATION_SCANS}</> : <>✅ Calibrated!</>}</div>
             <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 0" }}>{game.calibrating
-              ? <>&ldquo;Here, have my scanner! It needs calibrating, so it&apos;s got {CALIBRATION_SCANS} free scans on it. Until then it finds nothing past Rare.&rdquo;</>
+              ? <>&ldquo;Here, have my scanner! It needs calibrating, so it&apos;s got {CALIBRATION_SCANS} free scans on it. Until then it finds nothing past Rare, but there&apos;s a <b>Rare creature</b> and a <b>Rare enchanted weapon</b> in there for you. And Code Caches are 2.5× likelier than chests to give enchanted gear!&rdquo;</>
               : <>&ldquo;Oh wow, it&apos;s calibrated! You&apos;ve still got {game.firstLeft} free scans: use them while you can. Those barcodes open for real now.&rdquo;</>}</p>
           </div>
         </div>

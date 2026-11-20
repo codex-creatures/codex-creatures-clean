@@ -197,6 +197,8 @@ export const CAMP_CAGES = 2;
 // Rare starter, Klutz's club and Common armour, Normal AI, vs the chief's Hard): it wins 46% of the time
 // (194 HP) where the Uncommon chief before it lost 52% (123 HP).
 export const CAMP_CHIEF_HP = 2;
+// Till he's first beaten, half that (the user, 2026-11-20: new players with one creature hit a wall at him).
+export const CAMP_CHIEF_HP_FIRST = 1;
 export const CAMP_CHIEF_PROF: CreatureProficiency = { atk: 14, rng: 0, mag: 0, agil: 4, mdef: 12, rdef: 8, magdef: 8 };
 export const CAMP_CHIEF_CLUB = { melee: 15, ranged: 11, magic: 5, agility: 12, hp: 17 };
 export function campChief(): Enemy {
@@ -204,6 +206,12 @@ export function campChief(): Enemy {
     creatureId: "baby_cyclops", proficiency: { ...CAMP_CHIEF_PROF }, moves: ["Club Smash", "Backhand"], level: CAMP_CHIEF_LEVEL, hpMult: CAMP_CHIEF_HP,
     gear: [{ slot: "weapon", key: "temporal_maul", rarity: "common", stats: { ...CAMP_CHIEF_CLUB }, drops: false }],
   };
+}
+// An Encampment run before its chief's first beaten (campFirst): he's at CAMP_CHIEF_HP_FIRST.
+const softChief = (r: Room): Room => ({ ...r, enemies: r.enemies?.map((e) => (e.creatureId === "baby_cyclops" ? { ...e, hpMult: CAMP_CHIEF_HP_FIRST } : e)) });
+export function firstCamp(run: DungeonRun): DungeonRun {
+  const boss = run.walk?.rooms[run.map.boss];
+  return { ...run, campFirst: true, ...(run.walk && boss ? { walk: { ...run.walk, rooms: { ...run.walk.rooms, [run.map.boss]: softChief(boss) } } } : {}) };
 }
 export const CAMP_CAGE_LEVELS: [number, number] = [2, 4];
 export const CAMP_REPEAT_CHANCE = 0.2;
@@ -1241,6 +1249,7 @@ export type DungeonRun = {
   status: RunStatus;
   bindle?: boolean;            // you set out on the bindle: merchants and storehouses have the backpack
   campCages?: Cage[];          // the Encampment: its chief's cages (campCages)
+  campFirst?: boolean;         // …and he's never been beaten: at half HP (firstCamp)
   walk?: WalkRun;               // the walkable Encampment (the Labyrinth's "New"): walkRun.ts
 };
 
@@ -1306,7 +1315,7 @@ export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.rando
   const node = nextRooms(run).find((n) => n.id === nodeId);
   if (!node) return run;
   const rolled = makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run), !!run.bindle);
-  const room = dungeonOf(run) === 0 && node.id === run.map.boss ? { ...rolled, cages: run.campCages ?? [] } : rolled;
+  const room = dungeonOf(run) === 0 && node.id === run.map.boss ? (run.campFirst ? softChief : (r: Room) => r)({ ...rolled, cages: run.campCages ?? [] }) : rolled;
   return { ...run, path: [...run.path, node.id], current: node.dynamite ? { ...room, dynamite: true } : room, room: run.room + 1 };
 }
 

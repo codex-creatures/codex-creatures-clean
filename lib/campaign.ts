@@ -150,6 +150,7 @@ export type CampaignReward =
   | { crate: CrateKind; lo: Rarity; hi: Rarity; n: number }
   | { goldKey: true }
   | { enchanted: "weapon" | "armour"; rarity: Rarity }
+  | { weapon: Rarity } // a weapon of this rarity, not enchanted
   | { bookcasePlans: true };
 
 // (The codex reward is a bookcase, not a crate: the user, 2026-11-16. The gear one's a barrel, to be drawn.)
@@ -162,6 +163,7 @@ export function rewardText(r: CampaignReward): string {
   if ("crate" in r) return r.crate === "supplies" ? CRATE_NAMES.supplies : `${CRATE_NAMES[r.crate]} (${band(r.lo, r.hi)})`;
   if ("goldKey" in r) return "A Gold Key";
   if ("enchanted" in r) return `An enchanted ${RARITY_WORD[r.rarity]} ${r.enchanted}`;
+  if ("weapon" in r) return `A ${RARITY_WORD[r.weapon]} weapon`;
   return "The Crooked Bookcase Schematic";
 }
 
@@ -190,6 +192,7 @@ export function rollCampaignReward(r: CampaignReward, rng: Rng = Math.random): D
   if ("scrolls" in r) return Array.from({ length: r.scrolls }, () => scrollDrop());
   if ("goldKey" in r) return [toolDrop("gold_key")];
   if ("enchanted" in r) return [enchantedPiece(r.enchanted, r.rarity, rng)];
+  if ("weapon" in r) { const key = ITEM_KEYS[Math.floor(rng() * ITEM_KEYS.length)]; return [weaponDrop(key, r.weapon, "", rollItemStats(key, r.weapon, rng).stats)]; }
   if (!("crate" in r)) return [];
   if (r.crate === "supplies") return [potionDrop(), potionDrop(), potionDrop("", "potion"), toolDrop("revival"), toolDrop("flare")];
   return Array.from({ length: r.n }, () => {
@@ -249,7 +252,7 @@ export const CHAPTERS: Chapter[] = [
     q.scan(3, gold(50)),
     q.bestiary(3, gold(50)),
     q.once("klutz-out", "Send Klutz out hunting", "/klutz", (c) => c.klutzSent || tallied(c, "klutz") > 0, scrolls(1)),
-    q.once("kit", "Put a weapon and all three armour pieces on a creature", "/pit", (c) => c.fullyEquipped, gold(100)),
+    q.once("kit", "Put a weapon and all three armour pieces on a creature", "/pit", (c) => c.fullyEquipped, { weapon: "rare" }), // (100 gold till 2026-11-20)
     q.fights(5, gold(100)),
     q.cards(3, gold(100)),
     q.level(5, scrolls(1)),

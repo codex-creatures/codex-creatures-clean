@@ -8,16 +8,28 @@
 // Once calibrated, those same barcodes are new to you again: scan them and
 // they open from the registry, with the usual rules (explorer level and all).
 //
+// Two of them are gifts (the user, 2026-11-20; CALIBRATION_GIFTS): a Rare
+// creature you've never had (a real one, not a card), so you've a second for
+// the Encampment, and a Rare enchanted weapon, a first taste of enchantments.
+//
 // Kept in the save as { used, codes }: first scans used, and the barcodes
 // read while calibrating (one barcode can't calibrate twice). Missing (a save
 // from before this): none, so existing players carry on as they were.
 
-import type { Rarity } from "./types";
+import type { Drop, Rarity } from "./types";
+import type { ItemKey } from "./items/ceilings";
 import { REGISTRY_RULES, SCAN_ODDS, rollFromRules, type BarcodeOutcome } from "./barcodeRegistry";
+import { scanDrop } from "./scanning";
+import { weaponDrop } from "./drops";
+import { enchanted } from "./items/enchantments";
+import { CREATURE_BY_ID } from "./creatures/creatureData";
+import { makeCreatureDrop } from "./creatures/summon";
 
 export const FIRST_SCANS = 35;     // (the user, 2026-11-20: 10 to calibrate, then 25 free; it was 25 and 25)
 export const CALIBRATION_SCANS = 10;
 export const CALIBRATION_TOP: Rarity = "rare";
+// Which calibration scans are the gifts (how many first scans were used before it: the 3rd and the 6th).
+export const CALIBRATION_GIFTS = { creature: 2, weapon: 5 } as const;
 
 export type FirstScans = { used: number; codes: string[] };
 
@@ -51,4 +63,18 @@ const CALIBRATION_ODDS = { ...SCAN_ODDS, soul_stone: 0 };
 export function calibrationRoll(rng: () => number = Math.random): BarcodeOutcome {
   const rarity = Object.fromEntries(Object.entries(REGISTRY_RULES.rarity).filter(([r]) => UP_TO.includes(r as Rarity)));
   return rollFromRules({ ...REGISTRY_RULES, odds: CALIBRATION_ODDS, rarity }, rng);
+}
+
+// A calibration scan's find: the gift if it's one of CALIBRATION_GIFTS' scans,
+// else calibrationRoll. used: first scans used before this one; owned: the
+// species you've had as creatures (the gift's one you haven't, if there's any left).
+export function calibrationDrop(used: number, owned: ReadonlySet<string>, code: string, rng: () => number = Math.random): Drop | null {
+  const pick = <T,>(xs: readonly T[]) => xs[Math.floor(rng() * xs.length)];
+  if (used === CALIBRATION_GIFTS.creature) {
+    const rares = REGISTRY_RULES.creatures.rare;
+    const fresh = rares.filter((id) => !owned.has(id));
+    return makeCreatureDrop(CREATURE_BY_ID[pick(fresh.length ? fresh : rares)], "creature", code);
+  }
+  if (used === CALIBRATION_GIFTS.weapon) return enchanted(weaponDrop(pick(REGISTRY_RULES.weapons) as ItemKey, "rare", code), 1, rng);
+  return scanDrop(calibrationRoll(rng), code);
 }
