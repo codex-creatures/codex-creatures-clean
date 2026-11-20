@@ -211,6 +211,10 @@ export const LABYRINTH_SCANS = 25;
 // (Anyone who'd already beaten the Cyclops keeps the way in.)
 export const labyrinthOpen = (meta: DungeonMeta, scans: number) =>
   (meta.campClears ?? 0) > 0 || meta.clears > 0 || scans >= LABYRINTH_SCANS;
+// The Soul Altar works once the Encampment's chief has been beaten: he drops the gem that mends it (the user,
+// 2026-11-20). Till then, no summoning from cards and no ascension. (Anyone past him already has it.)
+export const altarMended = (meta: DungeonMeta) =>
+  (meta.campClears ?? 0) > 0 || meta.clears > 0 || (meta.deepClears ?? 0) > 0 || (meta.abyssClears ?? 0) > 0;
 // A room on the way up: no two stashes in a row (lastStash: the room before was one).
 export const campRoomKind = (lastStash: boolean, rng: Rng = Math.random): RoomKind => (!lastStash && rng() < CAMP_STASH ? "stash" : "easy");
 

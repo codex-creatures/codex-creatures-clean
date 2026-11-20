@@ -1,0 +1,258 @@
+{
+  "format": 1,
+  "id": "altar-broken",
+  "name": "Altar (broken)",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den3d/altar.png",
+    "foot": [52, 121]
+  },
+  "parts": [
+    {
+      "id": "footing",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [1.35, 0.15, 1.35],
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#8a8a90"
+        }
+      }
+    },
+    {
+      "id": "base",
+      "kind": "cylinder",
+      "at": [0, 0.15, 0],
+      "size": [1.785445, 0.3, 1.785445],
+      "sides": 4,
+      "taper": 0.712871,
+      "outline": true,
+      "faces": {
+        "side": {
+          "src": "/sprites/den3d/parts/stone-bricks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#8a8a90"
+        },
+        "top": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#8a8a90"
+        },
+        "bottom": {
+          "colour": "#8a8a90"
+        }
+      }
+    },
+    {
+      "id": "ledge",
+      "kind": "box",
+      "at": [0, 0.45, 0],
+      "size": [0.9, 0.175, 0.9],
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-runes.png",
+          "crop": [0, 33, 48, 14],
+          "tint": "#8a8a90"
+        },
+        "top": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#8a8a90"
+        }
+      }
+    },
+    {
+      "id": "corner-base",
+      "kind": "box",
+      "at": [0.6, 0, 0.6],
+      "size": [0.1875, 0.15, 0.1875],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#8a8a90"
+        }
+      }
+    },
+    {
+      "id": "corner-pillar",
+      "kind": "box",
+      "at": [0.6, 0.15, 0.6],
+      "size": [0.1625, 0.475, 0.1625],
+      "glow": false,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/altar-lantern.png",
+          "crop": [0, 9, 13, 19],
+          "fit": "fill",
+          "tint": "#8a8a90"
+        },
+        "top": {
+          "colour": "#8a8a90"
+        }
+      },
+      "four": true
+    },
+    {
+      "id": "corner-cap",
+      "kind": "box",
+      "at": [0.6, 0.625, 0.6],
+      "size": [0.175, 0.0375, 0.175],
+      "light": "unlit",
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8a90"
+        },
+        "top": {
+          "colour": "#8a8a90"
+        }
+      },
+      "four": true
+    },
+    {
+      "id": "corner-spike",
+      "kind": "cylinder",
+      "at": [0.6, 0.6625, 0.6],
+      "size": [0.1, 0.1625, 0.1],
+      "sides": 6,
+      "taper": 0,
+      "light": "toon",
+      "faces": {
+        "*": {
+          "colour": "#bdb6a4"
+        }
+      },
+      "four": true
+    },
+    {
+      "id": "cauldron-foot",
+      "kind": "cylinder",
+      "at": [0.06, 0.595, 0],
+      "size": [0.375, 0.225, 0.375],
+      "sides": 16,
+      "taper": 1.3,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a3c47"
+        }
+      },
+      "turn": [0, 0, 9]
+    },
+    {
+      "id": "cauldron-low",
+      "kind": "cylinder",
+      "at": [0.06, 0.82, 0],
+      "size": [0.4875, 0.225, 0.4875],
+      "sides": 16,
+      "taper": 1.9846,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a3c47"
+        }
+      },
+      "turn": [0, 0, 9]
+    },
+    {
+      "id": "cauldron-high",
+      "kind": "cylinder",
+      "at": [0.06, 1.045, 0],
+      "size": [0.975, 0.225, 0.975],
+      "sides": 16,
+      "taper": 0.79,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a3c47"
+        }
+      },
+      "turn": [0, 0, 9]
+    },
+    {
+      "id": "cauldron-rim",
+      "kind": "cylinder",
+      "at": [0.06, 1.27, 0],
+      "size": [0.8, 0.125, 0.8],
+      "sides": 16,
+      "hole": 0.84,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#383b45"
+        },
+        "top": {
+          "colour": "#4a4e5a"
+        },
+        "bottom": {
+          "colour": "#383b45"
+        },
+        "inner": {
+          "colour": "#15161b"
+        }
+      },
+      "turn": [0, 0, 9]
+    },
+    {
+      "id": "soup",
+      "kind": "cylinder",
+      "at": [0.06, 1.3074999999999999, 0],
+      "size": [0.675, 0.0125, 0.675],
+      "sides": 16,
+      "glow": false,
+      "faces": {
+        "*": {
+          "colour": "#1d2622"
+        }
+      },
+      "turn": [0, 0, 9]
+    },
+    {
+      "id": "skull",
+      "kind": "sprite",
+      "at": [0, 0.9125, 0.468],
+      "size": [0.425, 0.325],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/altar-skull.png",
+          "crop": [0, 0, 34, 26],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "chain-l",
+      "kind": "sprite",
+      "at": [-0.492, 0.375, 0.33],
+      "size": [0.1875, 0.575],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/altar-chain.png",
+          "crop": [0, 0, 11, 34],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "chain-r",
+      "kind": "sprite",
+      "at": [0.492, 0.375, 0.33],
+      "size": [0.1875, 0.575],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/altar-chain-r.png",
+          "crop": [0, 0, 11, 34],
+          "fit": "fill"
+        }
+      }
+    }
+  ]
+}

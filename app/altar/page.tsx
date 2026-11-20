@@ -21,6 +21,7 @@ import { isCardDrop, type CreatureOrItemDrop } from "@/lib/types";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { ASCEND_AFTER, ASCEND_FIRST, ASCEND_MIN_LEVEL, giveProblem, keepProblem, othersNeeded } from "@/lib/creatures/ascend";
+import { altarMended, loadDungeon } from "@/lib/dungeon/run";
 
 type Part = "summon" | "ascend";
 const MUTED = "rgba(255,255,255,0.6)";
@@ -29,6 +30,8 @@ const GOLD = "#f1d9a0";
 export default function AltarPage() {
   const game = useGameState();
   const [part, setPart] = useState<Part | null>(null);
+  // Broken till the Encampment's chief drops its gem (lib/dungeon/run.ts altarMended).
+  const mended = !game.hydrated || altarMended(loadDungeon().meta);
   const [openCard, setOpenCard] = useState<CreatureOrItemDrop | null>(null);
   const cards = useMemo(() => game.inventory.filter(isCardDrop) as CreatureOrItemDrop[], [game.inventory]);
   const creatures = useMemo(() => game.inventory.filter((d) => d.dropType === "creature") as CreatureOrItemDrop[], [game.inventory]);
@@ -64,13 +67,13 @@ export default function AltarPage() {
                 <AltarHelp />
               </div>
               <div className="pixel-font" style={{ textAlign: "center", color: "#9fe9d8", fontSize: "clamp(12px, 3.6cqw, 15px)", margin: "4cqh 16px 3cqh", textShadow: "0 0 10px rgba(80,230,200,0.6)" }}>
-                The soul fire stirs. What will you make?
+                {mended ? "The soul fire stirs. What will you make?" : "The altar is cracked and cold. The Encampment's chief has the gem that mends it."}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4cqw", padding: "0 4cqw" }}>
-                <Choice title="Spirit Summon" sub="from cards" color="#7fd8ff" onClick={() => setPart("summon")}
+                <Choice title="Spirit Summon" sub="from cards" color="#7fd8ff" onClick={() => setPart("summon")} off={!mended}
                   note={summonsReady ? `${summonsReady} ready to summon` : `${CARDS_TO_SUMMON} cards make a creature`} lit={summonsReady > 0}
                   emblem={<CardFan cards={stacks[0] ?? []} />} />
-                <Choice title="Ascend" sub="from creatures" color="#ffd66e" onClick={() => setPart("ascend")} delay={-2.5}
+                <Choice title="Ascend" sub="from creatures" color="#ffd66e" onClick={() => setPart("ascend")} delay={-2.5} off={!mended}
                   note={ascendKinds === 1 ? `${ascendReady[0].name} can ascend` : ascendKinds ? `${ascendKinds} kinds can ascend` : `${ASCEND_FIRST} of a kind, Lv ${ASCEND_MIN_LEVEL}+`} lit={ascendReady.length > 0}
                   emblem={<Rising creature={ascendReady[0] ?? creatures[0]} />} />
               </div>
@@ -107,12 +110,12 @@ export default function AltarPage() {
 
 // One of the two choices: no frame, just light. A soft glow of its colour
 // behind its emblem, its name, and a line on what you could do now.
-function Choice({ title, sub, note, color, emblem, onClick, lit, delay = 0 }: {
-  title: string; sub: string; note: string; color: string; emblem: React.ReactNode; onClick: () => void; lit: boolean; delay?: number;
+function Choice({ title, sub, note, color, emblem, onClick, lit, delay = 0, off = false }: {
+  title: string; sub: string; note: string; color: string; emblem: React.ReactNode; onClick: () => void; lit: boolean; delay?: number; off?: boolean; // off: the altar's broken
 }) {
   return (
-    <button className="altar-choice" onClick={onClick} aria-label={`${title}: ${note}`}
-      style={{ animationDelay: `${delay}s`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "14px 6px 12px", minWidth: 0,
+    <button className="altar-choice" onClick={onClick} disabled={off} aria-label={`${title}: ${note}`}
+      style={{ opacity: off ? 0.35 : 1, filter: off ? "grayscale(1)" : undefined, animationDelay: `${delay}s`, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "14px 6px 12px", minWidth: 0,
         border: "none", color: "inherit", font: "inherit", cursor: "pointer",
         background: `radial-gradient(ellipse 70% 60% at 50% 42%, ${color}33 0%, ${color}12 45%, transparent 75%)` }}>
       <div style={{ position: "relative", width: "100%", height: "clamp(110px, 26cqh, 190px)", display: "flex", alignItems: "center", justifyContent: "center",

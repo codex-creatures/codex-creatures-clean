@@ -29,9 +29,12 @@ const action = (label: string) => [...host.querySelectorAll("button:not([data-sl
 const raise = async (c: CreatureOrItemDrop) => { await tap(tileOf(c)); await tap(action("Raise")); };
 const offer = async (c: CreatureOrItemDrop) => { await tap(tileOf(c)); await tap(action("Offer")); };
 
+// The altar works once the Encampment's chief is beaten (lib/dungeon/run.ts altarMended).
+const MENDED = { labyrinth: { meta: { campClears: 1, clears: 0 }, run: null } };
+
 async function open(inventory: CreatureOrItemDrop[], equipment: Record<string, unknown> = {}) {
   localStorage.clear();
-  localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory, equipment, gold: 100, caged: [] }));
+  localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory, equipment, gold: 100, caged: [], ...MENDED }));
   const Page = (await import("@/app/altar/page")).default;
   host = document.createElement("div");
   document.body.appendChild(host);
@@ -111,7 +114,7 @@ describe("the Soul Altar's Summon", () => {
     vi.resetModules();
     const cards = [1, 2, 3].map(() => makeCreatureDrop(CREATURE_BY_ID.moss_wolf, "card", "x"));
     localStorage.clear();
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: cards, equipment: {}, gold: 0, caged: [] }));
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: cards, equipment: {}, gold: 0, caged: [], ...MENDED }));
     const Page = (await import("@/app/altar/page")).default;
     host = document.createElement("div");
     document.body.appendChild(host);
@@ -124,5 +127,24 @@ describe("the Soul Altar's Summon", () => {
     const inv = saved().inventory;
     expect(inv.filter((d) => d.dropType === "card")).toHaveLength(0);
     expect(inv.filter((d) => d.dropType === "creature")).toHaveLength(1);
+  });
+});
+
+describe("the Soul Altar, broken (the user, 2026-11-20)", () => {
+  afterEach(() => { act(() => root.unmount()); host.remove(); });
+  it("before the Encampment's chief is beaten: no summoning, no ascending", async () => {
+    vi.resetModules();
+    const cards = [1, 2, 3].map(() => makeCreatureDrop(CREATURE_BY_ID.moss_wolf, "card", "x"));
+    localStorage.clear();
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: cards, equipment: {}, gold: 0, caged: [] }));
+    const Page = (await import("@/app/altar/page")).default;
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => { root.render(<Page />); });
+    expect(host.textContent).toContain("The altar is cracked and cold");
+    const choices = [...host.querySelectorAll("button.altar-choice")] as HTMLButtonElement[];
+    expect(choices.length).toBe(2);
+    expect(choices.every((b) => b.disabled)).toBe(true);
   });
 });

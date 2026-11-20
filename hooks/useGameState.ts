@@ -11,7 +11,7 @@ import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, isRetiredMove, KLUTZ, CREATURE_TEMPLATES, renamedMove, replaceRetired, REUSED_NAMES, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { findPrice } from "@/lib/scanReveal";
-import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, POTIONS, type Ware } from "@/lib/dungeon/run";
+import { clearDungeon, loadDungeon, saveDungeon, altarMended, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, POTIONS, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, retiredCodexMove } from "@/lib/drops";
 import type { Rarity } from "@/lib/items/budgets";
 import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, sendBlock, klutzStatus, drinkPotion, destCost, spendSkill, canPickTrait, pickTrait, selectiveOpen, cageFilterOpen, chestUpgradePrice, repairShack, NEW_KLUTZ, SHACK_REPAIR, packSize, PACK_TRAIT, PACK_MAX, type KlutzState, type KlutzDest, type SkillKey, type TraitKey, type BossClears, type SendBlock } from "@/lib/klutz";
@@ -1206,7 +1206,7 @@ export function useGameState(initialTab: TabKey = "all") {
   function ascendCreature(keptId: string, otherIds: string[]): CreatureOrItemDrop | null {
     const find = (id: string) => inventory.find((d) => d.id === id) as CreatureOrItemDrop | undefined;
     const kept = find(keptId), others = otherIds.map(find);
-    if (!kept || others.some((o) => !o)) return null;
+    if (!kept || others.some((o) => !o) || !altarMended(loadDungeon().meta)) return null; // (the altar's broken: lib/dungeon/run.ts)
     const away = ascendAway(), busy = ascendBusy();
     if (ritualProblem(kept, others as CreatureOrItemDrop[], away, busy)) return null;
     const up = ascend(kept, others as CreatureOrItemDrop[], away, busy);

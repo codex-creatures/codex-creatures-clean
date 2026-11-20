@@ -4,6 +4,7 @@
 // Written by the prop builder's Save (./indexFile.ts): add a recipe by saving it there, or list it here by hand.
 
 import altar from "./altar.json";
+import altarBroken from "./altar-broken.json";
 import arch from "./arch.json";
 import board from "./board.json";
 import cage from "./cage.json";
@@ -19,4 +20,4 @@ import tavern from "./tavern.json";
 import tavernBroken from "./tavern-broken.json";
 import training from "./training.json";
 
-export const RECIPE_FILES: Record<string, unknown> = { altar, arch, board, cage, pit, pool, portal, shack, "shack-broken": shackBroken, socket, sparring, storehouse, tavern, "tavern-broken": tavernBroken, training };
+export const RECIPE_FILES: Record<string, unknown> = { altar, "altar-broken": altarBroken, arch, board, cage, pit, pool, portal, shack, "shack-broken": shackBroken, socket, sparring, storehouse, tavern, "tavern-broken": tavernBroken, training };

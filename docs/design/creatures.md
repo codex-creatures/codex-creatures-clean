@@ -38,6 +38,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ### Ascension (the user, 2026-11-18, decision 49; lib/creatures/ascend.ts)
 
+- ✅ **The Soul Altar starts broken** (the user, 2026-11-20; lib/dungeon/run.ts `altarMended`): no summoning and
+  no ascending (its two choices greyed out, "The altar is cracked and cold…") until the Encampment's chief is
+  beaten: he drops the gem that mends it (the first-win line says so). Anyone past him already has a working altar.
+  The 3D Den draws it cracked and cold till then (the sample recipe `altar-broken`).
 - ✅ **The Soul Altar's screen** (the user, 2026-11-18; app/altar, components/altar/AltarBackdrop.tsx):
   you stand over the altar, its soul-fire cauldron big at the bottom (the Den art's 8 frames,
   spirit motes rising), and pick from two borderless floating panels side by side: **Spirit

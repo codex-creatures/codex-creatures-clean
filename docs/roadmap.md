@@ -75,7 +75,7 @@ interesting situations, real decisions, progression and surprises, not feel they
     Wandering traders sell the next schematic after the first upgrade. Old saves land on the stage at or above
     their size (10 → Crooked; 20, 25, 30 → Sturdy): nobody loses space.
   - **Divinity Crystal:** a new Legendary material: every Legendary material drop is one (1% of material drops).
-  - **The Soul Altar** starts broken: no summoning from cards and no ascension (Code Caches open at the scanner)
+  - ✅ **The Soul Altar** (built 2026-11-20; its broken look a sample to approve) starts broken: no summoning from cards and no ascension (Code Caches open at the scanner)
     until the gem the Encampment's chief (the Baby Cyclops) drops the first time he's beaten. Saves that have
     beaten him have a working altar.
   - ✅ **Klutz's Den** (built 2026-11-20; its broken look a sample to approve) starts as a broken-down shack, his crate 10; repaired for 20 planks and 10 nails, it's

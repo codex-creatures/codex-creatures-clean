@@ -30,8 +30,8 @@ const GREEN = "#7fdc8a"; // the portal's
 // for their old drawings: the altar, the pool, the pits, the board and the buildings (the tavern once it's repaired).
 // Without its recipe (one that won't read), a place keeps its old drawing.
 // `classic`: the old drawings, never the recipes (the prop builder's "what the game draws now", to compare).
-export function Place({ s, tint, stretch, pitch = Math.PI / 3, caged, repaired, trainingPit, stoneReady, shack = false, classic = false }: { s: Station; tint: () => THREE.Color; stretch: number; pitch?: number; caged?: string;
-  repaired: boolean; trainingPit: boolean; stoneReady: boolean; shack?: boolean; classic?: boolean }) {
+export function Place({ s, tint, stretch, pitch = Math.PI / 3, caged, repaired, trainingPit, stoneReady, shack = false, altarBroken = false, classic = false }: { s: Station; tint: () => THREE.Color; stretch: number; pitch?: number; caged?: string;
+  repaired: boolean; trainingPit: boolean; stoneReady: boolean; shack?: boolean; altarBroken?: boolean; classic?: boolean }) {
   const at: [number, number, number] = [s.x, 0, s.y];
   const made = (id: string, against: "middle" | "north" | "west" = "middle", extra?: React.ReactNode) => {
     const r = classic ? null : recipeOf(id);
@@ -43,7 +43,8 @@ export function Place({ s, tint, stretch, pitch = Math.PI / 3, caged, repaired, 
     case "storehouse": return made("storehouse", "west") ?? <Building at={at} d={s.turn ? s.w : s.d} art={BUILDINGS.storehouse} tint={tint} turn={!!s.turn} />;
     case "tavern": return (repaired ? made("tavern", "north", <Smoke at={CHIMNEY} />) : made("tavern-broken", "north")) ?? <Building at={at} d={s.d} art={BUILDINGS.tavern} broken={!repaired} tint={tint} />;
     case "board": return made("board", "north") ?? <OnWall s={s} pic={NOTES} tint={tint} backing={{ colour: "#5e432a", pad: 0.12 }} />;
-    case "altar": return made("altar") ?? <Altar at={at} tint={tint} stretch={stretch} />;
+    // (Cracked and cold till the Encampment's chief's gem mends it, the user, 2026-11-20; a sample: altar-broken.json.)
+    case "altar": return (altarBroken ? made("altar-broken") ?? made("altar") : made("altar")) ?? <Altar at={at} tint={tint} stretch={stretch} />;
     case "pool": return made("pool") ?? <Pool at={at} w={s.w} d={s.d} tint={tint} />;
     case "pit": return made("pit") ?? <Pit at={at} w={s.w} d={s.d} tint={tint} />;
     case "training": return made(trainingPit ? "training" : "sparring") ?? <Sparring at={at} w={s.w} d={s.d} tint={tint} stretch={stretch} spikes={trainingPit} />;

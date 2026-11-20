@@ -67,3 +67,10 @@ describe("a camp's cage, opened (the user, 2026-11-20)", () => {
     expect(open.parts.filter((p) => !/^(bar-|lock|hinge)/.test(p.id))).toEqual(shut.parts.filter((p) => !/^(bar-|lock|hinge)/.test(p.id)));
   });
 });
+
+describe("the broken looks (the user, 2026-11-20: samples)", () => {
+  it("Klutz's shack and the altar each have a broken recipe that reads", () => {
+    for (const id of ["shack-broken", "altar-broken"]) expect(recipeOf(id), id).not.toBeNull();
+    expect(recipeOf("altar-broken")!.halo).toBeUndefined();
+  });
+});

@@ -75,6 +75,7 @@ export type Den3DProps = {
   caged?: string; klutz: KlutzMode; klutzNews: boolean; highlight?: ObjId; rubble: Rubble; onBlast?: () => void;
   tavern: TavernQuest; pit?: { ready: boolean }; tavernNews: boolean; boardNews: boolean; crateNews: boolean; cageNews: boolean;
   shack?: boolean;       // Klutz's place still the broken-down shack (lib/klutz.ts): drawn so till it's repaired
+  altarBroken?: boolean; // the Soul Altar not yet mended (lib/dungeon/run.ts altarMended): drawn cracked and cold
   options?: DenOptions;  // (the lab's; the game's are the player's own, from Settings)
   keep?: "save" | "none"; // where moved things are kept (the lab keeps them nowhere)
 };
@@ -92,8 +93,8 @@ export default function Den3D(p: Den3DProps) {
   // The player's options (Settings: lib/den3d/setting.ts): names, the camera's angle.
   const stored = useDenOptions(), o = p.options ?? stored ?? DEN_DEFAULTS, pitch = (o.angle * Math.PI) / 180;
   const hasPit = !!p.pit, trainingPit = !!p.tavern.pit, repaired = !!p.tavern.repaired;
-  const shack = !!p.shack;
-  const state: DenState = useMemo(() => ({ opened, pit: hasPit, trainingPit, repaired, shack }), [opened, hasPit, trainingPit, repaired, shack]);
+  const shack = !!p.shack, altarBroken = !!p.altarBroken;
+  const state: DenState = useMemo(() => ({ opened, pit: hasPit, trainingPit, repaired, shack, altarBroken }), [opened, hasPit, trainingPit, repaired, shack, altarBroken]);
   const others = useOthersOnline();
 
   // Where things stand: the saved layout (the lab's starts fresh), and the thing being moved, if any.
@@ -421,7 +422,7 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
       <ambientLight color="#ffe6c8" intensity={DEN_KEY.ambient} />
       <directionalLight color="#ffe2bd" intensity={DEN_KEY.key} position={DEN_KEY.at} />
       {list.map((s) => <Place key={s.key} s={s} tint={movingKey === s.key ? () => NO.clone() : pressedKey === s.key ? () => shade(s.x, s.y + s.d / 2).multiplyScalar(PRESS_GLOW) : tint(s.x, s.y + s.d / 2)} stretch={stretch} pitch={pitch} caged={caged}
-        repaired={state.repaired} trainingPit={state.trainingPit} stoneReady={stoneReady} shack={!!state.shack} />)}
+        repaired={state.repaired} trainingPit={state.trainingPit} stoneReady={stoneReady} shack={!!state.shack} altarBroken={!!state.altarBroken} />)}
       {/* The torches on the north walls, and the braziers (with the altar, and the tavern room's pit). */}
       {SCONCES.filter((c) => state.opened || c.x < DIVIDE_X).map((c, i) => {
         const [tw, th] = KIT_LIGHTS.torchSize, w = tw / DENSITY, h = th / DENSITY;

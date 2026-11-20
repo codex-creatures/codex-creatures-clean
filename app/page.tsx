@@ -16,7 +16,7 @@ import DailyPopup from "@/components/DailyPopup";
 import { useEffect, useState } from "react";
 import { klutzStatus, pointsFree } from "@/lib/klutz";
 import { klutzFirstStep, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
-import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
+import { loadDungeon, bagSize, BINDLE, altarMended } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
 import { canBlast, headUp, tavernVisitors } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
@@ -97,7 +97,7 @@ export default function Home() {
             sink as the save came in, every time you came home.) */}
         {newDen ? game.hydrated && (
           <Den3D caged={caged} klutz={klutzAt} klutzNews={klutzNews} highlight={highlight} rubble={rubble} onBlast={game.blastRubble}
-            tavern={game.tavern} pit={pit} tavernNews={tavernNews} boardNews={boardNews} crateNews={crateNews} cageNews={cageNews} shack={!!game.klutz.shack} />
+            tavern={game.tavern} pit={pit} tavernNews={tavernNews} boardNews={boardNews} crateNews={crateNews} cageNews={cageNews} shack={!!game.klutz.shack} altarBroken={game.hydrated && !altarMended(loadDungeon().meta)} />
         ) : newDen === false && (
           <DenRoom caged={caged} klutz={klutzAt} klutzNews={klutzNews} backpack={backpack} highlight={highlight}
             rubble={rubble} onBlast={game.blastRubble} tavernNews={tavernNews} boardNews={boardNews} upgraded={game.bookcase >= 2}
