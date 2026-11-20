@@ -89,7 +89,7 @@ describe("what the save says", () => {
       scanCounts: { "1": 1, "2": 3 }, player: { level: 7 }, gold: 1234,
     });
     expect(x).toMatchObject({
-      wins: { camp: 3, cyclops: 2, hydra: 0, abyss: 0 }, blasted: true, repaired: true, blueprints: 4, bagUpgraded: true,
+      wins: { camp: 3, cyclops: 2, hydra: 0, abyss: 0, minotaur: 0 }, blasted: true, repaired: true, blueprints: 4, bagUpgraded: true,
       klutzLevel: 6, klutzSent: true, klutzSkills: SKILL_KEYS.length, bestiary: 3, cards: 1, scans: 2, explorer: 7, gold: 1234,
     });
     expect(campaignCtx({ labyrinth: { meta: { bagSize: BINDLE } } }).bagUpgraded).toBe(false);
@@ -134,6 +134,17 @@ describe("progress and claiming", () => {
     // Everything claimed stays everything claimed; and a v1 save goes through both.
     expect(nextQuest(upToDate({ claimed: 69, v: 2 }))).toBeUndefined();
     expect(nextQuest(upToDate({ claimed: 2 }))!.id).toBe("klutz-out");
+  });
+
+  it("the Minotaur came in before the Abyss (CAMPAIGN_V 4); every claim stays on the quest it was", () => {
+    const at = (id: string) => CAMPAIGN.findIndex((q) => q.id === id);
+    expect(at("minotaur")).toBeLessThan(at("abyss"));
+    // Claimed up to level 20 (v3's 59th): next is the Minotaur.
+    expect(nextQuest(upToDate({ claimed: 59, v: 3 }))!.id).toBe("minotaur");
+    // Claimed the Abyss (v3's 63rd): the Minotaur before it counts as claimed.
+    expect(claimedCount(upToDate({ claimed: 63, v: 3 }))).toBe(at("abyss") + 1);
+    // A v2 save goes straight to the new list.
+    expect(nextQuest(upToDate({ claimed: 42, v: 2 }))!.id).toBe("enchanted-armour");
   });
 
   it("the upgrade quests read the Den as it is, and give some of the cost back (essence crystals higher up)", () => {

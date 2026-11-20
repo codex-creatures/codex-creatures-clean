@@ -25,6 +25,7 @@ const META_FIELDS: Record<DungeonId, [runs: string, wins: string]> = {
   1: ["runs", "clears"],
   2: ["deepRuns", "deepClears"],
   3: ["abyssRuns", "abyssClears"],
+  4: ["minoRuns", "minoClears"],
 };
 
 const count = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
@@ -61,8 +62,8 @@ export const BOARD_INFO: Record<BoardKind, { icon: string; name: string }> = {
 export const perDungeon = (kind: BoardKind) => kind === "runs" || kind === "wins";
 export const boardKey = (kind: BoardKind, dungeon: DungeonId): BoardKey => (kind === "runs" || kind === "wins" ? `${kind}:${dungeon}` : kind);
 export const dungeonName = (d: DungeonId) => DUNGEONS[d].name;
-// For the board's dungeon buttons (the full names don't fit four across).
-export const DUNGEON_SHORT: Record<DungeonId, string> = { 0: "Camp", 1: "Labyrinth", 2: "Deep", 3: "Abyss" };
+// For the board's dungeon buttons (the full names don't fit five across).
+export const DUNGEON_SHORT: Record<DungeonId, string> = { 0: "Camp", 1: "Labyrinth", 2: "Deep", 3: "Abyss", 4: "Minotaur" };
 
 // A board's number as shown: species out of every species there is (12/120),
 // time played in hours and minutes (12h 05m, 45m).

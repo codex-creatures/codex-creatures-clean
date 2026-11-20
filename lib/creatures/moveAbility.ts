@@ -15,7 +15,7 @@ const ABILITY: Record<MoveEffect["kind"], string> = {
   septic: "Bleed combo", execute: "Finisher", cloud: "Poison cloud", ignite: "Ignite cloud",
   ambush: "Ambush", surge: "Magic up", poison: "Poison", implode: "Self-destruct", flamebody: "Burn attackers",
   gore: "Toxic weakness", recoil: "Recoil", slap: "Wipe buffs", charge: "Wind-up",
-  burn: "Burn", fright: "Fear", bounce: "Hit and swap", curse: "Curse",
+  burn: "Burn", fright: "Fear", bounce: "Hit and swap", curse: "Curse", sweep: "Knock aside",
 };
 
 // Its ability (a few kinds read differently by what they do), or none for a core move's plain hit.
@@ -23,5 +23,6 @@ export function abilityOf(m: Skill): string | undefined {
   const fx = m.effect;
   if (!fx) return m.mult && m.mult > 1 ? "Big hit" : m.codexRarity ? "Plain hit" : undefined;
   if (fx.kind === "weaken" && fx.forceSwap) return "Scare off";
+  if (fx.kind === "charge" && fx.kill) return "Deadly charge";
   return ABILITY[fx.kind];
 }

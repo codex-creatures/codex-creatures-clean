@@ -65,13 +65,14 @@ export const SECOND_DEN = 0.35;
 // (dungeon 1, the Cyclops; /lab/newrun only for now): its own mix and large
 // rooms (layout.ts labyrinthMap) on a bigger layout (WALK_LABYRINTH), the
 // Cyclops waiting at the top. The Deep Labyrinth (dungeon 2, the Hydra): the
-// Labyrinth's way, with two large rooms (WALK_HYDRA) and the Hydra at the top.
+// Labyrinth's way, with two large rooms (WALK_HYDRA) and the Hydra at the top. The
+// Minotaur's (dungeon 4): the Hydra's layout, fought 5 against 5, the Minotaur at the top.
 // Either way, some big rooms hold two dens.
 // dynamite: Klutz's dynamite quest wants a storehouse (the Labyrinth's large room).
 // wander: people who wander (decision 39; the Cyclops's, world version 9 on, and the Hydra's); false: the rooms as
 // they were before (the tests' runs made at older world versions).
 export function startWalkRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, cages: Cage[], bindle = false, rng: Rng = Math.random, dungeon: WalkDungeon = 0, dynamite = false, wander = dungeon !== 0): DungeonRun {
-  const layout = rollLayout(dungeon === 0 ? WALK_SPEC : dungeon === 2 ? WALK_HYDRA : WALK_LABYRINTH, rng);
+  const layout = rollLayout(dungeon === 0 ? WALK_SPEC : dungeon === 2 || dungeon === 4 ? WALK_HYDRA : WALK_LABYRINTH, rng);
   const map = dungeon === 0 ? campMap(layout, false, rng) : labyrinthMap(layout, false, dungeon, rng, dynamite, wander);
   const rooms = rollWalkRooms(map, rng, true, [], dungeon, bindle);
   if (wander) addWanderersRooms(map, rooms, rng);
@@ -123,7 +124,7 @@ function addWanderersRooms(map: DungeonMap, rooms: Record<string, Room>, rng: Rn
 }
 
 // The dungeons that can be walked so far: the Encampment, the Labyrinth (the Cyclops), the Deep Labyrinth (the Hydra).
-export type WalkDungeon = 0 | 1 | 2;
+export type WalkDungeon = 0 | 1 | 2 | 4;
 
 // A boss waiting for you to walk up to it (foes.ts placeWaiter): the
 // Encampment's chief, the Labyrinth's boss, the first quest's thief. (Not the Labyrinth's large

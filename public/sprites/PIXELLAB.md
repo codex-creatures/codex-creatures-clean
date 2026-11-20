@@ -19,6 +19,7 @@ the PNG here.
 | creatures/amber_wasp.png | gallery:8e760486-daef-4018-b3be-a15a4e0b4d6e |
 | creatures/aurelius.png | gallery:c29d5316-b647-4268-b754-884ace94a837 |
 | creatures/baby_cyclops.png | 6cfa1a7f-0a25-528b-861c-ba59c7a8e9e5 (with his club, 2026-11-20: edit_image_pro_flash of gallery:e7451478-247f-4c4e-bec7-754d61156141, the one with the box) |
+| art/minotaur-samples/minotaur-1..3.png | The Minotaur, samples for the user to pick (2026-11-21; create_image_pixen 128×128, side view): 1 a5c89281-70fe-4fc1-930b-9203be9c9868, 2 c65d0cb5-3b4e-4d85-92e6-3e38497b4252 (two axes), 3 e728aedd-e3b7-424b-b87c-15c2570f6b7f (head lowered). In the game till then: a stand-in (lib/sprites/creatures.ts MINOTAUR_ART) |
 | creatures/bellow_toad.png | gallery:2dd08335-9bf9-51b7-bc63-20ddbefcd7e5 (raw generation; trimmed + mirrored here) |
 | creatures/cave_bat.png | gallery:7a5a21a3-4c74-533e-9d12-c6efc97b48ed (the Cave Goblin, sample 11 of 16; raw generation; trimmed + mirrored here. The old Cave Bat: gallery:054e1aad-2c7f-4370-8ba2-bae183383893) |
 | creatures/crystal_golem.png | gallery:39cc6f47-8738-4a8f-8a88-c5e05ee6ad7b |

@@ -84,7 +84,8 @@ export type MoveEffect =
   | { kind: "gore"; rounds: number; amp: number }        // blood under the foes for a few rounds: toxic damage on them is this share higher (not Undead)
   | { kind: "recoil"; share: number }                    // the user takes this share of the damage it did
   | { kind: "slap"; chance: number }                     // a chance to wipe the target's stat changes
-  | { kind: "charge" }                                   // winds up (pays its energy), then strikes next turn for mult× (no cost, still regains energy)
+  | { kind: "charge"; kill?: boolean }                   // winds up (pays its energy), then strikes next turn for mult× (no cost, still regains energy); kill: the strike fells whoever is in front, whatever its HP (the Minotaur's)
+  | { kind: "sweep" }                                    // a hit, then the target is knocked aside: a random teammate takes its place (the Minotaur's)
   // The user's third batch (2026-11-19).
   | { kind: "burn"; chance: number; tick: number; minRounds: number; maxRounds: number } // a chance to burn the target (like poison; Geo are immune; it puts out a bleed)
   | { kind: "fright"; chance: number }                   // a chance the target loses its attack this round (Haunting Presence's fear), only if it hasn't acted yet
@@ -323,6 +324,15 @@ export const BOSS_MOVES: Skill[] = [
   { name: "Withering Curse", damage: 22, energyCost: 45, type: "magic", dmgType: "arcane" },
   { name: "Toxic Breath",  damage: 0,  energyCost: 0,  type: "magic",  dmgType: "arcane", self: true,
     desc: "A poison cloud for 3 rounds: your creature on the field, and any that come in while it hangs there, are poisoned (2.5% of max HP a round, for 20 rounds). It doesn't poison a creature that's already poisoned." },
+  // The Minotaur (lib/combat/bossAi.ts MINOTAUR): a quick and a heavy blow, the
+  // charge (it lowers its horns one round, and the next it fells whoever stands in
+  // front of it) and the sweep (a hit that knocks your creature aside for another).
+  { name: "Horn Jab",      damage: 12, energyCost: 25, type: "melee",  dmgType: "pierce" },
+  { name: "Labrys Cleave", damage: 22, energyCost: 45, type: "melee",  dmgType: "force"  },
+  { name: "Horn Charge",   damage: 30, energyCost: 30, type: "melee",  dmgType: "force", effect: { kind: "charge", kill: true },
+    desc: "It lowers its horns for a round. Next round it charges: whoever is in front of it then falls, whatever its health. Choose who stands there." },
+  { name: "Sweeping Horns", damage: 14, energyCost: 35, type: "melee", dmgType: "force", effect: { kind: "sweep" },
+    desc: "A hit, then your creature is knocked aside: a random teammate takes its place." },
 ];
 
 export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
@@ -458,6 +468,10 @@ export const BOSS_PARTS: CreatureTemplate[] = [
   { id: "hydra_hex", name: "Hex Head", rarity: "legendary", baseHp: 225, boss: true, cls: "magic", proficiency: NO_PROF,
     skills: bossMoves("Hex Bolt", "Withering Curse", "Toxic Breath"),
     flavour: "The middle head. Its eyes glow, and its whispers hurt." },
+  // The Minotaur (its own labyrinth's boss): one huge fighter against your five.
+  { id: "minotaur", name: "Minotaur", rarity: "legendary", baseHp: 750, boss: true, cls: "melee", proficiency: NO_PROF,
+    skills: bossMoves("Horn Jab", "Labrys Cleave", "Horn Charge", "Sweeping Horns"),
+    flavour: "Bull-headed and walls-high, it knows every turn of its maze. When it lowers its horns, someone falls." },
   // The first quest's thief (lib/quest.ts): the guided first fight.
   { id: "baby_cyclops", name: "Baby Cyclops", rarity: "rare", baseHp: 76, boss: true, cls: "melee", proficiency: NO_PROF,
     skills: bossMoves("Backhand", "Club Smash"),

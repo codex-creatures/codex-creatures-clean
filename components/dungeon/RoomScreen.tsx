@@ -39,7 +39,7 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
   const fightLoot = room.container && (room.opened ? sackPanel : (
     <div style={{ marginTop: 8 }}>
       <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>
-        {room.container === "strongbox" ? `${room.boss === "hydra" ? "Under the Hydra's coils lies" : "Behind the Warden's throne sits"} a strongbox: black iron, chains, and a lock that glows cold.` : room.golden ? "It was guarding a golden chest. It's locked: it takes a Gold Key from your bag." : room.container === "chest" ? "It leaves a rickety old chest behind, its lid hanging loose." : "It leaves a grubby sack behind."}
+        {room.container === "strongbox" ? `${room.boss === "hydra" ? "Under the Hydra's coils lies" : room.boss === "minotaur" ? "Among the bones in the Minotaur's den lies" : "Behind the Warden's throne sits"} a strongbox: black iron, chains, and a lock that glows cold.` : room.golden ? "It was guarding a golden chest. It's locked: it takes a Gold Key from your bag." : room.container === "chest" ? "It leaves a rickety old chest behind, its lid hanging loose." : "It leaves a grubby sack behind."}
       </p>
       <button className="pixel-btn" onClick={onOpenSack}>{room.golden ? "🔑 Unlock the golden chest" : room.container === "strongbox" ? "🗝️ Open the strongbox" : room.container === "chest" ? "🧰 Loot the chest" : "💰 Loot the sack"}</button>
     </div>
@@ -258,10 +258,11 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
             {room.kind === "boss" && !room.boss && `The Warden of the Deep waits at the top of the climb, with two guards at its side. A Legendary and two Epics, all Lv ${bossLevel(run.dungeon ?? 2) - 1}+ — and they fight smart.`}
             {room.boss === "hydra" && "A Hydra fills the lair: three heads, each fighting its own way, taking turns from left to right. Tap a head to aim at it. A head that's cut down grows back unless you finish the others quickly, and sooner or later it breathes poison."}
             {room.boss === "cyclops" && "A Cyclops fills the chamber — a mountain of muscle with one huge, rolling eye. It's a melee brute: tough to hurt up close (magic hits it hardest), and its Stomp can cripple you badly (swapping out shakes it off… eventually). Something tells you this won't be the whole fight."}
+            {room.boss === "minotaur" && "The Minotaur paces its den, a great axe in its fists. When it lowers its horns, whoever stands in front of it next round falls: choose who that is. Its sweep knocks your creature aside for another."}
             {!room.boss && <> They play like the {AI_LEVEL_LABELS[room.level ?? "normal"]} AI.</>}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {room.boss && (room.boss === "hydra" ? BOSS_PARTS_OF.hydra : BOSS_PARTS_OF.cyclops.slice(0, 1)).map((p, i) => (
+            {room.boss && (room.boss === "cyclops" ? BOSS_PARTS_OF.cyclops.slice(0, 1) : BOSS_PARTS_OF[room.boss]).map((p, i) => (
               <div key={p.id} style={{ fontSize: 13, padding: "6px 8px", background: "#12131a" }}>
                 <b style={{ color: rarityColor("legendary") }}>{room.boss === "cyclops" ? "Cyclops" : p.name}</b>
                 <span style={{ color: MUTED }}> · {p.label} · {combatLine(bossTeam(room.boss!, bossLevel(dungeonOf(run)))[i])}</span>

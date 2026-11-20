@@ -9,16 +9,17 @@ import { useGameState } from "@/hooks/useGameState";
 import { TEAM_SLOTS, teamMembers } from "@/lib/teams";
 import BagPacker from "@/components/BagPacker";
 import CreaturePortrait from "@/components/CreaturePortrait";
-import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, bagWantsPotions, type DungeonSave, DUNGEONS, DEEP_ROUTE, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE, CRAWLABLE, scrollOpen, bossLevel, CAMP_CHIEF_LEVEL } from "@/lib/dungeon/run";
+import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, bagWantsPotions, type DungeonSave, DUNGEONS, DEEP_ROUTE, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE, CRAWLABLE, scrollOpen, bossLevel, CAMP_CHIEF_LEVEL, DUNGEON_ORDER, minotaurOpen, abyssOpen } from "@/lib/dungeon/run";
+import { MINOTAUR_ART } from "@/lib/sprites/creatures";
 import { SectionTitle, loadOwnedCreatures, rarityColor, MUTED, type OwnedCreature } from "@/components/BattleScreen";
 import Help from "@/components/Help";
 import { gearMarks } from "@/components/CreatureMarks";
 import { BOX_NAMES, type CappedBox } from "@/lib/items/storage";
 
-const DUNGEON_ICONS: Record<DungeonId, string> = { 0: "⛺", 1: "🌀", 2: "🕳️", 3: "🌑" };
-// The picker's rows (the user, 2026-11-13): the dungeons in order, with the Minotaur to come.
-const ROWS: (DungeonId | "minotaur")[] = [0, 1, 2, "minotaur", 3];
-const BOSS: Record<DungeonId, string> = { 0: "the camp's chief", 1: "the Cyclops", 2: "the Hydra", 3: "the Warden and his guards" };
+const DUNGEON_ICONS: Record<DungeonId, string> = { 0: "⛺", 1: "🌀", 2: "🕳️", 3: "🌑", 4: "🐂" };
+// The picker's rows (the user, 2026-11-13): the dungeons in the order you meet them.
+const ROWS: DungeonId[] = DUNGEON_ORDER;
+const BOSS: Record<DungeonId, string> = { 0: "the camp's chief", 1: "the Cyclops", 2: "the Hydra", 3: "the Warden and his guards", 4: "the Minotaur" };
 const roomsTo = (d: DungeonId) => (d === 0 ? CAMP_ROUTE : d === 1 ? DUNGEONS[1].spec.minRoute : DEEP_ROUTE);
 
 // Each dungeon's showcase (the UI overhaul, the user, 2026-11-17): its boss's art (the camp's chief and
@@ -29,6 +30,7 @@ const SHOW: Record<DungeonId, { art: string; crop: string; shadow?: boolean; glo
   1: { art: "/sprites/creatures/cyclops.png", crop: "50% 10%", glow: "rgba(150,180,235,0.35)", sky: "#141a24", ground: "#0b0e14", motes: "#d8e2f0", sub: "The Labyrinth" },
   2: { art: "/sprites/creatures/hydra/hydra-000.png", crop: "50% 15%", glow: "rgba(120,230,150,0.42)", sky: "#14261d", ground: "#0a1410", motes: "#c9ffd8", sub: "The Deep Labyrinth" },
   3: { art: "/sprites/creatures/aurelius.png", crop: "50% 15%", shadow: true, glow: "rgba(170,70,255,0.42)", sky: "#150d1e", ground: "#0b0710", motes: "#e0b8ff", sub: "The Abyss" },
+  4: { art: MINOTAUR_ART, crop: "50% 15%", glow: "rgba(230,110,60,0.42)", sky: "#22140e", ground: "#120a07", motes: "#ffc69a", sub: "The Maze" },
 };
 // Where the motes drift, as shares of the showcase (fixed, so it looks the same every time).
 const MOTES: [number, number, number][] = [[12, 30, 3], [22, 62, 2], [31, 18, 2], [68, 24, 3], [79, 52, 2], [88, 34, 3], [44, 12, 2], [58, 66, 2], [7, 56, 2]];
@@ -98,22 +100,22 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
   // The Hydra opens once you've beaten the Cyclops.
   const deepOpen = lab.meta.clears > 0;
   // The Labyrinth opens once you've beaten the Encampment (or scanned plenty: labyrinthOpen);
-  // until then it's shown, locked. The Abyss opens once you've beaten the Hydra.
+  // until then it's shown, locked. The Minotaur opens once you've beaten the Hydra, the Abyss once you've beaten the Minotaur.
   const labOpen = labyrinthOpen(lab.meta, scans);
   const [picked, setDungeon] = useState<DungeonId>(labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0);
   // Dungeon Crawling (the default) or Speed Scroll. (The quest's run is always walked: lib/dungeon/tutorialRun.ts.)
   const [mode, setMode] = useState<"crawl" | "scroll">("crawl");
-  const unlocked = (d: DungeonId) => d === 0 || (d === 1 ? labOpen : d === 2 ? deepOpen : (lab.meta.deepClears ?? 0) > 0);
+  const unlocked = (d: DungeonId) => d === 0 || (d === 1 ? labOpen : d === 2 ? deepOpen : d === 4 ? minotaurOpen(lab.meta) : abyssOpen(lab.meta));
   const dungeon: DungeonId = quest ? 1 : unlocked(picked) ? picked : 0;
   const walking = quest || mode === "crawl";
   const notBuilt = walking && !CRAWLABLE.includes(dungeon); // Dungeon Crawling isn't there yet
   // Speed Scroll opens once you've beaten the dungeon crawling (run.ts scrollOpen).
   const crawlFirst = (d: DungeonId) => mode === "scroll" && !scrollOpen(d, lab.meta);
   const scrollShut = !quest && crawlFirst(dungeon);
-  const beaten = (d: DungeonId) => (d === 0 ? lab.meta.campClears : d === 1 ? lab.meta.clears : d === 2 ? lab.meta.deepClears : lab.meta.abyssClears) ?? 0;
-  const lockedWhy = (d: DungeonId) => (d === 1 ? `Beat the Encampment first (or scan ${LABYRINTH_SCANS} barcodes)` : d === 2 ? "Beat the Cyclops first" : "Beat the Hydra first");
+  const beaten = (d: DungeonId) => (d === 0 ? lab.meta.campClears : d === 1 ? lab.meta.clears : d === 2 ? lab.meta.deepClears : d === 4 ? lab.meta.minoClears : lab.meta.abyssClears) ?? 0;
+  const lockedWhy = (d: DungeonId) => (d === 1 ? `Beat the Encampment first (or scan ${LABYRINTH_SCANS} barcodes)` : d === 2 ? "Beat the Cyclops first" : d === 4 ? "Beat the Hydra first" : "Beat the Minotaur first");
   const priceOf = (d: DungeonId) => { const f = entryFee(d, lab.meta, false); return d === 0 && freeRunsLeft(lab.meta) > 0 ? "FREE" : f === 0 ? "FREE" : `${f} gold`; };
-  // Who goes in: the dungeon's team size (3; 5 in the Abyss), picked here. A
+  // Who goes in: the dungeon's team size (3; 5 in the Minotaur and the Abyss), picked here. A
   // bigger team sends its first ones (the rest are shown waiting).
   const cap = squadsOf(dungeon).team;
   const listed = team ?? free; // who's numbered on the grid (a team's knocked-out creatures too)
@@ -168,16 +170,16 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
           {/* Every dungeon as a medallion: tap one to show it above (a locked one says why). */}
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${ROWS.length}, minmax(0, 1fr))`, gap: 4 }}>
             {ROWS.map((row) => {
-              const locked = row === "minotaur" || !unlocked(row), on = row === dungeon;
-              const name = row === "minotaur" ? "Minotaur" : DUNGEONS[row].name.replace(/^The /, "");
+              const locked = !unlocked(row), on = row === dungeon;
+              const name = DUNGEONS[row].name.replace(/^The /, "");
               return (
-                <button key={row} onClick={() => row !== "minotaur" && setDungeon(row)} disabled={locked} aria-pressed={on} aria-label={name}
-                  title={row === "minotaur" ? "The Minotaur: to come" : locked ? lockedWhy(row) : name}
+                <button key={row} onClick={() => setDungeon(row)} disabled={locked} aria-pressed={on} aria-label={name}
+                  title={locked ? lockedWhy(row) : name}
                   style={{ background: "none", border: "none", padding: 0, cursor: locked ? "default" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, minWidth: 0 }}>
                   <span className="medallion" data-on={on} data-locked={locked}><span className="medallion-in">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {row !== "minotaur" && !locked && <img src={SHOW[row].art} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: SHOW[row].crop, imageRendering: "pixelated", filter: SHOW[row].shadow ? "brightness(0.25) sepia(1) hue-rotate(-20deg)" : undefined }} />}
-                    {locked && <span style={{ fontSize: 18, opacity: 0.6 }}>{row === "minotaur" ? "🐂" : "🔒"}</span>}
+                    {!locked && <img src={SHOW[row].art} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: SHOW[row].crop, imageRendering: "pixelated", filter: SHOW[row].shadow ? "brightness(0.25) sepia(1) hue-rotate(-20deg)" : undefined }} />}
+                    {locked && <span style={{ fontSize: 18, opacity: 0.6 }}>🔒</span>}
                   </span></span>
                   <span className="pixel-font" style={{ fontSize: 10, color: on ? "#ffe7a8" : locked ? "#6f6b62" : "#a9a49a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{row === 0 ? "Camp" : name}</span>
                 </button>

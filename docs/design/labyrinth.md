@@ -52,12 +52,19 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
       22% of the time. (Older, 5 rooms:) Then, with the two cage creatures in the box's leftovers, 87% of runs get through the
       Labyrinth's rooms 1–5 (a brute beats you 16% of the time, the chief ~70%); ungeared, 66%.
   Their names on screen (the user, 2026-11-03): the Encampment, **the Cyclops** (the Labyrinth below),
-  **the Hydra** (the Deep Labyrinth) and the Abyss. "The Labyrinth" is still the place as a whole (the
+  **the Hydra** (the Deep Labyrinth), **the Minotaur** and the Abyss. "The Labyrinth" is still the place as a whole (the
   Den's archway, Klutz's hunts).
   - **The Labyrinth:** 15 rooms to the lair, 1 large room, enemies Lv 1–7, boss the **Cyclops**.
   - **The Deep Labyrinth:** opens after your first Cyclops clear. 15 rooms, 2 large rooms, enemies
     up to Lv 17, boss the **Hydra** (below; it replaced the Warden's pack here, the user, 2026-10-30).
-  - **The Abyss:** opens after your first Deep Labyrinth clear (the user, 2026-10-26). The Deep Labyrinth
+  - ✅ **The Minotaur** (the user, 2026-11-21; dungeon 4, as saves held 0–3: `DUNGEON_ORDER` puts it between the
+    Hydra and the Abyss): opens after your first Hydra clear (`minotaurOpen`). The first dungeon fought **5 against 5**
+    (`squadsOf`: the Abyss's counts below). The Deep Labyrinth's map (crawlable: the Hydra's walked layout, then
+    Speed Scroll), foes Lv 11–21 by depth with the Hydra's rarities but a mini boss's gear Epic, foes' codexes up to
+    Epic (half off-race), gold ×2.5, entry 300 gold. Its boss is **the Minotaur** (below). Its runs and clears are
+    `minoRuns` / `minoClears`. 🧪 The numbers are Claude's.
+  - **The Abyss:** opens after your first Minotaur clear (`abyssOpen`; the user, 2026-11-21: before, after the first Deep
+    Labyrinth clear, 2026-10-26; anyone who has been into the Abyss keeps the way in). The Deep Labyrinth
     again (same map, same creature rarities) with higher levels (Lv 15–26 by depth) and every piece
     of enemy gear a rarity up; gold ×3. Its boss is the **Warden's pack** (a Legendary plus Epic
     guards, Warden Lv 25; the user kept it here when the Hydra took the Deep Labyrinth). 🧪 The levels and gold
@@ -69,11 +76,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
       species. 🧪 The counts are Claude's, about 5/3 of the usual. The user kept brutes and mini
       bosses as pairs, and the party at 5 (so no bench in the Abyss), 2026-10-27.
 - ✅ **Party** (the user, 2026-11-02): the creatures that go in are picked at the entrance: 3
-  (`TEAM_SIZE`; 5 in the Abyss: `teamSize`). A team holds up to 5 (`PARTY_SIZE`); a bigger team
+  (`TEAM_SIZE`; 5 in the Minotaur and the Abyss: `teamSize`). A team holds up to 5 (`PARTY_SIZE`); a bigger team
   than the dungeon takes sends its first ones. No bench and no picking at the map (it shows the team,
   to change who leads). Entering with nobody picked asks you to pick.
 - ✅ **PvP** (built 2026-11-01, waiting for its first two-player test): live duels with a friend, from the quest board. See §12.
-- ✅ **Entry** (`ENTRY_FEES`, `entryFee`, the user 2026-10-31: a gold sink that grows with the loot, and a nudge to scan): the Encampment 50 gold after its first 10 free runs (`FREE_RUNS`), the Labyrinth 100, the Deep Labyrinth 200, the Abyss 500. No free Labyrinth runs; Klutz's quest run is free.
+- ✅ **Entry** (`ENTRY_FEES`, `entryFee`, the user 2026-10-31: a gold sink that grows with the loot, and a nudge to scan): the Encampment 50 gold after its first 10 free runs (`FREE_RUNS`), the Labyrinth 100, the Deep Labyrinth 200, the Minotaur 300, the Abyss 500. No free Labyrinth runs; Klutz's quest run is free.
 - ✅ **Room mix** (`ROOM_MIX`): creature den 40, healing pool 20, lurking brute 10, chest 10,
   stash 10, merchant 5, card witch 5.
   - **Mystery "?" rooms** (`MYSTERY_MIX`) are a gamble: 45% a mini boss, some good wanderers
@@ -221,8 +228,21 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     for each of the 8 mixes of heads cut off, a cut head a bloody stump
     (`public/sprites/creatures/hydra/hydra-<spitter><hex><fang>.png`, 1 = cut; `hydraSprite`;
     `HydraBody` in components/BossStage.tsx). The heads' names and health sit in a row above it.
+- ✅ **The Minotaur** (its own dungeon's boss; the user's spec, 2026-11-21; `MINOTAUR` in lib/combat/bossAi.ts,
+  `MINOTAUR_PARTS` in lib/creatures/bosses.ts). Lv 20, no race, one fighter against your five.
+  - **Horn Charge:** at random (25% a round, from round 2, never straight after a charge) it lowers its horns (shown:
+    "🐂 Charging next round"). Next round it charges, and **whoever is in front of it then falls, whatever its
+    health**: no armour set, brace or dodge saves it (a Mega Smash-style charge with `kill`). Swapping doesn't dodge
+    it; it picks who takes it. (Fear or a stumble delays it.)
+  - **Sweeping Horns** (25%): a hit, then your creature is knocked aside and a random teammate comes in (a seal
+    doesn't hold), which may leave the wrong one in front of a charge.
+  - Otherwise Labrys Cleave (heavy) or Horn Jab (quick).
+  - 🧪 Its numbers are Claude's, set by sim (50 fights each: 5 random creatures Lv 20, the Hard AI, which doesn't
+    play the charge round as a person would): 5 Epics in Epic gear beat it about half the time, losing about 4 of
+    their 5 (the Hydra, 3 Epics Lv 16 in Epic gear: about two thirds). Its HP went up 25% after the first sim (80%).
+  - ⚠️ Art: a stand-in (Ironhide's) until the user picks one of the PixelLab samples in `art/minotaur-samples/`.
 - ✅ **Boss rewards:** the boss chest (10 rolls, plus a scroll chance) and the Rugged Backpack. The
-  Hydra and the Warden drop a strongbox.
+  Hydra, the Minotaur and the Warden drop a strongbox.
 - ✅ Also Cyclops rewards: building the **Tavern** (via the tavern questline in §9, not gold), and
   the **trophy** showing which run you won on: the Cyclops Head (§9, step 7), mounted in the
   tavern's room marked "Run N" (`meta.firstClearRun`).

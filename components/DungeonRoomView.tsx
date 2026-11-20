@@ -227,7 +227,7 @@ function RoomContents({ run, size, view, onObject, onEnemies, lift }: { run: Dun
       return null;
     }
     if (room.boss) {
-      const boss = creatureSprite(room.boss === "hydra" ? "hydra_fang" : "cyclops");
+      const boss = creatureSprite(room.boss === "hydra" ? "hydra_fang" : room.boss);
       return (
         <div style={at}>
           <div className="boss-breathe" style={{ width: share(boss, BOSS_TALL), filter: "drop-shadow(0 0 10px rgba(255,59,42,0.7)) drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>{draw(boss)}</div>

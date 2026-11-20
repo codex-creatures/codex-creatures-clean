@@ -138,3 +138,8 @@ for (const [id, [w, h]] of Object.entries(BACK_SIZES)) {
 // The sprite a creature shows in a fight: from behind on your side when it has one.
 export const fightSprite = (id: string, yours: boolean): Sprite | undefined =>
   (yours ? BACK_SPRITES[id] : undefined) ?? CREATURE_SPRITES[id];
+
+// The Minotaur (its own labyrinth's boss). ⚠️ A stand-in (Ironhide's art) until the
+// user approves its own PixelLab drawing: then it's public/sprites/creatures/minotaur.png.
+export const MINOTAUR_ART = "/sprites/creatures/ironhide.png";
+CREATURE_SPRITES.minotaur = withArt(["."], { src: MINOTAUR_ART, w: 122, h: 87 });

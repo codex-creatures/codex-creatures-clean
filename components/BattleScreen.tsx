@@ -712,6 +712,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   if (fx?.kind === "burn") tags.push(`${pc(fx.chance)}: burn ${pc(fx.tick)} a round`);
   if (fx?.kind === "fright") tags.push(`if first, ${pc(fx.chance)}: they lose their attack`);
   if (fx?.kind === "bounce") tags.push("then swaps to who you pick");
+  if (fx?.kind === "sweep") tags.push("knocks them aside for a random teammate");
   if (fx?.kind === "curse") tags.push(`curse: a small hit a round for ${fx.minRounds}–${fx.maxRounds} rounds · may spread on swaps`);
   if (fx?.kind === "charge") tags.push(me.statuses.some((s) => s.id === "charged") ? "wound up: strike now!" : "winds up, strikes next turn");
   const cooling = me.cooldowns?.[sk.name] ?? 0;

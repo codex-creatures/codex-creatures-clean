@@ -60,7 +60,7 @@ interesting situations, real decisions, progression and surprises, not feel they
 
 - 🚧 **Den progression: things in the Den grow in stages, each its own 3D look** (the user, 2026-11-20; a sim
   of the costs, scans, runs and Klutz's trips, in the commit that added this). Mostly built (below). Dungeon gates are
-  "that dungeon or harder". The Minotaur is still to come (players reach the Hydra in about 4–5 hours).
+  "that dungeon or harder". (Players reach the Hydra in about 4–5 hours; the Minotaur, between it and the Abyss, is built: 2026-11-21.)
   - **Bookcase** (codexes it holds; cost to reach the stage; its schematic):
 
     | Stage | Holds | Cost | Schematic (where from; a trader's price) |

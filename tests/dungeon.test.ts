@@ -339,11 +339,31 @@ describe("a labyrinth run", () => {
     expect(makeRoom("boss", Math.random, 15, 2).boss).toBe("hydra"); // (the Deep Labyrinth's boss)
   });
 
+  it("the Minotaur: open after the Hydra, fought 5 against 5, the Minotaur at the top; it opens the Abyss", async () => {
+    const { minotaurOpen, abyssOpen, squadsOf, DUNGEON_ORDER, bossLevel, MINOTAUR_LEVEL } = await import("../lib/dungeon/run");
+    const meta = { runs: 9, clears: 3, injuries: {}, bag: [] };
+    expect(minotaurOpen(meta)).toBe(false);
+    expect(minotaurOpen({ ...meta, deepClears: 1 })).toBe(true);
+    // The Abyss now waits on the Minotaur; anyone who's been in keeps the way in.
+    expect(abyssOpen({ ...meta, deepClears: 1 })).toBe(false);
+    expect(abyssOpen({ ...meta, deepClears: 1, minoClears: 1 })).toBe(true);
+    expect(abyssOpen({ ...meta, deepClears: 1, abyssRuns: 2 })).toBe(true);
+    expect(DUNGEON_ORDER).toEqual([0, 1, 2, 4, 3]);
+    expect(squadsOf(4)).toBe(ABYSS_SQUADS);
+    expect(teamSize({ dungeon: 4 })).toBe(5);
+    expect(bossLevel(4)).toBe(MINOTAUR_LEVEL);
+    expect(makeRoom("boss", Math.random, 15, 4).boss).toBe("minotaur");
+    // Its clears are its own.
+    const won = { ...startRun(party, party, {}, 1, Math.random, 4), status: "cleared" as const };
+    const after = endRun({ meta, run: won }).meta;
+    expect([after.minoClears, after.deepClears ?? 0, after.abyssClears ?? 0, after.clears]).toEqual([1, 0, 0, 3]);
+  });
+
   it("Speed Scroll opens for a dungeon once it's been beaten crawling (those that can't be crawled are always open)", async () => {
     const { scrollOpen, CRAWLABLE } = await import("../lib/dungeon/run");
     const meta = { runs: 4, clears: 0, injuries: {}, bag: [] };
     const won = { ...startRun(party, party.slice(0, 3), {}, 4), status: "cleared" as const };
-    expect(CRAWLABLE.map((d) => scrollOpen(d, meta))).toEqual([false, false, false]);
+    expect(CRAWLABLE.map((d) => scrollOpen(d, meta))).toEqual([false, false, false, false]);
     expect(scrollOpen(3, meta)).toBe(true);
     // Beaten on the scroll: still shut. Beaten walking: open, and counted once.
     expect(scrollOpen(1, endRun({ meta, run: won }).meta)).toBe(false);
@@ -611,7 +631,7 @@ describe("entry fees", () => {
   it("charges every other dungeon from the first run, except Klutz's quest run", () => {
     for (const d of [1, 2, 3] as const) expect(entryFee(d, meta())).toBe(ENTRY_FEES[d]);
     expect(entryFee(1, meta(), true)).toBe(0);
-    expect(ENTRY_FEES).toEqual({ 0: 50, 1: 100, 2: 200, 3: 500 });
+    expect(ENTRY_FEES).toEqual({ 0: 50, 1: 100, 2: 200, 3: 500, 4: 300 });
   });
 });
 

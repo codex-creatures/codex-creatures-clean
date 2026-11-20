@@ -45,8 +45,16 @@ export const HYDRA_PARTS: Part[] = [
     weapon: { melee: 40 }, armor: { mDef: 70, rDef: 70, magDef: 70, agility: 85 }, weakTo: "magic" },
 ];
 
+// The Minotaur (its own labyrinth's boss, between the Hydra and the Abyss; see
+// MINOTAUR in bossAi.ts): one fighter, built to outlast five. 🧪 Claude's numbers,
+// by sim (docs/design/labyrinth.md).
+export const MINOTAUR_PARTS: Part[] = [
+  { id: "minotaur", name: "Minotaur", label: "Boss · Melee Brute", weaponName: "Great labrys", armorName: "Bull hide",
+    weapon: { melee: 42 }, armor: { mDef: 96, rDef: 84, magDef: 72, agility: 90 } },
+];
+
 // The parts of each boss, in team order.
-export const BOSS_PARTS_OF: Record<BossKind, Part[]> = { cyclops: CYCLOPS_PARTS, hydra: HYDRA_PARTS };
+export const BOSS_PARTS_OF: Record<BossKind, Part[]> = { cyclops: CYCLOPS_PARTS, hydra: HYDRA_PARTS, minotaur: MINOTAUR_PARTS };
 
 // level: how strong it is (the Labyrinth's CYCLOPS_LEVEL; missing = REF_LEVEL).
 export function cyclopsTeam(level?: number): Fighter[] {

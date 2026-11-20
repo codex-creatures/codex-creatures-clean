@@ -111,7 +111,7 @@ account, kept entirely apart from Vouchee.
   50 shown, plus your own rank; only named players with more than 0 are listed, ties share a rank.
   - The game works out each player's numbers (`leaderboardStats`, lib/leaderboard.ts) and they go
     up with the cloud save, in `cloud_saves.stats`. The server's `leaderboard(board)` ranks them
-    (supabase/migrations …_leaderboards.sql). Like the rest, not hardened against a scripted cheat.
+    (supabase/migrations …_leaderboards.sql; the Minotaur's boards, dungeon 4, from …_leaderboard_minotaur.sql). Like the rest, not hardened against a scripted cheat.
   - **Seasons** (resets run by the user): `select public.start_season();` in the Supabase SQL
     editor. It notes everyone's numbers then, and runs, wins, time and scans count from there. 🧪 Species
     don't reset (Claude's call: they're your collection; the user may want otherwise).

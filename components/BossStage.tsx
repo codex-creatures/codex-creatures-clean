@@ -57,6 +57,8 @@ export default function BossStage({ side, fx, you, infos, target, onTarget, clou
   const shown = fieldOf(side).filter((i) => !t[i].hidden);
   const clue = scene ? (fx as Extract<Fx, { kind: "lineup" }>).text : undefined;
   const aiming = shown.filter((i) => t[i].hp > 0).length > 1; // more than one to choose from
+  // The Minotaur with its horns lowered: next round it charges (bossAi.ts MINOTAUR).
+  const horns = kind === "minotaur" && t.some((f) => f.hp > 0 && f.statuses.some((st) => st.id === "charged"));
 
   // How a part reacts to this step: lunging, flinching, or nothing.
   const reaction = (i: number) => {
@@ -128,6 +130,7 @@ export default function BossStage({ side, fx, you, infos, target, onTarget, clou
       {you}
 
       {cloud > 0 && <div className="boss-cloud-tag pixel-font">☠️ Poison cloud · {cloud}</div>}
+      {horns && <div className="boss-cloud-tag pixel-font">🐂 Charging next round</div>}
       {clue && <div key={`clue-${fx!.id}`} className="boss-clue pixel-font">{clue}</div>}
     </div>
   );

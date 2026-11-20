@@ -326,6 +326,13 @@ export default function DungeonPage() {
       update({ meta: { ...meta, campRuns: n }, run });
       return;
     }
+    if (dungeon === 4) {
+      const n = (lab.meta.minoRuns ?? 0) + 1;
+      // Dungeon Crawling (the Hydra's layout: walkRun.ts) or Speed Scroll.
+      const run = walk ? newWalkRun(startWalkRun(party, team, hp, n, [], onBindle(lab.meta), Math.random, 4, dynamite)) : startRun(party, team, hp, n, Math.random, 4, dynamite, onBindle(lab.meta));
+      update({ meta: { ...meta, minoRuns: n }, run });
+      return;
+    }
     if (dungeon === 3) {
       const n = (lab.meta.abyssRuns ?? 0) + 1;
       update({ meta: { ...meta, abyssRuns: n }, run: startRun(party, team, hp, n, Math.random, 3, dynamite, onBindle(lab.meta)) });
@@ -1102,7 +1109,7 @@ export default function DungeonPage() {
       room.level ?? "hard",
       {
         startHp: mine.map((c, i) => Math.round((r.hp[own[i]] ?? 1) * c.fighter.maxHp)),
-        title: room.boss === "hydra" ? "The Hydra · its lair" : room.boss ? "The Cyclops · its lair" : `${DUNGEONS[dungeonOf(r)].name} · ${ROOM_INFO[room.kind].name}`,
+        title: room.boss === "hydra" ? "The Hydra · its lair" : room.boss === "minotaur" ? "The Minotaur · its den" : room.boss ? "The Cyclops · its lair" : `${DUNGEONS[dungeonOf(r)].name} · ${ROOM_INFO[room.kind].name}`,
         boss: room.boss,
         // (Each illness its own, counting down on its own: decision 39.)
         illnesses: illnessesOf(r).flatMap((ill) => (ids.includes(ill.id) ? [{ index: ids.indexOf(ill.id), rounds: ill.left }] : [])),

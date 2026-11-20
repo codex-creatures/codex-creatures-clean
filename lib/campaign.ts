@@ -2,7 +2,7 @@
 // The campaign (the user, 2026-11-16; docs/design/den.md §9): quests that
 // aren't daily and lead through the game, on the quest board's Campaign tab.
 // Five chapters, each leading up to a dungeon's boss (the Encampment, the
-// Cyclops, the Hydra, the Abyss), then a long last one for what's left.
+// Cyclops, the Hydra, the Abyss: the Minotaur on the way), then a long last one for what's left.
 //
 // Progress counts all along: most quests read the save as it is now (levels,
 // gold, gear worn, bosses beaten), so an old save starts with most done. The
@@ -61,7 +61,7 @@ export type CampaignCtx = {
   enchantedWeapon: boolean;
   enchantedArmour: boolean;
   calibrated: boolean;    // the altar's calibration scans are done
-  wins: { camp: number; cyclops: number; hydra: number; abyss: number };
+  wins: { camp: number; cyclops: number; hydra: number; abyss: number; minotaur: number };
   campRuns: number;       // Encampment runs started
   blasted: boolean;       // the rubble's blown open
   repaired: boolean;      // the tavern's repaired
@@ -118,7 +118,7 @@ export function campaignCtx(save: Obj): CampaignCtx {
     enchantedWeapon: loadouts.some((l) => !!enchantOf(l.weapon)),
     enchantedArmour: loadouts.some((l) => l.armour.some((a) => !!enchantOf(a))),
     calibrated: !calibrating(firstScans),
-    wins: { camp: num(meta.campClears), cyclops: num(meta.clears), hydra: num(meta.deepClears), abyss: num(meta.abyssClears) },
+    wins: { camp: num(meta.campClears), cyclops: num(meta.clears), hydra: num(meta.deepClears), abyss: num(meta.abyssClears), minotaur: num(meta.minoClears) },
     campRuns: num(meta.campRuns),
     blasted: !!tavern.blasted,
     repaired: !!tavern.repaired,
@@ -334,6 +334,7 @@ export const CHAPTERS: Chapter[] = [
     q.once("pit2", "Widen the Training Pit to 2 slots", "/training", (c) => c.pitSlots >= 2, essence(2)),
     q.spar(10, scrolls(3)),
     q.level(20, crate("gear", "epic", "epic")),
+    q.once("minotaur", "Beat the Minotaur", "/dungeon", (c) => c.wins.minotaur > 0, { enchanted: "weapon", rarity: "epic" }),
     q.gold(15000, scrolls(3)),
     q.fights(250, crate("codex", "rare", "epic", 2)),
     q.clean(2, "the Hydra", crate("gear", "epic", "epic")),
@@ -373,18 +374,28 @@ export type CampaignState = { claimed?: number; tally?: Record<string, number>; 
 // as claimed too (they're past it: its 50 gold isn't owed), so every claim stays on the quest it was.
 // 3 (2026-11-21): the Den's upgrade quests came in among the others. Again every claim stays on its quest: the
 // new claim count runs to the last quest claimed in the old list, so any new ones before it count as claimed.
-export const CAMPAIGN_V = 3;
+// 4 (2026-11-21): "Beat the Minotaur" came in, before the Abyss. The same again.
+export const CAMPAIGN_V = 4;
 // The quest lists as they were, by id (CAMPAIGN_V 2's: the list before the upgrade quests).
 const QUESTS_V2 = ["camp-run", "scan3", "bestiary3", "klutz-out", "kit", "fights5", "cards3", "level5", "camp",
   "calibrate", "explorer5", "codex", "buy", "summon-common", "cages3", "rare-weapon", "kfind-rare", "fights25", "set", "gold1000", "clean0", "rubble", "cyclops",
   "klutz5", "level10", "enchanted-weapon", "skills", "tavern", "effective", "summon-uncommon", "scan50", "bestiary15", "bag", "spar3", "kfind-epic", "wear-epic", "fights100", "gold-key", "gold5000", "clean1", "level15", "hydra",
   "enchanted-armour", "klutz10", "visitors", "summon-rare", "blueprints3", "explorer20", "spar10", "level20", "gold15000", "fights250", "clean2", "abyss",
   "level25", "klutz15", "summon-epic", "kfind-legendary", "wear-legendary", "scan250", "bestiary35", "explorer30", "gold50000", "clean3", "level30", "klutz20", "summon-legendary", "klutz25", "klutz30"];
+// (CAMPAIGN_V 3's: the list before the Minotaur.)
+const QUESTS_V3 = ["camp-run", "scan3", "bestiary3", "klutz-out", "kit", "fights5", "cards3", "crooked", "level5", "camp", "calibrate", "explorer5", "codex", "buy",
+  "summon-common", "cages3", "rare-weapon", "kfind-rare", "fights25", "set", "iron-cage", "rack", "gold1000", "clean0", "rubble", "cyclops", "klutz5", "level10",
+  "enchanted-weapon", "skills", "tavern", "effective", "summon-uncommon", "sturdy", "scan50", "bestiary15", "bag", "spar3", "kfind-epic", "wear-epic", "box75",
+  "fights100", "gold-key", "gold5000", "clean1", "level15", "hydra", "enchanted-armour", "klutz10", "visitors", "summon-rare", "training-pit", "blueprints3",
+  "explorer20", "reinforced-cage", "box85", "pit2", "spar10", "level20", "gold15000", "fights250", "clean2", "abyss", "level25", "klutz15", "summon-epic",
+  "kfind-legendary", "carved", "wear-legendary", "box100", "pit3", "scan250", "bestiary35", "explorer30", "gold50000", "clean3", "level30", "klutz20",
+  "summon-legendary", "klutz25", "klutz30"];
 export function upToDate(s: CampaignState): CampaignState {
   if ((s.v ?? 1) >= CAMPAIGN_V) return s;
   let claimed = Math.floor(s.claimed ?? 0);
   if ((s.v ?? 1) < 2 && claimed > 0) claimed += 1;
-  if (claimed > 0) claimed = CAMPAIGN.findIndex((q) => q.id === QUESTS_V2[Math.min(claimed, QUESTS_V2.length) - 1]) + 1;
+  const was = (s.v ?? 1) < 3 ? QUESTS_V2 : QUESTS_V3; // (the list its claims count in)
+  if (claimed > 0) claimed = CAMPAIGN.findIndex((q) => q.id === was[Math.min(claimed, was.length) - 1]) + 1;
   return { ...s, v: CAMPAIGN_V, ...(claimed > 0 ? { claimed } : {}) };
 }
 

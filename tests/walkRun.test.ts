@@ -167,6 +167,20 @@ describe("the walkable Labyrinth (New: the Cyclops)", () => {
     expect(after.deepClears).toBe(1);
     expect(after.walkClears).toEqual([2]);
   });
+  it("the walkable Minotaur: the Deep Labyrinth's layout, the Minotaur waiting at the top, its clear its own", () => {
+    const mino = startWalkRun(["a"], ["a"], { a: 1 }, 1, [], false, seeded(31), 4);
+    expect(mino.dungeon).toBe(4);
+    const boss = mino.walk!.rooms[mino.map.boss];
+    expect(boss.boss).toBe("minotaur");
+    expect(waitsHere(boss, 4)).toBe(true);
+    expect(Object.values(mino.walk!.layout.rooms).filter((r) => r.shape === LARGE_SHAPE.name)).toHaveLength(2);
+    const { report } = placeWalk({ ...mino.walk!, v: WALK_V }, mino.map, dungeonOf(mino), (k) => walkRoom(mino, k));
+    expect(report.problems.map((p) => p.what)).toEqual([]);
+    const won = { ...walkInto(mino, mino.map.boss), current: { ...boss, done: true } };
+    const after = endRun({ meta: { runs: 0, clears: 1, injuries: {}, bag: [] }, run: headHome(won) }).meta;
+    expect(after.minoClears).toBe(1);
+    expect(after.walkClears).toEqual([4]);
+  });
   slowIt("a sweep of Deep Labyrinth runs: everything placed, the Hydra's huge body included", () => {
     const bad: string[] = [];
     for (let s = 0; s < 4; s++) {

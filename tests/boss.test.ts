@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, sendInReplacement, currentAgility, fieldOf, type BattleState } from "../lib/combat/battle";
 import { effectiveAgil, calcDamage, setCombatRules, LIVE_RULES } from "../lib/combat/engine";
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
-import { CYCLOPS, HYDRA } from "../lib/combat/bossAi";
+import { CYCLOPS, HYDRA, MINOTAUR } from "../lib/combat/bossAi";
 import { bossTeam, cyclopsTeam } from "../lib/creatures/bosses";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, MOVE_BY_NAME } from "../lib/creatures/creatureData";
@@ -246,6 +246,82 @@ describe("the Hydra", () => {
     for (let i = 0; i < 10; i++) {
       const A = [0, 1, 2].map(() => buildFighter(CREATURE_BY_ID.dire_wolf, { melee: 30, ranged: 10 }, { mDef: 20, rDef: 20, agility: 20 }, undefined, undefined, undefined, undefined, 16));
       const s = createBattle(A, bossTeam("hydra", 16), {}, "hydra");
+      while (!s.winner) {
+        resolveRound(s, { A: chooseAiAction(s, "A", "easy"), B: pass });
+        for (const k of [...s.needsReplacement]) sendInReplacement(s, k, chooseAiReplacement(s, k, "easy"));
+      }
+      expect(["A", "B", "draw"]).toContain(s.winner);
+    }
+  });
+});
+
+describe("the Minotaur", () => {
+  // Five sturdy heroes against a Minotaur that can't fall by accident.
+  const minotaur = () => {
+    const s = createBattle([hero(), hero(), hero(), hero(), hero()], bossTeam("minotaur", 20), {}, "minotaur");
+    const m = s.sides.B.team[0];
+    m.hp = 99999; m.maxHp = 99999; m.energy = 100;
+    return s;
+  };
+  const jab = { kind: "attack" as const, skillName: "Slash" };
+  const said = (s: BattleState, from: number, text: string) => s.log.slice(from).some((e) => e.type === "effect" && e.side === "B" && e.text.includes(text));
+
+  it("lowers its horns one round, and the next fells whoever is in front, whatever its health", () => {
+    const s = minotaur();
+    s.round = 1; // (it doesn't charge in round 1: this is round 2)
+    const dice = vi.spyOn(Math, "random").mockReturnValue(0.01); // (a charge, and no luck for the heroes)
+    resolveRound(s, { A: jab, B: pass });
+    expect(said(s, 0, "lowers its horns")).toBe(true);
+    expect(s.sides.A.team.every((f) => f.hp > 0)).toBe(true);
+    // You swap someone else in front: it's them that fall.
+    resolveRound(s, { A: { kind: "swap", to: 3 }, B: pass });
+    dice.mockRestore();
+    expect(s.sides.A.team[3].hp).toBe(0);
+    expect(s.sides.A.team[0].hp).toBeGreaterThan(0);
+  });
+
+  it("no armour, brace or dodge saves the one in front", () => {
+    const s = minotaur();
+    s.round = 1;
+    const dice = vi.spyOn(Math, "random").mockReturnValue(0.01);
+    resolveRound(s, { A: jab, B: pass });
+    const front = s.sides.A.team[s.sides.A.active];
+    front.statuses.push({ id: "mirage", rounds: 5, chance: 1 }, { id: "brace", rounds: 1, loss: 0.9 });
+    resolveRound(s, { A: jab, B: pass });
+    dice.mockRestore();
+    expect(front.hp).toBe(0);
+  });
+
+  it("never lowers its horns in round 1, nor straight after a charge", () => {
+    const s = minotaur();
+    const dice = vi.spyOn(Math, "random").mockReturnValue(0.01);
+    const winds: number[] = [];
+    for (let r = 0; r < 8 && !s.winner; r++) {
+      const at = s.log.length, round = s.round + 1; // (rounds count from 1: resolveRound steps it first)
+      resolveRound(s, { A: jab, B: pass });
+      if (said(s, at, "lowers its horns")) winds.push(round);
+      for (const k of [...s.needsReplacement]) sendInReplacement(s, k, s.sides[k].team.findIndex((f) => f.hp > 0));
+    }
+    dice.mockRestore();
+    expect(winds[0]).toBeGreaterThanOrEqual(2);
+    for (let i = 1; i < winds.length; i++) expect(winds[i] - winds[i - 1]).toBeGreaterThanOrEqual(3);
+  });
+
+  it("Sweeping Horns knocks your creature aside for a random teammate", () => {
+    const s = minotaur();
+    // r = 0.3: past the charge's chance, inside the sweep's; then a teammate picked.
+    const dice = vi.spyOn(Math, "random").mockReturnValue(MINOTAUR.CHARGE_CHANCE + 0.05);
+    resolveRound(s, { A: jab, B: pass });
+    dice.mockRestore();
+    expect(s.log.some((e) => e.type === "attack" && e.side === "B" && e.skill.name === "Sweeping Horns")).toBe(true);
+    expect(s.sides.A.active).not.toBe(0);
+    expect(s.log.some((e) => e.type === "swap" && e.side === "A")).toBe(true);
+  });
+
+  it("full battles against the AI always finish, with a winner", () => {
+    for (let i = 0; i < 10; i++) {
+      const A = [0, 1, 2, 3, 4].map(() => buildFighter(CREATURE_BY_ID.dire_wolf, { melee: 30, ranged: 10 }, { mDef: 20, rDef: 20, agility: 20 }, undefined, undefined, undefined, undefined, 20));
+      const s = createBattle(A, bossTeam("minotaur", 20), {}, "minotaur");
       while (!s.winner) {
         resolveRound(s, { A: chooseAiAction(s, "A", "easy"), B: pass });
         for (const k of [...s.needsReplacement]) sendInReplacement(s, k, chooseAiReplacement(s, k, "easy"));

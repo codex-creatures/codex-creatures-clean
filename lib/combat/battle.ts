@@ -574,7 +574,8 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     if (fx?.kind === "charge" && !woundUp) {
       actor.streak = undefined;
       actor.statuses = [...actor.statuses, { id: "charged", rounds: 3, move: skill.name }];
-      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `winds up ${skill.name}`, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "self" });
+      const wind = fx.kill ? "lowers its horns — next round it charges, and whoever stands in front of it falls" : `winds up ${skill.name}`;
+      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: wind, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "self" });
       continue;
     }
     if (skill.cooldown) actor.cooldowns = { ...actor.cooldowns, [skill.name]: skill.cooldown + 1 }; // +1: ticks at the end of this round
@@ -673,9 +674,11 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       // Precise moves can miss, but every hit is precise; other moves have
       // the normal (or armour-gap boosted) chance of a precise hit. A
       // mirage can make any attack miss.
+      // The Minotaur's charge, wound up: whoever is in front falls, and nothing turns it aside.
+      const lethal = woundUp && fx?.kind === "charge" && !!fx.kill;
       const mirage = target.statuses.find((s) => s.id === "mirage");
-      const evaded = !!mirage && Math.random() < (mirage.chance ?? 0);
-      const deflected = !evaded && skill.type === "ranged" && hasSet(target, "arrowward_mantle") && Math.random() < DEFLECT_CHANCE;
+      const evaded = !lethal && !!mirage && Math.random() < (mirage.chance ?? 0);
+      const deflected = !lethal && !evaded && skill.type === "ranged" && hasSet(target, "arrowward_mantle") && Math.random() < DEFLECT_CHANCE;
       const missed = evaded || deflected || (fx?.kind === "precise" && Math.random() >= fx.hitChance);
       const armorFx: string[] = []; // armour sets (and soul stones) that kicked in
       if (quickscale) armorFx.push(`${SET_BONUS.dragonscale_tunic.name}: strikes first`);
@@ -720,6 +723,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         damage = target.hp - 1;
         armorFx.push(`${SET_BONUS.juggernaut_platemail.name}: hangs on with 1 HP`);
       }
+      if (lethal) { damage = target.hp; armorFx.length = 0; }
       if (!missed && skill.damage > 0) {
         state.hits++;
         if (damage <= 1) state.minDamageHits++;
@@ -789,7 +793,14 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         if (fx?.kind === "agility") actor.agilityUp = Math.max(actor.agilityUp ?? 0, fx.gain);
         if (fx?.kind === "surge") actor.surge = Math.max(actor.surge ?? 0, fx.gain);
         if (target.hp > 0) {
-          if (fx?.kind === "weaken" && fx.forceSwap !== undefined && !isWarded(target) && !foe.boss && !isSealed(target) && swapTargets(foe).length > 0 && Math.random() < fx.forceSwap) {
+          // Sweeping Horns: knocked aside (a seal doesn't hold against it), and a random teammate comes in.
+          const swept = fx?.kind === "sweep" && !foe.boss ? foe.team.map((_, i) => i).filter((i) => i !== foe.active && i !== foe.partner && foe.team[i].hp > 0) : [];
+          if (swept.length > 0) {
+            const to = swept[Math.floor(Math.random() * swept.length)];
+            changeActive(state, foeKey, to);
+            state.log.push({ type: "swap", side: foeKey, from: target.name, to: activeOf(foe).name, toIndex: to, energyRestored: 0 });
+            groundOnEntry(state, foeKey, to);
+          } else if (fx?.kind === "weaken" && fx.forceSwap !== undefined && !isWarded(target) && !foe.boss && !isSealed(target) && swapTargets(foe).length > 0 && Math.random() < fx.forceSwap) {
             // Haunting Scream: it flees for a random teammate (who doesn't act this round).
             const bench = swapTargets(foe), to = bench[Math.floor(Math.random() * bench.length)];
             changeActive(state, foeKey, to);

@@ -28,15 +28,25 @@
 //   another goes down first (that starts the count again). Then every head
 //   that's down comes back: one with 75% of its HP, two with 50% each.
 //   Beat all three before that and the Hydra is dead.
+//
+// The Minotaur (dungeon 4, the first fought 5 against 5; the user, 2026-11-21):
+// one fighter against your five.
+// - Horn Charge, at random (CHARGE_CHANCE a round, not two in a row): it lowers
+//   its horns one round (shown), and the next it charges: whoever is in front of
+//   it then falls, whatever its health (battle.ts: a charge with kill). Swapping
+//   doesn't dodge it; it picks who takes it.
+// - Sweeping Horns (SWEEP_CHANCE): a hit, then your creature is knocked aside and
+//   a random teammate comes in (which may leave the wrong one in front of a charge).
+// - Otherwise a quick or a heavy blow.
 
 import type { BattleAction, BattleEvent, BattleSide, BattleState, Combatant, GroundEffect, SideKey } from "./battle";
 
-export type BossKind = "cyclops" | "hydra";
+export type BossKind = "cyclops" | "hydra" | "minotaur";
 // The Hydra's: next: the head whose turn is next. breathAt: the round of its
 // first breath. cloudUntil: the last round its cloud hangs. regrow: rounds
 // until the heads that are down grow back. down: the heads that were down at
-// the end of last round.
-export type BossState = { kind: BossKind; phase: number; next?: number; breathAt?: number; cloudUntil?: number; regrow?: number; down?: number[] };
+// the end of last round. The Minotaur's: horns: the round it last lowered its horns.
+export type BossState = { kind: BossKind; phase: number; next?: number; breathAt?: number; cloudUntil?: number; regrow?: number; down?: number[]; horns?: number };
 
 export const CYCLOPS = {
   BODY: 0, HANDS: [1, 2], EYE: 3,
@@ -57,6 +67,11 @@ export const HYDRA = {
   REGROW_ROUNDS: 5,    // rounds after a head goes down until it grows back
   REGROW_HP: [0.75, 0.5], // the HP heads grow back with: one head, or two
   HEAVY_CHANCE: 0.5,   // a head's heavy move vs its quick one
+};
+export const MINOTAUR = {
+  CHARGE_CHANCE: 0.25, // each round (from round 2, and never right after a charge), the chance it lowers its horns
+  SWEEP_CHANCE: 0.25,  // …otherwise, the chance of Sweeping Horns (when you've someone to knock in)
+  HEAVY_CHANCE: 0.5,   // …otherwise its heavy blow vs its quick one
 };
 const HEAD_MOVES: Record<string, [quick: string, heavy: string]> = {
   "Fang Head": ["Snap", "Rending Bite"],
@@ -106,6 +121,18 @@ export function bossActions(state: BattleState, key: SideKey): { index: number; 
     const r = Math.random();
     let action: BattleAction;
     switch (me.name) {
+      case "Minotaur": {
+        const woundUp = me.statuses.some((s) => s.id === "charged");
+        const benched = foe.team.some((f, i) => i !== foe.active && f.hp > 0);
+        const r2 = Math.random();
+        if (woundUp) action = attack("Horn Charge");
+        else if (state.round >= 2 && state.round > (side.boss!.horns ?? -9) + 2 && r < MINOTAUR.CHARGE_CHANCE && canUse(me, "Horn Charge")) {
+          side.boss!.horns = state.round; // (a round of something else after each charge, before the next)
+          action = attack("Horn Charge");
+        } else if (benched && r < MINOTAUR.CHARGE_CHANCE + MINOTAUR.SWEEP_CHANCE && canUse(me, "Sweeping Horns")) action = attack("Sweeping Horns");
+        else action = r2 < MINOTAUR.HEAVY_CHANCE ? firstAffordable(me, "Labrys Cleave", "Horn Jab") : firstAffordable(me, "Horn Jab");
+        break;
+      }
       case "Cyclops":
         if (r < CYCLOPS.LASER_CHANCE && canUse(me, "Eye Laser")) action = attack("Eye Laser");
         else if (r < CYCLOPS.LASER_CHANCE + CYCLOPS.STOMP_CHANCE && !crippled(target) && canUse(me, "Stomp")) action = attack("Stomp");

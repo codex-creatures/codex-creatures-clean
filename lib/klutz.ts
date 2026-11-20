@@ -90,7 +90,7 @@ export const TRAP_STEP = 0.02;                // Trapping: catch chance a level
 // His traits (the user, 2026-11-14): a pick at each of these levels, any trait not yet picked, in any order.
 export const TRAIT_LEVELS = [5, 10, 15];
 
-export type KlutzDest = DungeonId; // 0 the Encampment, 1 the Cyclops, 2 the Hydra, 3 the Abyss
+export type KlutzDest = Exclude<DungeonId, 4>; // 0 the Encampment, 1 the Cyclops, 2 the Hydra, 3 the Abyss (not the Minotaur, 4: not yet)
 export const KLUTZ_DESTS: Record<KlutzDest, { name: string; best: Rarity; levelsUp: number; firstStrike: number; lift: number }> = {
   0: { name: "The Encampment", best: "rare", levelsUp: 0, firstStrike: 0.1, lift: 0 },
   1: { name: "The Cyclops", best: "epic", levelsUp: 1, firstStrike: 0.2, lift: 0 },

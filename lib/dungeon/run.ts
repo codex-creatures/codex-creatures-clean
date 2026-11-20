@@ -55,8 +55,8 @@ export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
 // Entry fees by dungeon, a gold sink that grows with the loot (the user,
 // 2026-10-31): the Encampment, the Labyrinth (Cyclops), the Deep Labyrinth
-// (Hydra), the Abyss. Only the Encampment has free runs.
-export const ENTRY_FEES: Record<DungeonId, number> = { 0: 50, 1: 100, 2: 200, 3: 500 };
+// (Hydra), the Abyss, the Minotaur. Only the Encampment has free runs.
+export const ENTRY_FEES: Record<DungeonId, number> = { 0: 50, 1: 100, 2: 200, 3: 500, 4: 300 };
 export const FREE_RUNS = 10; // your first Encampment runs cost nothing
 export const freeRunsLeft = (meta: DungeonMeta) => Math.max(0, FREE_RUNS - (meta.campRuns ?? 0));
 // What entering costs now: nothing while the Encampment's free runs last, or
@@ -83,10 +83,15 @@ export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "che
 // lair), tougher and higher-level creatures, and the Hydra waiting at the
 // top (the Warden's pack until 2026-10-30). 3: the Abyss, open once you've
 // beaten the Deep Labyrinth: the same climb with the Warden's pack at the
-// top, and higher-level creatures in rarer gear (the user, 2026-10-26). Enemy levels
-// rise with depth (enemyLevel).
-export type DungeonId = 0 | 1 | 2 | 3;
-export const DUNGEON_IDS: DungeonId[] = [0, 1, 2, 3];
+// top, and higher-level creatures in rarer gear (the user, 2026-10-26). 4: the
+// Minotaur (the user, 2026-11-21), between the Hydra and the Abyss: open once
+// you've beaten the Hydra, the first fought 5 against 5, the Minotaur at the top;
+// the Abyss opens once it's beaten. (Its number is 4 because saves already hold
+// 0–3; DUNGEON_ORDER is the order you meet them.) Enemy levels rise with depth
+// (enemyLevel).
+export type DungeonId = 0 | 1 | 2 | 3 | 4;
+export const DUNGEON_IDS: DungeonId[] = [0, 1, 2, 3, 4];
+export const DUNGEON_ORDER: DungeonId[] = [0, 1, 2, 4, 3];
 export const DEEP_ROUTE = 15;
 export type DungeonInfo = {
   name: string;
@@ -128,6 +133,13 @@ export const DUNGEONS: Record<DungeonId, DungeonInfo> = {
          { upTo: Infinity, easy: ["uncommon", "rare", STEP_UP], hard: ["epic", "epic", STEP_UP], camp: ["epic", "epic", 0], miniboss: ["rare", "epic", 0.3] },
        ],
        levels: [[5, 15, 19], [10, 17, 22], [Infinity, 19, 24]], maxLevel: 26, goldScale: 3, pack: ["epic", "rare"] },
+  // Between the Hydra and the Abyss: its foes a level band up on the Hydra's, their gear
+  // halfway to the Abyss's, and in fives (squadsOf). 🧪 Claude's numbers.
+  4: { name: "The Minotaur", spec: { h: 500, rooms: 40, minRoute: DEEP_ROUTE, maxRoute: DEEP_ROUTE, large: 2 },
+       foes: [
+         { upTo: Infinity, easy: ["uncommon", "uncommon", STEP_UP], hard: ["epic", "rare", STEP_UP], camp: ["epic", "rare", 0], miniboss: ["rare", "epic", 0.3] },
+       ],
+       levels: [[5, 11, 15], [10, 13, 18], [Infinity, 15, 20]], maxLevel: 21, goldScale: 2.5 },
 };
 // The creature and gear rarity for one enemy of this kind at this depth (its step-up rolled).
 export function foeAt(dungeon: DungeonId, kind: "easy" | "hard" | "camp" | "miniboss", depth: number, rng: Rng = Math.random): [Rarity, Rarity] {
@@ -154,7 +166,8 @@ export const MINIBOSS_LEVELS = 3;
 export const CYCLOPS_LEVEL = 6;  // the Labyrinth's boss
 export const WARDEN_LEVEL = 16;  // the Deep Labyrinth's boss, the Hydra (the Warden's pack's level when it was the boss here)
 export const ABYSS_WARDEN_LEVEL = 25; // the Abyss's (the same pack, stronger)
-export const bossLevel = (dungeon: DungeonId) => (dungeon === 1 ? CYCLOPS_LEVEL : dungeon === 2 ? WARDEN_LEVEL : ABYSS_WARDEN_LEVEL);
+export const MINOTAUR_LEVEL = 20; // the Minotaur's
+export const bossLevel = (dungeon: DungeonId) => (dungeon === 1 ? CYCLOPS_LEVEL : dungeon === 2 ? WARDEN_LEVEL : dungeon === 4 ? MINOTAUR_LEVEL : ABYSS_WARDEN_LEVEL);
 export function enemyLevel(dungeon: DungeonId, kind: RoomKind, depth: number, rng: Rng = Math.random): number {
   const D = DUNGEONS[dungeon];
   if (kind === "boss") return bossLevel(dungeon);
@@ -216,7 +229,11 @@ export const labyrinthOpen = (meta: DungeonMeta, scans: number) =>
 // The Soul Altar works once the Encampment's chief has been beaten: he drops the gem that mends it (the user,
 // 2026-11-20). Till then, no summoning from cards and no ascension. (Anyone past him already has it.)
 export const altarMended = (meta: DungeonMeta) =>
-  (meta.campClears ?? 0) > 0 || meta.clears > 0 || (meta.deepClears ?? 0) > 0 || (meta.abyssClears ?? 0) > 0;
+  (meta.campClears ?? 0) > 0 || meta.clears > 0 || (meta.deepClears ?? 0) > 0 || (meta.abyssClears ?? 0) > 0 || (meta.minoClears ?? 0) > 0;
+// The Minotaur opens once you've beaten the Hydra; the Abyss once you've beaten the Minotaur (the
+// user, 2026-11-21; before, the Hydra opened it). Anyone who's been into the Abyss keeps the way in.
+export const minotaurOpen = (meta: DungeonMeta) => (meta.deepClears ?? 0) > 0 || (meta.minoClears ?? 0) > 0;
+export const abyssOpen = (meta: DungeonMeta) => (meta.minoClears ?? 0) > 0 || (meta.abyssRuns ?? 0) > 0 || (meta.abyssClears ?? 0) > 0;
 // A room on the way up: no two stashes in a row (lastStash: the room before was one).
 export const campRoomKind = (lastStash: boolean, rng: Rng = Math.random): RoomKind => (!lastStash && rng() < CAMP_STASH ? "stash" : "easy");
 
@@ -571,8 +588,8 @@ export const ENCAMP_CAGES: [number, number] = [1, 3];
 export const CAGE_CREATURE_CHANCE = 0.5;
 
 // ── How many fight ──────────────────────────────────────────────────
-// Your team, and the creatures you face in each kind of fight. The Abyss,
-// the last dungeon, is fought 5 against 5 (the user, 2026-10-27: 5v5 is the
+// Your team, and the creatures you face in each kind of fight. The Minotaur
+// and the Abyss after it are fought 5 against 5 (the Minotaur the first, the user, 2026-11-21) (the user, 2026-10-27: 5v5 is the
 // level PvP should be), and its foes come in matching numbers, about 5/3 of
 // the usual. 🧪 The Abyss's counts are Claude's numbers.
 // first: dens in the first FIRST_ROOMS rooms; early: up to EARLY_DEPTH;
@@ -592,7 +609,7 @@ export const ABYSS_SQUADS: Squads = {
   team: ABYSS_TEAM, first: [2, 2], early: [2, 3], deep: [3, 5],
   hard: 2, miniboss: 2, camp: [3, 5], ambush: 3, guards: 4, fuse: 30,
 };
-export const squadsOf = (dungeon: DungeonId): Squads => (dungeon === 3 ? ABYSS_SQUADS : SQUADS);
+export const squadsOf = (dungeon: DungeonId): Squads => (dungeon === 3 || dungeon === 4 ? ABYSS_SQUADS : SQUADS);
 // How many of your party go in and fight (the rest wait in the Den).
 export const teamSize = (run: { dungeon?: DungeonId }) => squadsOf(dungeonOf(run)).team;
 // A cage in an encampment: maybe a creature (rolled like a scan), until you open it.
@@ -1029,6 +1046,7 @@ export const FOE_CODEX: Record<DungeonId, { upTo: Rarity; offRace: number } | nu
   1: { upTo: "uncommon", offRace: 1 / 3 }, // the Labyrinth
   2: { upTo: "rare", offRace: 1 / 2 },     // the Deep Labyrinth
   3: { upTo: "epic", offRace: 2 / 3 },     // the Abyss
+  4: { upTo: "epic", offRace: 1 / 2 },     // the Minotaur (🧪)
 };
 export const NOT_ON_FOES = ["Healing Blessing", "Blood Sacrifice"];
 export const ONE_A_ROOM = ["Choking Smog"];
@@ -1191,6 +1209,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
       // Dungeon 1: the Cyclops; the Deep Labyrinth: the Hydra (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
       if (dungeon === 1) return { kind, boss: "cyclops", gold: gold(BOSS_GOLD), done: false };
       if (dungeon === 2) return { kind, boss: "hydra", gold: gold(BOSS_GOLD), done: false };
+      if (dungeon === 4) return { kind, boss: "minotaur", gold: gold(BOSS_GOLD), done: false };
       // The Abyss: the Warden (a Legendary) and his Epic guards.
       return { kind, enemies: wardenPack(rng, dungeon), level: "hard", gold: gold(BOSS_GOLD), done: false };
     case "librarian": {
@@ -1448,6 +1467,8 @@ export type DungeonMeta = {
   deepClears?: number;               // …and its Warden beaten
   abyssRuns?: number;                // the Abyss: runs started…
   abyssClears?: number;              // …and its Warden beaten
+  minoRuns?: number;                 // the Minotaur: runs started…
+  minoClears?: number;               // …and the Minotaur beaten
   soakedAt?: string;                 // when the pool last healed the injured (ISO time)
   campRuns?: number;                 // the Encampment: runs started…
   campClears?: number;               // …and its chief beaten
@@ -1456,7 +1477,7 @@ export type DungeonMeta = {
 };
 
 // Dungeon Crawling (walking it yourself: walkRun.ts) is built for these so far; the rest are Speed Scroll only.
-export const CRAWLABLE: DungeonId[] = [0, 1, 2];
+export const CRAWLABLE: DungeonId[] = [0, 1, 2, 4];
 // Speed Scroll opens for a dungeon once you've beaten it crawling (the user, 2026-11-14), at the same
 // fee. Those that can't be crawled yet are Speed Scroll only, so always open.
 export const scrollOpen = (d: DungeonId, meta: DungeonMeta) => !CRAWLABLE.includes(d) || !!meta.walkClears?.includes(d);
@@ -1575,6 +1596,9 @@ export function endRun(save0: DungeonSave, now = Date.now()): DungeonSave {
   }
   if (dungeonOf(run) === 2) {
     return { meta: { ...save.meta, injuries, deepClears: (save.meta.deepClears ?? 0) + (cleared ? 1 : 0) }, run: null };
+  }
+  if (dungeonOf(run) === 4) {
+    return { meta: { ...save.meta, injuries, minoClears: (save.meta.minoClears ?? 0) + (cleared ? 1 : 0) }, run: null };
   }
   if (dungeonOf(run) === 3) {
     return { meta: { ...save.meta, injuries, abyssClears: (save.meta.abyssClears ?? 0) + (cleared ? 1 : 0) }, run: null };

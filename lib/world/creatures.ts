@@ -30,6 +30,7 @@ export const SPECIES_SIZE: Record<string, SizeClass | CreatureSize> = {
   crystal_golem: "large", hollow_matriarch: "large", void_serpent: "large", tunnel_wyrm: "large", thunderhead: "large", pale_rider: "large", storm_phoenix: "large", aurelius: "large",
   baby_cyclops: "medium",
   cyclops: "huge", hydra: "huge", hydra_spitter: "huge", hydra_hex: "huge", hydra_fang: "huge", // (the hydra: one beast, each head its own fighter)
+  minotaur: "huge",
 };
 
 // A species' footprint and height: its own size, or its class's (the middle of the range).

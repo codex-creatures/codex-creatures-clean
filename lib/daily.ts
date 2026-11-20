@@ -215,7 +215,7 @@ export function dailyCtx(online: boolean): DailyCtx {
   const save = readSave();
   const meta = ((save.labyrinth as { meta?: Record<string, unknown> } | undefined)?.meta ?? {}) as Record<string, number | undefined>;
   return {
-    wins: { 0: meta.campClears ?? 0, 1: meta.clears ?? 0, 2: meta.deepClears ?? 0, 3: meta.abyssClears ?? 0 },
+    wins: { 0: meta.campClears ?? 0, 1: meta.clears ?? 0, 2: meta.deepClears ?? 0, 3: meta.abyssClears ?? 0, 4: meta.minoClears ?? 0 },
     online,
     klutz: !!save.quest && klutzHelping(save.quest as QuestState),
     tavern: !!(save[TAVERN_FIELD] as { repaired?: boolean } | undefined)?.repaired,

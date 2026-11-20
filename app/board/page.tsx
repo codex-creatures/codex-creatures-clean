@@ -17,7 +17,7 @@ import { onlineClient, onlineConfig } from "@/lib/online/client";
 import { fetchBoard } from "@/lib/online/leaderboard";
 import FriendList, { useFriends } from "@/components/FriendList";
 import { BOARD_INFO, BOARD_KINDS, DUNGEON_SHORT, boardKey, perDungeon, boardValue, dungeonName, type Board, type BoardKind } from "@/lib/leaderboard";
-import { DUNGEON_IDS, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
+import { DUNGEON_ORDER, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
 import { hasBookPlans } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
@@ -105,8 +105,8 @@ export default function QuestBoardPage() {
           {/* The leaderboards: the dungeon buttons (their space kept on the other boards, so nothing moves) and 👥 friends. */}
           {!quests && (
             <div style={{ display: "flex", gap: 6 }}>
-              <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, visibility: perDungeon(kind) && !showFriends ? "visible" : "hidden" }}>
-                {DUNGEON_IDS.map((d) => (
+              <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: `repeat(${DUNGEON_ORDER.length}, 1fr)`, gap: 6, visibility: perDungeon(kind) && !showFriends ? "visible" : "hidden" }}>
+                {DUNGEON_ORDER.map((d) => (
                   <button key={d} className="chip" data-active={dungeon === d} onClick={() => setDungeon(d)} title={dungeonName(d)}
                     style={{ minHeight: 44, justifyContent: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {DUNGEON_SHORT[d]}

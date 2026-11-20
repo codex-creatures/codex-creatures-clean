@@ -18,8 +18,8 @@ describe("leaderboard stats from a save", () => {
     };
     expect(leaderboardStats(progress)).toEqual({
       species: 2,
-      runs: { 0: 3, 1: 7, 2: 1, 3: 0 },
-      wins: { 0: 3, 1: 2, 2: 0, 3: 0 },
+      runs: { 0: 3, 1: 7, 2: 1, 3: 0, 4: 0 },
+      wins: { 0: 3, 1: 2, 2: 0, 3: 0, 4: 0 },
       playTime: 4000,
       scans: 4,
     });
@@ -31,7 +31,7 @@ describe("leaderboard stats from a save", () => {
   });
 
   it("gives zeros for an empty or odd save", () => {
-    const zero = { species: 0, runs: { 0: 0, 1: 0, 2: 0, 3: 0 }, wins: { 0: 0, 1: 0, 2: 0, 3: 0 }, playTime: 0, scans: 0 };
+    const zero = { species: 0, runs: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 }, wins: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 }, playTime: 0, scans: 0 };
     expect(leaderboardStats(null)).toEqual(zero);
     expect(leaderboardStats({ inventory: "x", labyrinth: { meta: { runs: -4, clears: "9", deepRuns: NaN } }, playTime: -5, scanCounts: { a: -2, b: "7" } })).toEqual(zero);
   });
