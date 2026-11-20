@@ -69,12 +69,48 @@ interesting situations, real decisions, progression and surprises, not feel they
     | 2 Crooked | 15 | 7 planks, 4 nails | none |
     | 3 Sturdy | 30 | 25 planks, 15 nails, 5 metal bars | Epic: Encampment+ chests, scans; 2,000g. The old-wall campaign reward (the Crooked Bookcase Schematic) becomes this one |
     | 4 Carved | 50 | 25 planks, 15 nails, 10 bars, 2 Stone, 1 Essence crystal, 1,000g | Legendary: Cyclops+ chests (mini boss, boss), scans; 5,000g |
-    | 5 Gilded | 75 | 25 planks, 25 nails, 20 bars, 5 Essence crystals, 2 Divinity Crystals | Legendary: Hydra+ chests, scans; 10,000g |
-    | 6 Enchanted | 100 | 25 Essence crystals, 4 Divinity Crystals | Legendary: scans only, a barcode's first-ever scan only; not sold |
 
-    Wandering traders sell the next schematic after the first upgrade. Old saves land on the stage at or above
+    **The bookcase stops at 50** (the user, 2026-11-20: there aren't that many codexes yet): the Gilded (75) and
+    Enchanted (100) stages are cut. Wandering traders sell the next schematic after the first upgrade. Old saves land on the stage at or above
     their size (10 → Crooked; 20, 25, 30 → Sturdy): nobody loses space.
-  - **Divinity Crystal:** a new Legendary material: every Legendary material drop is one (1% of material drops).
+  - ⏸ **Divinity Crystal** (a Legendary material, every Legendary material drop): only the cut bookcase stages used
+    it, so it waits till something needs it.
+  - **Cage** (the user, 2026-11-20): 1 → Iron 3 (as built: its schematic, 10 metal bars) → **Reinforced 5**: 25 metal
+    bars and 2 essence crystals (the user said "2 essence stone": Claude's reading, to confirm), from the Reinforced
+    Cage Schematic, in Hydra+ chests or sold for 3,000 gold.
+  - **Training Pit up to 3 slots** (the user, 2026-11-20: a big upgrade). ❓ Costs: Claude's proposal below.
+  - **Soul Altar: one upgrade** (more Code Cache room). More room past it will be bought for real money (not built,
+    not designed). ❓ How many and the cost: Claude's proposal below.
+  - **Klutz's Cabin:** more room past the gold upgrades. ❓ Claude's proposal below.
+  - **Inventory:** weapons and armour each top out at **100** (as built: 50 → 75 → 100 by two schematics), staged
+    like the bookcase; room past 100 will be bought for real money (not built). ❓ The stages: Claude's proposal below.
+  - **More materials** (the user, 2026-11-20): more loot containers (more stacks, and so more rare ones) and more
+    materials in the campaign's rewards. Not salvage, and Klutz's finds stay as they are. ❓ Tools taken into the
+    Labyrinth that open more finds (a crowbar for nailed-shut crates, a hammer to break tables and bookcases for
+    materials): the user's idea, not decided.
+  - 🧪 **Claude's proposal** (2026-11-20, to approve):
+
+    | Thing | Stages (cost each) |
+    |---|---|
+    | Training Pit | 1 slot (as built) → 2 slots: 15 planks, 10 nails, 20 bars, 10 Stone, 3 essence (Epic schematic, Hydra+ chests; 4,000g) → 3 slots: 20 planks, 15 nails, 30 bars, 15 Stone, 6 essence (Legendary schematic, Abyss chests; 8,000g) |
+    | Soul Altar | 9 → 15 Code Caches: 15 bars, 5 Stone, 1 essence, no schematic |
+    | Klutz's Cabin | after the gold upgrades (80): Lodge 100 (30 planks, 20 nails, 10 bars) → Hall 120 (20 bars, 8 Stone, 2 essence) |
+    | Inventory, weapons and armour each | 50 → 60 (10 planks, 10 nails) → 75 (the built first schematic: 10 planks, 10 nails, 1 Stone) → 85 (10 bars, 3 Stone) → 100 (the built second schematic: 10 bars, 5 Stone, 2 essence) |
+
+    The sim (2026-11-20, the game's own code; 150 walked runs a dungeon, every crate and chest opened; 50,000 scans):
+
+    | Per run, full clear | Planks | Nails | Metal bars | Stone | Essence |
+    |---|---|---|---|---|---|
+    | Encampment | 1.7 | 1.9 | 0.2 | 0.05 | 0.01 |
+    | Cyclops (0.35 storehouses, 5.8 chests, 6.3 corner crates) | 8.6 | 7.3 | 1.7 | 0.36 | 0.08 |
+    | Hydra (0.69 storehouses, 5.6 chests, 5.8 corner crates) | 10.5 | 9.2 | 2.0 | 0.39 | 0.12 |
+    | 100 scans | 10 | 8.3 | 2.9 | 0.8 | 0.24 |
+
+    Chests give about half of it, storehouses a quarter (they're rare: a third of large rooms), corner crates
+    planks and nails only. Everything above plus the bookcase to 50 and the cage needs about 190 planks, 135
+    nails, 195 bars, 68 Stone and 22 essence (the tavern's upgrades about 360 / 135 / 255 / 78 / 6 more). An active
+    player (4 Hydra runs, Klutz 3 times and 10 scans a day) gets about 10 bars, 2 Stone and 0.5 essence a day:
+    Stone and essence set the pace (about 35 and 45 days for these, without the tavern).
   - ✅ **The Soul Altar** (built 2026-11-20; its broken look a sample to approve) starts broken: no summoning from cards and no ascension (Code Caches open at the scanner)
     until the gem the Encampment's chief (the Baby Cyclops) drops the first time he's beaten. Saves that have
     beaten him have a working altar.
