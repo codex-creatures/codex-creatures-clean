@@ -114,6 +114,9 @@ export default function DungeonPage() {
   // The roster or the bag, open over the screen (see Sheet).
   const [sheet, setSheet] = useState<"roster" | "bag" | null>(null);
   const [bagStart, setBagStart] = useState<number | undefined>(undefined); // the bag opened on this slot (the merchant's Use)
+  // Foes have seen you and are coming (the walk's "!"): no bag till the fight (opening it would stop them while you
+  // drank or swapped gear); the party can still be reordered (the user, 2026-11-21).
+  const [alarmed, setAlarmed] = useState(false);
   const [retreatArmed, setRetreatArmed] = useState(false);
   // Left-handed mode (Settings): the dock mirrored, Bag and Retreat on the left by the stick (lib/handedness.ts).
   const leftHanded = useLeftHanded();
@@ -794,6 +797,16 @@ export default function DungeonPage() {
       return c ? [{ ...u, creatureId: c.creatureId, template: c.template, rolled: drop?.proficiency, steps: drop?.ascended ?? 0 }] : [];
     }));
   }
+  // A codex read from your bag (the user, 2026-11-21): the creature learns its move, as at the bookcase, with
+  // moves its new slots, and the codex is used up (one found this run, or one of yours packed at home).
+  function teachFromBag(e: BagEntry, id: string, moves: string[]) {
+    const codex = itemOf(e);
+    if (!codex?.codexMove || !loadDungeon().run?.party.includes(id)) return;
+    game.learnCodex(id, codex.id, codex as CreatureOrItemDrop);
+    game.setMoves(id, moves);
+    spendTool(e);
+    setNotes((n) => [...n, `📖 ${byId(id)?.name ?? "Your creature"} learned ${codex.codexMove}!`]);
+  }
   // A flare, a clairvoyance scroll or a locator, used from your bag or straight out of the chest
   // (as from the bag: a locator tracks, and is used up only if it found them; a flare lights the walk too).
   function toolFrom(from: "loot" | "bag", i: number) {
@@ -982,6 +995,7 @@ export default function DungeonPage() {
   // Seen by a room's foes (or into the chief's camp): that room's fight. Its loot will lie where you stood.
   // The foes line up for it in the order they reached you.
   function walkSpotted(id: string, st: WalkState, order?: number[]) {
+    setAlarmed(false);
     closeLoot();
     battle.clear();
     setWalkPanel(false);
@@ -1457,6 +1471,7 @@ export default function DungeonPage() {
     <Bag run={run} bag={lab.meta.bag ?? []} slots={bagSize(lab.meta)} name={bagName(lab.meta)} itemOf={itemOf} slotOf={slotOf}
       byId={byId} onDrink={drink} onEquip={askEquip} onLeave={leaveOnFloor} tutorial={clubTutorial} onTool={applyTool}
       onRead={(e, id) => { const i = loadDungeon().meta.bag.indexOf(e); if (i >= 0) giveFrom("bag", i, id); }}
+      teach={{ drop: (id) => game.inventory.find((d) => d.id === id) as CreatureOrItemDrop | undefined, movesOf: (id) => game.equipment[id]?.moves, onTeach: teachFromBag }}
       sell={buysHere(run.current) ? { offer: (e) => offerFor(e), onSell: sellToMerchant } : undefined} start={bagStart}
       wornIn={(id, slot) => itemsById.get(game.equipment[id]?.[SLOT_FIELD[slot]] ?? "")} />
   );
@@ -1468,7 +1483,7 @@ export default function DungeonPage() {
       gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
       clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={() => openDeck()} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.wantedPlans()} klutzPacks={game.klutz.packs ?? 0} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite} onLectern={() => track("librarian_locator")}
       bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
-      onUseBag={(i) => { setBagStart(i); setSheet("bag"); }}
+      onUseBag={(i) => { setBagStart(i); setSheet("bag"); }} bag={bagView}
     />
   );
   const walking = !!run.walk && !!run.inside;
@@ -1480,7 +1495,7 @@ export default function DungeonPage() {
         onTapClose={walkPanel ? () => setWalkPanel(false) : undefined}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
-        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onShelf={walkShelf} onPickup={walkPickup} onCrate={walkCrate} onBox={walkBox} onHeal={walkHeal} onKeep={walkSave} />
+        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onShelf={walkShelf} onPickup={walkPickup} onCrate={walkCrate} onBox={walkBox} onHeal={walkHeal} onKeep={walkSave} onAlarm={setAlarmed} />
       {wonAtTop(run) && run.status === "exploring" && !walkPanel && (
         <button className="pixel-btn" onClick={walkHome} style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", minHeight: 44, zIndex: 3 }}>🏠 Head home</button>
       )}
@@ -1646,7 +1661,7 @@ export default function DungeonPage() {
           <button className="dock-tab" style={side(false)} onClick={() => setSheet("roster")} disabled={!!clubTutorial}>
             🐾 Party <span className="count">{fightingTeam(run).length}/{run.party.length}</span>
           </button>
-          <button className="dock-tab" style={side(true)} onClick={() => { setBagStart(undefined); setSheet("bag"); }} disabled={!!clubTutorial}>
+          <button className="dock-tab" style={side(true)} onClick={() => { setBagStart(undefined); setSheet("bag"); }} disabled={!!clubTutorial || alarmed}>
             🎒 Bag <span className="count">{(lab.meta.bag ?? []).length}/{bagSize(lab.meta)}</span>
             {(run.pending?.length ?? 0) > 0 && <span aria-label="Your bag is full" style={{ position: "absolute", top: 3, right: 3, width: 10, height: 10, borderRadius: 5, background: "#ff6b5e", border: "2px solid #1d1209" }} />}
           </button>

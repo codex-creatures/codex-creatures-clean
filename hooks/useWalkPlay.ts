@@ -45,6 +45,7 @@ export type WalkPlayProps = {
   onBox?: (id: string, key: string, state: WalkState) => void; // …a crate in a room's corner (world version 17)
   onHeal: (gains: Record<string, number>, state: WalkState) => void;
   onKeep: (state: WalkState) => void;
+  onAlarm?: (on: boolean) => void;     // foes have seen you ("!", then they come at you) till the fight starts, or not
   seeAll?: boolean;                    // the lab: everything shown as seen (to judge a room)
   startIn?: string;                    // the lab: start in the middle of this room
 };
@@ -88,6 +89,9 @@ export function useWalkPlay(P0: WalkPlayProps) {
   useEffect(() => { if (P0.scroll) stick.current = null; }, [P0.scroll]); // (the stick goes with the scroll out: let go)
   // The keyboard's stick (WASD, the arrows), used when the on-screen one isn't held.
   const keys = useRef(new Set<string>());
+  const alarmOn = useRef(false); // what onAlarm last said
+  // …and it's over once the walk goes (into the fight, or home).
+  useEffect(() => () => { if (alarmOn.current) props.current.onAlarm?.(false); }, []);
 
   // The props the frame loop reads, kept current.
   const props = useRef(P0);
@@ -130,6 +134,7 @@ export function useWalkPlay(P0: WalkPlayProps) {
       sim.me = walkStick(live, sim.me, S.x, S.y * down, (a, b) => (can ??= rule(sim.progress))(a, b));
     }
     const F = stepWalk(sim, { now, busy, room: P.room, here: P.here, team: P.team.map((m) => m.id), hp: P.hp, things });
+    if (!!sim.alarm !== alarmOn.current) { alarmOn.current = !!sim.alarm; P.onAlarm?.(alarmOn.current); }
     for (const e of F.events) {
       if (e.type === "progress") setProgress(e.progress);
       else if (e.type === "enter") P.onEnter(e.room, e.state);

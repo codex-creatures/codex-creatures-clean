@@ -148,10 +148,18 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   slot, stays in your bag between runs as tools do, and isn't sold by merchants (they buy it for 200).
   Walking, it's the 3D chest with its own gold faces (`GOLDEN_FACES`, public/sprites/props/chest3d-gold/,
   the user's pick, 2026-11-16) and a Legendary glow on the floor round it, as a deck with a Legendary in it has.
-- ✅ **Selling to the merchant:** his room shows your bag (slots used/free); tap a slot and sell it to make room,
-  or Use it (opens it in your bag: drink, equip…). In the merchant's or a librarian's room, your bag also has a
-  Sell button, at the same prices (`buysHere`; selling to a librarian is Claude's default, 2026-10-23). A codex
-  can't be bought with a full bag (the user, 2026-10-23).
+- ✅ **Selling to the merchant:** his room, and a librarian's, show your whole bag under the cart or shelf (since
+  2026-11-21; it was a cut-down one with Sell and Use): tap a thing to sell it to make room, drink, equip, read or
+  teach it, or drag it onto one of your creatures, as between rooms. Sell is at the same prices in both rooms
+  (`buysHere`; selling to a librarian is Claude's default, 2026-10-23). A codex can't be bought with a full bag
+  (the user, 2026-10-23). A merchant's cart stays as rolled: what you buy stays in its slot, sold (`waresFor`'s
+  `bought`), and nothing new is stocked in its place (2026-11-21).
+- ✅ **Codexes in the bag** (the user, 2026-11-21): a codex you carry, found this run or packed at home, can be
+  taught during the run as at the bookcase: tap it and Teach someone in your party, or drag it onto them (only
+  those who can learn it light up); a creature with its move slots full picks one to forget first. It's used up.
+- ✅ **No bag once you're seen:** from a room's foes' "!" till the fight, the Bag can't be opened (a window
+  stops the walk, so it was a free moment to drink or swap gear); the Party can still be reordered (the user,
+  2026-11-21).
   - ✅ Prices (decided 2026-10-19; `merchantOffer`, lib/dungeon/run.ts): weapons and armour at the crate's sell price; potions, materials,
     scrolls and tools at half his price (`MERCHANT_BUYBACK`); codexes at half the librarian's. Klutz's club can't be sold.
     Claude's defaults, added 2026-10-19.

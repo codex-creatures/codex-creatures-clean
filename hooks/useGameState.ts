@@ -1173,8 +1173,9 @@ export function useGameState(initialTab: TabKey = "all") {
   }
 
   // Read a codex: the creature learns its race move for good, and the codex is used up.
-  function learnCodex(creatureId: string, codexId: string) {
-    const codex = inventory.find((d) => d.id === codexId) as CreatureOrItemDrop | undefined;
+  // (found: a codex not in your Inventory, one picked up in the Labyrinth and read there.)
+  function learnCodex(creatureId: string, codexId: string, found?: CreatureOrItemDrop) {
+    const codex = found ?? inventory.find((d) => d.id === codexId) as CreatureOrItemDrop | undefined;
     const move = codex?.codexMove;
     if (!move) return;
     if (creatureId === KLUTZ_DROP_ID) setKlutz((k) => ({ ...k, learned: [...new Set([...(k.learned ?? []), move])] }));

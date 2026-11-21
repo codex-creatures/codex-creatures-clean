@@ -14,6 +14,9 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import { POTIONS, type PotionKey, isPotionEntry, lootIdOf, type BagEntry, type DungeonRun } from "@/lib/dungeon/run";
 import { SectionTitle, MUTED, type OwnedCreature } from "@/components/BattleScreen";
 import { TOOLS, isLocator } from "@/lib/items/materials";
+import CodexMove from "@/components/CodexMove";
+import { ForgetMove, codexBlock, codexSlots } from "@/components/CodexShelf";
+import { MOVE_SLOTS } from "@/lib/creatures/creatureData";
 
 const GOLD = "#f5c542";
 
@@ -21,7 +24,7 @@ const GOLD = "#f5c542";
 // tutorial: the entry to walk the player through equipping (Klutz's Club).
 // sell: in a room where someone buys (buysHere), what they'd pay for each
 // thing, and selling it. start: the slot to open with (from the merchant's Use).
-export default function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onEquip, onLeave, onTool, onRead, tutorial, sell, start }: {
+export default function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onEquip, onLeave, onTool, onRead, teach, tutorial, sell, start }: {
   run: DungeonRun; bag: BagEntry[]; slots: number; name: string;
   itemOf: (e: BagEntry) => CreatureOrItemDrop | undefined; slotOf: (it: CreatureOrItemDrop) => EquipSlot | null;
   byId: (id: string) => OwnedCreature | undefined; onDrink: (k: PotionKey, id: string) => void;
@@ -29,11 +32,14 @@ export default function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornI
   onEquip: (e: BagEntry, creatureId: string) => void; onLeave: (e: BagEntry) => void; tutorial?: BagEntry;
   onTool?: (e: BagEntry, who?: string) => void; // a flare, a clairvoyance scroll, or a Revival Elixir (on who): use it
   onRead?: (e: BagEntry, who: string) => void;  // an XP scroll, read on who
+  // A codex, taught to who as at the bookcase (moves: its slots after): the creature as saved, and its loadout's moves.
+  teach?: { drop: (id: string) => CreatureOrItemDrop | undefined; movesOf: (id: string) => string[] | undefined; onTeach: (e: BagEntry, who: string, moves: string[]) => void };
   sell?: { offer: (e: BagEntry) => number; onSell: (bagIndex: number) => void };
   start?: number;
 }) {
   const [sel, setSel] = useState<number | null>(start ?? null);
   const [comparing, setComparing] = useState(false);
+  const [forgetting, setForgetting] = useState<string | null>(null); // a codex for someone whose slots are full: which move goes
   const standing = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) > 0);
   // Drag a weapon or armour piece onto one of your creatures to equip it.
   const wears = (i: number) => { const x = bag[i]; const w = x && !isPotionEntry(x) ? itemOf(x) : undefined; return !!w && !!slotOf(w); };
@@ -44,12 +50,26 @@ export default function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornI
   // …an XP scroll onto anyone, or a Revival Elixir onto a knocked-out one.
   const usedOn = (i: number) => { const x = bag[i]; const w = x && !isPotionEntry(x) ? itemOf(x) : undefined;
     return w?.scroll && onRead ? "scroll" : w?.tool === "revival" && onTool ? "revival" : undefined; };
+  // …or a codex onto one that can learn it.
+  const codexAt = (i: number) => { const x = bag[i]; const w = x && !isPotionEntry(x) ? itemOf(x) : undefined; return teach && w?.codexMove ? w.codexMove : undefined; };
+  const slotsOf = (id: string) => { const d = teach?.drop(id); return d ? codexSlots(d, teach!.movesOf(id)) : []; };
+  const whyNot = (id: string, move: string) => { const d = teach?.drop(id); return d ? codexBlock(d, move, slotsOf(id)) : "Can't learn it"; };
+  const learners = (i: number) => { const m = codexAt(i); return m ? run.party.filter((id) => byId(id) && !whyNot(id, m)) : []; };
+  // Teach it: straight in if it has a free slot, else pick a move to forget first.
+  const teachTo = (i: number, id: string) => {
+    const m = codexAt(i);
+    if (!m || !learners(i).includes(id)) return;
+    const now = slotsOf(id);
+    if (now.length < MOVE_SLOTS) { teach!.onTeach(bag[i], id, [...now, m]); setSel(null); setForgetting(null); }
+    else { setSel(i); setForgetting(id); }
+  };
   // Who what's at i can go on.
-  const goesOn = (i: number) => (wears(i) ? standing : potionAt(i) ? hurt : usedOn(i) === "revival" ? downed : usedOn(i) === "scroll" ? run.party : []);
+  const goesOn = (i: number) => (wears(i) ? standing : potionAt(i) ? hurt : usedOn(i) === "revival" ? downed : usedOn(i) === "scroll" ? run.party : codexAt(i) ? learners(i) : []);
   const { box: dragBox, ...dnd } = useDragDrop<number>({ onDrop: (i, t) => {
     const id = t?.startsWith("who:") ? t.slice(4) : undefined;
     const p = potionAt(i);
     if (!id || !goesOn(i).includes(id)) return;
+    if (codexAt(i)) { teachTo(i, id); return; }
     if (wears(i)) onEquip(bag[i], id);
     else if (p) onDrink(p, id);
     else if (usedOn(i) === "revival") onTool?.(bag[i], id);
@@ -63,7 +83,9 @@ export default function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornI
   const slot = it ? slotOf(it) : null;
   const tutorialAt = tutorial ? bag.indexOf(tutorial) : -1;
   const teaching = tutorialAt >= 0 && e === tutorial;
-  const done = (fn: () => void) => () => { fn(); setSel(null); setComparing(false); };
+  const done = (fn: () => void) => () => { fn(); setSel(null); setComparing(false); setForgetting(null); };
+  const move = sel !== null ? codexAt(sel) : undefined;
+  const forgetter = forgetting ? teach?.drop(forgetting) : undefined;
   const chip = (key: string, label: string, onClick: () => void, extra: React.CSSProperties = {}, pulse = false) => (
     <button key={key} className={`chip${pulse ? " tutorial-pulse" : ""}`} style={{ padding: "5px 10px", ...extra }} onClick={onClick}>{label}</button>
   );
@@ -79,8 +101,8 @@ export default function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornI
         </div>
       )}
       <BagSlots slots={slots} looks={bag.map((x) => slotLook(x, isPotionEntry(x) ? undefined : itemOf(x)))}
-        grab={(i, l) => (wears(i) || potionAt(i) || usedOn(i) ? { onPointerDown: dnd.press(i, l), ...dnd.handlers } : {})}
-        selected={sel} onSelect={(i) => { if (dnd.wasDrag()) return; setSel(i); setComparing(false); }} pulse={tutorialAt >= 0 && sel !== tutorialAt ? tutorialAt : undefined} />
+        grab={(i, l) => (wears(i) || potionAt(i) || usedOn(i) || codexAt(i) ? { onPointerDown: dnd.press(i, l), ...dnd.handlers } : {})}
+        selected={sel} onSelect={(i) => { if (dnd.wasDrag()) return; setSel(i); setComparing(false); setForgetting(null); }} pulse={tutorialAt >= 0 && sel !== tutorialAt ? tutorialAt : undefined} />
       {/* Your creatures and their health: drag gear onto one to equip it, or a potion to heal it. */}
       {party.length > 0 && (
         <div style={{ marginTop: 8 }}>
@@ -108,6 +130,13 @@ export default function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornI
               <span style={{ fontSize: 12, color: MUTED }}> · {it.rarity}{lootIdOf(e) ? " · found this run" : " · yours"}</span>
               {slot && <GearStatLine item={it} />}
               {it.tool && <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{TOOLS[it.tool].desc}</div>}
+              {move && <div style={{ marginTop: 6 }}><CodexMove move={move} /></div>}
+              {move && forgetter && forgetting && (
+                <div style={{ marginTop: 8 }}>
+                  <ForgetMove key={forgetting} creature={forgetter} move={move} slots={slotsOf(forgetting)}
+                    onLearn={(next) => { teach!.onTeach(e, forgetting, next); setSel(null); setForgetting(null); }} onBack={() => setForgetting(null)} />
+                </div>
+              )}
               {teaching && (
                 <div className="tutorial-tip" style={{ margin: "8px 0 0" }}>
                   <span className="tutorial-arrow">👇</span> Now choose who carries it. Gear you find down here works the same way: tap it in your bag, then equip it.
@@ -118,6 +147,8 @@ export default function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornI
                 {it.tool && it.tool !== "revival" && it.tool !== "gold_key" && it.tool !== "klutz_pack" && onTool && chip("use", it.tool === "flare" ? "🧨 Light it" : isLocator(it.tool) ? `${TOOLS[it.tool].icon} Use it` : "🔮 Read it", done(() => onTool(e)))}
                 {it.tool === "revival" && onTool && downed.map((id) => chip(id, `💖 Revive ${byId(id)!.name}`, done(() => onTool(e, id))))}
                 {it.tool === "revival" && downed.length === 0 && <span style={{ fontSize: 12, color: MUTED }}>Nobody&apos;s knocked out.</span>}
+                {move && !forgetting && run.party.filter((id) => byId(id)).map((id) => { const no = whyNot(id, move);
+                  return chip(id, no ? `${byId(id)!.name}: ${no}` : `📖 Teach ${byId(id)!.name}`, () => teachTo(sel!, id), no ? { opacity: 0.45, pointerEvents: "none" } : {}); })}
                 {it.scroll && onRead && run.party.filter((id) => byId(id)).map((id) => chip(id, `📜 Read on ${byId(id)!.name}`, done(() => onRead(e, id))))}
                 {slot && !teaching && !comparing && chip("compare", "⚖️ Compare", () => setComparing(true))}
                 {!teaching && sellChip}
