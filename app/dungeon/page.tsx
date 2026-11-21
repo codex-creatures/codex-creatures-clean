@@ -452,7 +452,7 @@ export default function DungeonPage() {
     const codex = codexDrop(move);
     carry([codex]);
     countCampaign("buy");
-    updateRun((r) => (r.current ? { ...r, loot: [...r.loot, `Codex: ${move}`], got: [...(r.got ?? []), { drop: codex }], current: { ...r.current, bought: [...(r.current.bought ?? []), move] } } : r));
+    updateRun((r) => (r.current ? { ...r, spent: (r.spent ?? 0) + codexPrice(move), loot: [...r.loot, `Codex: ${move}`], got: [...(r.got ?? []), { drop: codex }], current: { ...r.current, bought: [...(r.current.bought ?? []), move] } } : r));
   }
 
   function healOne(id: string) {
@@ -472,7 +472,7 @@ export default function DungeonPage() {
       update({ ...cur, meta: { ...cur.meta, bagSize: BACKPACK } });
       countCampaign("buy");
       setNotes((n) => [...n, `🎒 A rugged backpack! You can carry ${BACKPACK} things now (your bindle held ${BINDLE}).`]);
-      updateRun((r) => (r.current ? { ...r, bindle: undefined, loot: [...r.loot, wareName(w)], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } } : r));
+      updateRun((r) => (r.current ? { ...r, bindle: undefined, spent: (r.spent ?? 0) + w.price, loot: [...r.loot, wareName(w)], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } } : r));
       return;
     }
     if ("bagUp" in w) {
@@ -482,7 +482,7 @@ export default function DungeonPage() {
       update({ ...cur, meta: { ...cur.meta, bagSize: size + 1 } });
       countCampaign("buy");
       setNotes((n) => [...n, `🎒 Your backpack holds ${size + 1} things now.`]);
-      updateRun((r) => (r.current ? { ...r, loot: [...r.loot, wareName(w)], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } } : r));
+      updateRun((r) => (r.current ? { ...r, spent: (r.spent ?? 0) + w.price, loot: [...r.loot, wareName(w)], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } } : r));
       return;
     }
     const d = wareDrop(w);
@@ -498,7 +498,7 @@ export default function DungeonPage() {
       got = { drop: d! };
     }
     updateRun((r) => (r.current
-      ? { ...r, loot: [...r.loot, wareName(w)], got: [...(r.got ?? []), got], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } }
+      ? { ...r, spent: (r.spent ?? 0) + w.price, loot: [...r.loot, wareName(w)], got: [...(r.got ?? []), got], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } }
       : r));
   }
 
@@ -525,7 +525,7 @@ export default function DungeonPage() {
     }
     game.addGold(price);
     countDaily("sell", price);
-    update({ meta: { ...cur.meta, bag: cur.meta.bag.filter((_, i) => i !== bagIndex), loot }, run: { ...cur.run, got } });
+    update({ meta: { ...cur.meta, bag: cur.meta.bag.filter((_, i) => i !== bagIndex), loot }, run: { ...cur.run, got, sold: (cur.run.sold ?? 0) + price } });
   }
 
   // ── Encampments ─────────────────────────────────────────────────

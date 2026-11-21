@@ -375,6 +375,26 @@ describe("a labyrinth run", () => {
     expect(endRun({ meta, run: { ...walked, status: "dead" as const } }).meta.walkClears).toBeUndefined();
   });
 
+  it("every run that ends leaves a line in the run history: where, how it went, how far, and its gold", async () => {
+    const { RUN_HISTORY } = await import("../lib/dungeon/run");
+    const { goldDrop } = await import("../lib/drops");
+    const meta = { runs: 4, clears: 1, injuries: {}, bag: [] };
+    const start = startRun(party, party.slice(0, 3), {}, 4, Math.random, 2);
+    const run: DungeonRun = {
+      ...start, startedAt: new Date(0).toISOString(), status: "dead", path: [start.map.start, "x", "y", "x"], cleared: [start.map.start, "x"],
+      got: [{ drop: goldDrop(40) }, { potion: "lesser" }, { drop: goldDrop(15) }], spent: 250, sold: 60,
+    };
+    const [line] = endRun({ meta, run }, 30 * 60000).meta.history!;
+    expect(line).toEqual({ d: 2, end: new Date(30 * 60000).toISOString(), mins: 30, out: "dead", rooms: 3, cleared: 2, route: line.route, gold: 55, spent: 250, sold: 60 });
+    expect(line.route).toBeGreaterThan(0);
+    // Won walking; only the last RUN_HISTORY are kept.
+    const won = { ...start, status: "cleared" as const, walk: {} as DungeonRun["walk"] };
+    expect(endRun({ meta, run: won }).meta.history![0]).toMatchObject({ walk: true, out: "won", gold: 0 });
+    const full = { ...meta, history: Array.from({ length: RUN_HISTORY }, () => line) };
+    const after = endRun({ meta: full, run: won }).meta.history!;
+    expect([after.length, after[RUN_HISTORY - 1].out]).toEqual([RUN_HISTORY, "won"]);
+  });
+
   it.runIf(HEAL_AT_HOME)("with the testing shortcut on, every run ends with everyone healed", () => {
     const run = { ...startRun(party, party.slice(0, 3), {}, 4), hp: { a: 0.5, b: 0, c: 1, d: 1, e: 1 }, status: "dead" as const };
     expect(endRun({ meta: { runs: 4, clears: 1, injuries: {}, bag: [] }, run }).meta.injuries).toEqual({});

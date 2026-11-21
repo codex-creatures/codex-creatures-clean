@@ -1290,6 +1290,8 @@ export type DungeonRun = {
   bindle?: boolean;            // you set out on the bindle: merchants and storehouses have the backpack
   campCages?: Cage[];          // the Encampment: its chief's cages (campCages)
   walk?: WalkRun;               // the walkable Encampment (the Labyrinth's "New"): walkRun.ts
+  spent?: number;              // gold spent in it (merchants, librarians; not the entry fee): for its RunRecord
+  sold?: number;               // gold from selling to them
 };
 
 // The room at the top: the boss's lair, or the Encampment's camp. Finishing it ends the run, cleared.
@@ -1487,7 +1489,38 @@ export type DungeonMeta = {
   campClears?: number;               // …and its chief beaten
   teamPick?: number;                 // the entrance: the team last picked (lib/teams.ts; missing = free pick)
   walkClears?: DungeonId[];          // the dungeons you've beaten by Dungeon Crawling (missing = none): scrollOpen
+  history?: RunRecord[];             // the last RUN_HISTORY runs, newest last (missing = none recorded yet)
 };
+
+// ── Run history (the user, 2026-11-21) ─────────────────────────────
+// A line for each run as it ends, kept in the save (and so in cloud saves), to see how people really
+// play: how far they go, how much they clear, what gold they bring home. Only the last RUN_HISTORY
+// are kept (about 150 bytes each).
+export const RUN_HISTORY = 100;
+export type RunRecord = {
+  d: DungeonId;
+  walk?: true;                 // walked (Dungeon Crawling), not the Speed Scroll
+  end: string;                 // when it ended (ISO time)
+  mins: number;                // how long it lasted, start to end (a run left waiting counts its wait)
+  out: "won" | "dead" | "retreated";
+  rooms: number;               // rooms stood in (the entrance included)
+  cleared: number;             // rooms finished
+  route: number;               // the shortest way to the top, in rooms (to set rooms against)
+  gold: number;                // gold picked up (fights, chests, sacks: run.got)
+  spent?: number;              // gold spent inside, and from selling (missing = none)
+  sold?: number;
+};
+export function runRecord(run: DungeonRun, now = Date.now()): RunRecord {
+  const won = run.status === "cleared" || wonAtTop(run);
+  const gold = (run.got ?? []).reduce((n, g) => n + ("drop" in g && g.drop.dropType === "reward" && g.drop.rewardKind === "resource" ? g.drop.amount ?? 0 : 0), 0);
+  return {
+    d: dungeonOf(run), ...(run.walk ? { walk: true as const } : {}), end: new Date(now).toISOString(),
+    mins: Math.max(0, Math.round((now - Date.parse(run.startedAt)) / 60000)) || 0,
+    out: won ? "won" : run.status === "dead" ? "dead" : "retreated",
+    rooms: new Set(run.path).size, cleared: run.cleared.length, route: run.map?.start && Number.isFinite(routeLength(run.map)) ? routeLength(run.map) : 0, gold,
+    ...(run.spent ? { spent: run.spent } : {}), ...(run.sold ? { sold: run.sold } : {}),
+  };
+}
 
 // Dungeon Crawling (walking it yourself: walkRun.ts) is built for these so far; the rest are Speed Scroll only.
 export const CRAWLABLE: DungeonId[] = [0, 1, 2, 4];
@@ -1594,7 +1627,8 @@ export function endRun(save0: DungeonSave, now = Date.now()): DungeonSave {
   const run = save0.run;
   if (!run) return save0;
   // The pool catches up first (everyone left at home has been healing all along).
-  const save = { ...save0, meta: soak(save0.meta, now) };
+  const meta = soak(save0.meta, now);
+  const save = { ...save0, meta: { ...meta, history: [...(meta.history ?? []), runRecord(run, now)].slice(-RUN_HISTORY) } };
   const injuries = { ...save.meta.injuries };
   const healed = freeHealing(save.meta);
   for (const id of run.party) {
