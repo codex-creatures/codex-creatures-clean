@@ -560,6 +560,13 @@ export const MINIBOSS_POTIONS: [number, number] = [1, 2];
 // gold, in place of the mini boss's gold, potions and extras (the foe's dropped gear as ever).
 // (The user, 2026-11-14: keys are meant to be carried into runs, waiting for a golden chest.)
 export const GOLDEN_CHEST = 0.1;
+// Ordinary chest rooms can be golden too (the user, 2026-11-21: "people seeing them and getting excited
+// to get a golden key"): never before room GOLDEN_FROM, then by dungeon, commoner the deeper the
+// Labyrinth (none in the Encampment). Same key, same finds (in place of the chest's own).
+export const GOLDEN_FROM = MINIBOSS_FROM;
+export const GOLDEN_CHEST_ROOM: Partial<Record<DungeonId, number>> = { 1: 0.05, 2: 0.1, 3: 0.15, 4: 0.15 };
+// Is a chest room this deep golden, for a roll in [0, 1)? (Walkable runs roll it from their seed: walkRun.ts.)
+export const goldenChestRoom = (dungeon: DungeonId, depth: number, roll: number) => depth >= GOLDEN_FROM && roll < (GOLDEN_CHEST_ROOM[dungeon] ?? 0);
 export const GOLDEN_DROPS = 5;
 export const GOLDEN_RARITY = { rare: 65, epic: 30, legendary: 5 };
 export const GOLDEN_LEGENDARY_FROM: DungeonId = 2;
@@ -734,9 +741,15 @@ export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
 // can grow, priced for your bag's size; a schematic only as the next one you
 // want on its ladder (wanted: lib/items/plans.ts wantedPlans), at its price.
 // klutzPacks: the Pack Upgrades Klutz has had (a cart's is priced by them; none once his pack's full).
-export function waresFor(wares: Ware[], meta: { bagSize?: number }, wanted: readonly SchematicKey[] = [], klutzPacks?: number): Ware[] {
+// bought: what's been bought off this cart. Those stay put, as sold, so the cart is fixed once rolled: buying a
+// plan doesn't put its ladder's next one up, nor buying the backpack let a cut material back on (the user, 2026-11-21).
+export function waresFor(wares: Ware[], meta: { bagSize?: number }, wanted: readonly SchematicKey[] = [], klutzPacks?: number, bought: readonly string[] = []): Ware[] {
   const size = bagSize(meta);
   return wares.flatMap((w): Ware[] => {
+    if ("schematic" in w) {
+      const l = ladderOf(w.schematic), had = bought.find((k) => k in SCHEMATICS && ladderOf(k as SchematicKey) === l);
+      if (had) return [{ key: had, schematic: had as SchematicKey, price: PLAN_PRICES[had as SchematicKey] ?? w.price }];
+    } else if (bought.includes(w.key)) return [w];
     if ("tool" in w && w.tool === "klutz_pack") return klutzPacks === undefined ? [w] : klutzPacks >= KLUTZ_PACK_PRICES.length ? [] : [{ ...w, price: KLUTZ_PACK_PRICES[klutzPacks] }];
     if ("backpack" in w) return onBindle(meta) ? [w] : [];
     if ("bagUp" in w) return size >= BACKPACK && size < BAG_MAX ? [{ ...w, price: bagUpgradePrice(size) }] : [];

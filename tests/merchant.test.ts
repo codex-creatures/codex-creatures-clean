@@ -80,6 +80,15 @@ describe("what the cart shows you", () => {
     for (const l of [LADDERS.weapon, LADDERS.armor, LADDERS.bookcase, LADDERS.pit]) l.slice(1).forEach((k, i) => expect(PLAN_PRICES[k]!).toBeGreaterThan(PLAN_PRICES[l[i]]!));
   });
 
+  it("the cart stays as rolled: what you bought stays on it as sold, and nothing new is stocked", () => {
+    // Bought the plan the cart showed: its ladder's next one doesn't take its place.
+    expect(waresFor([plan], { bagSize: 5 }, ["weapon_storage_3"], undefined, ["weapon_storage_2"])).toEqual([{ key: "weapon_storage_2", schematic: "weapon_storage_2", price: PLAN_PRICES.weapon_storage_2 }]);
+    // Bought the backpack: it stays (sold), so a cut material doesn't slip back on.
+    const w = rollWares(() => 0.01, true);
+    const before = waresFor(w, {});
+    expect(waresFor(w, { bagSize: BACKPACK }, [], undefined, ["backpack"]).map((x) => x.key)).toEqual(before.map((x) => x.key));
+  });
+
   it("an upgrade needs no bag slot; a schematic or elixir does", () => {
     const elixir: Ware = { key: "revival", tool: "revival", price: 500 };
     expect(priceUp([up], ["bag_up"], 5000, 0, []).short).toBeNull();

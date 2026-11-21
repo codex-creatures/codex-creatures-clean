@@ -30,7 +30,7 @@ const detailOf = (w: Ware) => ("backpack" in w ? `Room for ${BACKPACK} things in
 
 export default function MerchantCart({ wares, bought = [], gold, bagUsed, bagSlots, stacks, onBuy }: {
   wares: Ware[]; bought?: string[];
-  gold: number; bagUsed: number; bagSlots: number;
+  gold: number; bagUsed?: number; bagSlots?: number; // (no bag at the tavern: it all goes in your Inventory)
   stacks: string[];                 // materials already in your bag (more of one joins its stack)
   onBuy: (wares: Ware[]) => void;
 }) {
@@ -38,7 +38,7 @@ export default function MerchantCart({ wares, bought = [], gold, bagUsed, bagSlo
   // Each ware as the thing it is, for its picture and colour.
   const looks = useMemo(() => wares.map((w) => lookOf(("backpack" in w || "bagUp" in w ? { backpack: true } : "potion" in w ? { potion: w.potion }
     : { gear: wareDrop(w)! }) as SackItem)), [wares]);
-  const { chosen, total, short } = priceUp(wares, picked, gold, bagSlots - bagUsed, stacks);
+  const { chosen, total, short } = priceUp(wares, picked, gold, bagSlots === undefined ? Infinity : bagSlots - (bagUsed ?? 0), stacks);
   const focus = wares.find((w) => w.key === picked[picked.length - 1]);
   const toggle = (key: string) => setPicked((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
   const buy = () => { if (chosen.length && !short) { onBuy(chosen); setPicked([]); } };
@@ -51,7 +51,7 @@ export default function MerchantCart({ wares, bought = [], gold, bagUsed, bagSlo
         <span title={focus ? detailOf(focus) : undefined} style={{ fontSize: 12, color: MUTED, ...lines(2, 1.35) }}>{focus ? detailOf(focus) : "Tap again to put it back."}</span>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13 }}>
           <span className="pixel-font" style={{ color: short === "gold" ? "#ff8a80" : GOLD }}>Total <Coin size={13} /> {total}</span>
-          <span style={{ color: MUTED }}><Coin size={13} /> {gold} · 🎒 {bagUsed}/{bagSlots}</span>
+          <span style={{ color: MUTED }}><Coin size={13} /> {gold}{bagSlots !== undefined && <> · 🎒 {bagUsed}/{bagSlots}</>}</span>
         </div>
       </div>
 

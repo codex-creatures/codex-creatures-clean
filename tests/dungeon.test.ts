@@ -656,3 +656,17 @@ describe("a deck of cards (the user, 2026-11-11: its glow on the table shows the
     expect(deckRarity([])).toBeUndefined();
   });
 });
+
+import { GOLDEN_FROM, GOLDEN_CHEST_ROOM, goldenChestRoom } from "../lib/dungeon/run";
+describe("golden chest rooms", () => {
+  it("never before room 7 or in the Encampment; then 5% in the Cyclops, 10% the Hydra, 15% the Minotaur", () => {
+    const share = (dungeon: DungeonId, depth: number) => {
+      let g = 0; for (let i = 0; i < 1000; i++) if (goldenChestRoom(dungeon, depth, i / 1000)) g++;
+      return g / 1000;
+    };
+    expect(GOLDEN_FROM).toBe(7);
+    expect(share(1, GOLDEN_FROM - 1)).toBe(0);
+    expect(share(0, 20)).toBe(0);
+    expect([share(1, GOLDEN_FROM), share(2, 9), share(4, 12)]).toEqual([0.05, 0.1, 0.15]);
+  });
+});

@@ -129,7 +129,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   most 5 things (`CHEST_SLOTS`, `capSack`): rolled more, the least rare fall out (gold first, then
   Common, Uncommon…).
 - ✅ **Golden chests and Gold Keys** (the user, 2026-11-13): 10% of mini bosses (`GOLDEN_CHEST`,
-  room kind `miniboss` only, rolled with the room as `Room.golden`) guard a golden chest instead of
+  rolled with the room as `Room.golden`) guard a golden chest instead of
   the rickety one. It opens only with a **Gold Key** in your bag, which is used up (no key: it stays
   locked, and it isn't in the haul). Inside: the mini boss's dropped gear as usual, and, instead of
   its gold, potions, extras (the cage schematic included) and XP scroll, 500–1000 gold (`GOLDEN_GOLD`)
@@ -137,7 +137,12 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   in a chest) at Rare 65 / Epic 30 / Legendary 5 (`GOLDEN_RARITY`), Legendary only from the Hydra on
   (`GOLDEN_LEGENDARY_FROM`; in the Cyclops Rare and Epic share its odds, about 68 / 32). Keys are
   rare on purpose: the idea is to carry one into runs, waiting for a golden chest (the user,
-  2026-11-14). The Gold Key is a Legendary tool (`gold_key`; Epic until the user's change of
+  2026-11-14). Ordinary chest rooms can be golden too (the user, 2026-11-21, so players see them and
+  want a key): never before room 7 (`GOLDEN_FROM`), then 5% in the Cyclops' Labyrinth, 10% the
+  Hydra's, 15% the Minotaur's and the Warden's (`GOLDEN_CHEST_ROOM`; none in the Encampment). Same key;
+  inside, 500–1000 gold and the 5 golden finds in place of the chest's own. A full map then holds
+  about 0.65 golden chests in the Cyclops, 0.9 in the Hydra and 1.15 in the Minotaur (sim of whole
+  maps, 2026-11-21). The Gold Key is a Legendary tool (`gold_key`; Epic until the user's change of
   2026-11-16, when every key already found was taken back from saves: `dropOldGoldKeys`, lib/save.ts,
   removes any key that isn't Legendary on load) in 10% of chests (`CHEST_TOOLS`); it takes a bag
   slot, stays in your bag between runs as tools do, and isn't sold by merchants (they buy it for 200).

@@ -119,8 +119,8 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
 
       {room.kind === "chest" && (room.done ? <>{sackPanel}{next}</> : (
         <>
-          <p style={{ fontSize: 13, color: "#d8d4c8" }}>An old chest, humming faintly — like the barcodes do. {CHEST_DROPS} things rattle inside.</p>
-          <button className="pixel-btn" onClick={onChest}>Open it</button>
+          <p style={{ fontSize: 13, color: "#d8d4c8" }}>{room.golden ? "A golden chest. It's locked: it takes a Gold Key from your bag." : `An old chest, humming faintly — like the barcodes do. ${CHEST_DROPS} things rattle inside.`}</p>
+          <button className="pixel-btn" onClick={onChest}>{room.golden ? "🔑 Unlock the golden chest" : "Open it"}</button>
         </>
       ))}
 
@@ -188,7 +188,7 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
             A cart piled with odds and ends, and a merchant who smiles too much. &ldquo;One of each, friend. Everything takes a slot in your bag — the timber stacks, mind.&rdquo;
           </p>
-          <MerchantCart key={run.path.length} wares={waresFor(room.wares ?? [], { bagSize: bagSlots }, plans, klutzPacks)} bought={room.bought} gold={gold} bagUsed={bagUsed} bagSlots={bagSlots} stacks={stacks} onBuy={onBuyWares} />
+          <MerchantCart key={run.path.length} wares={waresFor(room.wares ?? [], { bagSize: bagSlots }, plans, klutzPacks, room.bought)} bought={room.bought} gold={gold} bagUsed={bagUsed} bagSlots={bagSlots} stacks={stacks} onBuy={onBuyWares} />
           <MerchantBag key={`bag${run.path.length}`} slots={bagSlots} looks={bagLooks} offers={bagOffers} onSell={onSell} onUse={onUseBag} />
           {next}
         </>
@@ -203,6 +203,8 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
           <LibrarianShelf key={run.path.length} offers={room.offers ?? []} bought={room.bought} price={codexPrice} gold={gold} onBuy={onBuy}
             full={bagUsed >= bagSlots ? "Bag full" : undefined}
             room={<>🎒 {bagUsed}/{bagSlots}{bagUsed >= bagSlots && <span style={{ color: "#ff8a80" }}> full: sell something to make room</span>}</>} />
+          {/* Your bag, to sell from, as at the merchant's cart (the librarian buys at his prices: buysHere). */}
+          <MerchantBag key={`bag${run.path.length}`} slots={bagSlots} looks={bagLooks} offers={bagOffers} onSell={onSell} onUse={onUseBag} />
           {room.kind === "library" ? onward : next}
         </>
       )}

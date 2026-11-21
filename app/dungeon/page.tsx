@@ -410,6 +410,21 @@ export default function DungeonPage() {
   }
 
   function openChest() {
+    // A golden chest room (GOLDEN_CHEST_ROOM): only with a Gold Key from your bag, used up; no key, it
+    // stays shut till you bring one. Inside: a golden chest's finds and gold, in place of the chest's own.
+    const here = loadDungeon().run;
+    if (here?.current?.golden) {
+      const key = (loadDungeon().meta.bag ?? []).find((e) => itemOf(e)?.tool === "gold_key");
+      if (!key) { setNotes(["🔒 The golden chest is locked. You need a Gold Key in your bag."]); return; }
+      spendTool(key);
+      countCampaign("goldchest");
+      setNotes(["🔑 The Gold Key turns, and the golden chest opens."]);
+      const gold = GOLDEN_GOLD[0] + Math.floor(Math.random() * (GOLDEN_GOLD[1] - GOLDEN_GOLD[0] + 1));
+      const sack: SackItem[] = [{ gold }, ...goldenDrops(dungeonOf(here)).map((d): SackItem => ({ gear: d }))];
+      updateRun((r) => (r.current ? { ...r, current: { ...r.current, sack, opened: true, done: true } } : r));
+      setLootOpen(true);
+      return;
+    }
     // Barcode-style drops. (When the barcode merchant outcome arrives, it must be left out here.)
     const drops: Drop[] = [];
     while (drops.length < CHEST_DROPS) {
