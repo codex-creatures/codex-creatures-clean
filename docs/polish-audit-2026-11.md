@@ -25,7 +25,7 @@ Most important first. Each fix is its own commit on `main`, with a test that fai
 | # | What was wrong | Fix (commit starts…) |
 |---|---|---|
 | 1 | The Den drew every face of every prop as its own drawing (3,505 a frame): it ran at 12–20 frames a second on a laptop, and everything opened from it or closing back to it waited on that | "The Den's props are drawn a few drawings each" |
-| 2 | Coming home built the whole Den again, every time | "The Den is made once and kept" (and "Coming home from a run…", its follow-up) |
+| 2 | Coming home built the whole Den again, every time | "The Den is made once and kept" (and its follow-up, "Coming home from a run, you're back in the middle…") |
 | 3 | A duel that was over didn't tell a player who hadn't heard: a guest could be left waiting, then told it had won a duel it lost | "A duel that's over tells whoever is still playing it" |
 | 4 | A guest waiting on the other's replacement lost its turn if one message went missing | "A guest waiting on the other's replacement asks where things are" |
 | 5 | Every read of the save walked all of it four times; the Den's page read it 18 times every 5 seconds | "The save is read without walking all of it each time" |
@@ -409,3 +409,21 @@ worst), so 0.1 to 0.3 s on a slow phone between your tap and the round starting.
   have); and one shader warning from Windows' compiler about a variable in the rock's shader
   ("use of potentially uninitialized variable (f_faceAs_int)"), which draws correctly.
 - **Old names in the tour and links** (option F above).
+
+## Test results (end of the night, commit 9baf952 and this file's after it)
+
+- **`npm run test:all`** (run as two halves, as this laptop needs): **128 files passed, 1 skipped**
+  (the layout bench, which only `test:stress` runs); **1,396 tests passed, 6 skipped** (stress
+  only). No failures, no retries. The Labyrinth page's golden file was not touched and still passes.
+- **`npx tsc --noEmit`:** clean.
+- **`npm run lint`:** 32 errors, 11 warnings, all in files as they were before tonight (the 32 are
+  the parked ones); the files changed or added tonight lint clean.
+- **New tests tonight:** tests/propBatch.test.ts, propMaterials.test.ts, den3dKept.test.tsx,
+  saveRead.test.ts, pitItems.test.tsx, duelFaults.test.ts, battleSoak.test.ts, and three more in
+  stone3d.test.ts. `npm test` (the quick run) takes about 15 s longer than it did, most of it the
+  150 random battles and the 55 random duels.
+- **In a browser, on the scratch copy only** (a scratch port, its own profile; never :3000, :8123,
+  the Vercel site or a phone): the timings in section 1; every recipe prop pictured before and
+  after under two lights and compared pixel by pixel; the Den in and out of four places, dragged,
+  reloaded; the Den → a walked run in the Encampment → home.
+- **Not pushed.** 17 commits on `main` since bec9eec, `origin/main` still at bec9eec.
