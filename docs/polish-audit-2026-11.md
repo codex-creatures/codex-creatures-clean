@@ -91,6 +91,22 @@ Not in the pages, the save or the network: **in how the Den's props were drawn.*
    pixel art, about 120 drawings), and the Labyrinth's 3D view runs beside it rather than instead
    of it. See "What to check on a phone".
 
+6. **Every read of the save walked all of it four times.** `readSave` (lib/save.ts) parses the
+   whole save and then runs the four upgrades old saves need (old armour, old tool names, the Gold
+   Keys taken back, old gear's enchantment roll), each a walk over everything you own. And the save
+   is read a lot: counted in the browser, **26 times coming home to the Den, 11 opening the
+   Storehouse, and 18 times every 5 seconds just standing in the Den** (the Den's page asks the
+   Labyrinth, the campaign, the daily quests, the Challenge and the tavern for news each time its
+   clock ticks). With a mid-game save that was about 200 ms of a slowed phone's time each time you
+   came home, a hitch every 5 seconds in the Den, and it grows with what you own.
+   **Fixed** (commit "The save is read without walking all of it each time"): a save that came
+   through the upgrades unchanged is remembered, and while what's stored is still the same text a
+   read is only parsed (about a quarter of the work). A save that still needs an upgrade is walked
+   at every read, as before, until the game writes it back. tests/saveRead.test.ts checks every
+   upgrade still happens, and that the result is what walking it by hand gives.
+   *Not done, for the user to weigh:* the Den's page still **reads** the save 18 times every 5
+   seconds (each now a parse only). See "Left for the user".
+
 ### Timings, before and after
 
 TODO

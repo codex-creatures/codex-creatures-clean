@@ -20,11 +20,28 @@ export const SAVE_KEY = "codex_creatures_save_v3";
 // Fields written by something other than useGameState.
 export const OWN_FIELDS = ["labyrinth", "tavern", "playTime", "tour", "daily", "campaign", "den3d", "challenge" /* lib/challenge.ts */] as const; // (playTime: lib/playTime.ts; tour: lib/tour.ts; daily: lib/daily.ts; campaign: lib/campaign.ts; den3d: lib/den3d/placement.ts, where you've moved the new Den's things)
 
+// The upgrades below walk the whole save, four times over, and the save is read often: the Den's page read it
+// 26 times coming home and 18 times every 5 seconds standing there, each a walk of everything you own
+// (docs/polish-audit-2026-11.md). They only ever change a save from before them, so: a save that came through
+// them unchanged is remembered (`settled`, its text as stored), and while what's stored is still that text,
+// a read is just parsed: the same result, a fresh copy each time. A save that still needs an upgrade is walked
+// at every read, as before, until the game writes it back upgraded.
+let settled: string | null = null;
+let changed = false; // (set by any upgrade that changes anything, during a walk)
+let walks = 0;
+export const saveWalks = () => walks; // (how many reads have walked the save: the tests')
 export function readSave(): Record<string, unknown> {
   if (typeof window === "undefined") return {};
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(SAVE_KEY) ?? "{}");
-    return parsed && typeof parsed === "object" ? upgradeOldArmor(refreshToolNames(dropTakenBack(enchantOldGear(parsed)))) : {};
+    const raw = window.localStorage.getItem(SAVE_KEY) ?? "{}";
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    if (raw === settled) return parsed;
+    changed = false;
+    walks++;
+    const out = upgradeOldArmor(refreshToolNames(dropTakenBack(enchantOldGear(parsed))));
+    settled = changed ? null : raw;
+    return out;
   } catch {
     return {};
   }
@@ -45,7 +62,7 @@ export function enchantOldGear<T>(save: T): T {
     if (o.dropType === "item" && o.enchant === undefined && typeof o.id === "string" && canEnchant(o as Gear)
       && !(typeof o.createdAt === "string" && o.createdAt >= ENCHANT_ROLL_BEFORE)) {
       const k = (enchanted(o as unknown as Drop, CHEST_ENCHANT, seeded(`enchant:${o.id}`)) as { enchant?: string }).enchant;
-      if (k) o.enchant = k;
+      if (k) { o.enchant = k; changed = true; }
     }
     for (const k in o) walk(o[k]);
   };
@@ -75,6 +92,7 @@ export function dropTakenBack<T>(save: T): T {
         if (!key) continue;
         if (key.id) gone.add(key.id);
         v.splice(i, 1);
+        changed = true;
       }
       v.forEach(strip);
       return;
@@ -82,7 +100,7 @@ export function dropTakenBack<T>(save: T): T {
     if (!v || typeof v !== "object") return;
     const o = v as Record<string, unknown>;
     for (const k in o) {
-      if (isTakenBack(o[k])) { const id = (o[k] as { id?: string }).id; if (id) gone.add(id); delete o[k]; }
+      if (isTakenBack(o[k])) { const id = (o[k] as { id?: string }).id; if (id) gone.add(id); delete o[k]; changed = true; }
       else strip(o[k]);
     }
   };
@@ -114,6 +132,7 @@ export function upgradeOldArmor<T>(save: T): T {
     if (isArmour && o.armorV !== ARMOR_V2 && o.stats && typeof o.stats === "object") {
       o.stats = upgradeOldArmorStats(o.stats as Record<string, number>);
       o.armorV = ARMOR_V2;
+      changed = true;
     }
     for (const k in o) walk(o[k]);
   };
@@ -130,7 +149,7 @@ export function refreshToolNames<T>(save: T): T {
     if (!v || typeof v !== "object") return;
     const o = v as Record<string, unknown>;
     const t = typeof o.tool === "string" && o.dropType === "item" ? TOOLS[o.tool as ToolKey] : undefined;
-    if (t) { o.name = t.name; o.desc = t.desc; }
+    if (t && (o.name !== t.name || o.desc !== t.desc)) { o.name = t.name; o.desc = t.desc; changed = true; }
     for (const k in o) walk(o[k]);
   };
   walk(save);
