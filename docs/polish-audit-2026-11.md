@@ -180,13 +180,81 @@ the code, each difference checked against the docs for a reason.
    creature of your own yet, its Read opened an empty window. No reason in the docs.
    **Fixed** (commit "An XP scroll can be read to Klutz from the Pit too"). tests/pitItems.test.tsx.
 
+### What can be done where (as built)
+
+| | Den: Storehouse / Inventory | Den: the Pit | Den: Bookcase | A run: the bag (between rooms, by a campfire, a merchant's or librarian's room) | A run: an open chest or sack | A battle | Klutz's page | PvP portal |
+|---|---|---|---|---|---|---|---|---|
+| **Look at a creature** (stats, gear, moves) | yes (Inventory's Creatures) | yes | no | no: the Party sheet only reorders | no | the cards of who you're fighting; not your own | Klutz's own window | no: tapping one adds or removes it |
+| **Look at an item** | its window | its window | a codex's box | its stats line, Compare | its stats line, Compare | the battle bag's names | the crate: a stats line | - |
+| **Equip** | from a creature's window | from a creature's window | - | tap or drag onto a creature | tap or drag, from the chest or the bag | swap a weapon from the battle bag | his own window | - |
+| **Take gear off** | yes | yes | - | no | no | no | yes | - |
+| **Teach a codex** | from a creature's Moves | from a creature's Moves | Teach (your creatures; not Klutz) | Teach, or drag onto a creature | **no** | no | his Moves (when he's home) | - |
+| **Change which 4 moves it uses** | yes | yes | only as part of teaching | only as part of teaching | no | no | yes (when he's home) | - |
+| **Read an XP scroll** | Read (creatures and Klutz) | Read (now Klutz too: fix 2) | - | tap or drag | tap or drag, from the chest or the bag | no | his window | - |
+| **Heal** | - (the pool, on its own page; Klutz drinks a potion on his page) | - | - | potions, a Revival Elixir | potions, from the chest or the bag | potions, an elixir | a potion | - |
+| **Sell** | Sell mode, or one from its window | one from its window (documented: Sell mode stays at the chest) | Sell a codex | to a merchant or librarian only | no | no | the crate: one or all | - |
+| **Edit a team** | a creature's window (Labyrinth teams) | a creature's window (Labyrinth teams) | - | reorder the party | - | swap | - | PvP teams only |
+| **Set a soul stone** | a creature's window | a creature's window | - | no | no | no | his window | - |
+
+Prices are the same wherever a thing is sold (`merchantOffer` / `crateSellValue` / `codexSellPrice`
+all come to one sum): checked, no difference found.
+
+### Differences left as they are, with why
+
+- **Sell mode only at the Storehouse**, one at a time from the Pit: the Pit's own comment says so
+  (app/pit/page.tsx). Deliberate.
+- **Klutz is taught from his own window, not the Bookcase's Teach**: klutz.md says so ("Klutz reads
+  codexes you own from his Equip window → Moves"). Deliberate, though see option C below.
+- **No soul stones, taking gear off or re-picking moves during a run**: nothing in the docs either
+  way. They read as "you prepare at home", so left; say if any should be possible in a run.
+- **Off-style moves, and players gearing up their own creatures**: your notes; not looked at as
+  problems.
+
 ## 3. Bugs
 
 TODO
 
 ## Left for the user (options)
 
-TODO
+**From the Den's timings**
+
+- **A. The Den's page reads the whole save 18 times every 5 seconds** (its clock ticks, and each
+  thing it shows a "❗" for asks the save afresh: the Labyrinth, the campaign, the daily quests, the
+  Challenge, the tavern). Fix 6 made each read about four times cheaper, but they're still reads.
+  Options: (1) leave it (it's small now); (2) have the Den's page read the save once per tick and
+  hand it round (a contained change to app/page.tsx and the readers it calls); (3) only re-check
+  when the save has actually been written (a listener exists: `onSaveWritten`). I'd pick 3.
+- **B. The first opening of each place after the site loads is about twice as slow as later ones.**
+  The Den already asks for every place's page in the background as it opens (`router.prefetch`).
+  What's left is the browser reading that code for the first time. Options: leave it; or warm the
+  two or three biggest places (the Labyrinth, the Storehouse) a second or two after the Den
+  settles. Not done: it trades battery and data for a first-tap saving, which is your call.
+
+**From the inconsistencies**
+
+- **C. A codex in an open chest (or in your bag while the chest is open) can't be taught there.**
+  Gear can be equipped, a potion drunk and an XP scroll read straight from the chest window; a
+  codex can only be taken. You close the chest, open the bag, and teach it there (the 2026-11-21
+  change). Options: (1) leave it; (2) add Teach to the chest window for codexes in your bag only
+  ("a codex you carry", as labyrinth.md words it); (3) for codexes still in the chest too, as
+  scrolls work. It needs the "which move does it forget?" step fitted into the chest's fixed
+  window, which is a layout decision, so it's left for you.
+- **D. You can't look at one of your own creatures (stats, gear, moves) while picking a party at
+  the Labyrinth's entrance, picking a PvP team at the portal, or during a run.** Tapping one there
+  adds or removes it. To check a creature you go back to the Pit. Options: leave it; or a long
+  press (or a small "i") on a creature opening its window read-only. A new control, so yours.
+- **E. Klutz and codexes.** An XP scroll's Read lists Klutz beside your creatures; the Bookcase's
+  Teach doesn't (he's taught from his own window, as klutz.md says). Options: leave it; or list
+  him at the Bookcase too when he's home.
+- **F. "Inventory" and "Storehouse".** The Den's place is the Storehouse (weapons, armour,
+  consumables), but six links still open the old three-part Inventory (`/chest` without
+  `?store=1`): the scan screen's card, the entrance's "box is full" link, Klutz's crate, the
+  campaign's box and schematic quests, and Klutz's tour (whose words also say "Inventory" and
+  "codexes"). Already on your list (the tour's text); noted here so the links aren't forgotten.
+- **G. "Testing: heal now"** is still the label at the Labyrinth's entrance; the Healing Pool's
+  own page had its testing label taken off (2026-11-20). Same shortcut, two wordings.
+- **H. A creature training in the pit** can be put in a Labyrinth team (it then shows greyed at
+  the entrance) but can't be added to a PvP team at all. Either is defensible; they differ.
 
 ## UI noticed along the way (not changed)
 
