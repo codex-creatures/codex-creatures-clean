@@ -319,16 +319,54 @@ out" to be the game. No enchantments and no essence crystals from dailies. 🧪 
 | Beat the Minotaur | the same box, two pieces at least Epic |
 | Beat the Abyss | the same box, one piece Legendary and one at least Epic |
 
-📌 **The Challenge** (the user, 2026-11-23; not built): "the chase one", the quest that can pay the
-most, apart from the two dailies. A dungeon to beat with a quirk, for example:
-- exploring 80% or more of its rooms;
-- with a team that all share a trait (all Toxic);
-- wearing nothing better than Uncommon gear.
+✅ **The Challenge** (the user, 2026-11-23; lib/challenge.ts): "the chase one", a third note on the Daily
+Quests tab (🏆, under the two dailies) and the quest that can pay the most. **A boss to beat with a quirk:**
+- **a full team all of one race** ("Beat the Hydra with a full Toxic team"; a creature of two
+  races counts for both; a full team is 3, or 5 in the Minotaur's and the Abyss);
+- **without a potion or a Revival Elixir** on that run (any team);
+- **a full team, none above a rarity** (an ascended creature counts as what it has become).
 
-Its reward grows with how hard the quirk makes it. **Each lasts 2 days** (the user, 2026-11-23: "2 days
-works for now"). **What it can pay** (the user, the same day): enchanted weapons and armour, and essence
-crystals (the Epic material: fine as a reward here and in boss chests). ❓ Open: the full list of quirks,
-how the difficulty of one is scored, and how much each pays.
+**Each lasts 2 days** (`CHALLENGE_DAYS`; the note says how long is left), the same for everyone, picked
+from the date. It opens once you've beaten the Cyclops. A boss you've never beaten steps down to the deepest
+one you have, as the daily boss quests do; which one you got is fixed the first time it's seen, so a first
+win doesn't swap it. Win a run that meets it and the note can be claimed, once (the Den's board is marked).
+Its state is its own field of the save (`challenge`; nothing's saved till it opens).
+
+**What it pays** (the user: enchanted weapons and armour, and essence crystals) grows with the boss and
+with how hard the quirk makes it (a grade of 1 to 3). 🧪 Claude's amounts, kept to one good piece:
+
+| | Grade 1 | Grade 2 | Grade 3 |
+|---|---|---|---|
+| The Cyclops | 1 enchanted Rare or Epic piece | 1 enchanted Epic | 1 enchanted Epic and a crystal |
+| The Hydra | 1 enchanted Epic | 1 enchanted Epic and a crystal | 2 enchanted Epic and a crystal |
+| The Minotaur | 1 enchanted Epic and a crystal | 1 enchanted Legendary | 1 enchanted Legendary and 2 crystals |
+| The Abyss | 1 enchanted Legendary | 1 enchanted Legendary and 2 crystals | 2 enchanted Legendary and 2 crystals |
+
+**The grades are from a sim** (the user: "sim how hard they are to do and do a scale based on those
+results"; 50 to 120 runs each, 2026-11-23, since deleted): a party a player at that boss might have walks
+the careful way up and fights the boss, with the Normal AI, as it is and under each quirk. How often it
+clears:
+
+| | The Cyclops (Lv 10, Rare gear) | The Hydra (Lv 21, Epic gear) | The Minotaur (five, Lv 26, Epic gear) | The Abyss (five, Lv 30, Epic gear) |
+|---|---|---|---|---|
+| As it is | 32% | 39% | 27% | 24% |
+| No potions | 18% | 30% | 28% | 16% |
+| All one race (its best) | 24% | 39% | 20% | 14% |
+| None above Epic | | | | 40% (all Epic) |
+| None above Rare | | 25% | 15% | 6% |
+| None above Uncommon | 17% | 18% | 7% | 2% |
+| None above Common | 8% | 12% | 2% | 0% |
+
+A quirk that makes a run under one and a half times as hard is grade 1, up to two and a half times grade 2,
+more grade 3 (`CHALLENGE_GRADES`): the Cyclops's are one race 1, no potions 2, none above Uncommon 2 or
+Common 3; the Hydra's one race 1, no potions 1, none above Rare or Uncommon 2 or Common 3; the Minotaur's
+one race 2, no potions 1, none above Rare 2 or Uncommon 3; the Abyss's one race 2, no potions 2, none above
+Epic 1 or Rare 3. Two things the sim can't see, to weigh when playing it: it picks the best three (or five)
+of a race, when the real cost of that quirk is owning them (the Minotaur's is grade 2, not the sim's 1, for
+needing five); and it only drinks between rooms, never mid-fight, and has no elixirs, so "no potions" is
+likely harder for a person than it shows.
+
+❓ Open: more quirks (the user's others: 80% or more of the rooms explored, a cap on gear).
 
 | Secondary | Reward |
 |---|---|

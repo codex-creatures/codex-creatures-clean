@@ -27,6 +27,7 @@ import { klutzHelping } from "@/lib/quest";
 import { useRouter } from "next/navigation";
 import { hydraStep } from "@/lib/trainingPit";
 import { DAILY_ONLINE, canClaim, claimDaily, dailyCtx, dailyFor, dayKey, loadDaily, rollDailyReward, todayDaily, todaysQuests, updateDaily, waitsForTavern, type DailyQuest, type DailyReward } from "@/lib/daily";
+import { bossWins, canClaimChallenge, challengeFor, challengeKey, challengeName, challengeTask, claimChallenge, currentChallenge, daysLeft, loadChallenge, rewardOf, rewardText as challengeRewardText, rollChallengeReward, updateChallenge } from "@/lib/challenge";
 import { CACHE_LIMIT } from "@/hooks/useGameState";
 import CodeCache from "@/components/CodeCache";
 import ClaimBurst, { type ClaimShow } from "@/components/ClaimBurst";
@@ -171,7 +172,7 @@ function QuestList() {
   const [burst, setBurst] = useState<{ show: ClaimShow; drops: Drop[] | null } | null>(null); // a claim's celebration, then its box
   const [summoned, setSummoned] = useState<CreatureOrItemDrop | null>(null); // a creature reward, coming out of the altar
   // Fix today's quests in the save the first time they're seen (lib/daily.ts todayDaily).
-  useEffect(() => { if (game.hydrated) todayDaily(DAILY_ONLINE); }, [game.hydrated]);
+  useEffect(() => { if (game.hydrated) { todayDaily(DAILY_ONLINE); currentChallenge(); } }, [game.hydrated]); // (and this window's Challenge: lib/challenge.ts)
   if (!game.hydrated) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Loading…</p>;
 
   const daily = dailyFor(loadDaily(), dayKey(), dailyCtx(DAILY_ONLINE));
@@ -201,6 +202,19 @@ function QuestList() {
     const look = dailyLook(q);
     setBurst({ show: { art: look.art, tint: look.tint, text: q.reward === "gold" ? `+${(q.gold ?? 0).toLocaleString()} gold` : q.pays,
       from: note?.querySelector(".reward-badge")?.getBoundingClientRect() ?? null }, drops: box });
+    buzz("levelUp");
+    reread((n) => n + 1);
+  }
+
+  // The Challenge (lib/challenge.ts): a boss with a quirk, for CHALLENGE_DAYS days; none till the Cyclops is beaten.
+  const chase = challengeFor(loadChallenge(), challengeKey(), bossWins());
+  function claimChase(note: Element | null) {
+    const s = currentChallenge();
+    if (!s.challenge || !canClaimChallenge(s)) return;
+    const r = rewardOf(s.challenge), drops = rollChallengeReward(r);
+    updateChallenge(claimChallenge);
+    drops.forEach(game.addDrop);
+    setBurst({ show: { art: CHALLENGE_ART, tint: RARITY_COLORS[r.hi].text, text: challengeRewardText(r), from: note?.querySelector(".reward-badge")?.getBoundingClientRect() ?? null }, drops: drops.length > 1 ? drops : null });
     buzz("levelUp");
     reread((n) => n + 1);
   }
@@ -240,6 +254,31 @@ function QuestList() {
           </div>
         );
       })}
+
+      {chase.challenge && (() => {
+        const c = chase.challenge, r = rewardOf(c), ready = canClaimChallenge(chase), left = daysLeft();
+        const text = `${challengeTask(c)}. Reward: ${challengeRewardText(r)}.`, days = left === 1 ? "1 day" : `${left} days`;
+        return (
+          <div className="note" style={{ transform: `rotate(${TILT[2 % TILT.length]}deg)`, display: "grid", gridTemplateColumns: "58px 1fr", alignItems: "center", gap: 10, padding: "14px 12px 10px 10px", opacity: chase.claimed ? 0.75 : 1 }}>
+            <span className="note-pin" />
+            <Badge art={CHALLENGE_ART} inside={null} tint={RARITY_COLORS[r.hi].text} label="" gold={false} title={challengeRewardText(r)} ready={ready} />
+            <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span className="note-label">🏆 Challenge · {days} left</span>
+                <span className="note-label">{chase.done ? 1 : 0}/1</span>
+              </div>
+              <div className="pixel-font" style={{ fontSize: 18, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{challengeName(c)}</div>
+              <div title={text} style={CLAMP2}>{text}</div>
+              <div style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 10 }}>
+                <button className="pixel-btn" onClick={(e) => claimChase(e.currentTarget.closest(".note"))} disabled={!ready}
+                  style={{ visibility: chase.claimed ? "hidden" : "visible" }}>🎁 Claim</button>
+                <span style={{ fontSize: 13, fontWeight: 600, color: ready ? "#2f7a3a" : "#7a5a30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{chase.claimed ? `A new one in ${days}` : ready ? "Ready to claim" : ""}</span>
+              </div>
+            </div>
+            {chase.claimed && <span className="note-stamp" style={{ right: 14 }}>CLAIMED</span>}
+          </div>
+        );
+      })()}
 
       {hydra !== "closed" && (
         <div className="note note-wanted" style={{ transform: `rotate(${TILT[2]}deg)`, display: "grid", gridTemplateColumns: "auto 1fr", alignItems: "center", gap: 10, padding: "14px 12px 10px", opacity: hydra === "paid" ? 0.75 : 1 }}>
@@ -424,6 +463,8 @@ function rewardLook(r: CampaignReward) {
 }
 const RewardBadge = ({ r, small, ready }: { r: CampaignReward; small?: boolean; ready?: boolean }) => <Badge {...rewardLook(r)} title={rewardText(r)} small={small} ready={ready} />;
 
+// The Challenge's reward, as a picture: an enchanted piece (its tint, the rarity).
+const CHALLENGE_ART = "/sprites/items/void_scythe.png";
 // A daily quest's reward, as a picture (and how much gold).
 const DAILY_ART: Record<DailyReward, string> = {
   gold: "/sprites/items/gold.png", box: "/sprites/props/klutz_box.png", creature: "/sprites/icons/ui_creatures.png",

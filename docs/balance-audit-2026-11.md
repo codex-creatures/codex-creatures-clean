@@ -61,8 +61,8 @@ Read these before acting on an item: they overrule what's written under it.
   designed to want some share-of-max-HP damage. Cleanse stays.
 - **The level cap is 50** (2026-11-23; Klutz stays at 30), and the Bestiary shows stats at Lv 15, 30 and 50.
 - **Item 4's daily rewards are fixed** (2026-11-23): every boss pays the Cyclops's box of 5, a little
-  better the deeper the boss, and the Minotaur has one. Kept small: the big reward is to be the Challenge
-  (a dungeon beaten with a quirk), decided in outline in [design/den.md](design/den.md), not built.
+  better the deeper the boss, and the Minotaur has one. Kept small: the big reward is the Challenge
+  (a boss beaten with a quirk, 2 days each), built the same day: [design/den.md](design/den.md).
 
 ## What this rests on
 

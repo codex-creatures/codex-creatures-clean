@@ -20,6 +20,7 @@ import { endTour } from "@/lib/tour";
 import { canReroll, reroll, rerollCost, REROLL_ESSENCE } from "@/lib/enchantress";
 import { VISITORS, tavernVisitors, guestOf, tavernNow, upgradeVisitor, blast, forceOpen, callVisitor, buyFromVisitor, clearTavern, loadTavern, materialOffer, merchantCalls, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { clearDaily, countDaily } from "@/lib/daily";
+import { clearChallenge } from "@/lib/challenge";
 import { clearCampaign, countCampaign, loadCampaign } from "@/lib/campaign";
 import { fighterFor, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
@@ -1289,6 +1290,7 @@ export function useGameState(initialTab: TabKey = "all") {
     clearTavern();
     clearDaily();
     clearCampaign();
+    clearChallenge();
     clearPlayTime();
     endTour();
     setTavern({});

@@ -48,6 +48,11 @@ import type { ArmorKey } from "@/lib/items/armor";
 import { planFinds } from "@/lib/items/plans";
 import { cornerCrateFind, squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, bossChest, bossLoot, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, fightEnemies, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, floorRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
+import { noteItemUsed, noteWin, updateChallenge, usedItemOn } from "@/lib/challenge";
+import { isCreatureDrop } from "@/lib/types";
+import { SPECIES_RACES } from "@/lib/creatures/racesV2";
+import { rarityOfCreature } from "@/lib/creatures/ascend";
+import { teamSize } from "@/lib/dungeon/run";
 import { countCampaign, drankOn, noteDrank, onlyEffective } from "@/lib/campaign";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
@@ -142,14 +147,16 @@ export default function DungeonPage() {
   }
 
   // A potion drunk: this run's boss won't count for the campaign's "without a potion" quests.
-  const drankHere = () => { const id = loadDungeon().run?.id; if (id) noteDrank(id); };
+  const drankHere = () => { const id = loadDungeon().run?.id; if (id) { noteDrank(id); updateChallenge((s) => noteItemUsed(s, id)); } };
+  // A Revival Elixir used: with a potion, what the Challenge's "without a potion or an elixir" rules out (lib/challenge.ts).
+  const elixirHere = () => { const id = loadDungeon().run?.id; if (id) updateChallenge((s) => noteItemUsed(s, id)); };
 
   // Used from the bag mid-fight: a potion, a weapon for the creature on the
   // field, or a Revival Elixir (on a knocked-out teammate: the fight brings it back).
   function useFromBag(key: string, activeIndex: number) {
     const e = key as BagEntry;
     if (isPotionEntry(e)) { takeOne(e); drankHere(); return; }
-    if (itemOf(e)?.tool === "revival") { spendTool(e); return; }
+    if (itemOf(e)?.tool === "revival") { spendTool(e); elixirHere(); return; }
     const creatureId = loadDungeon().run?.current?.fighters?.[activeIndex];
     if (creatureId) equipFromBag(e, creatureId);
   }
@@ -388,6 +395,10 @@ export default function DungeonPage() {
     if (cur.run && (cur.run.status === "cleared" || wonAtTop(cur.run))) {
       countDaily(`win:${dungeonOf(cur.run)}`);
       if (!drankOn(cur.run.id)) countCampaign(`clean:${dungeonOf(cur.run)}`); // (the campaign: its boss beaten without a potion)
+      // The Challenge (lib/challenge.ts): this boss, beaten with its quirk? Who went in, as they are now.
+      const run = cur.run, went = run.party.flatMap((id) => { const c = game.inventory.find((d) => d.id === id); return c && isCreatureDrop(c) ? [c as CreatureOrItemDrop] : []; });
+      updateChallenge((s) => noteWin(s, { dungeon: dungeonOf(run), teamSize: teamSize(run), usedItem: usedItemOn(s, run.id),
+        team: went.map((c) => ({ races: SPECIES_RACES[c.creatureId ?? ""] ?? [], rarity: rarityOfCreature(c) })) }));
     }
     update(endRun({ ...cur, meta: { ...cur.meta, bag, loot } }));
     updateTavern(comeHome); // home: a visitor from before the clock stays a run less
@@ -570,6 +581,7 @@ export default function DungeonPage() {
     if (it.tool === "revival") {
       if (!who || !cur.run.party.includes(who) || (cur.run.hp[who] ?? 1) > 0) return;
       spendTool(entry);
+      elixirHere();
       updateRun((r) => ({ ...r, hp: { ...r.hp, [who]: REVIVE_HP } }));
       setNotes((n) => [...n, `💖 ${byId(who)?.name ?? "Your creature"} is back on its feet.`]);
       return;
@@ -779,6 +791,7 @@ export default function DungeonPage() {
       if (from === "bag") { applyTool(loadDungeon().meta.bag[i], id); return; }
       if ((r0.hp[id] ?? 1) > 0) return;
       takeOutOfSack(i);
+      elixirHere();
       updateRun((r) => ({ ...r, hp: { ...r.hp, [id]: REVIVE_HP } }));
       setNotes((n) => [...n, `💖 ${byId(id)?.name ?? "Your creature"} is back on its feet.`]);
       return;

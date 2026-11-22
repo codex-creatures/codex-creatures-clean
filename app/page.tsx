@@ -22,6 +22,7 @@ import { canBlast, headUp, tavernVisitors, visitorNews } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
 import { campaignUnseen, canClaimNext, loadCampaign, readCampaignCtx } from "@/lib/campaign";
 import { DAILY_ONLINE, dailyNews, todayDaily } from "@/lib/daily";
+import { canClaimChallenge, currentChallenge } from "@/lib/challenge";
 import { useTour } from "@/hooks/useTour";
 import { tourDenTarget } from "@/lib/tour";
 import { hasPit, hydraStep } from "@/lib/trainingPit";
@@ -67,7 +68,7 @@ export default function Home() {
   const tavernNews = game.hydrated && tavernVisitors(game.tavern, now).some((v) => visitorNews(game.tavern, v, now));
   // (A daily quest to claim, and nothing on the campaign: the board opens on today's quests, where it is.)
   const campaignNews = game.hydrated && ((klutzHelping(game.quest) && (canClaimNext(loadCampaign(), readCampaignCtx()) || campaignUnseen(loadCampaign()))) || hydraStep(game.tavern, clears, deepClears) === "claim");
-  const boardNews = campaignNews || (game.hydrated && dailyNews(todayDaily(DAILY_ONLINE), !!game.tavern.repaired) && "daily");
+  const boardNews = campaignNews || (game.hydrated && (dailyNews(todayDaily(DAILY_ONLINE), !!game.tavern.repaired) || canClaimChallenge(currentChallenge())) && "daily"); // (or the Challenge's reward: lib/challenge.ts)
   const crateNews = game.hydrated && game.crate.length > 0;
   const cageNews = game.hydrated && game.caged.length > 0 && highlight !== OBJ.cage;
 
