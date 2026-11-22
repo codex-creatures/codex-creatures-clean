@@ -4,8 +4,10 @@
 // crops at the art density, leaning as the rock does (Props3D's PROP_LEAN), unlit and tinted by the light where
 // the prop stands as the game's 3D things are; a part that glows is drawn full bright; toon parts carry their
 // band of light in each face's colour. /lab/propbuilder draws with it; the game will (world/art-pipeline.md §6.6).
-// Each part is drawn from its own recipe object, and each face from its own, so changing one part or one face's
-// texture rebuilds that part alone.
+// The game draws a prop's faces gathered into a few drawings (lib/props/batch.ts: a face a drawing was thousands a
+// frame in the Den, too many for a phone); only its moving faces (a swirl, a ripple) are drawn on their own.
+// The builder, which picks parts and repaints faces, draws each part from its own recipe object and each face
+// from its own, so changing one part or one face's texture rebuilds that part alone.
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -13,6 +15,7 @@ import { useFrame } from "@react-three/fiber";
 import { PROP_LEAN, Glow } from "@/components/Props3D";
 import { texture } from "@/components/WalkView3D";
 import { partFaces, SWIRL, RIPPLE, DENSITY, type FacePoly, type Part, type Recipe } from "@/lib/props/recipe";
+import { batchFaces, type FaceBatch } from "@/lib/props/batch";
 
 export type Tint = () => THREE.Color;
 
@@ -124,6 +127,60 @@ const Face = memo(function Face({ f, tint, picked, onPick, lit }: { f: FacePoly;
     : <mesh ref={ref} geometry={geo} material={mat} raycast={() => null} />;
 });
 
+// ── Gathered (the game's) ──
+// A drawing of many faces (lib/props/batch.ts): the same picture, lean and cut-out as a face drawn alone, each
+// face's crop of the picture (and whether it repeats) read from its corners, its own colour in its corners' colours.
+const SIDES = { front: THREE.FrontSide, back: THREE.BackSide, double: THREE.DoubleSide };
+function batchMaterial(b: FaceBatch, lit: boolean): THREE.MeshBasicMaterial | THREE.MeshLambertMaterial {
+  const Mat = lit && !b.plain ? THREE.MeshLambertMaterial : THREE.MeshBasicMaterial;
+  const m = new Mat({ map: b.src ? texture(b.src) : null, color: "#ffffff", vertexColors: true, alphaTest: 0.5, side: SIDES[b.side] });
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, PROP_LEAN);
+    sh.vertexShader = "uniform float uLean;\nuniform float uCx;\nin vec4 aCrop;\nin float aTile;\nflat out vec4 vCrop;\nflat out float vTile;\n" + sh.vertexShader.replace("#include <project_vertex>",
+      "vCrop = aCrop;\nvTile = aTile;\nvec4 mvPosition = modelMatrix * vec4(transformed, 1.0);\nmvPosition.x += uLean * (mvPosition.x - uCx) * mvPosition.y;\n" +
+      "mvPosition = viewMatrix * mvPosition;\ngl_Position = projectionMatrix * mvPosition;\n");
+    // (A line break after it: a lit material's shader starts with a #define, which must start its own line.)
+    sh.fragmentShader = "flat in vec4 vCrop;\nflat in float vTile;\n" + sh.fragmentShader.replace("#include <map_fragment>", `
+      #ifdef USE_MAP
+        vec2 size = vec2(textureSize(map, 0));
+        vec2 f = vTile > 0.5 ? fract(vMapUv) : clamp(vMapUv, 0.0, 0.9999);
+        vec4 sampledDiffuseColor = texture2D(map, vec2(vCrop.x + f.x * vCrop.z, size.y - vCrop.y - vCrop.w + f.y * vCrop.w) / size);
+        diffuseColor *= sampledDiffuseColor;
+      #endif`);
+  };
+  m.customProgramCacheKey = () => `propBatch${Mat === THREE.MeshLambertMaterial ? ":lit" : ""}`;
+  return m;
+}
+function batchGeometry(b: FaceBatch): THREE.BufferGeometry {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(b.position, 3));
+  g.setAttribute("uv", new THREE.BufferAttribute(b.uv, 2));
+  g.setAttribute("color", new THREE.BufferAttribute(b.colour, 3));
+  g.setAttribute("normal", new THREE.BufferAttribute(b.normal, 3));
+  g.setAttribute("aCrop", new THREE.BufferAttribute(b.crop, 4));
+  g.setAttribute("aTile", new THREE.BufferAttribute(b.tile, 1));
+  return g;
+}
+// A face's own colour as the renderer counts it (for its corners' colours).
+const ownColour = (f: FacePoly): [number, number, number] => { const c = baseOf(f); return [c.r, c.g, c.b]; };
+// The whole prop: its faces worked out and gathered once (again only if the recipe or the camera's angle changes),
+// one drawing for each picture and kind, all tinted together each frame by the light where the prop stands.
+function Gathered({ recipe, pitch, stretch, tint, lit }: { recipe: Recipe; pitch: number; stretch: number; tint?: Tint; lit: boolean }) {
+  const { drawings, alone } = useMemo(() => {
+    const g = batchFaces(recipe.parts.flatMap((p) => partFaces(p, { pitch, stretch })), { lit, colourOf: ownColour });
+    return { drawings: g.batches.map((b) => ({ key: b.key, plain: b.plain, geo: batchGeometry(b), mat: batchMaterial(b, lit) })), alone: g.alone };
+  }, [recipe, pitch, stretch, lit]);
+  useEffect(() => () => { for (const d of drawings) { d.geo.dispose(); d.mat.dispose(); } }, [drawings]);
+  // (Lit with no tint, the review lab's, the lights alone shade it; a tint given as well, as the Den gives, multiplies in.)
+  useFrame(() => { const light = tint && tint(); for (const d of drawings) d.mat.color.copy(d.plain || !light ? WHITE : light); });
+  return (
+    <>
+      {drawings.map((d) => <mesh key={d.key} geometry={d.geo} material={d.mat} raycast={() => null} />)}
+      {alone.map((f) => <Face key={f.key} f={f} tint={tint} picked={false} lit={lit} />)}
+    </>
+  );
+}
+
 // One part: its faces worked out again only when the part (or the camera's angle) changes.
 const RecipePart = memo(function RecipePart({ part, pitch, stretch, tint, picked, onPick, lit }: { part: Part; pitch: number; stretch: number; tint?: Tint; picked: boolean; onPick?: Pick; lit: boolean }) {
   const [before] = useState(() => new Map<string, { f: FacePoly; sig: string }>());
@@ -132,13 +189,15 @@ const RecipePart = memo(function RecipePart({ part, pitch, stretch, tint, picked
 });
 
 // The prop, standing at `at` (its origin, the middle of its foot), facing south. `picked`, `onPick`: the
-// builder's (the part picked, and a tap on a part). `lit`: shaded by the scene's lights instead of tinted.
+// builder's (the part picked, or null, and a tap on a part): given either, each face is drawn on its own.
+// `lit`: shaded by the scene's lights instead of tinted.
 export function PropRecipe3D({ recipe, at = [0, 0, 0], pitch, stretch, tint, picked, onPick, lit = false }: { recipe: Recipe; at?: [number, number, number]; pitch: number; stretch: number; tint?: Tint;
   picked?: string | null; onPick?: Pick; lit?: boolean }) {
   return (
     <group position={at}>
       {recipe.halo && <Glow colour={recipe.halo.colour} radius={recipe.halo.radius} strength={recipe.halo.strength} />}
-      {recipe.parts.map((p) => <RecipePart key={p.id} part={p} pitch={pitch} stretch={stretch} tint={tint} picked={p.id === picked} onPick={onPick} lit={lit} />)}
+      {picked === undefined && !onPick ? <Gathered recipe={recipe} pitch={pitch} stretch={stretch} tint={tint} lit={lit} />
+        : recipe.parts.map((p) => <RecipePart key={p.id} part={p} pitch={pitch} stretch={stretch} tint={tint} picked={p.id === picked} onPick={onPick} lit={lit} />)}
     </group>
   );
 }

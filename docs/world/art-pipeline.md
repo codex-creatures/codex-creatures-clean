@@ -70,7 +70,8 @@ spec assumes nothing about them.
 A 3D prop as a small JSON **recipe** of simple parts painted with crops of PixelLab drawings, built in the lab
 against its drawing; no baked meshes. ✅ Built (all five stages, 2026-11-19): the format, the loader, the renderer
 and the altar; editing parts; painting faces; the drawing over the view, torch light, the palette check, new props
-and saving. Lab only: nothing in the game draws a recipe yet.
+and saving. Lab only at first; the new Den has drawn its places from recipes since 2026-11-19 (components/Den3DPlaces.tsx `Place`),
+and the Labyrinth a camp's cage (components/Decor3D.tsx).
 
 **Using it** (`/lab/propbuilder`; Save needs `npm run dev`):
 1. **Start a prop:** pick a recipe, or "+ New prop" (a file name like `healing-pool`, a name, den or dungeon).
@@ -115,9 +116,15 @@ Until it's saved, a recipe's changes are a draft in that browser only: on anothe
   Ctrl+D, Delete. Every edit makes a new recipe sharing every untouched part, and `readRecipe`'s `cache` keeps
   their drawing as it was. An unsaved draft of each recipe stays in the browser (`codex_creatures_propbuilder_draft_v1`)
   till it's reset to the file; till Save (stage 4), Copy JSON gives the recipe to paste over its file (`formatRecipe`).
-- **Drawing** (`components/PropRecipe3D.tsx`): each face a flat polygon with its own material (the crop read in
-  the shader, the lean as Props3D's `leaned`), unlit and tinted by the light where it stands as the game's 3D
-  things are; each part memoised on its own recipe object, so changing one part rebuilds only it.
+- **Drawing** (`components/PropRecipe3D.tsx`): each face a flat polygon (the crop read in the shader, the lean
+  as Props3D's `leaned`), unlit and tinted by the light where it stands as the game's 3D things are.
+  **In the game a prop's faces are gathered** (`lib/props/batch.ts` `batchFaces`, 2026-11-23): faces that share
+  a picture and are drawn the same way (front, inside out or both sides; lit or plain) are one drawing, each
+  face's crop, repeat and own colour carried on its corners; only a moving face (`anim`) is drawn on its own. A
+  face a drawing made the Den about 3,500 drawings a frame, which a phone can't keep up with
+  ([polish-audit-2026-11.md](../polish-audit-2026-11.md)); gathered it's about 120, and looks the same (tests/propBatch.test.ts
+  keeps every Den prop to 16 drawings or fewer). **The builder** (given `picked` or `onPick`) still draws each
+  face with its own material, each part memoised on its own recipe object, so changing one part rebuilds only it.
 - **More part settings** (2026-11-19): `four` (×4 round: the part and three copies a quarter turn apart round the
   prop's middle, so one corner's design is on all four, the user's idea); `hole` (a cylinder as a tube: ring top and
   bottom, an `inner` wall); `inside` (a box or cylinder drawn hollow, its walls seen from within); a face's `anim`

@@ -20,6 +20,8 @@ Start here to find the one file a task needs. Read that file's relevant section,
    the record), and [ideas/](ideas/) (sketches and references). Something found only there is not a
    requirement. Nor is [balance-audit-2026-11.md](balance-audit-2026-11.md): a dated report of
    findings and options (sims and real data, 2026-11-22), with the user's replies at its top.
+   Nor is [polish-audit-2026-11.md](polish-audit-2026-11.md): a dated report (2026-11-23) of what an overnight
+   polish pass found, fixed and left for the user.
 6. [CLAUDE.md](../CLAUDE.md) holds the working rules (hard rules, git, commands, conventions);
    [README.md](../README.md) at the top is for the human (setup, running, the two computers).
 
