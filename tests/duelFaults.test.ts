@@ -4,7 +4,9 @@
 import { describe, expect, it } from "vitest";
 import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
-import { Duel, mirrorBattle, steadyAction, RESEND_MS, type DuelMsg, type DuelTeam, type DuelView } from "../lib/pvp/duel";
+import { activeOf, affordableSkills, attackTargets, type BattleAction } from "../lib/combat/battle";
+import { Duel, duelActionOk, mirrorBattle, steadyAction, RESEND_MS, type DuelMsg, type DuelTeam, type DuelView } from "../lib/pvp/duel";
+import { slowIt } from "./slow";
 import { PVP_FORMATS, GONE_SECONDS, GRACE_SECONDS, PICK_SECONDS } from "../lib/pvp/formats";
 
 const FMT = PVP_FORMATS["3v3-rare"];
@@ -127,6 +129,50 @@ describe("a duel's end always reaches the guest", () => {
   });
 });
 
+describe("a guest with nothing to say still asks", () => {
+  // Waiting for the host to send in a replacement, the guest has no choice of its own to repeat. If the host's
+  // next message was lost, nobody said anything: the guest sat on "Waiting…" until the host's own clock ran out
+  // (40 s) and made the guest's move for it.
+  it("the host's replacement lost on the way: the guest asks, gets the battle as it is, and makes its own move", () => {
+    let lose = false;
+    const p = link({ lose: (_, to) => lose && to === "guest" });
+    p.toBattle();
+    // Play till only the host's creature is down (the guest waits on the host's replacement).
+    for (let n = 0; n < 500; n++) {
+      const g = p.guest.view;
+      if (g.phase !== "battle") throw new Error("the battle ended before the host lost a creature alone: pick other teams");
+      if (g.state.needsReplacement.length === 1 && g.state.needsReplacement[0] === "B") break;
+      playSteady(p.host); playSteady(p.guest); p.deliver();
+    }
+    expect(p.guest.view).toMatchObject({ phase: "battle", sent: true });
+    const before = (p.guest.view as { seq: number }).seq;
+    lose = true;
+    playSteady(p.host); p.deliver(); // (the host sends its replacement in; the news of it never arrives)
+    lose = false;
+    expect(p.host.view).toMatchObject({ phase: "battle", seq: before + 1 });
+    expect(p.guest.view).toMatchObject({ phase: "battle", seq: before, sent: true });
+    p.run(RESEND_MS / 1000 + 1);
+    expect(p.guest.view).toMatchObject({ phase: "battle", seq: before + 1, sent: false }); // (its turn, in good time)
+  });
+
+  it("…and if the duel ended meanwhile, it hears that", () => {
+    let lose = false;
+    const p = link({ lose: (_, to) => lose && to === "guest" });
+    p.toBattle();
+    for (let n = 0; n < 500; n++) {
+      const g = p.guest.view;
+      if (g.phase !== "battle") throw new Error("the battle ended before the host lost a creature alone: pick other teams");
+      if (g.state.needsReplacement.length === 1 && g.state.needsReplacement[0] === "B") break;
+      playSteady(p.host); playSteady(p.guest); p.deliver();
+    }
+    lose = true;
+    p.host.forfeit(); p.deliver(); // (the host leaves instead; that's lost too)
+    lose = false;
+    p.run(RESEND_MS / 1000 + 1);
+    expect(p.guest.view).toMatchObject({ phase: "over", result: "win", reason: "forfeit" });
+  });
+});
+
 describe("a duel's end always reaches the host", () => {
   it("the host gone too long (its phone asleep), then back: it's told it lost, and doesn't play on against nobody", () => {
     let asleep = false;
@@ -144,4 +190,97 @@ describe("a duel's end always reaches the host", () => {
     for (let n = 0; n < 400 && p.host.view.phase === "battle"; n++) { playSteady(p.host); p.step(500); }
     expect(p.host.view).toMatchObject({ phase: "over", result: "loss", reason: "gone" });
   });
+});
+
+// ── Many duels over a bad line ──
+// Each game: its own dice (so a failing one can be played again by its number) for the teams, who leads, every
+// choice (any move that's allowed, a swap, a replacement; now and then no choice at all, so time runs out), which
+// messages are lost and how late the rest are (so they overtake each other), and the odd drop-out shorter than
+// the 30 seconds that loses. Whatever happens: nothing breaks, the duel ends, and both tell the same story.
+const dice = (seed: number) => () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+// The same thing, whatever order its fields were written in (a copy that's been down the wire has them in another).
+const canon = (v: unknown): string => JSON.stringify(v, (_, x) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
+const same = (a: unknown, b: unknown) => canon(a) === canon(b);
+
+function anyChoice(d: Duel, rng: () => number) {
+  const v = d.view, pick = <T,>(a: T[]) => a[Math.floor(rng() * a.length)];
+  if (v.phase !== "battle" || v.sent || v.state.winner) return;
+  const s = v.state.sides.A;
+  if (v.state.needsReplacement.includes("A")) { d.replace(pick(s.team.flatMap((f, i) => (f.hp > 0 && i !== s.active ? [i] : [])))); return; }
+  if (v.state.needsReplacement.length) return;
+  const all: BattleAction[] = [
+    ...affordableSkills(activeOf(s)).map((sk): BattleAction => { const ts = attackTargets(v.state, "A"); return { kind: "attack", skillName: sk.name, ...(ts.length > 1 ? { target: pick(ts) } : {}) }; }),
+    ...s.team.flatMap((f, i): BattleAction[] => (f.hp > 0 && i !== s.active ? [{ kind: "swap", to: i }] : [])),
+    { kind: "pass" },
+  ];
+  const options = all.filter((a) => duelActionOk(v.state, "A", a));
+  if (options.length) d.act(pick(options));
+}
+
+// One duel, start to finish. Returns what went wrong (null: nothing).
+function badLine(seed: number, lossy: number): string | null {
+  const rng = dice(seed);
+  const teams: [DuelTeam, DuelTeam] = [team(Math.floor(rng() * 200), FMT.size + Math.floor(rng() * 3)), team(Math.floor(rng() * 200), FMT.size + Math.floor(rng() * 3))];
+  const p = link({ teams, lose: () => rng() < lossy, late: () => (rng() < 0.3 ? Math.floor(rng() * 6000) : 0) });
+  const lazy = [rng() < 0.2 ? 0.5 : 0.05, rng() < 0.2 ? 0.5 : 0.05]; // (how often each just doesn't choose this half second)
+  const leads = () => { const n = teams[0].fighters.length; return Array.from({ length: n }, (_, i) => i).sort(() => rng() - 0.5).slice(0, FMT.size); };
+  p.join();
+  let away: { who: Duel; till: number } | null = null, checked = 0;
+  for (let t = 0; t < 3600 * 2; t++) { // (an hour of the duel's own time, a half second at a time)
+    const h = p.host.view, g = p.guest.view;
+    if (h.phase === "over" && g.phase === "over") break;
+    // A guest that never got in (every answer to its hellos lost for 20 seconds: it happens on the worst lines)
+    // has given up, and says so; the host, who saw it arrive, waits out the picking time and takes the win.
+    if (g.phase === "cancelled") {
+      if (h.phase === "over") return h.result === "win" && h.reason === "gone" ? null : `the guest gave up joining, the host ${h.result} (${h.reason})`;
+      if (h.phase === "cancelled") return null;
+      if (h.phase === "lead" || h.phase === "battle") return `the guest gave up joining, the host in ${h.phase}`;
+    }
+    if (h.phase === "cancelled") return `the host cancelled: ${JSON.stringify(h)}`;
+    // Both in the same round of the battle: the guest sees the host's battle, mirrored. (Once a round: it's a big sum.)
+    if (h.phase === "battle" && g.phase === "battle" && h.seq === g.seq && h.seq !== checked) {
+      checked = h.seq;
+      if (!same(g.state, mirrorBattle(h.state))) return `round ${h.seq}: the guest's battle isn't the host's, mirrored`;
+    }
+    for (const [i, d] of [p.host, p.guest].entries()) {
+      if (rng() < lazy[i]) continue;
+      const v = d.view;
+      if (v.phase === "pick" && !v.sent) d.pickTeam(teams[i]);
+      else if (v.phase === "lead" && !v.sent) d.chooseLead(leads());
+      else anyChoice(d, rng);
+    }
+    // Now and then one drops off the channel for up to 20 seconds (less than loses), as the other sees it.
+    if (!away && rng() < 0.002) { away = { who: rng() < 0.5 ? p.host : p.guest, till: p.at() + 1000 + Math.floor(rng() * 19000) }; away.who.peer(false); }
+    if (away && p.at() >= away.till) { away.who.peer(true); away = null; }
+    p.step(500);
+  }
+  const h = p.host.view, g = p.guest.view;
+  if (h.phase !== "over" || g.phase !== "over") return `not over after an hour: host ${h.phase}, guest ${g.phase}`;
+  if (g.result !== flipped[h.result]) return `host ${h.result} (${h.reason}), guest ${g.result} (${g.reason})`;
+  if (g.reason !== h.reason) return `host's reason ${h.reason}, guest's ${g.reason}`;
+  if (h.reason === "battle" && !same(g.state, mirrorBattle(h.state!))) return "the guest's last picture of the battle isn't the host's, mirrored";
+  return null;
+}
+
+describe("many duels over a bad line", () => {
+  const sweep = (from: number, n: number, lossy: number) => {
+    const wrong: string[] = [];
+    for (let seed = from; seed < from + n; seed++) {
+      let w: string | null;
+      try { w = badLine(seed, lossy); } catch (e) { w = `threw: ${(e as Error).message}`; }
+      if (w) wrong.push(`#${seed}: ${w}`);
+    }
+    return wrong;
+  };
+  it("a good line: 40 duels of any moves, both always seeing the same battle and the same end", () => {
+    expect(sweep(1, 40, 0)).toEqual([]);
+  });
+  it("a bad line (1 message in 4 lost, some up to 6 s late): 15 duels still end the same for both", () => {
+    expect(sweep(1000, 15, 0.25)).toEqual([]);
+  });
+  // (DUEL_SWEEP=1000 for a long soak: 3,000 duels, about 4 minutes. Run so on 2026-11-23: all the same for both.)
+  const each = Number(process.env.DUEL_SWEEP) || 30;
+  slowIt(`${each * 3} more, from a good line to half the messages lost`, () => {
+    expect([...sweep(5000, each, 0.1), ...sweep(6000, each, 0.3), ...sweep(7000, each, 0.5)]).toEqual([]);
+  }, 600_000);
 });

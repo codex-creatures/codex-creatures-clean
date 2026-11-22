@@ -234,7 +234,31 @@ players dropping out at each step and coming back, and both running out of time.
    guest's screen shows the last round; or who left). A guest that gave the host up as gone
    answers the host's next word with that, and the host has lost, as the rule says. Five tests,
    all failing before.
-   *Still possible, by design of a two-browser duel with no referee:* if the host closes its page
+2. **A guest waiting on the host's replacement said nothing, so a lost message cost it its turn.**
+   When only the host's creature is down, the guest waits for the host to send one in, with no
+   choice of its own to repeat. If the host's next message was lost, nobody spoke: the guest sat on
+   "Waiting…" until the host's own clock ran out 40 seconds later and made the guest's move for it
+   (a steady move it didn't choose). If the duel had ended meanwhile, the guest never heard.
+   **Fixed** (commit "A guest waiting on the other's replacement asks where things are"): waiting
+   with nothing to repeat, the guest asks every 4 seconds and is sent the battle as it is. Two
+   tests, failing before.
+
+**Then many duels at random** (tests/duelFaults.test.ts, "many duels over a bad line"): each with
+its own dice for the teams, who leads, every choice (any move allowed, swaps, replacements, and now
+and then no choice at all so the clock runs out), which messages are lost, how late the rest are (up
+to 6 s, so they overtake each other), and drop-outs of up to 20 s. Checked every round: the guest's
+battle is the host's, mirrored; at the end: opposite results, the same reason, the same last
+picture. **3,000 duels, from 1 message in 10 lost to 1 in 2: all the same for both** once the two
+fixes above were in (before them, the first 40 turned up the second bug). The only uneven ending
+left is at the door: on the worst lines a guest whose every hello goes unanswered for 20 seconds
+gives up ("The duel has gone."), and the host, who saw it arrive, waits out the picking time and is
+told it won. 90 of them run in `npm run test:all`; `DUEL_SWEEP=1000` runs the 3,000.
+
+The mirrored view itself: every field that names a side (the two sides, who must replace, the
+winner, and each line of the log) is flipped, and nothing in a battle's state fails to survive
+being sent (no Infinity or NaN anywhere in it).
+
+   *Still possible, by design of a two-browser duel with no referee (after fix 1):* if the host closes its page
    within about 4 seconds of the battle ending and the guest missed the last message, nobody is
    left to tell the guest, and after 30 seconds it sees "… is gone. You win!". And if neither can
    see the other for 30 seconds, both take the win. See option I.

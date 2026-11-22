@@ -298,9 +298,12 @@ export class Duel {
     if (!("sent" in v) || !v.sent) return;
     this.lastResend = now;
     if (v.phase === "pick" && this.myTeam) this.send({ t: "team", team: this.myTeam });
-    if (v.phase === "lead" && this.myLead !== undefined) this.send({ t: "lead", picks: this.myLead });
-    if (v.phase === "battle" && this.myAction?.seq === v.seq) this.send({ t: "action", ...this.myAction });
-    if (v.phase === "battle" && this.myReplace?.seq === v.seq) this.send({ t: "replace", ...this.myReplace });
+    else if (v.phase === "lead" && this.myLead !== undefined) this.send({ t: "lead", picks: this.myLead });
+    else if (v.phase === "battle" && this.myAction?.seq === v.seq) this.send({ t: "action", ...this.myAction });
+    else if (v.phase === "battle" && this.myReplace?.seq === v.seq) this.send({ t: "replace", ...this.myReplace });
+    // Waiting with no choice of its own to repeat (the host is sending in a replacement): it asks where things
+    // are instead. Silent, a lost message from the host left it waiting till the host's clock made its move for it.
+    else this.start();
   }
 
   // The host stops waiting for a guest that's still here but silent.

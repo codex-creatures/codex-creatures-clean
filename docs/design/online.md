@@ -158,7 +158,10 @@ account, kept entirely apart from Vouchee.
     how it ended (the battle as it finished, or who left); a guest that waited 30 s for the host and took
     the win answers the host's next word with that (`gone`). Before, a guest that missed the last
     message stayed in the battle, and was told it had won once the host left; a host back from 30 s
-    away played on against nobody. Only Supabase Realtime is used:
+    away played on against nobody. A guest waiting with no choice of its own to repeat (the host is sending in
+    a replacement) asks where things are every `RESEND_MS`, so a lost message can't leave it waiting.
+    tests/duelFaults.test.ts plays duels over a bad line (lost, late and overtaking messages, drop-outs).
+    Only Supabase Realtime is used:
     no new tables for duels. Not hardened: a guest's team and the host's dice are trusted.
   - ✅ **The PvP portal** (the user, 2026-11-04; app/pvp): a flat stone arch set into the wall, filled with a softly glowing, pulsing green flame (muted, in the cave's colours),
     in the tavern's room, against the back-left wall, left of the Sparring/Training Pit. It's
