@@ -8,8 +8,45 @@ is slow to open and close things, (2) inconsistencies between places where you c
 (3) real bugs, PvP first, then combat. One fix a commit, each proved first; nothing pushed.
 
 > The brief arrived with some characters missing from the middle of its lines. Its meaning was clear
-> everywhere that mattered; where a line could be read two ways, the reading taken is noted beside
-> the finding it affected.
+> everywhere that mattered. The three places it had to be read into: **(a)** "Quick tests … test:all,
+> the type check and lint" was taken as CLAUDE.md has it for unattended work: quick tests with each
+> fix, then the full run, the type check and lint once at the end (results at the bottom);
+> **(b)** the list of things to leave alone was taken as: balance numbers and settled mechanics,
+> the scanner, anything that changes what goes in dungeon rooms, the Supabase database, new
+> dependencies, PixelLab credits, and the Labyrinth page's golden file (none was touched; the golden
+> never came up); **(c)** the last line was taken as asking for this order in the morning: each
+> fix, the Den's timings before and after, what to check on your phone, the test results.
+
+## In short
+
+Most important first. Each fix is its own commit on `main`, with a test that failed before it;
+**nothing is pushed.**
+
+| # | What was wrong | Fix (commit starts…) |
+|---|---|---|
+| 1 | The Den drew every face of every prop as its own drawing (3,505 a frame): it ran at 12–20 frames a second on a laptop, and everything opened from it or closing back to it waited on that | "The Den's props are drawn a few drawings each" |
+| 2 | Coming home built the whole Den again, every time | "The Den is made once and kept" (and "Coming home from a run…", its follow-up) |
+| 3 | A duel that was over didn't tell a player who hadn't heard: a guest could be left waiting, then told it had won a duel it lost | "A duel that's over tells whoever is still playing it" |
+| 4 | A guest waiting on the other's replacement lost its turn if one message went missing | "A guest waiting on the other's replacement asks where things are" |
+| 5 | Every read of the save walked all of it four times; the Den's page read it 18 times every 5 seconds | "The save is read without walking all of it each time" |
+| 6 | A tapped place loaded in the gaps between the Den's frames | "The Den stops drawing the moment you tap a place" |
+| 7 | The Den's 20 lights were re-traced 15 times a second | "The Den's lights are traced once" |
+| 8 | The Pit called a box built bigger "full" at 50 | "The Pit no longer calls a bigger box full" |
+| 9 | An XP scroll couldn't be read to Klutz from the Pit | "An XP scroll can be read to Klutz from the Pit too" |
+| 10 | Every flat 3D material logged two or three warnings as it was made | "3D props are made without a stream of warnings" |
+
+**Den → Storehouse → Den, on a phone-sized window with the processor slowed 4×:** 10.8 s and
+12.1 s before; **0.64 s and 0.81 s** after. Unslowed: 1.5 s and 2.7 s before; 0.15 s and 0.11 s
+after. Full table in section 1.
+
+**Checked and found sound:** 16,000 battles at random with every move, soul stone, armour set, AI
+and boss (section 3): no rule broken. 3,000 duels over a bad connection, after fixes 3 and 4: both
+players always end with the same story. Selling prices are the same everywhere.
+
+**For you:** the phone checklist at the end of section 1 (the kept Den is the change to watch),
+and options A to K under "Left for the user".
+
+**Also** CLAUDE.md said the walkable world's version was 13; it's 18 (its own commit).
 
 ## 1. The Den: opening and closing things
 
@@ -87,6 +124,11 @@ Not in the pages, the save or the network: **in how the Den's props were drawn.*
    browser: 0 drawings a second while away); coming home puts it back, with the game as it is now
    and where things stand read again from the save. If the graphics card drops it while parked
    (a phone short of memory may), it's made afresh next visit. tests/den3dKept.test.tsx.
+   *One thing it broke, found and fixed the same night* (commit "Coming home from a run, you're
+   back in the middle of the Den again"): the kept Den noted where its view was a moment after
+   it was parked, which was after the Labyrinth's page had forgotten it, so you came home from a
+   run to wherever you'd left the view instead of the middle. It now notes it as it's parked.
+   Found by driving the scratch copy through a walked run and back; checked the same way.
    *What it costs:* the Den's pictures stay on the graphics card while you're elsewhere (small:
    pixel art, about 120 drawings), and the Labyrinth's 3D view runs beside it rather than instead
    of it. See "What to check on a phone".
@@ -263,6 +305,32 @@ being sent (no Infinity or NaN anywhere in it).
    left to tell the guest, and after 30 seconds it sees "… is gone. You win!". And if neither can
    see the other for 30 seconds, both take the win. See option I.
 
+### Combat generally
+
+**Battles at random, by the thousand** (tests/battleSoak.test.ts): any species at any level with any
+four of all 117 moves in the game (one of them steady, as every set has), any soul stone, any full
+armour set, any enchantments, sometimes starting hurt; against random choices (any move at any
+target it can reach, swaps, potions, elixirs, a weapon from the bag, rests), the plain AI and the
+thinking AIs at each level; in plain fights of 1 to 5 a side, ambushes (two on the field), fights
+with a turn limit, and each boss by its script. After every round:
+
+- every creature's HP is between 0 and its most, its energy between 0 and 100, every number in the
+  battle a real number, no status with less than no time left;
+- nobody knocked out in a round acts later in it (unless something brought it back);
+- whoever's out between rounds is standing, or a replacement has been asked for and there's
+  someone to send;
+- no AI ever chooses, or sends in, what the rules don't allow;
+- working a round out on a copy never changes the battle as it stood (the duel's host relies on it);
+- rounds count up by one and stop at the last (100); every battle ends; it ends once, and the
+  winner is the side left standing (or the turn limit, or a draw at the last round).
+
+**RESULT_LINE**
+
+One thing seen while timing it, not a bug: the Labyrinth's foes think at the "hard" level
+(32 imagined futures, 8 rounds deep, for every choice they have), worked out the moment you tap
+your own move, before anything shows. In an ordinary 3 v 3 that's about 30 ms on this laptop (80 at
+worst), so 0.1 to 0.3 s on a slow phone between your tap and the round starting. See option J.
+
 ## Left for the user (options)
 
 **From the Den's timings**
@@ -305,6 +373,34 @@ being sent (no Infinity or NaN anywhere in it).
 - **H. A creature training in the pit** can be put in a Labyrinth team (it then shows greyed at
   the entrance) but can't be added to a PvP team at all. Either is defensible; they differ.
 
+**From the bugs**
+
+- **I. A duel's last message, lost, with the host gone at once.** After fix 1 the host tells a
+  guest how it ended whenever the guest next speaks, for as long as the host's page is open. If
+  the host leaves within about 4 seconds of the end and the guest missed the last message, the
+  guest still sees "… is gone. You win!" after 30 seconds. Closing that needs either the host's
+  page to linger on the channel for a few seconds after leaving (simple: a short delay before it
+  closes), or duels to be recorded on the server (the ranked ladder will need that anyway). Your
+  call; nothing is saved from a duel today, so the cost is only a wrong message.
+- **J. The foes' thinking happens before your tap shows.** Options: leave it (it's short); or
+  show your move pressed first and let the foe think a frame later (no change to how it thinks);
+  or think while you're choosing. Not a balance change in any of these.
+- **K. A duel invite covers whatever you're doing**, including a walk through the Labyrinth with
+  foes coming, or a fight (components/DuelInbox.tsx: a full-screen window, anywhere but the title
+  screen, the privacy page and a duel). Accepting leaves the run where it is. Options: leave it;
+  hold invites while you're in a run and show them as you come out (they lapse after 60 s, so
+  the sender would see "No answer"); or a small badge instead of a window while in a run.
+
 ## UI noticed along the way (not changed)
 
-TODO
+- **"You left the duel."** was what a player read who lost by being away or out of time, not by
+  leaving. Changed with the duel fix to "You were away too long. You lose the duel." for those
+  (a guest out of time picking a team included); "You left the duel." stays for leaving. If you'd
+  word it differently, it's one line in app/duel/page.tsx.
+- **The browser's console** (for whoever next has it open): Three.js warns once that
+  `THREE.Clock` is deprecated (it's the 3D library's own renderer, not the game); "Texture marked
+  for update but no image data found" about a dozen times as the Den first opens (copies of
+  pictures made before the pictures have loaded: they fill in a moment later, as they always
+  have); and one shader warning from Windows' compiler about a variable in the rock's shader
+  ("use of potentially uninitialized variable (f_faceAs_int)"), which draws correctly.
+- **Old names in the tour and links** (option F above).

@@ -113,7 +113,8 @@ export default function Den3D(p: Den3DProps) {
 const SHOWN = "position:absolute;inset:0";
 const parked = (w: number, h: number) => `position:fixed;left:-100000px;top:0;width:${w || 390}px;height:${h || 600}px;visibility:hidden;pointer-events:none`;
 // `lost`: the graphics card dropped its canvas (a phone short of memory may, while it's parked): made afresh next visit.
-type Keeper = { box: HTMLDivElement; root: Root; lost: boolean };
+// `keepView`: the Den's own "remember where the view is", called the moment it's parked (see DenKept).
+type Keeper = { box: HTMLDivElement; root: Root; lost: boolean; keepView: { current: (() => void) | null } };
 let keeper: Keeper | null = null;
 // Let go of the kept Den (the tests': each starts with none made).
 export function forgetDen() {
@@ -127,7 +128,7 @@ function DenKept(p: Den3DProps & { nav: Nav }) {
   useLayoutEffect(() => {
     if (keeper?.lost) forgetDen();
     if (!keeper) {
-      const box = document.createElement("div"), made: Keeper = { box, root: createRoot(box), lost: false };
+      const box = document.createElement("div"), made: Keeper = { box, root: createRoot(box), lost: false, keepView: { current: null } };
       keeper = made;
       box.addEventListener("webglcontextlost", () => { made.lost = true; }, true);
     }
@@ -136,19 +137,23 @@ function DenKept(p: Den3DProps & { nav: Nav }) {
     k.box.removeAttribute("data-den-parked");
     host.current?.replaceChildren(k.box);
     return () => {
+      // (Where the view was, kept now, not when the parked Den next draws: the Labyrinth's page forgets it as it
+      // opens, so you come home from a run to the middle of the Den, and a late "keep" would undo that.)
+      k.keepView.current?.();
       k.box.style.cssText = parked(k.box.offsetWidth, k.box.offsetHeight);
       k.box.setAttribute("data-den-parked", "");
       document.body.appendChild(k.box);
-      k.root.render(<DenLive {...latest.current} shown={false} />);
+      k.root.render(<DenLive {...latest.current} shown={false} keepView={k.keepView} />);
     };
   }, []);
   // (Every time the page draws: the game as it is now, handed on.)
-  useLayoutEffect(() => { latest.current = p; keeper?.root.render(<DenLive {...p} shown />); });
+  useLayoutEffect(() => { latest.current = p; if (keeper) keeper.root.render(<DenLive {...p} shown keepView={keeper.keepView} />); });
   return <div ref={host} style={{ position: "absolute", inset: 0 }} />;
 }
 
-// The Den itself. `shown`: on the page now (the kept one isn't while you're elsewhere).
-function DenLive(p: Den3DProps & { nav: Nav; shown: boolean }) {
+// The Den itself. `shown`: on the page now (the kept one isn't while you're elsewhere). `keepView`: where the kept
+// one leaves its "remember where the view is" for its keeper to call.
+function DenLive(p: Den3DProps & { nav: Nav; shown: boolean; keepView?: { current: (() => void) | null } }) {
   const nav = p.nav;
   const opened = p.rubble === "open";
   // The player's options (Settings: lib/den3d/setting.ts): names, the camera's angle.
@@ -213,15 +218,19 @@ function DenLive(p: Den3DProps & { nav: Nav; shown: boolean }) {
     const t = window.setTimeout(() => setLeaving(false), LEAVE_MS);
     return () => window.clearTimeout(t);
   }, [leaving]);
-  // Taken off the page (the kept Den, while you're elsewhere): where the view was is kept, as on leaving it was, and
-  // anything half done (a press, a thing being moved) is let go. Put back: drawing again, with where things stand
+  useEffect(() => {
+    if (!p.keepView) return;
+    p.keepView.current = () => keepDenView({ at: view.current, across: zoomed.current, opened: wasOpen.current });
+    return () => { if (p.keepView) p.keepView.current = null; };
+  }, [p.keepView]);
+  // Taken off the page (the kept Den, while you're elsewhere): anything half done (a press, a thing being moved)
+  // is let go. (Where the view was is kept by its keeper, as it's parked.) Put back: drawing again, with where things stand
   // read again from the save (another save may have been loaded since), and after a run, back in the middle.
   const wasShown = useRef(p.shown);
   useEffect(() => {
     if (p.shown === wasShown.current) return;
     wasShown.current = p.shown;
     if (!p.shown) {
-      if (p.keep !== "none") keepDenView({ at: view.current, across: zoomed.current, opened: wasOpen.current });
       if (held.current?.lift) window.clearTimeout(held.current.lift);
       held.current = null; fingers.current.clear(); pinch.current = null;
       setPressed(null); hideFit(); setMoving(null); setNotice(false);

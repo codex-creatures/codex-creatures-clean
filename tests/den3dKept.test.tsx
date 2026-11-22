@@ -113,6 +113,23 @@ describe("the Den, kept between visits", () => {
     expect(loadDenLayout()).toEqual({ floor: { altar: { x: 5, y: 14 } } }); // (and coming back wrote nothing over it)
   });
 
+  it("after a run in the Labyrinth you're back in its middle, as before (the Labyrinth forgets where the view was as it opens)", async () => {
+    const { denView, forgetDenView } = await import("@/lib/den3d/view");
+    await visit();
+    // As in the browser: the Den's page goes, the Labyrinth's page opens and forgets the view, and only then does
+    // the parked Den get round to drawing itself hidden. (So not all in one act(), which would do that first.)
+    const act0 = (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean });
+    act0.IS_REACT_ACT_ENVIRONMENT = false;
+    try {
+      root.unmount();
+      expect(denView()).not.toBeNull(); // (kept as you leave, for coming back from a place)
+      forgetDenView();                  // (the Labyrinth's page, opening)
+      await new Promise((r) => setTimeout(r, 50));
+    } finally { act0.IS_REACT_ACT_ENVIRONMENT = true; }
+    host.remove();
+    expect(denView()).toBeNull();       // (and the parked Den doesn't put it back)
+  });
+
   it("is made afresh if the graphics card dropped it while you were away (a phone short of memory may)", async () => {
     await visit();
     const first = canvas()!;
