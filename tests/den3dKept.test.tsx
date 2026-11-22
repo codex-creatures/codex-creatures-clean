@@ -10,7 +10,8 @@ import { SAVE_KEY } from "@/lib/save";
 
 const made = { count: 0 };          // how many times the Den's scene has been made
 const push = vi.fn(), prefetch = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push, prefetch }) }));
+const router = { push, prefetch }; // (one router for the whole visit, as the game has)
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
 // The 3D canvas, stood in for: a box that says whether it's drawing, counted each time one is made.
 vi.mock("@react-three/fiber", async () => {
   const React = await import("react");
@@ -47,7 +48,7 @@ async function leave() {
 
 beforeEach(async () => {
   vi.resetModules();
-  made.count = 0; push.mockClear();
+  made.count = 0; push.mockClear(); prefetch.mockClear();
   localStorage.clear();
   localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: [], gold: 0 }));
   ({ default: Den3D, forgetDen } = await import("@/components/Den3D"));
@@ -111,6 +112,16 @@ describe("the Den, kept between visits", () => {
     expect(tag("tavern")).toBeTruthy();
     const { loadDenLayout } = await import("@/lib/den3d/placement");
     expect(loadDenLayout()).toEqual({ floor: { altar: { x: 5, y: 14 } } }); // (and coming back wrote nothing over it)
+  });
+
+  it("asks for its places' pages again each time you come home (what's fetched ahead goes stale after a few minutes)", async () => {
+    await visit();
+    expect(prefetch).toHaveBeenCalledWith("/chest");
+    await leave();
+    prefetch.mockClear();
+    await visit();
+    expect(prefetch).toHaveBeenCalledWith("/chest");
+    expect(prefetch).toHaveBeenCalledWith("/klutz");
   });
 
   it("after a run in the Labyrinth you're back in its middle, as before (the Labyrinth forgets where the view was as it opens)", async () => {
