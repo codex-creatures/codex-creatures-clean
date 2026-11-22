@@ -19,8 +19,12 @@
 //
 // Lost messages: the guest repeats its latest choice every RESEND_MS until
 // the host has moved on, and the host answers anything out of date with the
-// whole state again ("snap"). Not hardened against cheating (accepted for
-// playtesting: §12).
+// whole state again ("snap"). A duel that's over says so to whoever is still
+// playing it: the host answers anything the guest sends with how it ended
+// (the battle as it finished, or who left), and a guest that gave the host up
+// as gone answers the host's next word with that ("gone"), so neither plays
+// on alone and both end with the same story. Not hardened against cheating
+// (accepted for playtesting: §12).
 
 import type { Fighter } from "../combat/engine";
 import type { Rarity } from "../items/budgets";
@@ -49,6 +53,7 @@ export type DuelMsg =
   | { t: "hello"; from: DuelRole }
   | { t: "decline" }
   | { t: "forfeit" }
+  | { t: "gone" } // from the guest: it waited GONE_SECONDS for the host and took the win (the host, back, has lost)
   | { t: "team"; team: DuelTeam }
   | { t: "lead"; picks: number[] }
   | { t: "action"; seq: number; action: BattleAction }
@@ -264,7 +269,12 @@ export class Duel {
       else if (this.role === "guest" && now - this.lastResend >= RESEND_MS) { this.lastResend = now; this.start(); }
       return;
     }
-    if (this.goneAt !== null && now - this.goneAt >= GONE_SECONDS * 1000) { this.over("win", "gone"); return; }
+    if (this.goneAt !== null && now - this.goneAt >= GONE_SECONDS * 1000) {
+      // (Said as well as decided, in case they're only out of sight: back, they hear it at once.)
+      if (this.role === "host") this.send({ t: "snap", phase: "over", winner: "A", reason: "gone" }); else this.send({ t: "gone" });
+      this.over("win", "gone");
+      return;
+    }
 
     // My own time running out.
     if (now >= ("deadline" in v ? v.deadline : Infinity) && "sent" in v && !v.sent) {
@@ -318,11 +328,15 @@ export class Duel {
   // ── Messages ─────────────────────────────────────────────────────────
   receive(m: DuelMsg) {
     if (this.done) {
-      // A guest asking after it's over (it missed the end): tell it again.
-      if (this.role === "host" && m.t === "hello" && this.hostWinner) this.send({ t: "snap", phase: "over", ...this.hostWinner });
+      // Still playing a duel that's over here (it missed the end: a lost message, or it was gone too long and is
+      // back): whatever it said, tell it how it ended.
+      if (m.t === "forfeit" || m.t === "decline" || m.t === "gone") return;
+      if (this.role === "host" && this.hostWinner) this.sendEnd();
+      else if (this.role === "guest" && this.view.phase === "over" && this.view.reason === "gone" && this.view.result === "win") this.send({ t: "gone" });
       return;
     }
     if (m.t === "forfeit") { this.over("win", "forfeit"); return; }
+    if (m.t === "gone") { if (this.role === "host" && this.view.phase !== "waiting") this.over("loss", "gone"); return; }
     if (this.role === "host") this.hostReceive(m);
     else this.guestReceive(m);
   }
@@ -426,6 +440,14 @@ export class Duel {
       deadline: this.stepAt + (b.needsReplacement.length ? REPLACE_SECONDS : TURN_SECONDS) * 1000 });
     // Only one side needs a replacement: the other has nothing to do this step.
     if (b.needsReplacement.length && !b.needsReplacement.includes("A")) this.set({ ...this.view, sent: true } as DuelView);
+  }
+
+  // How it ended, to a guest that hasn't heard: the battle as it finished (so its screen shows the last round
+  // too), or, with no battle to show (someone left, or was gone too long), just who won and why.
+  private sendEnd() {
+    if (!this.hostWinner) return;
+    if (this.hostWinner.reason === "battle" && this.battle?.winner && this.info) this.send({ t: "snap", phase: "battle", seq: this.seq, state: this.battle, info: this.info });
+    else this.send({ t: "snap", phase: "over", ...this.hostWinner });
   }
 
   private sendSnap() {

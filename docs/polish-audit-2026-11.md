@@ -212,7 +212,32 @@ all come to one sum): checked, no difference found.
 
 ## 3. Bugs
 
-TODO
+### PvP duels
+
+Two machines linked in tests (tests/duelFaults.test.ts), with messages lost, late and out of order,
+players dropping out at each step and coming back, and both running out of time.
+
+1. **A duel that was over didn't tell a player who hadn't heard.** Once the host's game had
+   finished a duel it ignored everything the guest sent except a first "hello", and the guest only
+   says hello while joining. So:
+   - **the last round's message lost** (a connection blip as the battle ended): the guest stayed in
+     the battle, "Waiting for…", for good;
+   - **and when the host then left, the guest was told "… is gone. You win!"**, though it had
+     lost: both players had won;
+   - **a guest that ran out of time picking a team**, or dropped off for 30 seconds and came back,
+     was never told it had lost: it stayed on its screen until the host left, then "won";
+   - **a host back from 30 seconds away** (the guest had already taken the win) played on against
+     nobody, the guest's moves made for it, to a result only the host saw.
+
+   **Fixed** (commit "A duel that's over tells whoever is still playing it"): the host answers
+   anything a guest sends after the end with how it ended (the battle as it finished, so the
+   guest's screen shows the last round; or who left). A guest that gave the host up as gone
+   answers the host's next word with that, and the host has lost, as the rule says. Five tests,
+   all failing before.
+   *Still possible, by design of a two-browser duel with no referee:* if the host closes its page
+   within about 4 seconds of the battle ending and the guest missed the last message, nobody is
+   left to tell the guest, and after 30 seconds it sees "… is gone. You win!". And if neither can
+   see the other for 30 seconds, both take the win. See option I.
 
 ## Left for the user (options)
 

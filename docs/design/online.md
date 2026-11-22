@@ -153,7 +153,12 @@ account, kept entirely apart from Vouchee.
   - **How the two browsers agree** (Claude's answer to the kink below): whoever sent the invite
     is the host and their browser runs the fight with the usual rules; the other player's
     choices go to it and each round's result comes back (the guest's copy is mirrored so both
-    see themselves on the left). Lost messages are sent again. Only Supabase Realtime is used:
+    see themselves on the left). Lost messages are sent again. **A duel that's over says so to whoever
+    is still playing it** (2026-11-23, lib/pvp/duel.ts): the host answers anything the guest sends with
+    how it ended (the battle as it finished, or who left); a guest that waited 30 s for the host and took
+    the win answers the host's next word with that (`gone`). Before, a guest that missed the last
+    message stayed in the battle, and was told it had won once the host left; a host back from 30 s
+    away played on against nobody. Only Supabase Realtime is used:
     no new tables for duels. Not hardened: a guest's team and the host's dice are trusted.
   - ✅ **The PvP portal** (the user, 2026-11-04; app/pvp): a flat stone arch set into the wall, filled with a softly glowing, pulsing green flame (muted, in the cave's colours),
     in the tavern's room, against the back-left wall, left of the Sparring/Training Pit. It's

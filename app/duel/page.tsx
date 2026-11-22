@@ -293,7 +293,7 @@ export default function DuelPage() {
   // ── 3. The battle (and its end) ──
   // Won or lost by someone leaving: said in words (there's no battle result to show).
   if (view.phase === "over" && view.reason !== "battle") {
-    const text = view.result !== "win" ? "You left the duel." : view.reason === "forfeit" ? `${vs} left the duel. You win!` : `${vs} is gone. You win!`;
+    const text = view.result !== "win" ? (view.reason === "gone" ? "You were away too long. You lose the duel." : "You left the duel.") : view.reason === "forfeit" ? `${vs} left the duel. You win!` : `${vs} is gone. You win!`;
     return frame(<Note text={text} />, <BackDock onClick={() => router.push(home)} />);
   }
   if (!battle.match) return frame(<Note text="The battle is starting…" />);
