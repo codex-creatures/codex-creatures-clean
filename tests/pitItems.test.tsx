@@ -45,5 +45,13 @@ describe("the Pit's Items, beside the Inventory's", () => {
       expect(weapons.textContent).not.toContain("55/"); // (only a full box shows its size: "75/75")
       expect(weapons.querySelector('[title^="Full"]')).toBeNull();
     });
+
+    it(`${page === "pit" ? "the Pit" : "the Inventory"}: an XP scroll can be read to Klutz, as it says on it`, async () => {
+      await items(page);
+      await tap(tabOf("Consumables"));
+      await tap(host.querySelector('button[title="Tattered XP Scroll"]'));
+      await tap(button("Read"));
+      expect([...host.querySelectorAll("button.card-btn")].map((b) => b.getAttribute("title"))).toContain("Klutz");
+    });
   }
 });

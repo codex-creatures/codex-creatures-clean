@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useGameState, type TabKey } from "@/hooks/useGameState";
 import DenFrame from "@/components/DenFrame";
 import InventoryList from "@/components/InventoryList";
-import { needsGearUp } from "@/lib/quest";
+import { klutzHelping, needsGearUp } from "@/lib/quest";
 
 type Part = "creatures" | "items";
 const PART_TABS: Record<Part, TabKey[]> = {
@@ -64,6 +64,7 @@ export default function PitPage() {
         onSetMoves={game.setMoves}
         onLearnCodex={game.learnCodex}
         onReadScroll={game.readScroll}
+        klutzReads={klutzHelping(game.quest) ? game.klutz.level ?? 1 : undefined}
         onSetSoulStone={game.setSoulStone}
         gold={game.gold}
         tabCounts={game.tabCounts}

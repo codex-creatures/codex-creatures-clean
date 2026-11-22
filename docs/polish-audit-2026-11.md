@@ -174,6 +174,12 @@ the code, each difference checked against the docs for a reason.
    weapons in it, the Pit's tab read "55/50" in red ("Full: sell some to go back into the
    Labyrinth") while the Storehouse and the Inventory showed a plain 55. No reason in the docs.
    **Fixed** (commit "The Pit no longer calls a bigger box full"). tests/pitItems.test.tsx.
+2. **An XP scroll couldn't be read to Klutz from the Pit.** The scroll says on it "Read it to give
+   one creature, or Klutz, 100 XP", and from the Inventory or the Storehouse its Read lists Klutz
+   first (once he's helping you). The Pit's Items list, the same list, left him out; with no
+   creature of your own yet, its Read opened an empty window. No reason in the docs.
+   **Fixed** (commit "An XP scroll can be read to Klutz from the Pit too"). tests/pitItems.test.tsx.
+
 ## 3. Bugs
 
 TODO
