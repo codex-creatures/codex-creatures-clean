@@ -53,6 +53,15 @@ Not in the pages, the save or the network: **in how the Den's props were drawn.*
    an edge (the cabin and the pit). The Den's own pictures differ only where a "❗" name tag was
    mid-pulse.
 
+2. **The Den's light was worked out from scratch 15 times a second.** Some 20 lights, each
+   walking a line to every spot it might reach across the whole Den, though the lights never move:
+   only their strength flickers. After fix 1 that was over half of what the Den did each frame
+   (about 8 ms of every 66 on this laptop, so about a third of a slowed phone's time).
+   **Fixed** (commit "The Den's lights are traced once"): each light's share is traced once
+   (lib/render3d/stone.ts `lightShapes`) and the shares mixed again at each flicker (`mixLights`).
+   The same light to six decimal places (tests/stone3d.test.ts); the Labyrinth's light, where your
+   torch moves, is untouched.
+
 ### Timings, before and after
 
 TODO

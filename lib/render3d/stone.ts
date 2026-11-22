@@ -123,6 +123,47 @@ export function lightField(fp: Floorplan, lightNow: Uint8Array, torch: Light3D |
   return out;
 }
 
+// Lights that stand still and only flicker (the Den's): each one's share of the grid at full strength is
+// traced once (lightShapes: where it's lit, how it falls off, its clear lines), then the shares are mixed
+// again at each flicker (mixLights), which is all that changed. The same grid lightField gives for the same
+// lights at those strengths, without walking every line again 15 times a second (some 20 lights over the
+// whole Den was most of each frame's work on a phone: docs/polish-audit-2026-11.md).
+export type LightShape = { i0: number; j0: number; w: number; h: number; v: Float32Array };
+export type LightShapes = { x0: number; y0: number; size: number; shapes: LightShape[] };
+export function lightShapes(fp: Floorplan, on: Uint8Array, lights: { x: number; y: number; r: number }[], cx: number, cy: number, size = WINDOW): LightShapes {
+  const x0 = Math.round(cx) - size / 2, y0 = Math.round(cy) - size / 2, n = size * SUB;
+  const shapes = lights.map((l): LightShape => {
+    const i0 = Math.max(0, Math.floor((l.x - l.r - x0 + 0.5) * SUB)), i1 = Math.min(n - 1, Math.ceil((l.x + l.r - x0 + 0.5) * SUB));
+    const j0 = Math.max(0, Math.floor((l.y - l.r - y0 + 0.5) * SUB)), j1 = Math.min(n - 1, Math.ceil((l.y + l.r - y0 + 0.5) * SUB));
+    const w = Math.max(0, i1 - i0 + 1), h = Math.max(0, j1 - j0 + 1), v = new Float32Array(w * h);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const x = x0 - 0.5 + (i + 0.5) / SUB, y = y0 - 0.5 + (j + 0.5) / SUB;
+      const gate = onLit(fp, on, x, y);
+      if (gate <= 0) continue;
+      const u = gate * lightCurve(Math.hypot(x - l.x, y - l.y), l.r);
+      if (u > 0 && clearLine(fp, l, x, y)) v[(j - j0) * w + (i - i0)] = u;
+    }
+    return { i0, j0, w, h, v };
+  });
+  return { x0, y0, size, shapes };
+}
+// `powers`: each light's strength now, in the order they were traced. (`into`: last time's grid, reused.)
+export function mixLights(s: LightShapes, powers: number[], into?: LightField): LightField {
+  const n = s.size * SUB;
+  const out: LightField = into && into.size === s.size
+    ? Object.assign(into, { x0: s.x0, y0: s.y0 }) : { x0: s.x0, y0: s.y0, size: s.size, torch: new Float32Array(n * n), other: new Float32Array(n * n) };
+  if (into === out) { out.torch.fill(0); out.other.fill(0); }
+  s.shapes.forEach((sh, k) => {
+    const p = powers[k] ?? 0;
+    if (p <= 0) return;
+    for (let j = 0; j < sh.h; j++) for (let i = 0, at = (sh.j0 + j) * n + sh.i0, from = j * sh.w; i < sh.w; i++) {
+      const u = sh.v[from + i];
+      if (u > 0) out.other[at + i] = 1 - (1 - out.other[at + i]) * (1 - p * u);
+    }
+  });
+  return out;
+}
+
 // Your torch's light and the others' at a point, blended between the four samples round it as the
 // GPU blends the grid on the floor (so a thing walking across the floor brightens and dims smoothly
 // with it, instead of in steps a third of a tile apart).

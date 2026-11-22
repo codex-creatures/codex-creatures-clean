@@ -24,7 +24,7 @@ import {
 } from "@/lib/den3d/layout";
 import { loadDenLayout, saveDenLayout } from "@/lib/den3d/placement";
 import { denView, keepDenView } from "@/lib/den3d/view";
-import { lightField, seenField, shadeAt, texelsPerU, pixelScale, WINDOW, SUB, type LightField } from "@/lib/render3d/stone";
+import { lightShapes, mixLights, seenField, shadeAt, texelsPerU, pixelScale, WINDOW, SUB, type LightField, type LightShapes } from "@/lib/render3d/stone";
 import { rockHeights, carvedMesh, uprightStretch, ROCK_MARGIN, SOUTH_LIP } from "@/lib/render3d/dungeon3d";
 import {
   STONE, STONE_VERTEX, STONE_FRAGMENT, stoneUniforms, rawTexture, gridTexture, codeTexture, fillGrid,
@@ -394,7 +394,8 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
   const stretch = uprightStretch(pitch);
   const lit = useMemo(() => denLit(plan, shown), [plan, shown]);
   const seen = useMemo(() => seenField(plan, shown, "black"), [plan, shown]);
-  const lights = useMemo(() => denLights(state, placed), [state, placed]);
+  // (The lights stand still: each one's share of the light is traced once, here, and only mixed again as they flicker.)
+  const lights = useMemo(() => lightShapes(plan, lit, denLights(state, placed), plan.w / 2, plan.h / 2, WINDOW), [plan, lit, state, placed]);
   const fires = useMemo(() => braziers(placed, state), [placed, state]);
   const field = useRef<LightField | null>(null);
   const pix = pixelScale("art", DENSITY, across, size.width, typeof window === "undefined" ? 1 : window.devicePixelRatio || 1);
@@ -406,7 +407,7 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
   const v = useMemo(() => new THREE.Vector3(), []);
 
   const turn = useRef({ yaw: 0, x: NaN, at: 0 }); // (set on the first frame)
-  const ctx: Tick = { pitch, cameraRef, spanRef, glideRef, viewRef, movedAtRef, labelsRef, pix, size, opened: state.opened, centre, turn, lights, lit, plan, field, lastLight, v, list, walkers, stretch, klutz };
+  const ctx: Tick = { pitch, cameraRef, spanRef, glideRef, viewRef, movedAtRef, labelsRef, pix, size, opened: state.opened, centre, turn, lights, field, lastLight, v, list, walkers, stretch, klutz };
   useFrame((st) => denTick(st, ctx));
 
   const pool = list.find((s) => s.key === "pool");
@@ -465,10 +466,10 @@ type Tick = {
   viewRef: React.RefObject<Pt>; movedAtRef: React.RefObject<number | null>; labelsRef: React.RefObject<Map<string, HTMLElement>>;
   pix: { across: number }; size: { width: number; height: number }; opened: boolean; centre: React.RefObject<{ x: number; z: number }>;
   turn: React.RefObject<{ yaw: number; x: number; at: number }>;
-  lights: { x: number; y: number; r: number }[]; lit: Uint8Array; plan: Floorplan; field: React.RefObject<LightField | null>; lastLight: React.RefObject<number>;
+  lights: LightShapes; field: React.RefObject<LightField | null>; lastLight: React.RefObject<number>;
   v: THREE.Vector3; list: Station[]; walkers: Walker[]; stretch: number; klutz: KlutzMode;
 };
-function denTick(state: { camera: THREE.Camera }, { pitch, cameraRef, spanRef, glideRef, viewRef, movedAtRef, labelsRef, pix, size, opened, centre, turn, lights, lit, plan, field, lastLight, v, list, walkers, stretch, klutz }: Tick) {
+function denTick(state: { camera: THREE.Camera }, { pitch, cameraRef, spanRef, glideRef, viewRef, movedAtRef, labelsRef, pix, size, opened, centre, turn, lights, field, lastLight, v, list, walkers, stretch, klutz }: Tick) {
   const now = performance.now(), cam = state.camera;
   cameraRef.current = cam;
   // How much floor is in view, and where the camera looks (gliding when Klutz shows you somewhere).
@@ -503,8 +504,7 @@ function denTick(state: { camera: THREE.Camera }, { pitch, cameraRef, spanRef, g
   // The light, flickering (15 times a second is plenty).
   if (now - lastLight.current > 66) {
     lastLight.current = now;
-    const ls = lights.map((l, i) => ({ ...l, power: FIRE_POWER * (0.93 + 0.07 * Math.sin(now / 110 + i * 1.7)) }));
-    field.current = lightField(plan, lit, null, ls, plan.w / 2, plan.h / 2, WINDOW, field.current ?? undefined);
+    field.current = mixLights(lights, lights.shapes.map((_, i) => FIRE_POWER * (0.93 + 0.07 * Math.sin(now / 110 + i * 1.7))), field.current ?? undefined);
   }
   // The names: over each place's top front, and over each stroller's head; one that would cover
   // another moves up or down out of its way (the places first, so theirs move least).

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { texelsPerU, pixelScale, lightField, lightAt, lightCurve, seenField, shadeAt, SUB, CORE } from "../lib/render3d/stone";
+import { texelsPerU, pixelScale, lightField, lightShapes, mixLights, lightAt, lightCurve, seenField, shadeAt, SUB, CORE } from "../lib/render3d/stone";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 
 // The Stone experiment's rules (lib/render3d/stone.ts).
@@ -146,5 +146,34 @@ describe("seenField", () => {
     expect(black.shown[fp.w + 4]).toBe(0);
     expect(rock.shown[fp.w + 4]).toBe(1);
     expect(rock.shown[fp.w + 5]).toBe(0);
+  });
+});
+
+// The Den's lights stand still and only flicker: each one's share of the grid is traced once and mixed again
+// at each flicker, instead of every line being walked again 15 times a second (docs/polish-audit-2026-11.md).
+describe("lights that stand still: traced once, mixed again as they flicker", () => {
+  const fp = plan(["#########", "#...#...#", "#...#...#", "#.......#", "#########"]);
+  const lights = [{ x: 2, y: 2, r: 4 }, { x: 6, y: 1, r: 3 }, { x: 4, y: 3, r: 2.5 }];
+  const same = (a: Float32Array, b: Float32Array) => { let worst = 0; for (let i = 0; i < a.length; i++) worst = Math.max(worst, Math.abs(a[i] - b[i])); return worst; };
+  it("gives the grid lightField gives for the same lights at those strengths, whatever the strengths", () => {
+    const shapes = lightShapes(fp, all(fp), lights, 4, 2, 16);
+    for (const powers of [[1, 1, 1], [0.8, 0.74, 0.86], [0.3, 0, 1]]) {
+      const traced = lightField(fp, all(fp), null, lights.map((l, i) => ({ ...l, power: powers[i] })), 4, 2, 16);
+      const mixed = mixLights(shapes, powers);
+      expect([mixed.x0, mixed.y0, mixed.size]).toEqual([traced.x0, traced.y0, traced.size]);
+      expect(same(mixed.other, traced.other)).toBeLessThan(1e-6);
+      expect(mixed.torch.every((v) => v === 0)).toBe(true);
+    }
+    expect(mixLights(shapes, [1, 1, 1]).other.some((v) => v > 0.5)).toBe(true); // (and it isn't all dark)
+  });
+  it("keeps to the tiles that are lit, and never shines through rock, as lightField does", () => {
+    const on = all(fp); on[1 * fp.w + 6] = 0; on[1 * fp.w + 7] = 0;
+    const shapes = lightShapes(fp, on, lights, 4, 2, 16), traced = lightField(fp, on, null, lights.map((l) => ({ ...l, power: 0.9 })), 4, 2, 16);
+    expect(same(mixLights(shapes, [0.9, 0.9, 0.9]).other, traced.other)).toBeLessThan(1e-6);
+  });
+  it("reuses last time's grid", () => {
+    const shapes = lightShapes(fp, all(fp), lights, 4, 2, 16), a = mixLights(shapes, [1, 1, 1]), b = mixLights(shapes, [0.5, 0.5, 0.5], a);
+    expect(b).toBe(a);
+    expect(same(b.other, lightField(fp, all(fp), null, lights.map((l) => ({ ...l, power: 0.5 })), 4, 2, 16).other)).toBeLessThan(1e-6);
   });
 });
