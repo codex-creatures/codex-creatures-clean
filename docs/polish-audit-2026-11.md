@@ -78,6 +78,19 @@ Not in the pages, the save or the network: **in how the Den's props were drawn.*
    picture from the tap until it's left (4 s at most, `LEAVE_MS`, in case the place never opens).
    tests/den3dKept.test.tsx.
 
+5. **Coming home built the whole Den again.** Every visit made a new 3D canvas, compiled its 18
+   shader programs, sent every picture and buffer to the graphics card again and laid the scene
+   out again; every leaving tore it all down. With fixes 1 to 4 in, that was still nearly all of
+   the 2.9 s (slowed 4×) between tapping "← Den" and seeing it.
+   **Fixed** (commit "The Den is made once and kept"): the Den's scene is kept for as long as the
+   site is open. Going into a place parks it off-screen, hidden and not drawing (checked in the
+   browser: 0 drawings a second while away); coming home puts it back, with the game as it is now
+   and where things stand read again from the save. If the graphics card drops it while parked
+   (a phone short of memory may), it's made afresh next visit. tests/den3dKept.test.tsx.
+   *What it costs:* the Den's pictures stay on the graphics card while you're elsewhere (small:
+   pixel art, about 120 drawings), and the Labyrinth's 3D view runs beside it rather than instead
+   of it. See "What to check on a phone".
+
 ### Timings, before and after
 
 TODO

@@ -10,10 +10,12 @@
 // it goes red where it can't stand. Where you've put things is kept in the save (lib/den3d/placement.ts).
 // Every place has its name over it (Settings can hide them), a ❗ when something's waiting there.
 // The old wall: Klutz uses the Labyrinth Stone on it, and the whole wall sinks away (lib/tavern.ts).
-// It stops drawing the moment a place is tapped, so that place's screen gets the phone's whole attention
-// (the user, 2026-11-23: opening things from the Den was slow).
+// Made once and kept (DenKept): going into a place takes the Den off the page, still made, and coming home puts
+// it back, so it isn't all built again each time; and it stops drawing the moment a place is tapped, so that
+// place's screen gets the phone's whole attention (the user, 2026-11-23: opening and closing things was slow).
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { useRouter } from "next/navigation";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
@@ -92,8 +94,62 @@ const VISITOR_LABEL: Record<Visitor, string> = { merchant: "Merchant", librarian
 // A thing being moved: what, where it would go now, whether it can, and where on it the finger took hold.
 type Moving = { key: FloorKey | WallKey; kind: "floor" | "wall"; at: Pt; slot?: SlotId; ok: boolean; grab: Pt };
 
+// Going into places: the page's router (the kept Den is drawn outside the page's own tree, where there's none to ask for).
+type Nav = { push: (href: string) => void; prefetch: (href: string) => void };
+
 export default function Den3D(p: Den3DProps) {
   const router = useRouter();
+  const nav = useMemo<Nav>(() => ({ push: (h) => router.push(h), prefetch: (h) => router.prefetch(h) }), [router]);
+  // (The lab's Den keeps nothing, and is made afresh each time.)
+  return p.keep === "none" ? <DenLive {...p} nav={nav} shown /> : <DenKept {...p} nav={nav} />;
+}
+
+// The game's Den, made once and kept for as long as the site's open: on the Den's page it's put in the page; going
+// anywhere else parks it off the side of the screen, still made (its scene, its pictures on the graphics card),
+// hidden and not drawing. Coming home puts it back as it was, with the game as it is now. Made again each time,
+// it was most of a second on a laptop and several on a phone before the Den showed (docs/polish-audit-2026-11.md).
+// (Parked at the size it was, not taken out of the page: a canvas with no size is left alone by its renderer,
+// which then wouldn't be told to stop drawing.)
+const SHOWN = "position:absolute;inset:0";
+const parked = (w: number, h: number) => `position:fixed;left:-100000px;top:0;width:${w || 390}px;height:${h || 600}px;visibility:hidden;pointer-events:none`;
+// `lost`: the graphics card dropped its canvas (a phone short of memory may, while it's parked): made afresh next visit.
+type Keeper = { box: HTMLDivElement; root: Root; lost: boolean };
+let keeper: Keeper | null = null;
+// Let go of the kept Den (the tests': each starts with none made).
+export function forgetDen() {
+  keeper?.root.unmount();
+  keeper?.box.remove();
+  keeper = null;
+}
+function DenKept(p: Den3DProps & { nav: Nav }) {
+  const host = useRef<HTMLDivElement>(null);
+  const latest = useRef(p);
+  useLayoutEffect(() => {
+    if (keeper?.lost) forgetDen();
+    if (!keeper) {
+      const box = document.createElement("div"), made: Keeper = { box, root: createRoot(box), lost: false };
+      keeper = made;
+      box.addEventListener("webglcontextlost", () => { made.lost = true; }, true);
+    }
+    const k = keeper;
+    k.box.style.cssText = SHOWN;
+    k.box.removeAttribute("data-den-parked");
+    host.current?.replaceChildren(k.box);
+    return () => {
+      k.box.style.cssText = parked(k.box.offsetWidth, k.box.offsetHeight);
+      k.box.setAttribute("data-den-parked", "");
+      document.body.appendChild(k.box);
+      k.root.render(<DenLive {...latest.current} shown={false} />);
+    };
+  }, []);
+  // (Every time the page draws: the game as it is now, handed on.)
+  useLayoutEffect(() => { latest.current = p; keeper?.root.render(<DenLive {...p} shown />); });
+  return <div ref={host} style={{ position: "absolute", inset: 0 }} />;
+}
+
+// The Den itself. `shown`: on the page now (the kept one isn't while you're elsewhere).
+function DenLive(p: Den3DProps & { nav: Nav; shown: boolean }) {
+  const nav = p.nav;
   const opened = p.rubble === "open";
   // The player's options (Settings: lib/den3d/setting.ts): names, the camera's angle.
   const stored = useDenOptions(), o = p.options ?? stored ?? DEN_DEFAULTS, pitch = (o.angle * Math.PI) / 180;
@@ -151,12 +207,37 @@ export default function Den3D(p: Den3DProps) {
   // A place tapped: the Den stops drawing till it's left (or, if that place never opens, for LEAVE_MS), so the
   // place's screen isn't loaded a few milliseconds at a time between the Den's frames.
   const [leaving, setLeaving] = useState(false);
-  const leave = (href: string) => { setLeaving(true); router.push(href); };
+  const leave = (href: string) => { setLeaving(true); nav.push(href); };
   useEffect(() => {
     if (!leaving) return;
     const t = window.setTimeout(() => setLeaving(false), LEAVE_MS);
     return () => window.clearTimeout(t);
   }, [leaving]);
+  // Taken off the page (the kept Den, while you're elsewhere): where the view was is kept, as on leaving it was, and
+  // anything half done (a press, a thing being moved) is let go. Put back: drawing again, with where things stand
+  // read again from the save (another save may have been loaded since), and after a run, back in the middle.
+  const wasShown = useRef(p.shown);
+  useEffect(() => {
+    if (p.shown === wasShown.current) return;
+    wasShown.current = p.shown;
+    if (!p.shown) {
+      if (p.keep !== "none") keepDenView({ at: view.current, across: zoomed.current, opened: wasOpen.current });
+      if (held.current?.lift) window.clearTimeout(held.current.lift);
+      held.current = null; fingers.current.clear(); pinch.current = null;
+      setPressed(null); hideFit(); setMoving(null); setNotice(false);
+      return;
+    }
+    setLeaving(false);
+    if (p.keep !== "none") { const saved = loadDenLayout(); setLayout((old) => (JSON.stringify(old) === JSON.stringify(saved) ? old : saved)); }
+    const v = denView();
+    if (!v || v.opened !== opened) {
+      glide.current = null;
+      view.current = firstView(opened, pitch);
+      setAcross(ZOOM.start);
+      const s = p.highlight === undefined ? undefined : list.find((x) => x.obj === p.highlight);
+      if (s) move({ x: s.x, y: s.y - 1 });
+    }
+  }, [p.shown]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Klutz strolling round room 1 while he's home; visitors round the whole Den once it's open; each finding
   // their way round wherever things stand now.
@@ -174,7 +255,7 @@ export default function Den3D(p: Den3DProps) {
   // Every place's page loaded in the background as the Den opens, so a tap goes straight in (taps go by
   // router.push, which doesn't fetch ahead as a link does; the user, 2026-11-20: going in was slow).
   const hrefs = [...new Set([...list.flatMap((s) => (s.href ? [s.href.split("?")[0]] : [])), "/klutz", VISITOR_HREF])].join("|");
-  useEffect(() => { for (const h of hrefs.split("|")) router.prefetch(h); }, [hrefs, router]);
+  useEffect(() => { for (const h of hrefs.split("|")) nav.prefetch(h); }, [hrefs, nav]);
 
   // What's waiting where (a ❗ on its name).
   const news = (s: Station) => (s.key === "shack" && (p.crateNews || (p.klutz !== "home" && p.klutzNews))) || (s.key === "cage" && p.cageNews)
@@ -325,7 +406,7 @@ export default function Den3D(p: Den3DProps) {
       onWheel={(e) => zoomTo(across * (e.deltaY > 0 ? 1.1 : 1 / 1.1))}
       style={{ position: "relative", width: "100%", height: "100%", background: "#000", overflow: "hidden", touchAction: "none" }}>
       <div ref={pad} style={{ position: "absolute", inset: 0, touchAction: "none", cursor: moving ? "grabbing" : "grab" }}>
-        <Canvas resize={{ offsetSize: true }} orthographic flat gl={{ antialias: false, powerPreference: "high-performance" }} frameloop={leaving ? "never" : "always"}
+        <Canvas resize={{ offsetSize: true }} orthographic flat gl={{ antialias: false, powerPreference: "high-performance" }} frameloop={p.shown && !leaving ? "always" : "never"}
           style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
           <DenWorld pitch={pitch} across={across} state={state} placed={now} plan={plan} shown={shown} list={list} walkers={walkers} caged={p.caged} klutz={p.klutz}
             movingKey={moving && !moving.ok ? moving.key : null}

@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
-// The new Den on its page (components/Den3D.tsx) in a pretend browser, its 3D canvas stood in for: it stops drawing
-// the moment you tap a place, so the place's screen gets the phone's whole attention (docs/polish-audit-2026-11.md).
+// The new Den on its page (components/Den3D.tsx) in a pretend browser, its 3D canvas stood in for: it's made once
+// and kept between visits (so coming home doesn't build it all again), it stops drawing the moment you tap a
+// place (so the place's screen gets the phone's whole attention), and what it shows is always the current game's
+// (docs/polish-audit-2026-11.md).
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -23,7 +25,7 @@ vi.mock("@react-three/fiber", async () => {
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 type Props = import("@/components/Den3D").Den3DProps;
-let Den3D: (p: Props) => React.ReactNode;
+let Den3D: (p: Props) => React.ReactNode, forgetDen: () => void;
 let root: Root, host: HTMLDivElement;
 const props: Props = { klutz: "home", klutzNews: false, rubble: "shut", tavern: {}, tavernNews: false, boardNews: false, crateNews: false, cageNews: false };
 const canvas = () => document.querySelector("[data-canvas]") as HTMLElement | null;
@@ -48,11 +50,37 @@ beforeEach(async () => {
   made.count = 0; push.mockClear();
   localStorage.clear();
   localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: [], gold: 0 }));
-  ({ default: Den3D } = await import("@/components/Den3D"));
+  ({ default: Den3D, forgetDen } = await import("@/components/Den3D"));
 });
-afterEach(async () => { if (host?.isConnected) await leave(); });
+afterEach(async () => { if (host?.isConnected) await leave(); forgetDen(); });
 
-describe("the Den, tapped", () => {
+describe("the Den, kept between visits", () => {
+  it("is made once: coming back from a place shows the one that was there, not a new one", async () => {
+    await visit();
+    const first = canvas();
+    expect(first).toBeTruthy();
+    expect(made.count).toBe(1);
+    await leave();
+    expect(first!.closest("[data-den-parked]")).toBeTruthy(); // (parked, hidden, while you're elsewhere)
+    expect(host.isConnected).toBe(false);
+    await visit();
+    expect(canvas()).toBe(first);
+    expect(host.contains(first)).toBe(true);
+    expect(first!.closest("[data-den-parked]")).toBeNull();
+    expect(made.count).toBe(1);
+    expect(canvas()!.dataset.drawing).toBe("always");
+  });
+
+  it("stops drawing while you're elsewhere, and starts again when you're back", async () => {
+    await visit();
+    const c = canvas()!;
+    expect(c.dataset.drawing).toBe("always");
+    await leave();
+    expect(c.dataset.drawing).toBe("never");
+    await visit();
+    expect(c.dataset.drawing).toBe("always");
+  });
+
   it("stops drawing the moment you tap a place, and goes there", async () => {
     await visit();
     expect(tag("storehouse")).toBeTruthy();
@@ -72,4 +100,36 @@ describe("the Den, tapped", () => {
     } finally { vi.useRealTimers(); }
   });
 
+  it("shows the game as it is now when you come back: what changed while you were away, and where things stand in the save", async () => {
+    await visit();
+    expect(tag("tavern")).toBeNull(); // (the wall's still up)
+    await leave();
+    // While away: the wall came down, and (another save loaded, say) the altar stands somewhere else.
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: [], gold: 0, den3d: { floor: { altar: { x: 5, y: 14 } } } }));
+    await visit({ ...props, rubble: "open", tavern: { blasted: true } });
+    expect(made.count).toBe(1);
+    expect(tag("tavern")).toBeTruthy();
+    const { loadDenLayout } = await import("@/lib/den3d/placement");
+    expect(loadDenLayout()).toEqual({ floor: { altar: { x: 5, y: 14 } } }); // (and coming back wrote nothing over it)
+  });
+
+  it("is made afresh if the graphics card dropped it while you were away (a phone short of memory may)", async () => {
+    await visit();
+    const first = canvas()!;
+    await leave();
+    first.dispatchEvent(new Event("webglcontextlost"));
+    await visit();
+    expect(made.count).toBe(2);
+    expect(canvas()).not.toBe(first);
+    expect(host.contains(canvas())).toBe(true);
+    expect(first.isConnected).toBe(false);
+  });
+
+  it("the lab's Den (nothing kept) is made afresh each time, as before", async () => {
+    await visit({ ...props, keep: "none" });
+    expect(made.count).toBe(1);
+    await leave();
+    await visit({ ...props, keep: "none" });
+    expect(made.count).toBe(2);
+  });
 });

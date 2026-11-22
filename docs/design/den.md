@@ -45,6 +45,14 @@ placement (players could block themselves in). With it off, the old Den, as it w
   high (`DEN_WALL`; the Labyrinth's are 2.25): a cavern, the buildings under them. 🧪 The walls and floor
   are the Labyrinth's kit F, every pixel kept, recoloured warm sandstone and earth (scripts/den-kit-warm.mjs);
   lanterns by the shack's and storehouse's doors, braziers in the tavern's room once it's open.
+- **Made once, kept between visits** (2026-11-23, after the user found opening and closing things slow;
+  [polish-audit-2026-11.md](../polish-audit-2026-11.md)): the Den's scene is built the first time you're in it
+  and kept for as long as the site's open (components/Den3D.tsx `DenKept`). Going into a place parks it off the
+  side of the screen, hidden and not drawing; coming home puts it back with the game as it is now, where
+  things stand read again from the save. It stops drawing the moment a place is tapped (`LEAVE_MS`). Its
+  props are drawn a few drawings each (lib/props/batch.ts), and its lights traced once and only mixed again as
+  they flicker (lib/render3d/stone.ts `lightShapes`). If the graphics card drops it while it's parked, it's
+  made afresh next visit. The lab's Den (`keep="none"`) is made afresh each time.
 - **The shape** (the user's drawing, 2026-11-19; lib/den3d/layout.ts): a **T**. A wide hall (12 × 15 floor
   each side; 11 deep till the user added 4 rows south, 2026-11-19, for the bigger pool and pits) with a narrower nook (6 × 6 each side) rising from the middle of its back wall, split down the
   middle by a wall that all moves away once Klutz uses the Labyrinth Stone. Each nook has a way out in the
