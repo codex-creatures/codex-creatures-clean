@@ -325,9 +325,10 @@ most, apart from the two dailies. A dungeon to beat with a quirk, for example:
 - with a team that all share a trait (all Toxic);
 - wearing nothing better than Uncommon gear.
 
-Its reward grows with how hard the quirk makes it. ❓ Open: how long each lasts (the user: "maybe 2
-days each? I'm not sure"), the full list of quirks, how the difficulty of one is scored, and what
-it pays.
+Its reward grows with how hard the quirk makes it. **Each lasts 2 days** (the user, 2026-11-23: "2 days
+works for now"). **What it can pay** (the user, the same day): enchanted weapons and armour, and essence
+crystals (the Epic material: fine as a reward here and in boss chests). ❓ Open: the full list of quirks,
+how the difficulty of one is scored, and how much each pays.
 
 | Secondary | Reward |
 |---|---|
