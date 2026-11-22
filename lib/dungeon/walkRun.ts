@@ -17,7 +17,7 @@
 // or not: you can slip past foes unseen, and they're still there.
 
 import { seeded } from "../creatures/soulStones";
-import { goldenChestRoom, makeRoom, leaveRoom, wonAtTop, rollBookcases, type Cage, type DungeonId, type DungeonRun, type Room } from "./run";
+import { goldenChestRoom, withMoney, makeRoom, leaveRoom, wonAtTop, rollBookcases, type Cage, type DungeonId, type DungeonRun, type Room } from "./run";
 import { rollPeople, locatorFinds, CAMPFIRE_STASH, type Person } from "./people";
 import type { LocatorKey } from "../items/materials";
 import { rollLayout, campMap, labyrinthMap, roomCentre, layoutFloorplan, WALK_SPEC, WALK_LABYRINTH, WALK_HYDRA, TWO_DEN_SHAPES, type Layout } from "./layout";
@@ -90,8 +90,11 @@ export function startWalkRun(party: string[], team: string[], hp: Record<string,
   }
   const seed = Math.floor(rng() * 1e9);
   // Golden chest rooms (run.ts GOLDEN_CHEST_ROOM), rolled from the seed and each room's id, so nothing else the run rolls moves.
-  for (const [id, r] of Object.entries(rooms))
+  // Money stashes (run.ts MONEY_STASH) the same way: a stash, or a campfire's.
+  for (const [id, r] of Object.entries(rooms)) {
     if (r.kind === "chest" && goldenChestRoom(dungeon, roomDepth(map, id), seeded(`golden:${seed}:${id}`)())) rooms[id] = { ...r, golden: true };
+    else if (r.kind === "stash" || (r.kind === "campfire" && r.sack)) rooms[id] = withMoney(r, dungeon, seeded(`money:${seed}:${id}`));
+  }
   const fires = placeCampfires(layoutFloorplan(layout), map, (id) => roomCentre(layout.rooms[id]), rng, dungeon === 0 ? CAMPFIRE_CHANCE : 0);
   const people = wander ? rollPeople(map, layout, layoutFloorplan(layout), rooms, rng, dungeon, bindle) : null;
   if (people) Object.assign(rooms, people.rooms);

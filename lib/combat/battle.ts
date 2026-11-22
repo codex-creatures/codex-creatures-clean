@@ -617,8 +617,15 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         text += ` — +${Math.round(fx.boost * 100)}% ${fx.style} attack while it stays on the field`;
       }
       if (fx?.kind === "ward") {
-        actor.statuses = [...actor.statuses.filter((s) => !WARD_BLOCKS.includes(s.id) && s.id !== "ward"), { id: "ward", rounds: fx.rounds + 1 }];
-        actor.defenceCut = undefined;
+        // (A boss's Cleanse covers every part of it on the field: bossAi.ts BOSS_CLEANSE.)
+        const mine = state.sides[key];
+        const who = mine.boss ? fieldOf(mine).filter((i) => mine.team[i].hp > 0 && !mine.team[i].hidden) : [actorIdx];
+        for (const i of who) {
+          const f = mine.team[i];
+          f.statuses = [...f.statuses.filter((s) => !WARD_BLOCKS.includes(s.id) && s.id !== "ward"), { id: "ward", rounds: fx.rounds + 1 }];
+          f.defenceCut = undefined;
+          if (i !== actorIdx) state.log.push({ type: "effect", side: key, index: i, name: f.name, text: "is cleansed", hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "heal" });
+        }
         text += ` — no status effects for ${fx.rounds} rounds`;
       }
       if (fx?.kind === "cleanse") {

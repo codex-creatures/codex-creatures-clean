@@ -29,7 +29,7 @@ import { RARITY_WEIGHTS } from "../items/budgets";
 import { coreMove } from "../creatures/raceKitsV2";
 import { SPECIES_RACES, type RaceV2 } from "../creatures/racesV2";
 import { rollCreature } from "../creatures/creatureRoll";
-import { randomSoulStone, type SoulStoneKey } from "../creatures/soulStones";
+import { randomSoulStone, seeded, type SoulStoneKey } from "../creatures/soulStones";
 import { buildFighter } from "../combat/loadout";
 import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
@@ -37,7 +37,7 @@ import { rollGear, RARITIES } from "../items/gear";
 import type { BossKind } from "../combat/bossAi";
 import { questMap, rollMap, routeLength, waysOn, type DungeonMap, type MapSpec } from "./map";
 import { newWitchGame, type WitchGame } from "./witch";
-import { REF_LEVEL } from "../creatures/levels";
+import { BOSS_XP, REF_LEVEL } from "../creatures/levels";
 import { readSave, writeSaveField } from "../save";
 import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS, ARMOR_SLOTS, ARMOR_V2 } from "../items/armor";
@@ -402,14 +402,31 @@ export function bagItems(bag: PotionKey[]) {
 // want (one slot each, gold takes none); what you leave stays on the floor.
 // - STASH_POTIONS potions (each a Healing Potion STASH_POTION_CHANCE of the
 //   time, else a Lesser one);
-// - the last thing is rolled: STASH_LAST_ROLL — another potion, some gold
-//   (STASH_GOLD), or a weapon or armour piece rolled like a scan;
+// - the last thing is rolled: STASH_LAST_ROLL — another potion, nothing, or a
+//   weapon or armour piece rolled like a scan. (The nothing was STASH_GOLD gold
+//   until 2026-11-23: the gold is in money stashes now, below);
 // - now and then a flare or a clairvoyance scroll as well (STASH_TOOLS).
-export const STASH_ITEMS = 3;
+export const STASH_ITEMS = 3; // (at most: 2 when the last roll comes up nothing)
 export const STASH_POTIONS = 2;
 export const STASH_POTION_CHANCE = 0.3;
-export const STASH_LAST_ROLL = { potion: 0.25, gold: 0.5, gear: 0.25 };
+export const STASH_LAST_ROLL = { potion: 0.25, none: 0.5, gear: 0.25 };
+// (What the roll that's now nothing used to hold. Still rolled, and set aside, so the rolls after it,
+// and so every run made from a seed, come out as they did.)
 export const STASH_GOLD: [number, number] = [100, 250];
+// Money stashes (the user, 2026-11-23): a stash's gold didn't grow with the dungeon, so it was half the
+// Cyclops' gold and a quarter of the Minotaur's. Now an ordinary stash holds none, and MONEY_STASH of
+// stashes (a campfire's too) are money stashes: MONEY_GOLD times the dungeon's goldScale on top of what
+// they hold. About the same gold as before in the Encampment and the Cyclops' Labyrinth, about 750 more
+// a full clear in the Hydra's and 1,100 in the Minotaur's. 🧪 Claude's numbers, the user's yes.
+export const MONEY_STASH = 0.25;
+export const MONEY_GOLD: [number, number] = [300, 450];
+export const moneyGold = (dungeon: DungeonId, roll: number) => Math.round((MONEY_GOLD[0] + roll * (MONEY_GOLD[1] - MONEY_GOLD[0])) * DUNGEONS[dungeon].goldScale);
+// A stash, made a money stash or left as it is. rng: one of its own (seeded by the run and the room),
+// so nothing else a run rolls moves.
+export function withMoney(room: Room, dungeon: DungeonId, rng: Rng): Room {
+  if (!room.sack || rng() >= MONEY_STASH) return room;
+  return { ...room, money: true, sack: [{ gold: moneyGold(dungeon, rng()) }, ...room.sack] };
+}
 // The odds of a flare, and of a clairvoyance scroll, on top of what's in a
 // stash or a chest (the user, 2026-10-20).
 export const STASH_TOOLS = { flare: 0.1, clairvoyance: 0.05 };
@@ -441,15 +458,43 @@ export function rollGearPiece(rng: Rng = Math.random): Drop {
   const rarity = pickRarity("", "random");
   return enchanted(rng() < 1 / 3 ? weaponDrop(pick(ITEM_KEYS, rng), rarity) : armorDrop(pick(ARMOR_KEYS, rng), rarity), CHEST_ENCHANT);
 }
-export function cyclopsChest(rng: Rng = Math.random): SackItem[] {
+// The bosses' chests (the user, 2026-11-23). Until then every boss opened the Cyclops' chest, so the
+// Hydra and the Minotaur paid no better than it did. Now each has its own, by dungeon:
+// - gear: how many weapons and armour pieces; rarity: their odds (missing: a scan's, as the Cyclops' has
+//   always been; the Hydra's are a golden chest's); sure: one of them is at least this;
+// - enchant: the chance each Rare or better one is enchanted;
+// - gold: the fight's own gold (as it is: not times goldScale);
+// - essence: essence crystals (a whole number, or the chance of one);
+// - partXp: XP for each part of it beaten (the Minotaur is one fighter: three parts' worth, as the
+//   Hydra's three heads give). The Warden's pack gives each of its foes' own XP.
+// Its codexes, potions, XP scroll, elixir, plans and soul stone are as they were (the Cyclops' tables).
+// 🧪 Claude's numbers, the user's yes ("as long as the increased challenge is in line with the loot").
+export type BossLoot = { gear: [number, number]; rarity?: [Rarity, number][]; sure?: Rarity; enchant: number; gold: [number, number]; essence: number; partXp: number };
+export const BOSS_LOOT: Record<Exclude<DungeonId, 0>, BossLoot> = {
+  1: { gear: CYCLOPS_GEAR, enchant: CHEST_ENCHANT, gold: BOSS_GOLD, essence: 0, partXp: BOSS_XP },
+  2: { gear: [4, 5], rarity: [["rare", 65], ["epic", 30], ["legendary", 5]], sure: "epic", enchant: 0.25, gold: [500, 700], essence: 0.5, partXp: BOSS_XP },
+  4: { gear: [5, 5], rarity: [["epic", 85], ["legendary", 15]], enchant: 0.5, gold: [800, 1100], essence: 1, partXp: BOSS_XP * 3 },
+  3: { gear: [5, 5], rarity: [["epic", 60], ["legendary", 40]], sure: "legendary", enchant: 1, gold: [1200, 1600], essence: 2, partXp: BOSS_XP },
+};
+export const bossLoot = (dungeon: DungeonId): BossLoot => BOSS_LOOT[dungeon === 0 ? 1 : dungeon];
+export function bossChest(dungeon: DungeonId, rng: Rng = Math.random): SackItem[] {
+  const loot = bossLoot(dungeon);
   const times = (range: [number, number], roll: () => SackItem) => Array.from({ length: randInt(...range, rng) }, roll);
   const chest = [
     ...times(CYCLOPS_ITEMS, () => ({ gear: codexDrop(rng() < CYCLOPS_RACE_CODEX ? randomCodexMove() : randomLearnableMove()) })),
     ...times(CYCLOPS_POTIONS, (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" })),
   ];
-  const gear = Math.min(randInt(...CYCLOPS_GEAR, rng), CYCLOPS_CHEST_MAX - chest.length);
-  return [...chest, ...Array.from({ length: gear }, (): SackItem => ({ gear: rollGearPiece(rng) }))];
+  const gear = Math.min(randInt(...loot.gear, rng), CYCLOPS_CHEST_MAX - chest.length);
+  const piece = (i: number): Drop => {
+    if (!loot.rarity) return rollGearPiece(rng);
+    const rolled = weighted(loot.rarity, rng);
+    const rarity = i === 0 && loot.sure && RARITIES.indexOf(rolled) < RARITIES.indexOf(loot.sure) ? loot.sure : rolled;
+    return enchanted(rng() < 1 / 3 ? weaponDrop(pick(ITEM_KEYS, rng), rarity) : armorDrop(pick(ARMOR_KEYS, rng), rarity), loot.enchant, rng);
+  };
+  const essence = Math.floor(loot.essence) + (loot.essence % 1 > 0 && rng() < loot.essence % 1 ? 1 : 0);
+  return [...chest, ...Array.from({ length: gear }, (_, i): SackItem => ({ gear: piece(i) })), ...(essence > 0 ? [{ gear: materialDrop("essence", essence) }] : [])];
 }
+export const cyclopsChest = (rng: Rng = Math.random): SackItem[] => bossChest(1, rng);
 // (World version 17, the user, 2026-11-17) A crate in a room's corner, searched once: CORNER_FIND of the time it
 // holds one thing, a material bundle (Common, sometimes Uncommon) or a consumable (CORNER_CONSUMABLES: a
 // Lesser or Healing Potion, a torch, a clairvoyance scroll); the rest of the time it's empty. 🧪
@@ -974,6 +1019,7 @@ export type Room = {
   sack?: SackItem[];   // a stash, or a beaten fight's loot: what's (still) inside
   opened?: boolean;    // …and you've opened it
   golden?: boolean;    // a mini boss's golden chest (GOLDEN_CHEST): locked till a Gold Key opens it
+  money?: boolean;     // a money stash (MONEY_STASH): its gold is in its sack
   container?: "sack" | "chest" | "strongbox"; // a beaten fight's loot: a sack (ordinary fights), a rickety chest (mini bosses, the Cyclops) or a strongbox (the Hydra, the Warden)
   quest?: "club" | "thief"; // part of the first quest (lib/quest.ts)
   boxTaken?: boolean;  // the thief's room: you've picked up Klutz's box
@@ -1113,6 +1159,7 @@ export function foeCodexes(enemies: Enemy[], dungeon: DungeonId) {
 function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, backpack: boolean): Room {
   const D = DUNGEONS[dungeon];
   const gold = (range: [number, number]) => Math.round(randInt(...range, rng) * D.goldScale);
+  const bossGold = () => randInt(...bossLoot(dungeon).gold, rng); // (a boss's own: BOSS_LOOT)
   const level = enemyLevel(dungeon, kind, depth, rng);
   const N = squadsOf(dungeon);
   // One enemy of this kind, at this depth (foeAt), not the same species as those in `others`.
@@ -1148,7 +1195,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
       const sack: SackItem[] = Array.from({ length: STASH_POTIONS }, potion);
       const last = rng();
       if (last < STASH_LAST_ROLL.potion) sack.push(potion());
-      else if (last < STASH_LAST_ROLL.potion + STASH_LAST_ROLL.gold) sack.push({ gold: randInt(...STASH_GOLD, rng) });
+      else if (last < STASH_LAST_ROLL.potion + STASH_LAST_ROLL.none) randInt(...STASH_GOLD, rng); // (nothing: its gold is in money stashes now. Rolled all the same: STASH_GOLD)
       else {
         // Like a scan: any rarity at the usual odds; armour twice as likely as a weapon.
         sack.push({ gear: rollGearPiece(rng) });
@@ -1220,11 +1267,11 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
       return { kind, done: true };
     case "boss":
       // Dungeon 1: the Cyclops; the Deep Labyrinth: the Hydra (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
-      if (dungeon === 1) return { kind, boss: "cyclops", gold: gold(BOSS_GOLD), done: false };
-      if (dungeon === 2) return { kind, boss: "hydra", gold: gold(BOSS_GOLD), done: false };
-      if (dungeon === 4) return { kind, boss: "minotaur", gold: gold(BOSS_GOLD), done: false };
+      if (dungeon === 1) return { kind, boss: "cyclops", gold: bossGold(), done: false };
+      if (dungeon === 2) return { kind, boss: "hydra", gold: bossGold(), done: false };
+      if (dungeon === 4) return { kind, boss: "minotaur", gold: bossGold(), done: false };
       // The Abyss: the Warden (a Legendary) and his Epic guards.
-      return { kind, enemies: wardenPack(rng, dungeon), level: "hard", gold: gold(BOSS_GOLD), done: false };
+      return { kind, enemies: wardenPack(rng, dungeon), level: "hard", gold: bossGold(), done: false };
     case "librarian": {
       // A few different codexes, each for a different race.
       const offers: string[] = [];
@@ -1355,7 +1402,8 @@ export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.rando
   if (run.status !== "exploring") return run;
   const node = nextRooms(run).find((n) => n.id === nodeId);
   if (!node) return run;
-  const rolled = makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run), !!run.bindle);
+  const made = makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run), !!run.bindle);
+  const rolled = made.kind === "stash" ? withMoney(made, dungeonOf(run), seeded(`money:${run.id}:${node.id}`)) : made;
   const room = dungeonOf(run) === 0 && node.id === run.map.boss ? { ...rolled, cages: run.campCages ?? [] } : rolled;
   return { ...run, path: [...run.path, node.id], current: node.dynamite ? { ...room, dynamite: true } : room, room: run.room + 1 };
 }
@@ -1506,6 +1554,7 @@ export type RunRecord = {
   rooms: number;               // rooms stood in (the entrance included)
   cleared: number;             // rooms finished
   route: number;               // the shortest way to the top, in rooms (to set rooms against)
+  at?: RoomKind;               // the kind of room it ended in (where runs are lost; missing: between rooms, or a record from before 2026-11-23)
   gold: number;                // gold picked up (fights, chests, sacks: run.got)
   spent?: number;              // gold spent inside, and from selling (missing = none)
   sold?: number;
@@ -1518,7 +1567,7 @@ export function runRecord(run: DungeonRun, now = Date.now()): RunRecord {
     mins: Math.max(0, Math.round((now - Date.parse(run.startedAt)) / 60000)) || 0,
     out: won ? "won" : run.status === "dead" ? "dead" : "retreated",
     rooms: new Set(run.path).size, cleared: run.cleared.length, route: run.map?.start && Number.isFinite(routeLength(run.map)) ? routeLength(run.map) : 0, gold,
-    ...(run.spent ? { spent: run.spent } : {}), ...(run.sold ? { sold: run.sold } : {}),
+    ...(run.current ? { at: run.current.kind } : {}), ...(run.spent ? { spent: run.spent } : {}), ...(run.sold ? { sold: run.sold } : {}),
   };
 }
 

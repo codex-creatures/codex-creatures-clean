@@ -39,8 +39,15 @@
 //   warning on screen), and charges the next.
 // - Kick (2-round cooldown; only with someone on your bench): a hit, then your creature
 //   is knocked aside and a random teammate comes in (maybe the wrong one for a charge).
-// - Water Body (7-round cooldown; only with venom, poison, bleed or a burn on it).
 // - Labrys Cleave (heavy) or Horn Jab (quick).
+// (Water Body, which washed venom, poison, bleed and burns off it on a roll, gave way to Cleanse.)
+//
+// Cleanse (every boss; the user, 2026-11-23): bleed, venom, poison and burns take a share of max
+// HP a round, whatever a boss's defences, and a boss can't leave the field to shake them off, so
+// they beat every boss. Once any part of a boss on the field has ended BOSS_CLEANSE.after round(s)
+// with one on it, it spends its turn on Cleanse: Crystal Armour's ward under a plainer name, over every
+// part of it on the field (their status effects cleared, and none stick for 3 rounds). The
+// Minotaur doesn't while it's wound up for its charge.
 
 import type { BattleAction, BattleEvent, BattleSide, BattleState, Combatant, GroundEffect, SideKey } from "./battle";
 
@@ -49,7 +56,10 @@ export type BossKind = "cyclops" | "hydra" | "minotaur";
 // first breath. cloudUntil: the last round its cloud hangs. regrow: rounds
 // until the heads that are down grow back. down: the heads that were down at
 // the end of last round. The Minotaur's: horns: the round it last lowered its horns.
-export type BossState = { kind: BossKind; phase: number; next?: number; breathAt?: number; cloudUntil?: number; regrow?: number; down?: number[]; horns?: number };
+// fouled: rounds in a row that have ended with a bleed, venom, poison or burn on a part of it (BOSS_CLEANSE).
+export type BossState = { kind: BossKind; phase: number; next?: number; breathAt?: number; cloudUntil?: number; regrow?: number; down?: number[]; horns?: number; fouled?: number };
+// 🧪 Claude's numbers, by sim (docs/design/labyrinth.md).
+export const BOSS_CLEANSE = { move: "Cleanse", after: 1, washes: ["venom", "poison", "bleed", "burn"] };
 
 export const CYCLOPS = {
   BODY: 0, HANDS: [1, 2], EYE: 3,
@@ -73,7 +83,7 @@ export const HYDRA = {
 };
 export const MINOTAUR = {
   CHARGE_FROM: 2,      // the first round it may lower its horns
-  WASHES: ["venom", "poison", "bleed", "burn"], // what Water Body washes off (and it's only rolled with one on it)
+  WASHES: ["venom", "poison", "bleed", "burn"], // what Water Body washed off (a fight saved with it still rolls it, with one on it)
   // 🧪 each move's weight in the roll (one it can't use is rolled again: the same as leaving it out)
   ROLL: [["Horn Charge", 1], ["Kick", 1], ["Water Body", 1], ["Labrys Cleave", 1], ["Horn Jab", 1]] as [string, number][],
 };
@@ -104,6 +114,9 @@ export function bossSetup(side: BattleSide, kind: BossKind) {
 const crippled = (f: Combatant) => f.statuses.some((s) => s.id === "cripple");
 const canUse = (f: Combatant, name: string) => f.skills.some((s) => s.name === name && s.energyCost <= f.energy) && (f.cooldowns?.[name] ?? 0) <= 0;
 const attack = (name: string): BattleAction => ({ kind: "attack", skillName: name });
+const onField = (side: BattleSide): number[] => side.field ?? [side.active, side.partner].filter((i): i is number => i != null);
+// Is it time to cleanse? (And can this part of it? A fight saved before Cleanse has no such move.)
+const cleanses = (side: BattleSide, me: Combatant) => (side.boss?.fouled ?? 0) >= BOSS_CLEANSE.after && canUse(me, BOSS_CLEANSE.move);
 
 // First of the named moves it can afford, or rest.
 function firstAffordable(f: Combatant, ...names: string[]): BattleAction {
@@ -119,11 +132,17 @@ export function bossActions(state: BattleState, key: SideKey): { index: number; 
   const foe = state.sides[key === "A" ? "B" : "A"];
   const target = foe.team[foe.active];
   const out: { index: number; action: BattleAction }[] = [];
+  let cleansed = false; // (one part's Cleanse covers them all: the Cyclops's other hand fights on)
   for (const index of [side.active, side.partner].filter((i): i is number => i != null)) {
     const me = side.team[index];
     if (me.hp <= 0) continue;
     const r = Math.random();
     let action: BattleAction;
+    if (!cleansed && cleanses(side, me) && !me.statuses.some((s) => s.id === "charged")) {
+      cleansed = true;
+      out.push({ index, action: attack(BOSS_CLEANSE.move) });
+      continue;
+    }
     switch (me.name) {
       case "Minotaur": {
         const woundUp = me.statuses.some((s) => s.id === "charged");
@@ -169,6 +188,7 @@ function hydraTurn(state: BattleState, side: BattleSide): { index: number; actio
   if (head === undefined) return [];
   boss.next = (head + 1) % n;
   const me = side.team[head];
+  if (cleanses(side, me)) return [{ index: head, action: attack(BOSS_CLEANSE.move) }];
   if (breathes(state, boss)) return [{ index: head, action: attack("Toxic Breath") }];
   const [quick, heavy] = HEAD_MOVES[me.name] ?? [me.skills[0].name, me.skills[0].name];
   return [{ index: head, action: Math.random() < HYDRA.HEAVY_CHANCE ? firstAffordable(me, heavy, quick) : firstAffordable(me, quick) }];
@@ -210,6 +230,10 @@ export function bossMinHp(state: BattleState, key: SideKey, index: number): numb
 export function bossEndOfRound(state: BattleState, key: SideKey): BattleEvent[] {
   const side = state.sides[key];
   const boss = side.boss;
+  if (boss) {
+    const fouled = onField(side).some((i) => side.team[i].hp > 0 && side.team[i].statuses.some((s) => BOSS_CLEANSE.washes.includes(s.id)));
+    boss.fouled = fouled ? (boss.fouled ?? 0) + 1 : 0;
+  }
   if (boss?.kind === "hydra") return hydraEndOfRound(side, key);
   if (boss?.kind !== "cyclops") return [];
   const t = side.team;

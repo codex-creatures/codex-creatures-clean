@@ -11,7 +11,6 @@ import type { BossKind } from "../combat/bossAi";
 type Stats = Record<string, number>;
 type Part = {
   id: string; name: string; label: string; weapon: Stats; armor: Stats; stance?: Fighter["stance"];
-  allMoves?: boolean; // every move its species has, past the 4 slots (the Minotaur's 5)
   weaponName: string; armorName: string; // shown where your creatures show their gear
   weakTo?: Fighter["cls"]; // its weak spot (Fighter.weakTo)
 };
@@ -50,7 +49,7 @@ export const HYDRA_PARTS: Part[] = [
 // MINOTAUR in bossAi.ts): one fighter, built to outlast five. 🧪 Claude's numbers,
 // by sim (docs/design/labyrinth.md).
 export const MINOTAUR_PARTS: Part[] = [
-  { id: "minotaur", name: "Minotaur", label: "Boss · Melee Brute", weaponName: "Great labrys", armorName: "Bull hide", allMoves: true,
+  { id: "minotaur", name: "Minotaur", label: "Boss · Melee Brute", weaponName: "Great labrys", armorName: "Bull hide",
     weapon: { melee: 42 }, armor: { mDef: 96, rDef: 84, magDef: 72, agility: 90 } },
 ];
 
@@ -65,6 +64,6 @@ export function cyclopsTeam(level?: number): Fighter[] {
 export function bossTeam(kind: BossKind, level?: number): Fighter[] {
   return BOSS_PARTS_OF[kind].map((p) => {
     const f = buildFighter(CREATURE_BY_ID[p.id], p.weapon, p.armor, undefined, undefined, undefined, undefined, level);
-    return { ...f, name: p.name, stance: p.stance ?? "neutral", ...(p.weakTo ? { weakTo: p.weakTo } : {}), ...(p.allMoves ? { skills: [...CREATURE_BY_ID[p.id].skills] } : {}) };
+    return { ...f, name: p.name, stance: p.stance ?? "neutral", ...(p.weakTo ? { weakTo: p.weakTo } : {}), skills: [...CREATURE_BY_ID[p.id].skills] }; // (every move its species has, past the 4 slots: the Cyclops's and the Minotaur's 5, with Cleanse)
   });
 }

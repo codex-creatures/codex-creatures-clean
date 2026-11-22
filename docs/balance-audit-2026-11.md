@@ -43,9 +43,20 @@ Read these before acting on an item: they overrule what's written under it.
   home), so its price stays unless the user says otherwise. A fairer reading of Player D than the
   one below: they had also spent 5 metal bars repairing the tavern and their nails on tavern
   upgrades, so they'd found at least 8 bars in 24 runs.
-- **Items 3 and 4, and the gold in stashes:** the user wants each boss to have its own way of
-  shaking off bleed and poison (as the Minotaur has), its own loot table, and stash gold replaced
-  by rarer money stashes. The numbers for each are still to be agreed.
+- **Item 0 is fixed** (2026-11-23), with a test, and the battle screen falls back to the simple AI
+  if the thinking one ever throws.
+- **Item 3 is built** (2026-11-23): every boss has **Cleanse** (Crystal Armour's ward, the user's
+  choice of effect and name), in place of the Minotaur's Water Body. Simmed three ways; what's in
+  is "the round after, and it costs the turn". It brings the Hydra back to a fight (Obsidian
+  Arrows 78% in 19 rounds, from 100% in 10). The Minotaur still loses to those moves every time,
+  only in 20 rounds, not 10. The numbers are in [design/labyrinth.md](design/labyrinth.md) (Bosses).
+- **Item 4 is built** (2026-11-23): a chest, gold and XP for each boss (`BOSS_LOOT`), and stash
+  gold replaced by money stashes (1 in 4, their gold times the dungeon's gold scale). The daily
+  boss rewards are not changed.
+- **Item 2:** no gear shown on the dungeon picker (the user: people read the levels, and gear there
+  adds complexity). The level cap may go to 50 one day; gear is meant to be the end-game chase, and
+  PvP can raise levels and stay fair. The XP curve waits for run history.
+- **Run history** now also records the kind of room a run ended in.
 
 ## What this rests on
 

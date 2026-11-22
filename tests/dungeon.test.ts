@@ -382,10 +382,10 @@ describe("a labyrinth run", () => {
     const start = startRun(party, party.slice(0, 3), {}, 4, Math.random, 2);
     const run: DungeonRun = {
       ...start, startedAt: new Date(0).toISOString(), status: "dead", path: [start.map.start, "x", "y", "x"], cleared: [start.map.start, "x"],
-      got: [{ drop: goldDrop(40) }, { potion: "lesser" }, { drop: goldDrop(15) }], spent: 250, sold: 60,
+      got: [{ drop: goldDrop(40) }, { potion: "lesser" }, { drop: goldDrop(15) }], spent: 250, sold: 60, current: { kind: "hard", done: false },
     };
     const [line] = endRun({ meta, run }, 30 * 60000).meta.history!;
-    expect(line).toEqual({ d: 2, end: new Date(30 * 60000).toISOString(), mins: 30, out: "dead", rooms: 3, cleared: 2, route: line.route, gold: 55, spent: 250, sold: 60 });
+    expect(line).toEqual({ d: 2, end: new Date(30 * 60000).toISOString(), mins: 30, out: "dead", rooms: 3, cleared: 2, route: line.route, gold: 55, at: "hard", spent: 250, sold: 60 });
     expect(line.route).toBeGreaterThan(0);
     // Won walking; only the last RUN_HISTORY are kept.
     const won = { ...start, status: "cleared" as const, walk: {} as DungeonRun["walk"] };

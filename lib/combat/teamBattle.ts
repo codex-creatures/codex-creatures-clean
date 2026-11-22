@@ -102,7 +102,10 @@ export function aiChooseAction(state: BattleState, key: SideKey, opts: AiOptions
 export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined {
   // Utility moves (Mirage, Corpsify) are left to the thinking AI's lookahead.
   // (A foe's off-race codex move: it doesn't always think of it.)
-  const usable = affordableSkills(me).filter((s) => s.name !== me.offRace || Math.random() < OFF_RACE_USE);
+  // (If that leaves nothing, wound up for an off-race Mega Smash, say, it uses what it can: a pass isn't
+  // allowed while a move's affordable, and the fight threw. thinkingAi.ts candidates does the same.)
+  const all = affordableSkills(me), thought = all.filter((s) => s.name !== me.offRace || Math.random() < OFF_RACE_USE);
+  const usable = thought.length > 0 ? thought : all;
   if (usable.length === 0) return undefined;
   const attacks = usable.filter((s) => !s.self);
   const affordable = attacks.length > 0 ? attacks : usable;

@@ -6,7 +6,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ## 7. The Labyrinth
 
-- ✅ **Run history** (the user, 2026-11-21: to see how people really play, and how much gold a run brings in): as each run ends (run.ts `endRun`), a line goes into `DungeonMeta.history` (`RunRecord`, the last `RUN_HISTORY` = 100, about 150 bytes each): the dungeon, walked or scroll, when it ended and how long it lasted, won / dead / retreated, rooms stood in, rooms cleared, the shortest way to the top, the gold picked up, and the gold spent at and made selling to merchants and librarians (`DungeonRun.spent`, `sold`; the entry fee isn't counted). Nothing on screen; it reaches the game's database with cloud saves. Old saves: none until their next run ends.
+- ✅ **Run history** (the user, 2026-11-21: to see how people really play, and how much gold a run brings in): as each run ends (run.ts `endRun`), a line goes into `DungeonMeta.history` (`RunRecord`, the last `RUN_HISTORY` = 100, about 150 bytes each): the dungeon, walked or scroll, when it ended and how long it lasted, won / dead / retreated, rooms stood in, rooms cleared, the shortest way to the top, the gold picked up, the gold spent at and made selling to merchants and librarians (`DungeonRun.spent`, `sold`; the entry fee isn't counted), and the kind of room it ended in (`at`, since 2026-11-23: where runs are lost). Nothing on screen; it reaches the game's database with cloud saves. Old saves: none until their next run ends.
 - ✅ **The dungeon picker** (the user, 2026-11-13; components/dungeon/Entrance.tsx): a toggle at the top, **Dungeon Crawling** (the walkable runs, by torchlight; the default) or **Speed Scroll** (the scroll map), then the dungeon picked as a showcase (its boss on a lit backdrop, its rooms, foe levels, team size, and its price or why it's shut; the UI overhaul, 2026-11-17) over a medallion each: Encampment, Cyclops, Hydra, Minotaur (to come, greyed), Abyss (a locked one says why when tapped), and an (i) on the showcase with the details. The Enter button is in a dock along the bottom, and your creatures' panel takes whatever height is left (never under about two rows; a short phone scrolls instead) (rooms to the boss, foe levels, team size, free runs left, foes' codexes, times beaten). Dungeon Crawling is built for the Encampment, the Cyclops and the Hydra (the user, 2026-11-17: the walkable Labyrinth's 60-room, 15-to-the-lair layout with the scroll map's two large rooms, `WALK_HYDRA` 🧪; its people who wander; the whole Hydra waiting at the top, a huge creature; runs and clears the Deep Labyrinth's); the Abyss says "Speed Scroll only" there. **Speed Scroll opens for a dungeon once you've beaten it crawling** (the user, 2026-11-14; at the same fee): until then its row says "Crawl it first" and Enter "Beat it crawling first". The dungeons beaten walking are kept in `DungeonMeta.walkClears` (old saves: none, so a scroll-only win from before doesn't count); those that can't be crawled yet are always open (run.ts `scrollOpen`, `CRAWLABLE`). Klutz's quest run is walked, by torchlight (klutz.md, the first quest; since 2026-11-20). (It replaced the cards and the two "🔥 New" cards.)
 - ✅ **The entrance** (the user, 2026-11-01): pick the dungeon, with its Enter button straight under it (the "?" beside it explains a run; the user, 2026-11-03), then two tabs. **Party**: Free pick
   (the default; it starts empty every time: tap the creatures that go in, up to the dungeon's team
@@ -129,6 +129,17 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   10% of chests (`STASH_TOOLS`, `CHEST_TOOLS`), on top of what they already hold. A chest holds at
   most 5 things (`CHEST_SLOTS`, `capSack`): rolled more, the least rare fall out (gold first, then
   Common, Uncommon…).
+- ✅ **Stashes and money stashes** (the user, 2026-11-23; `MONEY_STASH`, `withMoney` in lib/dungeon/run.ts): a
+  stash is 2 potions and a last roll: another potion 25%, a weapon or armour piece 25%, nothing 50% (that half held
+  100–250 gold until now: `STASH_LAST_ROLL`). The gold didn't grow with the dungeon, so it was half the Cyclops's
+  gold and a quarter of the Minotaur's. Now **1 stash in 4 is a money stash** (a campfire's stash too): on top of
+  what it holds, 300–450 gold times the dungeon's gold scale (`MONEY_GOLD`; 300–450 in the Encampment and the
+  Cyclops's Labyrinth, 600–900 in the Hydra's, 750–1,125 in the Minotaur's, 900–1,350 in the Abyss). Its loot window
+  says "The money stash". Rolled from the run's seed and the room, so nothing else a run rolls moves; a run under
+  way keeps the stashes it had. About the same gold as before in the first two, about 750 more a full clear in the
+  Hydra's and 1,100 in the Minotaur's. 🧪 Claude's numbers, the user's yes. 📌 Its own look: two samples are in
+  art/money-stash-samples/ (the burlap sack with a gold coin on it; a wine-red sack with a gold cord), each shut and
+  open, waiting for the user's pick; until then it's drawn as any stash.
 - ✅ **Golden chests and Gold Keys** (the user, 2026-11-13): 10% of mini bosses (`GOLDEN_CHEST`,
   rolled with the room as `Room.golden`) guard a golden chest instead of
   the rickety one. It opens only with a **Gold Key** in your bag, which is used up (no key: it stays
@@ -251,8 +262,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     of it"). Next round it charges, and **whoever is in front of it then falls, whatever its
     health**: no armour set, brace or dodge saves it (a Mega Smash-style charge with `kill`). Swapping doesn't dodge
     it; it picks who takes it. (Fear or a stumble delays it.)
-  - **Water Body** (7-round cooldown; only rolled with venom, poison, bleed or a burn on it): it's washed
-    clean (Rabid Bite's venom was too strong against it; it also breaks up its moves).
+  - (**Water Body**, a roll every 7 rounds at most that washed venom, poison, bleed and burns off it, gave way to
+    every boss's **Cleanse**, below, on 2026-11-23: the venom went straight back on. A fight saved with it carries on with it.)
   - **Kick** (2-round cooldown, so never two rounds running; only with someone on your bench; was Sweeping
     Horns): a hit, then your creature is
     knocked aside and a random teammate comes in (a seal doesn't hold), which may leave the wrong one in front of a
@@ -262,8 +273,37 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     play the charge round as a person would): 5 Epics in Epic gear beat it about half the time, losing about 4 of
     their 5 (the Hydra, 3 Epics Lv 16 in Epic gear: about two thirds). Its HP went up 25% after the first sim (80%).
   - ✅ Art (the user's pick, 2026-11-21): `public/sprites/creatures/minotaur.png`, sample 1 of `art/minotaur-samples/`, trimmed.
-- ✅ **Boss rewards:** the boss chest (10 rolls, plus a scroll chance) and the Rugged Backpack. The
-  Hydra, the Minotaur and the Warden drop a strongbox.
+- ✅ **Cleanse** (every boss; the user, 2026-11-23; `BOSS_CLEANSE` in lib/combat/bossAi.ts). Bleed, venom, poison and
+  burns take a share of max HP a round whatever a boss's defences, and a boss can't leave the field to shake them
+  off, so they beat every boss: in the 2026-11 audit's sims, parties with Obsidian Arrows, Rabid Bite or Choking Smog
+  won every fight against the Hydra and the Minotaur, in 8 to 11 rounds. Now, the round after any part of a boss on
+  the field ends a round with one of those on it (`after` 1), it spends its turn on **Cleanse**: Crystal Armour's
+  ward under a plainer name (the user: "so it's clear"), over every part of it on the field. Their status effects
+  go (cripple and weaken too), and none stick for 3 rounds. One part cleanses for all: the Hydra's head whose turn
+  it is; one of the Cyclops's hands, while the other fights on. The Minotaur doesn't while it's wound up for its charge.
+  - 🧪 Claude's numbers, by sim (the same parties with and without the move, 20 to 40 fights each, Normal AI). The
+    Hydra, against three at Lv 20 in Epic gear: Obsidian Arrows wins 78% (53% without it) in 19 rounds, where it won
+    100% in 10; Rabid Bite 70% (48%); Choking Smog 90% (55%); Razor Arrows 85% (55%). The Cyclops, against three at Lv 10 in Rare gear: 95% (75%), 68% (55%), 88% (75%) and 85% (65%). **The Minotaur still falls
+    to them every time,** but in 19 to 21 rounds, not 9 to 11: one tick is a tenth of a very big health bar, and
+    its charges fell someone every 8 rounds, so a shorter fight is a won one. Also simmed: waiting two rounds (the
+    Minotaur in 15 rounds), and a Cleanse that doesn't cost the turn (no better against the Minotaur). If the
+    Minotaur should hold out, the next lever is a longer ward for it, or a smaller tick on bosses.
+- ✅ **Boss rewards** (the user, 2026-11-23; `BOSS_LOOT`, `bossChest` in lib/dungeon/run.ts): each boss has its
+  own chest (until then every boss opened the Cyclops's, so the Hydra and the Minotaur paid no better than it
+  did). The Cyclops's first is also the Rugged Backpack; the Hydra, the Minotaur and the Warden drop a strongbox.
+  🧪 Claude's numbers, the user's yes ("as long as the increased challenge is in line with the loot"):
+
+  | | Cyclops (as it was) | Hydra | Minotaur | Warden |
+  |---|---|---|---|---|
+  | Weapons and armour | 3–5, any rarity (a scan's odds) | 4–5: Rare 65 / Epic 30 / Legendary 5 (a golden chest's), one at least Epic | 5: Epic 85 / Legendary 15 | 5: Epic 60 / Legendary 40, one Legendary |
+  | Enchanted (Rare or better) | 10% | 25% | 50% | all |
+  | The fight's gold | 80–120 | 500–700 | 800–1,100 | 1,200–1,600 |
+  | Essence crystals | none | 1, half the time | 1 | 2 |
+  | XP | 200 a part (800) | 200 a head (600) | 600 (it was 200: one part) | each foe's own |
+
+  Each also holds 1–2 codexes and 1–2 potions (10 rolls at most, gear cut first), an XP scroll half the time, a
+  Revival Elixir half the time, the Den's plans, and now and then a soul stone, as before. A boss's gold is its
+  own range now, not 80–120 times the dungeon's gold scale.
 - ✅ Also Cyclops rewards: building the **Tavern** (via the tavern questline in §9, not gold), and
   the **trophy** showing which run you won on: the Cyclops Head (§9, step 7), mounted in the
   tavern's room marked "Run N" (`meta.firstClearRun`).

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, sendInReplacement, currentAgility, fieldOf, type BattleState } from "../lib/combat/battle";
 import { effectiveAgil, calcDamage, setCombatRules, LIVE_RULES } from "../lib/combat/engine";
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
-import { CYCLOPS, HYDRA } from "../lib/combat/bossAi";
+import { CYCLOPS, HYDRA, BOSS_CLEANSE } from "../lib/combat/bossAi";
 import { bossTeam, cyclopsTeam } from "../lib/creatures/bosses";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, MOVE_BY_NAME } from "../lib/creatures/creatureData";
@@ -307,19 +307,31 @@ describe("the Minotaur", () => {
     for (let i = 1; i < winds.length; i++) expect(winds[i] - winds[i - 1]).toBeGreaterThanOrEqual(8); // (the charge, then 7 rounds)
   });
 
-  it("washes off venom with Water Body, then not again for 7 rounds (the user, 2026-11-21)", () => {
+  // (Water Body, a one-in-five roll every 7 rounds, washed venom off and it went straight back on: the sims'
+  // parties with a bleed or venom still won every time. Cleanse took its place, for every boss.)
+  it("cleanses the round after venom's on it: it's gone, and nothing sticks for 3 rounds (the user, 2026-11-23)", () => {
     const s = minotaur();
     const m = s.sides.B.team[0];
-    m.statuses.push({ id: "venom", rounds: 5, dmg: 10 });
-    const dice = vi.spyOn(Math, "random").mockReturnValue(0.3); // (round 1, venom on it: Kick, Water Body, Cleave, Jab; 0.3 is Water Body)
-    resolveRound(s, { A: jab, B: pass });
-    dice.mockRestore();
-    expect(s.log.some((e) => e.type === "effect" && e.side === "B" && e.text.includes("Water Body"))).toBe(true);
+    m.statuses.push({ id: "venom", rounds: 9, dmg: 1 });
+    const dice = vi.spyOn(Math, "random").mockReturnValue(0.99); // (its roll: a Horn Jab, never the charge)
+    const used = () => { const at = s.log.length; resolveRound(s, { A: jab, B: pass }); return said(s, at, BOSS_CLEANSE.move); };
+    expect(used()).toBe(false);
+    expect(used()).toBe(true);
     expect(m.statuses.some((st) => st.id === "venom")).toBe(false);
-    m.statuses.push({ id: "venom", rounds: 5, dmg: 10 });
-    const at = s.log.length;
-    resolveRound(s, { A: jab, B: pass });
-    expect(s.log.slice(at).some((e) => e.type === "effect" && e.side === "B" && e.text.includes("Water Body"))).toBe(false);
+    expect(m.statuses.some((st) => st.id === "ward")).toBe(true);
+    // Warded, a bleed doesn't take; three rounds on it does, and the round after that it cleanses again.
+    const arrows = { kind: "attack" as const, skillName: "Obsidian Arrows" };
+    const archer = s.sides.A.team[s.sides.A.active];
+    archer.skills = [...archer.skills, MOVE_BY_NAME["Obsidian Arrows"]];
+    const bleeding = () => m.statuses.some((st) => st.id === "bleed");
+    archer.energy = 100; resolveRound(s, { A: arrows, B: pass });
+    expect(bleeding()).toBe(false);
+    for (let i = 0; i < 2; i++) resolveRound(s, { A: jab, B: pass });
+    archer.energy = 100; resolveRound(s, { A: arrows, B: pass });
+    expect(bleeding()).toBe(true);
+    expect(used()).toBe(true);
+    expect(bleeding()).toBe(false);
+    dice.mockRestore();
   });
 
   it("rolls its moves at random, rolling again for one on cooldown (the user, 2026-11-21)", () => {
@@ -334,7 +346,7 @@ describe("the Minotaur", () => {
         resolveRound(s, { A: jab, B: pass });
         for (const e of s.log.slice(at)) {
           const name = e.type === "attack" && e.side === "B" ? e.skill.name : e.type === "effect" && e.side === "B" && e.text.startsWith("lowers its horns") ? "horns"
-            : e.type === "effect" && e.side === "B" && e.text.includes("Water Body") ? "Water Body" : undefined;
+            : e.type === "effect" && e.side === "B" && e.text.includes(BOSS_CLEANSE.move) ? BOSS_CLEANSE.move : undefined;
           if (name) (seen[name] ??= []).push(r);
         }
         for (const k of [...s.needsReplacement]) sendInReplacement(s, k, s.sides[k].team.findIndex((f) => f.hp > 0));
@@ -342,11 +354,10 @@ describe("the Minotaur", () => {
       const gaps = (xs: number[] = []) => xs.slice(1).map((x, i) => x - xs[i]);
       for (const g of gaps(seen.Kick)) expect(g).toBeGreaterThanOrEqual(2);
       for (const g of gaps(seen.horns)) expect(g).toBeGreaterThanOrEqual(8);
-      for (const g of gaps(seen["Water Body"])) expect(g).toBeGreaterThanOrEqual(7);
       for (const [k, v] of Object.entries(seen)) (used[k] ??= []).push(...v);
     }
     // …and it isn't a fixed pattern: every move turns up, and the horns don't always come in round 2.
-    for (const k of ["Kick", "horns", "Water Body", "Labrys Cleave", "Horn Jab"]) expect(used[k]?.length).toBeGreaterThan(0);
+    for (const k of ["Kick", "horns", "Labrys Cleave", "Horn Jab", BOSS_CLEANSE.move]) expect(used[k]?.length).toBeGreaterThan(0);
     expect(used.horns.some((r) => r > 2 && r < 10)).toBe(true);
   });
 

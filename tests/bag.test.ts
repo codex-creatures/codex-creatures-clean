@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, bagWantsPotions, cyclopsChest, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
+import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, bagWantsPotions, cyclopsChest, bossChest, BOSS_LOOT, withMoney, MONEY_STASH, MONEY_GOLD, DUNGEONS, type SackItem, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
 import { createBattle, resolveRound, isValidAction, revivable, swapTargets } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES } from "../lib/creatures/creatureData";
@@ -33,18 +33,19 @@ describe("the battle bag", () => {
     expect(POTIONS.lesser).toMatchObject({ heal: 50, price: 50 });
   });
 
-  it("stashes: always 3 things — 2 potions, then a potion (25%), gold (50%) or gear (25%) — besides any flare or clairvoyance scroll", () => {
+  it("stashes: 2 potions, then a potion (25%), nothing (50%) or gear (25%) — besides any flare or clairvoyance scroll; never gold (it's in money stashes)", () => {
     const N = 4000;
     let three = 0, gold = 0, gear = 0;
     for (let i = 0; i < N; i++) {
       const sack = makeRoom("stash").sack!.filter((x) => !("gear" in x && "tool" in x.gear)); // (toolFinds.test.ts)
-      expect(sack).toHaveLength(3);
+      expect(sack.length === 2 || sack.length === 3).toBe(true);
+      if (sack.length === 2) gold++; // (the roll that held gold, and now holds nothing)
       const potions = sack.filter((x) => "potion" in x);
       expect(potions.length === 2 || potions.length === 3).toBe(true);
       for (const p of potions) expect(POTIONS[(p as { potion: "potion" | "lesser" }).potion]).toBeTruthy();
       if (potions.length === 3) three++;
       const g = sack.find((x) => "gold" in x) as { gold: number } | undefined;
-      if (g) { gold++; expect(g.gold).toBeGreaterThanOrEqual(100); expect(g.gold).toBeLessThanOrEqual(250); }
+      expect(g).toBeUndefined();
       const it = sack.find((x) => "gear" in x) as { gear: { dropType: string; itemCategory?: string } } | undefined;
       if (it) { gear++; expect(["weapon", "armor"]).toContain(it.gear.itemCategory); }
     }
@@ -115,6 +116,65 @@ describe("swapping a weapon in mid-fight", () => {
     const before = s.sides.B.team[0].hp;
     resolveRound(s, { A: { kind: "attack", skillName: "Crush" }, B: { kind: "attack", skillName: "Jab" } });
     expect(before - s.sides.B.team[0].hp).toBeGreaterThan(60);
+  });
+});
+
+describe("the deeper bosses' chests (the user, 2026-11-23)", () => {
+  const ORDER = ["common", "uncommon", "rare", "epic", "legendary"];
+  const gearIn = (chest: SackItem[]) => chest.flatMap((x) => ("gear" in x && x.gear.dropType === "item" && (x.gear.itemCategory === "weapon" || x.gear.itemCategory === "armor") ? [x.gear] : []));
+  const crystals = (chest: SackItem[]) => chest.reduce((n, x) => n + ("gear" in x && x.gear.dropType === "item" && x.gear.material === "essence" ? x.gear.qty ?? 1 : 0), 0);
+  it("the Hydra's: 4–5 pieces, Rare or better, one at least Epic; the Minotaur's: 5, Epic or better; the Warden's: 5, a Legendary among them, all enchanted", () => {
+    for (let i = 0; i < 150; i++) {
+      const hydra = gearIn(bossChest(2)), mino = gearIn(bossChest(4)), warden = gearIn(bossChest(3));
+      expect(hydra.length).toBeGreaterThanOrEqual(4); expect(hydra.length).toBeLessThanOrEqual(5);
+      expect(hydra.every((d) => ORDER.indexOf(d.rarity) >= 2)).toBe(true);
+      expect(hydra.some((d) => ORDER.indexOf(d.rarity) >= 3)).toBe(true);
+      expect(mino).toHaveLength(5);
+      expect(mino.every((d) => ORDER.indexOf(d.rarity) >= 3)).toBe(true);
+      expect(warden).toHaveLength(5);
+      expect(warden.every((d) => ORDER.indexOf(d.rarity) >= 3 && !!d.enchant)).toBe(true);
+      expect(warden.some((d) => d.rarity === "legendary")).toBe(true);
+    }
+  });
+  it("essence crystals: none from the Cyclops, one half the time from the Hydra, one from the Minotaur, two from the Warden", () => {
+    let hydra = 0;
+    for (let i = 0; i < 400; i++) {
+      expect(crystals(bossChest(1))).toBe(0);
+      hydra += crystals(bossChest(2));
+      expect(crystals(bossChest(4))).toBe(1);
+      expect(crystals(bossChest(3))).toBe(2);
+    }
+    expect(Math.abs(hydra / 400 - 0.5)).toBeLessThan(0.1);
+  });
+  it("each boss's own gold, and the Minotaur's XP three parts' worth", () => {
+    for (const d of [1, 2, 4, 3] as const) for (let i = 0; i < 30; i++) {
+      const gold = makeRoom("boss", Math.random, 15, d).gold!;
+      expect(gold).toBeGreaterThanOrEqual(BOSS_LOOT[d].gold[0]); expect(gold).toBeLessThanOrEqual(BOSS_LOOT[d].gold[1]);
+    }
+    expect(BOSS_LOOT[1].gold).toEqual([80, 120]); // (the Cyclops' as it was)
+    expect(BOSS_LOOT[4].partXp).toBe(3 * BOSS_LOOT[2].partXp);
+  });
+});
+
+describe("money stashes (the user, 2026-11-23)", () => {
+  it("a quarter of stashes, their gold grown by the dungeon's; the rest hold none", () => {
+    const N = 4000;
+    for (const d of [0, 1, 2, 4] as const) {
+      let money = 0;
+      for (let i = 0; i < N; i++) {
+        const r = withMoney(makeRoom("stash", Math.random, 9, d), d, Math.random);
+        const g = r.sack!.find((x) => "gold" in x) as { gold: number } | undefined;
+        expect(!!g).toBe(!!r.money);
+        if (!g) continue;
+        money++;
+        expect(g.gold).toBeGreaterThanOrEqual(Math.round(MONEY_GOLD[0] * DUNGEONS[d].goldScale)); expect(g.gold).toBeLessThanOrEqual(Math.round(MONEY_GOLD[1] * DUNGEONS[d].goldScale));
+      }
+      expect(Math.abs(money / N - MONEY_STASH)).toBeLessThan(0.03);
+    }
+  });
+  it("a room with no sack is left alone", () => {
+    const pool = makeRoom("pool");
+    expect(withMoney(pool, 2, () => 0)).toBe(pool);
   });
 });
 

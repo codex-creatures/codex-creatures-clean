@@ -40,13 +40,13 @@ import { dealtDamage } from "@/lib/combat/battle";
 import { clubRoom, klutzClub, isClub, thiefRoom, rollBox, wantsClub, wantsThief } from "@/lib/quest";
 import { startTutorialRun, TUTORIAL_HELLO, TUTORIAL_POTIONS } from "@/lib/dungeon/tutorialRun";
 import { guess as witchGuess, walkAway, sitDown, type Guess, type WitchGame } from "@/lib/dungeon/witch";
-import { xpForEnemy, BOSS_XP, MAX_LEVEL, shareXp, impactsFromLog, xpShown, SCROLL_XP } from "@/lib/creatures/levels";
+import { xpForEnemy, MAX_LEVEL, shareXp, impactsFromLog, xpShown, SCROLL_XP } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { planFinds } from "@/lib/items/plans";
-import { cornerCrateFind, squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, fightEnemies, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, floorRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
+import { cornerCrateFind, squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, bossChest, bossLoot, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, fightEnemies, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, floorRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { countCampaign, drankOn, noteDrank, onlyEffective } from "@/lib/campaign";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
@@ -1170,7 +1170,7 @@ export default function DungeonPage() {
     const room0 = r.current!;
     const xp = m.state.winner !== "A" ? 0 : B.team.reduce((sum, f, i) => {
       if (f.hp > 0) return sum;
-      if (room0.boss) return sum + BOSS_XP;
+      if (room0.boss) return sum + bossLoot(dungeonOf(r)).partXp; // (the Minotaur, one fighter, gives three parts' worth)
       const e = fightEnemies(room0)[i];
       return sum + (e ? xpForEnemy(e.level ?? 15, CREATURE_BY_ID[e.creatureId].rarity) : 0);
     }, 0);
@@ -1251,7 +1251,7 @@ export default function DungeonPage() {
     // Its loot lies on the floor: a rickety chest (bosses) or a sack. Open it and take what you want.
     const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
     // A boss's chest (the Cyclops', the strongbox of the Hydra or the Warden): gear, codexes and potions as well as its gold.
-    if (room.kind === "boss") sack.push(...cyclopsChest());
+    if (room.kind === "boss") sack.push(...bossChest(dungeonOf(r)));
     const miniboss = room.kind === "miniboss" || (room.kind === "storehouse" && room.guarded) || (dungeonOf(r) === 0 && room.kind === "encampment");
     // A mini boss's chest: potions (and now and then a clairvoyance scroll, or the cage schematic,
     // though never from the Encampment's chief).
@@ -1563,7 +1563,7 @@ export default function DungeonPage() {
               : { step: "done" as const, i: -1 };
             return (
               <LootWindow
-                name={lootFrom === "bookcase" ? "The bookcase" : c.quest === "club" ? "On the floor" : c.kind === "chest" ? "The chest" : c.container === "strongbox" ? "The strongbox" : c.container === "chest" ? "The rickety chest" : c.kind === "stash" ? "The stash"
+                name={lootFrom === "bookcase" ? "The bookcase" : c.quest === "club" ? "On the floor" : c.kind === "chest" ? "The chest" : c.container === "strongbox" ? "The strongbox" : c.container === "chest" ? "The rickety chest" : c.kind === "stash" ? (c.money ? "The money stash" : "The stash")
                   : c.kind === "library" ? "The shelves" : c.kind === "storehouse" || c.kind === "stockroom" ? "The stores" : "The sack"}
                 sprite={lootFrom === "bookcase" ? BOOKCASE_LOOT : c.quest === "club" ? WEAPON_SPRITES.klutz_club : c.kind === "chest" ? TREASURE_CHEST_OPEN : c.container === "strongbox" ? STRONGBOX_OPEN : c.container === "chest" ? RICKETY_CHEST_OPEN : BURLAP_SACK_OPEN}
                 items={c.sack ?? []} bag={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))}

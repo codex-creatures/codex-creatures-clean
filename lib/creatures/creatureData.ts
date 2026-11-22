@@ -335,8 +335,13 @@ export const BOSS_MOVES: Skill[] = [
     desc: "It lowers its horns for a round. Next round it charges: whoever is in front of it then falls, whatever its health. Choose who stands there." },
   { name: "Kick",          damage: 14, energyCost: 35, type: "melee",  dmgType: "force", effect: { kind: "sweep" }, cooldown: 2,
     desc: "A kick, then your creature is knocked aside: a random teammate takes its place." },
+  // (Water Body gave way to Cleanse, 2026-11-23: a fight saved with it carries on with it.)
   { name: "Water Body",    damage: 0,  energyCost: 20, type: "magic",  dmgType: "arcane", self: true, effect: { kind: "cleanse" }, cooldown: 7,
     desc: "Water runs over it: it's washed clean of venom, poison, bleed and burns." },
+  // Every boss's (the user, 2026-11-23; lib/combat/bossAi.ts BOSS_CLEANSE): Crystal Armour's ward, under a
+  // name that says what it does.
+  { name: "Cleanse",       damage: 0,  energyCost: 0,  type: "magic",  dmgType: "arcane", self: true, effect: { kind: "ward", rounds: 3 },
+    desc: "It shakes off its status effects (bleed, poison, cripple and the rest), and none can touch it for 3 rounds." },
 ];
 
 export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
@@ -454,27 +459,27 @@ const bossMoves = (...names: string[]) => names.map((n) => BOSS_MOVES.find((m) =
 const NO_PROF: CreatureProficiency = { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0 };
 export const BOSS_PARTS: CreatureTemplate[] = [
   { id: "cyclops", name: "Cyclops", rarity: "legendary", baseHp: 240, boss: true, cls: "melee", proficiency: NO_PROF,
-    skills: bossMoves("Club Smash", "Stomp", "Backhand", "Eye Laser"),
+    skills: bossMoves("Club Smash", "Stomp", "Backhand", "Eye Laser", "Cleanse"),
     flavour: "A mountain of muscle with one huge, rolling eye. The labyrinth's first warden." },
   { id: "cyclops_hand", name: "Crawling Hand", rarity: "epic", baseHp: 70, boss: true, cls: "melee", proficiency: NO_PROF,
-    skills: bossMoves("Claw Rake", "Crushing Grip"),
+    skills: bossMoves("Claw Rake", "Crushing Grip", "Cleanse"),
     flavour: "It scuttles on its fingertips, much too fast." },
   { id: "cyclops_eye", name: "The Eye", rarity: "legendary", baseHp: 150, boss: true, cls: "magic", proficiency: NO_PROF,
-    skills: bossMoves("Laser", "Searing Beam"),
+    skills: bossMoves("Laser", "Searing Beam", "Cleanse"),
     flavour: "Free of the skull at last, it floats — and it is furious." },
   // The Hydra (the Deep Labyrinth's boss): three heads, each its own fighter, left to right.
   { id: "hydra_fang", name: "Fang Head", rarity: "legendary", baseHp: 250, boss: true, cls: "melee", proficiency: NO_PROF,
-    skills: bossMoves("Snap", "Rending Bite", "Toxic Breath"),
+    skills: bossMoves("Snap", "Rending Bite", "Toxic Breath", "Cleanse"),
     flavour: "The right head. All teeth, and it never lets go." },
   { id: "hydra_spitter", name: "Spitter Head", rarity: "legendary", baseHp: 225, boss: true, cls: "ranged", proficiency: NO_PROF,
-    skills: bossMoves("Acid Spit", "Acid Torrent", "Toxic Breath"),
+    skills: bossMoves("Acid Spit", "Acid Torrent", "Toxic Breath", "Cleanse"),
     flavour: "The left head. Its spit eats through stone." },
   { id: "hydra_hex", name: "Hex Head", rarity: "legendary", baseHp: 225, boss: true, cls: "magic", proficiency: NO_PROF,
-    skills: bossMoves("Hex Bolt", "Withering Curse", "Toxic Breath"),
+    skills: bossMoves("Hex Bolt", "Withering Curse", "Toxic Breath", "Cleanse"),
     flavour: "The middle head. Its eyes glow, and its whispers hurt." },
   // The Minotaur (its own labyrinth's boss): one huge fighter against your five.
   { id: "minotaur", name: "Minotaur", rarity: "legendary", baseHp: 750, boss: true, cls: "melee", proficiency: NO_PROF,
-    skills: bossMoves("Horn Jab", "Labrys Cleave", "Horn Charge", "Kick", "Water Body"),
+    skills: bossMoves("Horn Jab", "Labrys Cleave", "Horn Charge", "Kick", "Cleanse"),
     flavour: "Bull-headed and walls-high, it knows every turn of its maze. When it lowers its horns, someone falls." },
   // The first quest's thief (lib/quest.ts): the guided first fight.
   { id: "baby_cyclops", name: "Baby Cyclops", rarity: "rare", baseHp: 76, boss: true, cls: "melee", proficiency: NO_PROF,
