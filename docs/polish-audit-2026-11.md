@@ -70,6 +70,14 @@ Not in the pages, the save or the network: **in how the Den's props were drawn.*
    **Fixed** (commit "3D props are made without a stream of warnings"): it hands over only what
    the material has. tests/propMaterials.test.ts.
 
+4. **A tapped place loaded in the gaps between the Den's frames.** Tapping a place starts building
+   its screen in the background, a few milliseconds at a time, giving way to anything due to draw.
+   The Den draws every frame, so on a slow phone the new screen got a small share of the processor:
+   with fix 1 in, the Storehouse's screen took 1.2 to 1.4 s (slowed 4×) just to start showing.
+   **Fixed** (commit "The Den stops drawing the moment you tap a place"): the Den holds its last
+   picture from the tap until it's left (4 s at most, `LEAVE_MS`, in case the place never opens).
+   tests/den3dKept.test.tsx.
+
 ### Timings, before and after
 
 TODO

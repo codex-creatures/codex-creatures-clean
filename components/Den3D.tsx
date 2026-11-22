@@ -10,6 +10,8 @@
 // it goes red where it can't stand. Where you've put things is kept in the save (lib/den3d/placement.ts).
 // Every place has its name over it (Settings can hide them), a ❗ when something's waiting there.
 // The old wall: Klutz uses the Labyrinth Stone on it, and the whole wall sinks away (lib/tavern.ts).
+// It stops drawing the moment a place is tapped, so that place's screen gets the phone's whole attention
+// (the user, 2026-11-23: opening things from the Den was slow).
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -72,6 +74,7 @@ const FOOT_COLOURS = { fits: [120, 255, 150], no: [255, 80, 70] }; // 🧪 the f
 const FIT_COLOURS = { fits: [90, 220, 120, 75], no: [230, 60, 50, 60] }; // 🧪 RGBA over the floor
 
 const DAILY_BOARD = "/board?tab=daily"; // (where the board opens when a daily quest is what's waiting)
+const LEAVE_MS = 4000;    // ms after a tap on a place before the Den draws again, if that place never opened
 
 export type Den3DProps = {
   caged?: string; klutz: KlutzMode; klutzNews: boolean; highlight?: ObjId; rubble: Rubble; onBlast?: () => void;
@@ -145,6 +148,15 @@ export default function Den3D(p: Den3DProps) {
   const zoomed = useRef(across);
   useEffect(() => { zoomed.current = across; }, [across]);
   useEffect(() => () => { if (p.keep !== "none") keepDenView({ at: view.current, across: zoomed.current, opened: wasOpen.current }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // A place tapped: the Den stops drawing till it's left (or, if that place never opens, for LEAVE_MS), so the
+  // place's screen isn't loaded a few milliseconds at a time between the Den's frames.
+  const [leaving, setLeaving] = useState(false);
+  const leave = (href: string) => { setLeaving(true); router.push(href); };
+  useEffect(() => {
+    if (!leaving) return;
+    const t = window.setTimeout(() => setLeaving(false), LEAVE_MS);
+    return () => window.clearTimeout(t);
+  }, [leaving]);
 
   // Klutz strolling round room 1 while he's home; visitors round the whole Den once it's open; each finding
   // their way round wherever things stand now.
@@ -268,7 +280,7 @@ export default function Den3D(p: Den3DProps) {
     const at = floorAt(e.clientX, e.clientY);
     if (!at) return;
     const w = walkerAt(walkers, at, pitch);
-    if (w) { router.push(w.href); return; }
+    if (w) { leave(w.href); return; }
     const s = stationAt(list, at, pitch);
     if (s) go(s);
   };
@@ -293,12 +305,12 @@ export default function Den3D(p: Den3DProps) {
   function tapName(id: string) {
     const s = list.find((x) => x.key === id), w = walkers.find((x) => `walker:${x.key}` === id);
     if (s) go(s);
-    else if (w) router.push(w.href);
-    else if (id === "walker:resting") router.push("/klutz");
+    else if (w) leave(w.href);
+    else if (id === "walker:resting") leave("/klutz");
   }
   function go(s: Station) {
     if (s.key === "rubble") setNotice(true);
-    else if (s.href) router.push(s.key === "board" && p.boardNews === "daily" ? DAILY_BOARD : s.href);
+    else if (s.href) leave(s.key === "board" && p.boardNews === "daily" ? DAILY_BOARD : s.href);
   }
   // Klutz sets the Labyrinth Stone in the wall's socket: the ground rumbles and the wall sinks away.
   function setTheStone() {
@@ -313,7 +325,7 @@ export default function Den3D(p: Den3DProps) {
       onWheel={(e) => zoomTo(across * (e.deltaY > 0 ? 1.1 : 1 / 1.1))}
       style={{ position: "relative", width: "100%", height: "100%", background: "#000", overflow: "hidden", touchAction: "none" }}>
       <div ref={pad} style={{ position: "absolute", inset: 0, touchAction: "none", cursor: moving ? "grabbing" : "grab" }}>
-        <Canvas resize={{ offsetSize: true }} orthographic flat gl={{ antialias: false, powerPreference: "high-performance" }}
+        <Canvas resize={{ offsetSize: true }} orthographic flat gl={{ antialias: false, powerPreference: "high-performance" }} frameloop={leaving ? "never" : "always"}
           style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
           <DenWorld pitch={pitch} across={across} state={state} placed={now} plan={plan} shown={shown} list={list} walkers={walkers} caged={p.caged} klutz={p.klutz}
             movingKey={moving && !moving.ok ? moving.key : null}
@@ -329,9 +341,9 @@ export default function Den3D(p: Den3DProps) {
       ))}
       {walkers.filter((w) => o.names || w.news || (w.key === "klutz" && p.highlight === OBJ.klutz)).map((w) => (
         <NameTag key={w.key} id={`walker:${w.key}`} labels={labels} tour={w.tour} news={w.news} lit={w.key === "klutz" && p.highlight === OBJ.klutz}
-          onTap={() => router.push(w.href)} text={w.label} />
+          onTap={() => leave(w.href)} text={w.label} />
       ))}
-      {p.klutz === "pool" && (o.names || p.klutzNews || p.highlight === OBJ.klutz) && <NameTag id="walker:resting" labels={labels} tour={`den-${OBJ.klutz}`} news={p.klutzNews} lit={p.highlight === OBJ.klutz} onTap={() => router.push("/klutz")} text="Klutz 💤" />}
+      {p.klutz === "pool" && (o.names || p.klutzNews || p.highlight === OBJ.klutz) && <NameTag id="walker:resting" labels={labels} tour={`den-${OBJ.klutz}`} news={p.klutzNews} lit={p.highlight === OBJ.klutz} onTap={() => leave("/klutz")} text="Klutz 💤" />}
       {moving && (
         <div className="pixel-font" style={{ position: "absolute", top: 8, left: "50%", translate: "-50% 0", zIndex: 3, padding: "3px 8px", fontSize: 12, pointerEvents: "none",
           background: "rgba(12, 12, 18, 0.85)", border: `2px solid ${moving.ok ? "#6fc36f" : "#d05a5a"}`, color: "#f1d9a0" }}>
