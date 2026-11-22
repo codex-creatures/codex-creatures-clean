@@ -75,6 +75,8 @@ the PNG here.
 | props/bookcase3d/side.png | pro job d3c856a3-26bb-4771-a256-1cb58b19c1b2, asset a5e472fe-a221-596c-80bb-dffc75237992: candidate 19 of 64, resized to 24 × 48 and turned browner (hue +11, ×1.2) to match the front |
 | props/bookcase3d/top.png | pro job add29372-497b-45fc-80a1-f44b7fafc807, asset e1dd1b27-4653-5e1d-bb5f-33b6dedbefbd: candidate 0 of 16, resized to 60 × 21 and turned browner (hue +11, ×1.06) |
 | props/bookcase3d/*-lit.png | made from those: the top row of the front and side, and the top's front (last) row, ×1.4 |
+| props/sack3d/wine.png | edit_image job 4cb0092c-7827-499b-a308-7e4c5f019ddd of props/sack3d/burlap.png (the money stash's 3D sack: the burlap dyed wine red, a gold-stitched seam; the user's pick of look B, 2026-11-23) |
+| props/money_sack.png, props/money_sack_open.png | edit_image jobs 2fbded44-cd32-4d38-8c22-5d6d282ebd81 and e470bcb9-be6a-42f7-ba9f-0e2787df91e2 of burlap_sack.png and burlap_sack_open.png (look B; look A, a gold coin on the burlap, is in art/money-stash-samples) |
 | props/sack3d/burlap.png | pro job 838108d6-42b2-46d1-892e-6f3c89bf0adf, asset c8cc9e27-0fe3-5efe-a5ef-f5f4145c7534: candidate 0 of 25 (the 3D sack's cloth, repeated round it) |
 | props/table3d/front.png | pro job 34326a4c-c7c3-4b57-b211-c4bd1241b877, asset d5e1ab9f-a41d-5632-9e77-264a9fd7ad07: candidate 0 of 16 (the table from the front, its X-braced legs; the dungeon palette, chest3d/front.png as the style image; the 3D table's slab edge, legs and brace, and the 2D view's picture) |
 | props/table3d/top.png | pro job 569aeb76-cb67-4530-80f0-3d109ce9f007, asset dabc180e-e744-51c1-b330-7cdc972495a7: candidate 11 of 25 (the table's top, iron-banded planks; the dungeon palette, chest3d/top.png as the style image) |

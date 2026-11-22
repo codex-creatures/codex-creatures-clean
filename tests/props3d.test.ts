@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bookcaseArt, BOOKCASE_FACES, sackOutline, SACK_TALL, SACK_NECK } from "../lib/render3d/props3d";
+import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_TALL, SACK_NECK, MONEY_SPILL, MONEY_HEAP } from "../lib/render3d/props3d";
 import { ART_PER_U } from "../lib/render3d/chest3d";
 
 describe("the 3D bookcase and sack drafts", () => {
@@ -19,6 +19,12 @@ describe("the 3D bookcase and sack drafts", () => {
     expect(o.every(([, y]) => y >= 0)).toBe(true);
     const tie = o.find(([, y]) => y === SACK_NECK.y)!;
     expect(tie[0]).toBeLessThan(Math.max(...o.map(([r]) => r)) / 3);
+  });
+  it("a money stash's coins lie on the floor outside the sack, and its heap sits in the open mouth", () => {
+    const wide = Math.max(...sackOutline().map(([r]) => r));
+    for (const [x, z, lift] of MONEY_SPILL) { expect(Math.hypot(x, z)).toBeGreaterThan(wide); expect(lift).toBeGreaterThanOrEqual(0); }
+    expect(MONEY_HEAP.y).toBeGreaterThanOrEqual(SACK_NECK.y);
+    expect(MONEY_HEAP.r).toBeLessThanOrEqual(Math.max(...sackOpenOutline().slice(-2).map(([r]) => r)));
   });
 });
 

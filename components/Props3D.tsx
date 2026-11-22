@@ -12,7 +12,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { chestArt, OPEN_ANGLE, ART_FACES, GOLDEN_FACES, ART_PER_U, CHEST_NUDGE, crateFaces, type ChestFaces, type CrateKind3D } from "@/lib/render3d/chest3d";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { BARREL, bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, BROKEN_BOOKCASE_FACES, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, deckGlowRadius, type Prop3DKind, type BookcaseFaces } from "@/lib/render3d/props3d";
+import { BARREL, bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, MONEY_CLOTH, MONEY_CORD, MONEY_COIN, MONEY_SPILL, MONEY_HEAP, BROKEN_BOOKCASE_FACES, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, deckGlowRadius, type Prop3DKind, type BookcaseFaces } from "@/lib/render3d/props3d";
 import { CANDLE_RADIUS } from "@/lib/dungeon/torch";
 
 const OUTLINE_U = 1 / ART_PER_U; // the outline: an art pixel
@@ -112,12 +112,13 @@ export function bases(mats: THREE.Material[]) {
 
 // `deck`: a table with the deck of cards on it; `glow`: the colour of the rarest card in it (a CSS colour);
 // `broken`: a broken bookcase.
+// `money`: a money stash's sack (Sack).
 // `golden`: a mini boss's golden chest: its own gold faces (GOLDEN_FACES), glowing on the floor round it as a
 // deck with a Legendary in it does (the user, 2026-11-16).
-export function Prop3D({ kind, open = false, colour, outline = true, edges = true, deck = false, glow, broken = false, golden = false, empty = false }: { kind: Prop3DKind; open?: boolean; colour?: Tint; outline?: boolean; edges?: boolean; deck?: boolean; glow?: string; broken?: boolean; golden?: boolean; empty?: boolean }) {
+export function Prop3D({ kind, open = false, colour, outline = true, edges = true, deck = false, glow, broken = false, golden = false, empty = false, money = false }: { kind: Prop3DKind; open?: boolean; colour?: Tint; outline?: boolean; edges?: boolean; deck?: boolean; glow?: string; broken?: boolean; golden?: boolean; money?: boolean; empty?: boolean }) {
   if (kind === "table") return <Table colour={colour} outline={outline} deck={deck} glow={glow} />;
   if (kind === "bookcase") return broken ? <Bookcase colour={colour} outline={outline} edges={false} faces={BROKEN_BOOKCASE_FACES} /> : <Bookcase colour={colour} outline={outline} edges={edges} />;
-  if (kind === "stash") return <Sack open={open} colour={colour} outline={outline} />;
+  if (kind === "stash") return <Sack open={open} colour={colour} outline={outline} money={money} />;
   // (A storehouse's crate: once searched it stands open, bare inside.)
   if (kind === "crate") return <Crate inside="materials" open={open} colour={colour} outline={outline} edges={edges} empty={open} />;
   if (golden) return (<>
@@ -403,16 +404,20 @@ export function Flame({ at, size }: { at: [number, number, number]; size: number
 // The sack: its outline turned round (flat-shaded, so its few sides show as facets), in burlap laid
 // about a unit of cloth to a unit round it, and a rope round its neck. Opened, it's untied: no rope,
 // its mouth open (both sides of the cloth drawn, so you see into it).
-function Sack({ open, colour, outline }: { open: boolean; colour?: Tint; outline: boolean }) {
+// money: a money stash's (props3d.ts MONEY_CLOTH): wine-red cloth, a gold cord, gold coins at its foot and,
+// open, heaped in its mouth.
+function Sack({ open, colour, outline, money = false }: { open: boolean; colour?: Tint; outline: boolean; money?: boolean }) {
   const geo = useMemo(() => new THREE.LatheGeometry((open ? sackOpenOutline() : sackOutline()).map(([r, y]) => new THREE.Vector2(r, y)), SACK_SIDES), [open]);
   const rope = useMemo(() => new THREE.TorusGeometry(SACK_NECK.r + SACK_NECK.rope / 2, SACK_NECK.rope, 4, SACK_SIDES), []);
   const flat = !!colour;
   const mats = useMemo(() => {
-    const make = flat ? makeFlat : makeLit, cloth = loaded(SACK_CLOTH.src, true); // (only the sack's: its repeat is set on it, not a copy)
+    const make = flat ? makeFlat : makeLit, cloth = loaded((money ? MONEY_CLOTH : SACK_CLOTH).src, true); // (only the sack's: its repeat is set on it, not a copy)
     cloth.repeat.set(2, 0.5);
-    const all = [make({ map: cloth, flatShading: true, side: open ? THREE.DoubleSide : THREE.FrontSide }), make({ color: "#8a6a44", flatShading: true })];
-    return { cloth: all[0], rope: all[1], all, base: bases(all) };
-  }, [flat, open]);
+    const all = [make({ map: cloth, flatShading: true, side: open ? THREE.DoubleSide : THREE.FrontSide }), make({ color: money ? MONEY_CORD : "#8a6a44", flatShading: true }), make({ color: MONEY_COIN.colour, flatShading: true })];
+    return { cloth: all[0], rope: all[1], gold: all[2], all, base: bases(all) };
+  }, [flat, open, money]);
+  const coin = useMemo(() => new THREE.CylinderGeometry(MONEY_COIN.r, MONEY_COIN.r, MONEY_COIN.thick, MONEY_COIN.sides), []);
+  const heap = useMemo(() => new THREE.SphereGeometry(MONEY_HEAP.r, MONEY_COIN.sides, 3, 0, Math.PI * 2, 0, Math.PI / 2), []);
   useTint(mats.all, mats.base, colour);
   const wide = 2 * Math.max(...sackOutline().map(([r]) => r));
   return (
@@ -423,6 +428,14 @@ function Sack({ open, colour, outline }: { open: boolean; colour?: Tint; outline
           <Solid geometry={rope} material={mats.rope} at={[0, 0, 0]} size={[0.2, 0.2, 0.05]} outline={false} />
         </group>
       )}
+      {money && MONEY_SPILL.map(([x, z, lift, tilt], i) => (
+        <mesh key={i} geometry={coin} material={mats.gold} position={[x, MONEY_COIN.thick / 2 + lift, z]} rotation={[tilt, i, 0]} raycast={() => null} />
+      ))}
+      {money && open && (<>
+        <mesh geometry={heap} material={mats.gold} position={[0, MONEY_HEAP.y, 0]} scale={[1, MONEY_HEAP.tall / MONEY_HEAP.r, 1]} raycast={() => null} />
+        <mesh geometry={coin} material={mats.gold} position={[0.03, MONEY_HEAP.y + MONEY_HEAP.tall, 0.01]} rotation={[0.3, 0.4, 0]} raycast={() => null} />
+        <mesh geometry={coin} material={mats.gold} position={[-0.04, MONEY_HEAP.y + MONEY_HEAP.tall * 0.8, -0.02]} rotation={[-0.25, 1.1, 0.2]} raycast={() => null} />
+      </>)}
     </>
   );
 }

@@ -93,6 +93,14 @@ describe("a mini boss's or boss's chest is there from the start, guarded (the us
     const sack = thingsOf(s.layout, s.placed, s.ids, won, s.npcs, { [id!]: { x: 3, y: 4 } }, s.dungeon).find((t) => t.room === id && t.def === "loot-sack");
     expect(sack).toMatchObject({ x: 3, y: 4 });
   });
+  it("a money stash's sack is marked, so it's drawn in its own cloth (the user, 2026-11-23); any other stash's isn't", () => {
+    const stashes = s.ids.filter((i) => s.room(i)?.kind === "stash");
+    expect(stashes.length).toBeGreaterThan(0);
+    const rich = (i: string) => (i === stashes[0] ? { ...s.room(i)!, money: true } : s.room(i) && { ...s.room(i)!, money: undefined });
+    const sacks = thingsOf(s.layout, s.placed, s.ids, rich, s.npcs, {}, s.dungeon).filter((t) => t.def === "sack");
+    expect(sacks.find((t) => t.room === stashes[0])?.money).toBe(true);
+    expect(sacks.filter((t) => t.room !== stashes[0]).every((t) => !t.money)).toBe(true);
+  });
 });
 
 describe("a guarded chest's foes patrol close round it (the user, 2026-11-09)", () => {

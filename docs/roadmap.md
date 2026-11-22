@@ -127,6 +127,10 @@ interesting situations, real decisions, progression and surprises, not feel they
   [world/art-pipeline.md](world/art-pipeline.md) §6.6
 - ✅ **The Soul Altar: summoning and ascension; scanning on its own screen** (decision 49, built
   2026-11-18). [design/creatures.md](design/creatures.md) §4
+- 📌 **The Challenge** (the user, 2026-11-23; decision 57): "the chase one", a quest beside the two dailies that can
+  pay the most: a dungeon to beat with a quirk (80% or more of its rooms explored, a team all of one trait, nothing
+  better than Uncommon gear…), its reward growing with how hard the quirk makes it. ❓ Open: how long each lasts
+  (maybe 2 days), the list of quirks, how each is scored, what it pays. [design/den.md](design/den.md) §9, Daily quests.
 - 📌 **The Bestiary as a proper page** (the user, 2026-11-18; next session): a grid of the
   creatures you've seen, each with its own page: art, races, moves, and sliders for rarity (its own
   up to Legendary, as ascension would make it) and level (10, 20, 30) moving its HP and %s (the

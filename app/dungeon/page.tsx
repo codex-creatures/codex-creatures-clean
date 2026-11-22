@@ -17,7 +17,7 @@ import LevelUpShow, { type LevelUpInfo } from "@/components/LevelUpShow";
 import FightWon, { type WonRow } from "@/components/FightWon";
 import CageReveal, { type CageFind } from "@/components/CageReveal";
 import Triumph from "@/components/Triumph";
-import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE, BOOKCASE_LOOT } from "@/lib/sprites/props";
+import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, MONEY_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE, BOOKCASE_LOOT } from "@/lib/sprites/props";
 import LootGrid, { stackCards } from "@/components/LootGrid";
 import { useGameState, SLOT_FIELD } from "@/hooks/useGameState";
 import { bagHome } from "@/lib/den3d/bag";
@@ -1565,7 +1565,7 @@ export default function DungeonPage() {
               <LootWindow
                 name={lootFrom === "bookcase" ? "The bookcase" : c.quest === "club" ? "On the floor" : c.kind === "chest" ? "The chest" : c.container === "strongbox" ? "The strongbox" : c.container === "chest" ? "The rickety chest" : c.kind === "stash" ? (c.money ? "The money stash" : "The stash")
                   : c.kind === "library" ? "The shelves" : c.kind === "storehouse" || c.kind === "stockroom" ? "The stores" : "The sack"}
-                sprite={lootFrom === "bookcase" ? BOOKCASE_LOOT : c.quest === "club" ? WEAPON_SPRITES.klutz_club : c.kind === "chest" ? TREASURE_CHEST_OPEN : c.container === "strongbox" ? STRONGBOX_OPEN : c.container === "chest" ? RICKETY_CHEST_OPEN : BURLAP_SACK_OPEN}
+                sprite={lootFrom === "bookcase" ? BOOKCASE_LOOT : c.quest === "club" ? WEAPON_SPRITES.klutz_club : c.kind === "chest" ? TREASURE_CHEST_OPEN : c.container === "strongbox" ? STRONGBOX_OPEN : c.container === "chest" ? RICKETY_CHEST_OPEN : c.money ? MONEY_SACK_OPEN : BURLAP_SACK_OPEN}
                 items={c.sack ?? []} bag={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))}
                 slots={bagSize(lab.meta)} bagName={bagName(lab.meta)}
                 onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack}

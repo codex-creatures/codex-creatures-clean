@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PRIMARY_QUESTS, questById, SECONDARY_QUESTS, canClaim, claimDaily, dailyDone, dailyFor, dailyQuest, dayKey, noteDaily, openQuests, questsOfDay, hasCardsToSummon, dailyNews, rollDailyReward, rollRarity, todaysQuests, type DailyCtx } from "../lib/daily";
+import { DAILY_BOX, PRIMARY_QUESTS, questById, SECONDARY_QUESTS, canClaim, claimDaily, dailyDone, dailyFor, dailyQuest, dayKey, noteDaily, openQuests, questsOfDay, hasCardsToSummon, dailyNews, rollDailyReward, rollRarity, todaysQuests, type DailyCtx } from "../lib/daily";
 import { guestOf, merchantCalls, SUMMON_STAY } from "../lib/tavern";
 import type { Rarity } from "../lib/items/budgets";
 import type { Drop } from "../lib/types";
@@ -107,7 +107,7 @@ describe("the daily rewards", () => {
   });
 
   // (The user, 2026-11-23: until then the Cyclops' quest paid more than the Hydra's, and the Hydra's more than the Abyss's.)
-  it("a boss's quest pays better the deeper the boss: the Cyclops' box has an Epic, the Hydra's is all Epic, the Minotaur's has a Legendary, the Abyss's is all Legendary and enchanted", () => {
+  it("every boss's quest pays the box of 5 Rare+ pieces, a little better the deeper the boss: one Epic for the Hydra, two for the Minotaur, a Legendary and an Epic for the Abyss; never enchanted, no crystals", () => {
     const bad: string[] = [];
     type D = ReturnType<typeof rollDailyReward>[number];
     const isGear = (d: D) => d.dropType === "item" && !!(d.itemKey || d.armorKey);
@@ -117,12 +117,14 @@ describe("the daily rewards", () => {
     const pays = (id: string) => { const q = questById(id)!; return rollDailyReward(q.reward, Math.random, q.loot); };
     for (let i = 0; i < 60; i++) {
       const box = pays("cyclops"), hydra = pays("hydra"), mino = pays("minotaur"), abyss = pays("abyss");
-      if (box.length !== 5 || !box.every((d) => gearOk(d, "rare", "legendary")) || !box.some((d) => rank(rar(d)) >= rank("epic"))) bad.push("cyclops");
-      if (hydra.filter(isGear).length !== 3 || !hydra.filter(isGear).every((d) => gearOk(d, "epic", "legendary")) || crystals(hydra) !== 1) bad.push("hydra");
-      if (mino.filter(isGear).length !== 3 || !mino.filter(isGear).every((d) => gearOk(d, "epic", "legendary")) || !mino.some((d) => isGear(d) && rar(d) === "legendary") || crystals(mino) !== 2) bad.push("minotaur");
-      if (abyss.filter(isGear).length !== 3 || !abyss.filter(isGear).every((d) => d.dropType === "item" && d.rarity === "legendary" && !!d.enchant) || crystals(abyss) !== 3) bad.push("abyss");
+      const epics = (ds: D[]) => ds.filter((d) => rank(rar(d)) >= rank("epic")).length;
+      for (const [id, ds] of [["cyclops", box], ["hydra", hydra], ["minotaur", mino], ["abyss", abyss]] as [string, D[]][])
+        if (ds.length !== DAILY_BOX || !ds.every((d) => gearOk(d, "rare", "legendary")) || crystals(ds) !== 0 || ds.some((d) => d.dropType === "item" && !!d.enchant)) bad.push(id);
+      if (epics(hydra) < 1) bad.push("hydra's Epic");
+      if (epics(mino) < 2) bad.push("minotaur's Epics");
+      if (epics(abyss) < 2 || !abyss.some((d) => rar(d) === "legendary")) bad.push("abyss's Legendary");
       const [c, ...rest] = rollDailyReward("creature");
-      if (rest.length || c?.dropType !== "creature" || rank(c.rarity) < rank("uncommon") || rank(c.rarity) > rank("rare")) bad.push("creature");
+      if (rest.length || c?.dropType !== "creature" || rank(c.rarity) > rank("rare")) bad.push("creature");
       const [m] = rollDailyReward("material");
       if (m?.dropType !== "item" || !m.material) bad.push("material");
       const [x] = rollDailyReward("codex");

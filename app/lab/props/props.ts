@@ -8,6 +8,7 @@ export const PROPS: PropEntry[] = [
   { id: "chest", name: "Treasure chest", where: "Chest rooms, mini bosses, the boss" },
   { id: "golden", name: "Golden chest", where: "1 in 10 mini bosses (a Gold Key opens it)" },
   { id: "stash", name: "Stash (sack)", where: "Stashes, by campfires" },
+  { id: "money", name: "Money stash", where: "1 stash in 4: its gold grows with the dungeon" },
   { id: "store-crate", name: "Storehouse crate", where: "A storehouse's stores (searched)" },
   { id: "corner-crates", name: "Corner crates", where: "Rooms' corners (v17: searchable)" },
   { id: "stacked-crates", name: "Stacked crates", where: "A stockroom's stores (v18: searched)" },
@@ -28,7 +29,7 @@ export const PROPS: PropEntry[] = [
 export const ROWS = Math.ceil(PROPS.length / COLS);
 // How far each one reaches from its middle, across and front to back (u), for walking round it.
 export const REACH: Record<string, [number, number]> = {
-  chest: [0.7, 0.5], golden: [0.7, 0.5], stash: [0.4, 0.4], "store-crate": [0.7, 0.5], "corner-crates": [0.75, 0.55], "stacked-crates": [0.75, 0.55],
+  chest: [0.7, 0.5], golden: [0.7, 0.5], stash: [0.4, 0.4], money: [0.45, 0.45], "store-crate": [0.7, 0.5], "corner-crates": [0.75, 0.55], "stacked-crates": [0.75, 0.55],
   barrel: [0.4, 0.4], barrels: [0.85, 0.45], pots: [0.5, 0.45], bookcase: [0.8, 0.35], broken: [0.8, 0.35], lectern: [0.35, 0.3],
   table: [0.8, 0.45], deck: [0.8, 0.45], cage: [0.6, 0.6], dynamite: [0.25, 0.25], campfire: [0.5, 0.5], gem: [0.5, 0.5], torch: [0.15, 0.15],
 };

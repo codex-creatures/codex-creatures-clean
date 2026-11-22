@@ -137,9 +137,12 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   Cyclops's Labyrinth, 600–900 in the Hydra's, 750–1,125 in the Minotaur's, 900–1,350 in the Abyss). Its loot window
   says "The money stash". Rolled from the run's seed and the room, so nothing else a run rolls moves; a run under
   way keeps the stashes it had. About the same gold as before in the first two, about 750 more a full clear in the
-  Hydra's and 1,100 in the Minotaur's. 🧪 Claude's numbers, the user's yes. 📌 Its own look: two samples are in
-  art/money-stash-samples/ (the burlap sack with a gold coin on it; a wine-red sack with a gold cord), each shut and
-  open, waiting for the user's pick; until then it's drawn as any stash.
+  Hydra's and 1,100 in the Minotaur's. 🧪 Claude's numbers, the user's yes. ✅ **Its look** (the user's pick, 2026-11-23: "the red with gold one", and "a 3D asset"): in a walked run its
+  sack is the stash's own 3D sack in wine-red cloth with a gold-stitched seam (`MONEY_CLOTH`, public/sprites/props/sack3d/wine.png),
+  tied with a gold cord, a few gold coins on the floor at its foot and, once it's open, a heap of them in its mouth
+  (`Sack`'s `money` in components/Props3D.tsx; `Thing.money`; on /lab/props beside the stash). Its loot window shows
+  the same sack, open (public/sprites/props/money_sack_open.png). The other look tried, a gold coin on the burlap, is in
+  art/money-stash-samples/.
 - ✅ **Golden chests and Gold Keys** (the user, 2026-11-13): 10% of mini bosses (`GOLDEN_CHEST`,
   rolled with the room as `Room.golden`) guard a golden chest instead of
   the rickety one. It opens only with a **Gold Key** in your bag, which is used up (no key: it stays

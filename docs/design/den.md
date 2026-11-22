@@ -304,24 +304,30 @@ Encampment, until it's one you've beaten before. You get the easier quest's rewa
 Cyclops steps follow the same rule (Claude's reading). Which quests you got is fixed the first time
 they're seen that day.
 
-✅ **The deeper the boss, the better it pays** (the user, 2026-11-23: "more rewarding to encourage that
-daily engagement, the rewards should scale by difficulty and top rewards should be relevant to beating a
-dungeon"; `DailyQuest.loot`, `dailyLoot`). Until then the Cyclops's paid more than the Hydra's and the
-Hydra's more than the Abyss's, and the Minotaur had none. Each now pays in what the next dungeon asks of
-you: an Epic piece from the Cyclops for the Hydra, a Legendary from the Minotaur for the Abyss. 🧪 Claude's
-numbers and reading.
+✅ **The deeper the boss, the better it pays, a little** (the user, 2026-11-23; `DailyQuest.loot`,
+`dailyLoot`). Until then the Cyclops's paid more than the Hydra's and the Hydra's more than the
+Abyss's, and the Minotaur had none. Now every boss pays the Cyclops's box of 5, with a better piece or
+two the deeper it is. **Kept small on purpose:** a first, bigger ladder (Epic and Legendary boxes, essence
+crystals) was dropped the same day, unreleased, because the user doesn't want "log in, do the daily, log
+out" to be the game. No enchantments and no essence crystals from dailies. 🧪 Claude's numbers.
 
 | Primary | Reward |
 |---|---|
-| Beat the Encampment twice | a creature, Uncommon or Rare (claimed, the Soul Altar's whirl climbs to its rarity and it steps out: the user, 2026-11-20; it could be Common until 2026-11-23) |
-| Beat the Cyclops | a box of 5 pieces of gear, Rare or better, one at least Epic |
-| Beat the Hydra | 3 weapons or armour pieces, Epic or better (a quarter enchanted), and an essence crystal |
-| Beat the Minotaur | 3 pieces, Epic or better, one Legendary (half enchanted), and 2 essence crystals |
-| Beat the Abyss | 3 Legendary pieces, all enchanted, and 3 essence crystals |
+| Beat the Encampment twice | a creature, Rare at most (claimed, the Soul Altar's whirl climbs to its rarity and it steps out: the user, 2026-11-20) |
+| Beat the Cyclops | a box of 5 pieces of gear, Rare or better (as the user set it, 2026-11-02) |
+| Beat the Hydra | the same box, one piece at least Epic |
+| Beat the Minotaur | the same box, two pieces at least Epic |
+| Beat the Abyss | the same box, one piece Legendary and one at least Epic |
 
-❓ **A higher tier** (the user's idea, 2026-11-23, not decided): a harder daily that rewards a varied
-roster, such as beating a boss with every creature of one race, or with creatures of one rarity. Open:
-which conditions, how often, and what it pays.
+📌 **The Challenge** (the user, 2026-11-23; not built): "the chase one", the quest that can pay the
+most, apart from the two dailies. A dungeon to beat with a quirk, for example:
+- exploring 80% or more of its rooms;
+- with a team that all share a trait (all Toxic);
+- wearing nothing better than Uncommon gear.
+
+Its reward grows with how hard the quirk makes it. ❓ Open: how long each lasts (the user: "maybe 2
+days each? I'm not sure"), the full list of quirks, how the difficulty of one is scored, and what
+it pays.
 
 | Secondary | Reward |
 |---|---|

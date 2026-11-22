@@ -92,6 +92,7 @@ function Piece({ id, open }: { id: string; open: boolean }) {
     case "chest": return <Prop3D kind="chest" open={open} />;
     case "golden": return <Prop3D kind="chest" golden open={open} />;
     case "stash": return <Prop3D kind="stash" open={open} />;
+    case "money": return <Prop3D kind="stash" money open={open} />;
     case "store-crate": return <Crate inside="materials" open={open} outline edges empty={open} />;
     case "corner-crates": return <Decor3D kind="crates" stretch={stretch} open={open} />;
     case "stacked-crates": return <Decor3D kind="stack" stretch={stretch} open={open} />;

@@ -66,7 +66,9 @@ function differences(name: string, run0: DungeonRun): string[] {
     const thingsBefore = thingsOfBefore(walk.layout, plan, ids, room, before.witches, walk.spots).filter((t) => !guarded(t));
     // (And a camp's cages guarded till its foes are beaten, the user, 2026-11-09: compared without that flag.)
     const thingsNow = thingsOf(walk.layout, now, ids, room, now.witches, walk.spots, dungeonOf(run)).filter((t) => !guarded(t))
-      .map(({ guarded: g, ...t }) => (t.cage !== undefined || !g ? t : { ...t, guarded: g }));
+      .map(({ guarded: g, ...t }) => (t.cage !== undefined || !g ? t : { ...t, guarded: g }))
+      // (And a money stash's mark, 2026-11-23, which only picks its sack's cloth: compared without it.)
+      .map(({ money, ...t }) => (void money, t));
     const same = (what: string, a: unknown, b: unknown) => { if (JSON.stringify(a) !== JSON.stringify(b)) out.push(`${name}, ${state}: ${what} differ`); };
     same("wall torches", now.sconces, before.sconces);
     same("candles", now.candles, before.candles);

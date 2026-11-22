@@ -36,11 +36,6 @@ type Exhibit = { file: string; name: string; now: string; nowArt?: string; where
 // charged were dropped by the user.)
 // Each with what it replaces (an emoji, or the picture standing in) and where.
 const EXHIBITS: Exhibit[] = [
-  // The money stash (2026-11-23): two looks, each shut and open, PixelLab edits of the burlap sack (art/money-stash-samples).
-  { file: "money-stash-a", name: "Money stash A: a gold coin on the sack", now: "", nowArt: "/sprites/props/burlap_sack.png", where: "A money stash, shut (1 stash in 4)", px: 54 },
-  { file: "money-stash-a-open", name: "Money stash A, open", now: "", nowArt: "/sprites/props/burlap_sack_open.png", where: "Its loot window", px: 54 },
-  { file: "money-stash-b", name: "Money stash B: wine red, a gold cord", now: "", nowArt: "/sprites/props/burlap_sack.png", where: "A money stash, shut (1 stash in 4)", px: 54 },
-  { file: "money-stash-b-open", name: "Money stash B, open", now: "", nowArt: "/sprites/props/burlap_sack_open.png", where: "Its loot window", px: 54 },
   { file: "enchantress-3", name: "The Enchantress (smaller)", now: "", nowArt: "/sprites/npcs/collector.png", where: "The tavern: smaller, with her walk below", px: 80 },
 ];
 // Approved in round 1, and now in the game.

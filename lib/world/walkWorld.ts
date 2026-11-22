@@ -123,7 +123,7 @@ export function foeStarts(placed: Placements, ids: string[], room: (id: string) 
 // key: the room, or "<room>#<cage>". def: what it is (objects.ts), state:
 // which of its pictures; solid and npc come from the definition.
 export type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
-  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true; golden?: true;
+  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true; golden?: true; money?: true /* a money stash's sack (run.ts MONEY_STASH) */;
   shelf?: true; pickup?: "dynamite" | "backpack" | "club"; empty?: true; turned?: true; crate?: number; box?: true }; // crate: a storehouse's crate or barrel, to search (v16) // turned: a table end-on (v15) // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13); shelf: a bookcase against a wall, to search (v14); pickup: a storehouse's find on its floor (v14); empty: an open chest with nothing left in it
 const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
   const d = objectDef(t.def);
@@ -183,7 +183,7 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       if (at) out.push(thingOf({ key: id, room: id, ...at, ...t }));
     };
     if (r.kind === "chest" || r.kind === "treasure") add("chest", { def: "chest", state: shut(r.done), open: r.done, ...(r.done && (r.sack?.length ?? 0) === 0 ? { empty: true as const } : {}) });
-    else if ((r.kind === "stash" || (r.kind === "campfire" && r.sack)) && !looted(r)) add("sack", { def: "sack", state: shut(r.opened), open: !!r.opened });
+    else if ((r.kind === "stash" || (r.kind === "campfire" && r.sack)) && !looted(r)) add("sack", { def: "sack", state: shut(r.opened), open: !!r.opened, ...(r.money ? { money: true as const } : {}) });
     else if (r.kind === "library" && r.lectern) {
       add("lectern", { def: "lectern", open: false });
       for (let i = 0; placed.spot(`${bookcaseOf(id, i)}:bookcase`); i++) {

@@ -60,8 +60,9 @@ Read these before acting on an item: they overrule what's written under it.
 - **The Minotaur falling to bleed and venom in 20 rounds is as meant** (the user, 2026-11-23): it was
   designed to want some share-of-max-HP damage. Cleanse stays.
 - **The level cap is 50** (2026-11-23; Klutz stays at 30), and the Bestiary shows stats at Lv 15, 30 and 50.
-- **Item 4's daily rewards are fixed** (2026-11-23): they rise with the boss, and the Minotaur has one. A
-  higher tier for varied teams is the user's idea, still open.
+- **Item 4's daily rewards are fixed** (2026-11-23): every boss pays the Cyclops's box of 5, a little
+  better the deeper the boss, and the Minotaur has one. Kept small: the big reward is to be the Challenge
+  (a dungeon beaten with a quirk), decided in outline in [design/den.md](design/den.md), not built.
 
 ## What this rests on
 

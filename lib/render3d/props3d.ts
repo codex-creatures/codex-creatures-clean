@@ -47,6 +47,17 @@ const SACK_OUTLINE: [number, number][] = [
 export const SACK_NECK = { y: 0.49, r: 0.075, rope: 0.022 }; // where the rope's tied, and its thickness
 export const sackOutline = (): [number, number][] => SACK_OUTLINE.map(([r, y]) => [r, y]);
 
+// The money stash's sack (the user, 2026-11-23: "the red with gold one", in 3D): the same sack in wine-red
+// cloth (PixelLab: the burlap redyed), tied with a gold cord, a few gold coins on the floor at its foot, and,
+// once it's open, a heap of them in its mouth.
+export const MONEY_CLOTH = { src: "/sprites/props/sack3d/wine.png?v=1", w: 48, h: 48 };
+export const MONEY_CORD = "#d9a92e";
+export const MONEY_COIN = { r: 0.04, thick: 0.014, sides: 8, colour: "#f2c14a" };
+// Coins by its foot: [x, z, lift, tilt] from its middle (a tilted one leans on the one under it).
+export const MONEY_SPILL: [number, number, number, number][] = [[0.3, 0.2, 0, 0], [0.37, 0.13, 0, 0], [0.33, 0.165, 0.014, 0.35], [-0.31, 0.19, 0, 0], [0.12, 0.34, 0, 0]];
+// The heap in its open mouth: a low mound at the neck, and a couple of coins on top of it.
+export const MONEY_HEAP = { y: 0.5, r: 0.095, tall: 0.05 };
+
 // Opened, the sack's neck is untied: the outline stops at the neck and flares a little into an open
 // mouth (no tuft, no rope), so you can see it's been gone through, as the flat open picture showed.
 const SACK_OPEN_OUTLINE: [number, number][] = [...SACK_OUTLINE.slice(0, 8), [0.11, 0.53], [0.13, 0.55]];

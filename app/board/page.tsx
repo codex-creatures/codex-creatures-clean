@@ -433,7 +433,7 @@ const DAILY_ART: Record<DailyReward, string> = {
 };
 function dailyLook(q: DailyQuest) {
   // (A boss's: the colour of the best thing it's sure to hold.)
-  const tint = q.loot ? RARITY_COLORS[q.loot.sure ?? q.loot.lo].text : q.reward === "gold" ? "#FFCC4D" : q.reward === "scroll" ? "#4EA1FF" : "#c9a46a";
+  const tint = q.loot ? RARITY_COLORS[q.loot.sure?.[0] ?? q.loot.lo].text : q.reward === "gold" ? "#FFCC4D" : q.reward === "scroll" ? "#4EA1FF" : "#c9a46a";
   return { art: DAILY_ART[q.reward], inside: null, tint, label: q.reward === "gold" ? (q.gold ?? 0).toLocaleString() : "", gold: q.reward === "gold" };
 }
 

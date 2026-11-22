@@ -40,6 +40,9 @@ export const CARD_WITCH = npc("witch", 78, 92);
 // pile of gold; the deck of cards on its crate.
 export const BURLAP_SACK = prop("burlap_sack", 54, 56, 42);
 export const BURLAP_SACK_OPEN = prop("burlap_sack_open", 54, 50, 42);
+// A money stash's sack (the user's pick, 2026-11-23: wine red, a gold cord), shut and open: PixelLab edits of the two above.
+export const MONEY_SACK = prop("money_sack", 54, 56, 42);
+export const MONEY_SACK_OPEN = prop("money_sack_open", 54, 50, 42);
 export const RICKETY_CHEST = prop("rickety_chest", 56, 53, 46);
 export const RICKETY_CHEST_OPEN = prop("rickety_chest_open", 56, 59, 46);
 export const TREASURE_PILE = prop("treasure_pile", 58, 37, 44);
