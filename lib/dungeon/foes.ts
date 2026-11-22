@@ -10,7 +10,8 @@
 //   (WANDER_SHARE) walk about their room, pausing at each spot.
 // - Each sees along a line of sight (rock blocks it: walls, a dog-leg's
 //   corner), within SIGHT_RANGE and a cone SIGHT_CONE wide the way it faces,
-//   or SIGHT_NEAR whichever way it faces. Floors, doors and tunnels don't
+//   or SIGHT_NEAR whichever way it faces. A chest's guards (a mini boss's, a
+//   storehouse's) see all round (allRound: the user, 2026-11-21), so you can't creep up on the chest. Floors, doors and tunnels don't
 //   block it, so a foe may see you coming down a tunnel.
 // - If ANY of a room's foes sees you, ALL of that room's foes fight you
 //   together (spottedBy says which room).
@@ -55,7 +56,7 @@ export const GUARD_REACH = 2;        // tiles: a chest's guards patrol this clos
 // waits: a boss waiting for you (see the top). end: the end of a big room it
 // keeps to, when the room holds two dens (0 or 1: endOf). guard: the chest it
 // patrols round, close (GUARD_REACH), instead of wandering its room.
-export type Foe = { room: string; index: number; x: number; y: number; facing: number; walks: boolean; path: Pt[]; wait: number; waits?: boolean; end?: 0 | 1; guard?: Pt };
+export type Foe = { room: string; index: number; x: number; y: number; facing: number; walks: boolean; path: Pt[]; wait: number; waits?: boolean; end?: 0 | 1; guard?: Pt; allRound?: true };
 
 // A big room's second den (the user, 2026-11-06: big and long rooms can hold
 // two, one down each end): a room of its own in the run ("<room>~2"),
@@ -100,7 +101,7 @@ export function sees(fp: Floorplan, foe: Foe, you: Pt): boolean {
   const d = Math.hypot(you.x - foe.x, you.y - foe.y);
   if (foe.waits) return d <= WAIT_REACH && lineOfSight(fp, foe, you);
   if (d > SIGHT_RANGE) return false;
-  if (d > SIGHT_NEAR && turn(Math.atan2(you.y - foe.y, you.x - foe.x), foe.facing) > (SIGHT_CONE * Math.PI) / 360) return false;
+  if (d > SIGHT_NEAR && !foe.allRound && turn(Math.atan2(you.y - foe.y, you.x - foe.x), foe.facing) > (SIGHT_CONE * Math.PI) / 360) return false;
   return lineOfSight(fp, foe, you);
 }
 
@@ -215,7 +216,7 @@ export function stepFoe(fp: Floorplan, foe: Foe, seconds: number, rng: Rng = Mat
 // What a foe can see, to draw: points round the edge of its cone, each ray
 // stopped by the first rock (from the foe's middle, in tiles). rays: how many.
 export function visionCone(fp: Floorplan, foe: Foe, rays = 16): Pt[] {
-  const half = (SIGHT_CONE * Math.PI) / 360;
+  const half = foe.allRound ? Math.PI : (SIGHT_CONE * Math.PI) / 360;
   const pts: Pt[] = [{ x: foe.x, y: foe.y }];
   for (let i = 0; i <= rays; i++) {
     const a = foe.facing - half + (2 * half * i) / rays;

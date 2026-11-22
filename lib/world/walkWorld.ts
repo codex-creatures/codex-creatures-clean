@@ -93,7 +93,7 @@ export function guarding(foes: Foe[], layout: Layout, room: (id: string) => Room
     const cages = placed ? cageGuardSpot(placed, f.room, r) : undefined;
     if (cages) return { ...f, walks: true, guard: cages };
     if (fightContainer(r, dungeon) === "sack") return f;
-    return { ...f, walks: true, guard: guardedSpot(layout, placed, f.room, r, dungeon) };
+    return { ...f, walks: true, guard: guardedSpot(layout, placed, f.room, r, dungeon), allRound: true }; // (sees all round: foes.ts)
   });
 }
 

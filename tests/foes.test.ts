@@ -43,6 +43,13 @@ describe("being seen", () => {
     expect(sees(open, foe(1, 2, Math.PI / 2), { x: 10, y: 2 })).toBe(false); // facing south, you're east
   });
 
+  it("a chest's guard sees all round, as far as any foe sees", () => {
+    expect(sees(open, foe(10, 2, 0, { allRound: true }), { x: 5, y: 2 })).toBe(true); // behind it
+    expect(sees(open, foe(1, 2, Math.PI / 2, { allRound: true }), { x: 7, y: 2 })).toBe(true);
+    expect(sees(open, foe(1, 2, 0, { allRound: true }), { x: 1 + SIGHT_RANGE + 1, y: 2 })).toBe(false); // too far
+    expect(visionCone(open, foe(5, 2, 0, { allRound: true })).length).toBeGreaterThan(2);
+  });
+
   it("notices you right beside it whichever way it faces", () => {
     expect(sees(open, foe(5, 2, 0), { x: 4, y: 2 })).toBe(true);
     expect(SIGHT_NEAR).toBeLessThan(2);

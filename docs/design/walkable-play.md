@@ -176,7 +176,9 @@ so far, with an in-memory test team; nothing touches a save.)
     of 4 ways and turn every 2–5 s.
   - **What they see** 🧪: 7 tiles (`SIGHT_RANGE`) in a 90° cone (`SIGHT_CONE`) the way they
     face, or 1.5 tiles (`SIGHT_NEAR`) any way. Rock blocks it; floors, doors and tunnels
-    don't, so a foe can see you coming down a tunnel.
+    don't, so a foe can see you coming down a tunnel. A chest's guards (a mini boss's, a
+    guarded storehouse's) see the 7 tiles all round, not in a cone (`allRound`, walkWorld.ts
+    `guarding`; the user, 2026-11-21), so a guarded chest can't be crept up on.
   - **The chief** 🧪 is waiting (the lab: his fight starts as you step into the camp,
     `ALERT_KINDS`; in the game, see "Bosses wait" under step 7). Won, his cages are listed
     (the live chief's cages, `campCages`).
