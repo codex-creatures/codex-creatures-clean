@@ -286,8 +286,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     100% in 10; Rabid Bite 70% (48%); Choking Smog 90% (55%); Razor Arrows 85% (55%). The Cyclops, against three at Lv 10 in Rare gear: 95% (75%), 68% (55%), 88% (75%) and 85% (65%). **The Minotaur still falls
     to them every time,** but in 19 to 21 rounds, not 9 to 11: one tick is a tenth of a very big health bar, and
     its charges fell someone every 8 rounds, so a shorter fight is a won one. Also simmed: waiting two rounds (the
-    Minotaur in 15 rounds), and a Cleanse that doesn't cost the turn (no better against the Minotaur). If the
-    Minotaur should hold out, the next lever is a longer ward for it, or a smaller tick on bosses.
+    Minotaur in 15 rounds), and a Cleanse that doesn't cost the turn (no better against the Minotaur). **That's
+    as meant** (the user, 2026-11-23): the Minotaur was designed to want some share-of-max-HP damage to help
+    bring it down, and Cleanse is there so it isn't over in 10 rounds. Leave it.
 - ✅ **Boss rewards** (the user, 2026-11-23; `BOSS_LOOT`, `bossChest` in lib/dungeon/run.ts): each boss has its
   own chest (until then every boss opened the Cyclops's, so the Hydra and the Minotaur paid no better than it
   did). The Cyclops's first is also the Rugged Backpack; the Hydra, the Minotaur and the Warden drop a strongbox.

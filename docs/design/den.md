@@ -299,16 +299,29 @@ components/DailyPopup.tsx): once a day per visit to the site, so again at midnig
 not during Klutz's tour or before your first creature. A tap anywhere closes it.
 
 **A boss you've never beaten steps down** (the user: the Hydra to the Cyclops or Encampment):
-the Abyss to the Hydra, the Hydra to the Cyclops, the Cyclops to the Encampment, until it's one
-you've beaten before. You get the easier quest's reward. 🧪 The Abyss and Cyclops steps follow the
-same rule (Claude's reading). Which quests you got is fixed the first time they're seen that day.
+the Abyss to the Minotaur, the Minotaur to the Hydra, the Hydra to the Cyclops, the Cyclops to the
+Encampment, until it's one you've beaten before. You get the easier quest's reward. 🧪 The Abyss and
+Cyclops steps follow the same rule (Claude's reading). Which quests you got is fixed the first time
+they're seen that day.
+
+✅ **The deeper the boss, the better it pays** (the user, 2026-11-23: "more rewarding to encourage that
+daily engagement, the rewards should scale by difficulty and top rewards should be relevant to beating a
+dungeon"; `DailyQuest.loot`, `dailyLoot`). Until then the Cyclops's paid more than the Hydra's and the
+Hydra's more than the Abyss's, and the Minotaur had none. Each now pays in what the next dungeon asks of
+you: an Epic piece from the Cyclops for the Hydra, a Legendary from the Minotaur for the Abyss. 🧪 Claude's
+numbers and reading.
 
 | Primary | Reward |
 |---|---|
-| Beat the Cyclops | a box of 5 pieces of gear, Rare or better |
-| Beat the Encampment twice | a creature, Rare at most (claimed, the Soul Altar's whirl climbs to its rarity and it steps out: the user, 2026-11-20) |
-| Beat the Hydra | 3 Rare or Epic weapons or armour |
-| Beat the Abyss | an Epic weapon or armour piece |
+| Beat the Encampment twice | a creature, Uncommon or Rare (claimed, the Soul Altar's whirl climbs to its rarity and it steps out: the user, 2026-11-20; it could be Common until 2026-11-23) |
+| Beat the Cyclops | a box of 5 pieces of gear, Rare or better, one at least Epic |
+| Beat the Hydra | 3 weapons or armour pieces, Epic or better (a quarter enchanted), and an essence crystal |
+| Beat the Minotaur | 3 pieces, Epic or better, one Legendary (half enchanted), and 2 essence crystals |
+| Beat the Abyss | 3 Legendary pieces, all enchanted, and 3 essence crystals |
+
+❓ **A higher tier** (the user's idea, 2026-11-23, not decided): a harder daily that rewards a varied
+roster, such as beating a boss with every creature of one race, or with creatures of one rarity. Open:
+which conditions, how often, and what it pays.
 
 | Secondary | Reward |
 |---|---|
@@ -324,7 +337,7 @@ same rule (Claude's reading). Which quests you got is fixed the first time they'
 
 🧪 Claude's readings, not asked: "5 item scans" counts new barcodes (a Code Cache, sealed or not;
 a rescan's gold doesn't). Rarities are rolled at the usual odds (`RARITY_WEIGHTS`) and then held
-to the limits (`rollRarity`), so the box is mostly Rare; a weapon a third of the time. The
+to the limits (`rollRarity`), so the Cyclops's box is mostly Rare and the Hydra's Epic; a weapon a third of the time. The
 material bundle is a scan's (`materialBundle`, its rarity rolled); the codex is what a scan of the
 rolled rarity gives (Epic and up: a race codex); the Code Cache is a fresh scan roll. Sales count
 at home (Inventory, altar, crate, tavern, materials) and to the Labyrinth's merchant. Fights count

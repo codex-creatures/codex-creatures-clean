@@ -243,6 +243,9 @@ describe("Klutz's levels", () => {
   it("his first catch (the weakest there is) takes him to level 2", () => {
     expect(xpForEnemy(1, "common") + CAPTURE_XP).toBeGreaterThanOrEqual(xpToNext(1));
     expect(klutzGainXp({}, xpForEnemy(1, "common") + CAPTURE_XP).state.level).toBe(2);
+    // He stops at 30, though creatures go on to 50 (2026-11-23).
+    expect(klutzGainXp({ level: 29, xp: 0 }, 1e6).state).toMatchObject({ level: 30, xp: 0 });
+    expect(klutzGainXp({ level: 30, xp: 0 }, 1e6)).toMatchObject({ state: { level: 30, xp: 0 }, from: 30, to: 30 });
   });
 });
 

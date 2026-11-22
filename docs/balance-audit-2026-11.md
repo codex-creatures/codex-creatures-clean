@@ -57,6 +57,11 @@ Read these before acting on an item: they overrule what's written under it.
   adds complexity). The level cap may go to 50 one day; gear is meant to be the end-game chase, and
   PvP can raise levels and stay fair. The XP curve waits for run history.
 - **Run history** now also records the kind of room a run ended in.
+- **The Minotaur falling to bleed and venom in 20 rounds is as meant** (the user, 2026-11-23): it was
+  designed to want some share-of-max-HP damage. Cleanse stays.
+- **The level cap is 50** (2026-11-23; Klutz stays at 30), and the Bestiary shows stats at Lv 15, 30 and 50.
+- **Item 4's daily rewards are fixed** (2026-11-23): they rise with the boss, and the Minotaur has one. A
+  higher tier for varied teams is the user's idea, still open.
 
 ## What this rests on
 

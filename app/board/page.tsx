@@ -182,7 +182,7 @@ function QuestList() {
   function claim(i: number, note: Element | null) {
     const q = quests[i];
     if (!canClaim(dailyFor(loadDaily(), dayKey(), dailyCtx(DAILY_ONLINE)), i) || waits(q)) return;
-    const drops = rollDailyReward(q.reward);
+    const drops = rollDailyReward(q.reward, Math.random, q.loot);
     const codexes = drops.filter((d) => d.dropType === "item" && d.codexMove).length;
     // A reward always comes home, even into a full box (as a run's haul does: the user, 2026-11-17); a Code
     // Cache needs a space at the altar, and a codex a space on the bookcase.
@@ -432,7 +432,8 @@ const DAILY_ART: Record<DailyReward, string> = {
   cache: "/sprites/props/treasure_chest.png", merchant: "/sprites/den/merchant.png",
 };
 function dailyLook(q: DailyQuest) {
-  const tint = q.reward === "gold" ? "#FFCC4D" : q.reward === "scroll" ? "#4EA1FF" : q.reward === "epic" ? RARITY_COLORS.epic.text : q.reward === "box" || q.reward === "gear" ? RARITY_COLORS.rare.text : "#c9a46a";
+  // (A boss's: the colour of the best thing it's sure to hold.)
+  const tint = q.loot ? RARITY_COLORS[q.loot.sure ?? q.loot.lo].text : q.reward === "gold" ? "#FFCC4D" : q.reward === "scroll" ? "#4EA1FF" : "#c9a46a";
   return { art: DAILY_ART[q.reward], inside: null, tint, label: q.reward === "gold" ? (q.gold ?? 0).toLocaleString() : "", gold: q.reward === "gold" };
 }
 

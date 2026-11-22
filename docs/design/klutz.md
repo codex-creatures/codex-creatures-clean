@@ -18,7 +18,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     takes chip damage). 🧪 Those numbers are Claude's.
   - **Once in every 20 minutes** (`FIND_EVERY_MS`), at a random moment in it, he may come across something (the user, 2026-11-19:
     every 20 minutes on the dot felt far too rigid). Nothing at all is 30% less 1% a level (`NOTHING_START`,
-    `NOTHING_STEP`, `findChance`; the user, 2026-11-20): 71% at Lv 1, 100% at Lv 30, shown on the Hunt tab (🔍). When
+    `NOTHING_STEP`, `findChance`; the user, 2026-11-20): 71% at Lv 1, 100% at Lv 30 (his top level still, `KLUTZ_MAX_LEVEL`, though creatures go to 50 since 2026-11-23), shown on the Hunt tab (🔍). When
     it's something: a creature 30%, a codex 10%, a material or potion 20%, a weapon or armour piece 40% (`FIND_MIX`). Rarities at the usual split, capped by the dungeon, by his level
     (`SCAN_UNLOCK`) and by your explorer level (`capRarity`). The old "never rarer than his piece" rule is gone.
   - **Creatures:** he fights it (no healing on the way); beaten, it's caught at `CATCH_CHANCE` (Common 100%,

@@ -41,12 +41,12 @@ import { Coin } from "@/components/GoldCount";
 import { useGameState, KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { KLUTZ } from "@/lib/creatures/creatureData";
 import { klutzFirstStep, klutzHelping, needsFirstCreature, needsGearUp, type KlutzFirstStep } from "@/lib/quest";
-import { clampLevel, MAX_LEVEL, SCAN_UNLOCK } from "@/lib/creatures/levels";
+import { clampLevel, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/items/budgets";
 import {
   klutzStatus, pointsFree, HEAL_MS_PER_HP, CAPTURE_XP, FIND_XP, XP_SHARE, HUNT_BELOW, HUNT_ABOVE, FIND_EVERY_MS, FIND_MIX, SKILL_EVERY_MS, findChance, NOTHING_STEP, GEAR_DROP_CHANCE, HOME_AT, SEND_AT,
-  KLUTZ_DESTS, destCost, destOpen, bestRarity, packSize, chestSize, chestUpgradePrice, SHACK_REPAIR, CHEST_START, skillPointsFree, skillLevel, skillChance, catchChance, readyAt,
+  KLUTZ_MAX_LEVEL, KLUTZ_DESTS, destCost, destOpen, bestRarity, packSize, chestSize, chestUpgradePrice, SHACK_REPAIR, CHEST_START, skillPointsFree, skillLevel, skillChance, catchChance, readyAt,
   SKILL_KEYS, SKILL_MAX, PACK_TRAIT, PACK_MAX, TRAIT_LEVELS, traitsPicked, traitPicks, nextTraitLevel, canPickTrait,
   type Expedition, type KlutzDest, type SkillKey, type SendBlock, type TraitKey,
 } from "@/lib/klutz";
@@ -125,7 +125,7 @@ export default function KlutzPage() {
         {/* His tours (lib/tour.ts), again: once the box is open and he's offered them. */}
         {toursOpen && <button className="chip" onClick={() => setTutorialOpen(true)} title="Klutz's tours" aria-label="Klutz's tours" style={{ minHeight: 44, minWidth: 44, flexShrink: 0 }}>🗺️</button>}
       </div>
-      {helping && <LevelBar level={klutzLv} xp={game.klutz.xp ?? 0} />}
+      {helping && <LevelBar level={klutzLv} xp={game.klutz.xp ?? 0} top={KLUTZ_MAX_LEVEL} />}
 
       <QuestTalk game={game} first={first} onKit={() => setTab("kit")} onHunt={() => setTab("send")} />
       <ScanTip game={game} />
@@ -204,7 +204,7 @@ function SendTab({ game, nudge, now, status, recallArmed, setRecallArmed }: { ga
           <Help title="Klutz's trips">
             <HelpSection title="The trip">
               <ul>
-                <li>Once in every <b>{FIND_EVERY_MS / 60000} minutes</b>, at any moment, he has a <b>{Math.round(findChance(klutzLv) * 100)}%</b> chance (+{Math.round(NOTHING_STEP * 100)}% a level, 100% at Lv {MAX_LEVEL}) of coming across something: a <b>creature</b> ({Math.round(FIND_MIX.creature * 100)}%), a <b>codex</b> ({Math.round(FIND_MIX.codex * 100)}%), a <b>material or potion</b> ({Math.round(FIND_MIX.goods * 100)}%), or a <b>weapon or armour</b> ({Math.round(FIND_MIX.gear * 100)}%).</li>
+                <li>Once in every <b>{FIND_EVERY_MS / 60000} minutes</b>, at any moment, he has a <b>{Math.round(findChance(klutzLv) * 100)}%</b> chance (+{Math.round(NOTHING_STEP * 100)}% a level, 100% at Lv {KLUTZ_MAX_LEVEL}) of coming across something: a <b>creature</b> ({Math.round(FIND_MIX.creature * 100)}%), a <b>codex</b> ({Math.round(FIND_MIX.codex * 100)}%), a <b>material or potion</b> ({Math.round(FIND_MIX.goods * 100)}%), or a <b>weapon or armour</b> ({Math.round(FIND_MIX.gear * 100)}%).</li>
                 <li>He comes home when his <b>pack is full</b> ({packSize(k)} slots), when he&apos;s down to <b>{Math.round(HOME_AT * 100)}% HP</b>, or when something beats him. He keeps everything.</li>
                 <li>He can set off from <b>{Math.round(SEND_AT * 100)}% HP</b> (the pool heals 1 HP every {HEAL_MS_PER_HP / 1000}s). Lower HP, shorter trip.</li>
                 <li>You can <b>call him back</b> any time.</li>

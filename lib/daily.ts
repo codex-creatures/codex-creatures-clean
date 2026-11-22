@@ -3,7 +3,7 @@
 // day, a primary (a dungeon's boss) and a secondary (something smaller), the
 // same for everyone (picked from the date), new at local midnight. A quest
 // you can't do yet steps down to one you can (dailyQuest): the Abyss to the
-// Hydra, the Hydra to the Cyclops, the Cyclops to the Encampment, unless
+// Minotaur, the Minotaur to the Hydra, the Hydra to the Cyclops, the Cyclops to the Encampment, unless
 // you've beaten it before; a duel offline, Klutz before he helps, a sale
 // before the tavern's repaired and a summon without three matching cards, to
 // winning fights. Which quests you got is fixed for the day the
@@ -23,7 +23,8 @@ import { ARMOR_KEYS, ARMOR_SLOTS } from "./items/armor";
 import { weaponDrop, armorDrop, codexDrop, scrollDrop, dropFromOutcome, randomBasicMove, randomUncommonMove, randomStrongMove, randomCodexMove } from "./drops";
 import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
-import { materialBundle, toolDrop } from "./items/materials";
+import { materialBundle, materialDrop, toolDrop } from "./items/materials";
+import { enchanted } from "./items/enchantments";
 import { CREATURES_BY_RARITY } from "./creatures/creatureData";
 import { makeCreatureDrop, CARDS_TO_SUMMON } from "./creatures/summon";
 import { rollBarcodeOutcome } from "./barcodeRegistry";
@@ -46,6 +47,10 @@ export type DailyEvent = "scan" | "sell" | "battle" | "room" | "miniboss" | "klu
 // an XP scroll; a bundle of one material; a Revival Elixir; a codex of a rolled
 // rarity; a Code Cache at the altar; or the travelling merchant at the tavern.
 export type DailyReward = "gold" | "box" | "creature" | "gear" | "epic" | "scroll" | "material" | "elixir" | "codex" | "cache" | "merchant";
+// loot: what a boss's quest pays (rollDailyReward): n weapons and armour pieces between lo and hi
+// (at the usual odds, held between them), one of them at least `sure`, each Rare or better one
+// enchanted `enchant` of the time, and `essence` essence crystals.
+export type DailyLoot = { n: number; lo: Rarity; hi: Rarity; sure?: Rarity; enchant?: number; essence?: number };
 export type DailyQuest = {
   id: string;
   name: string;
@@ -54,17 +59,21 @@ export type DailyQuest = {
   goal: number;
   reward: DailyReward;
   gold?: number;     // (a gold reward: how much)
+  loot?: DailyLoot;  // (a boss's: what's in it)
   pays: string;      // the reward, in words
 };
 
-export const DAILY_BOX = 5;
-export const DAILY_GEAR = 3;
-// The primaries: a dungeon's boss.
+// The primaries: a dungeon's boss. The deeper the boss, the better it pays, and each pays in what
+// the next dungeon asks of you (the user, 2026-11-23: until then the Cyclops' paid 5 Rare+ pieces,
+// the Hydra's 3 Rare or Epic and the Abyss's one Epic, and the Minotaur had none): the Cyclops' has
+// an Epic piece for the Hydra, the Hydra's is all Epic, the Minotaur's has a Legendary for the Abyss.
+// 🧪 Claude's numbers.
 export const PRIMARY_QUESTS: DailyQuest[] = [
-  { id: "cyclops", name: "Cyclops slayer", task: "Beat the Cyclops",          event: "win:1", goal: 1, reward: "box",      pays: `A box of ${DAILY_BOX} Rare+ gear` },
-  { id: "camp",    name: "Camp raider",    task: "Beat the Encampment twice", event: "win:0", goal: 2, reward: "creature", pays: "A creature (up to Rare)" },
-  { id: "hydra",   name: "Hydra hunter",   task: "Beat the Hydra",            event: "win:2", goal: 1, reward: "gear",     pays: `${DAILY_GEAR} Rare or Epic weapons or armour` },
-  { id: "abyss",   name: "Into the Abyss", task: "Beat the Abyss",            event: "win:3", goal: 1, reward: "epic",     pays: "An Epic weapon or armour piece" },
+  { id: "cyclops",  name: "Cyclops slayer",  task: "Beat the Cyclops",          event: "win:1", goal: 1, reward: "box",      loot: { n: 5, lo: "rare", hi: "legendary", sure: "epic" }, pays: "A box of 5 Rare+ gear, one at least Epic" },
+  { id: "camp",     name: "Camp raider",     task: "Beat the Encampment twice", event: "win:0", goal: 2, reward: "creature", pays: "A creature (Uncommon or Rare)" },
+  { id: "hydra",    name: "Hydra hunter",    task: "Beat the Hydra",            event: "win:2", goal: 1, reward: "gear",     loot: { n: 3, lo: "epic", hi: "legendary", enchant: 0.25, essence: 1 }, pays: "3 Epic+ weapons or armour and an essence crystal" },
+  { id: "minotaur", name: "Bull by the horns", task: "Beat the Minotaur",       event: "win:4", goal: 1, reward: "gear",     loot: { n: 3, lo: "epic", hi: "legendary", sure: "legendary", enchant: 0.5, essence: 2 }, pays: "3 Epic+ pieces, one Legendary, and 2 essence crystals" },
+  { id: "abyss",    name: "Into the Abyss",  task: "Beat the Abyss",            event: "win:3", goal: 1, reward: "epic",     loot: { n: 3, lo: "legendary", hi: "legendary", enchant: 1, essence: 3 }, pays: "3 enchanted Legendary pieces and 3 essence crystals" },
 ];
 // The secondaries: something smaller.
 export const SECONDARY_QUESTS: DailyQuest[] = [
@@ -89,7 +98,8 @@ export const questById = (id: string) => QUEST_BY_ID.get(id);
 export type DailyCtx = { wins: Partial<Record<DungeonId, number>>; online: boolean; klutz: boolean; tavern: boolean; cards: boolean };
 // A quest you can't do yet, and what it steps down to.
 const STEP_DOWN: Record<string, { can: (c: DailyCtx) => boolean; to: string }> = {
-  abyss:   { can: (c) => (c.wins[3] ?? 0) > 0, to: "hydra" },
+  abyss:   { can: (c) => (c.wins[3] ?? 0) > 0, to: "minotaur" },
+  minotaur: { can: (c) => (c.wins[4] ?? 0) > 0, to: "hydra" },
   hydra:   { can: (c) => (c.wins[2] ?? 0) > 0, to: "cyclops" },
   cyclops: { can: (c) => (c.wins[1] ?? 0) > 0, to: "camp" },
   duel:    { can: (c) => c.online, to: "battles" },
@@ -183,15 +193,21 @@ function codexOfRarity(r: Rarity): Drop {
   return codexDrop(r === "common" ? randomBasicMove() : r === "uncommon" ? randomUncommonMove() : r === "rare" ? randomStrongMove() : randomCodexMove());
 }
 
+// A boss's loot (DailyLoot): its pieces, the first at least `sure`, and its essence crystals.
+export function dailyLoot(l: DailyLoot, rng: Rng = Math.random): Drop[] {
+  const pieces = Array.from({ length: l.n }, (_, i) => {
+    const d = gearPiece(i === 0 && l.sure ? l.sure : l.lo, l.hi, rng);
+    return l.enchant ? enchanted(d, l.enchant, rng) : d;
+  });
+  return [...pieces, ...(l.essence ? [materialDrop("essence", l.essence)] : [])];
+}
 // The things a reward gives. Gold and the merchant give none (they're paid
-// directly); a Code Cache is one drop, waiting at the altar.
-export function rollDailyReward(reward: DailyReward, rng: Rng = Math.random): Drop[] {
+// directly); a Code Cache is one drop, waiting at the altar. loot: a boss's quest's (DailyQuest.loot).
+export function rollDailyReward(reward: DailyReward, rng: Rng = Math.random, loot?: DailyLoot): Drop[] {
+  if (loot) return dailyLoot(loot, rng);
   switch (reward) {
-    case "box": return Array.from({ length: DAILY_BOX }, () => gearPiece("rare", "legendary", rng));
-    case "gear": return Array.from({ length: DAILY_GEAR }, () => gearPiece("rare", "epic", rng));
-    case "epic": return [gearPiece("epic", "epic", rng)];
     case "creature": {
-      const pool = CREATURES_BY_RARITY[rollRarity(rng, "common", "rare")];
+      const pool = CREATURES_BY_RARITY[rollRarity(rng, "uncommon", "rare")];
       return pool.length ? [makeCreatureDrop(pick(pool, rng), "creature", "")] : [];
     }
     case "scroll": return [scrollDrop()];

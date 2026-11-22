@@ -1,5 +1,5 @@
 // lib/creatures/levels.ts
-// Creature levels (1 to MAX_LEVEL for the closed beta).
+// Creature levels (1 to MAX_LEVEL: 50 since 2026-11-23, the user; it was 30).
 //
 // A creature's %s have two parts:
 // - its species' %s, which grow with level: none at level 1, the species'
@@ -22,7 +22,7 @@ import type { CreatureProficiency, CreatureTemplate } from "./creatureData";
 import type { Rarity } from "../types";
 import { ascendBonus, ascendHp } from "./ascendStats";
 
-export const MAX_LEVEL = 30;
+export const MAX_LEVEL = 50;
 export const REF_LEVEL = 15;      // the level a creature's species %s are "as listed"
 export const HP_SCALE = 1.5;      // HP is bigger in general
 export const HP_AT_LEVEL_1 = 0.6; // share of its level-15 HP a creature has at level 1

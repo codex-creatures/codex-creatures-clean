@@ -534,10 +534,14 @@ export function sendKlutz(k: KlutzState, klutz: Fighter, now = Date.now(), rng: 
 }
 
 // XP for Klutz (a hunt, or a scroll). Returns the new state and his level before.
+// He stops at KLUTZ_MAX_LEVEL: creatures go on to 50 since 2026-11-23, but his trips, his points and
+// the campaign's last quest were all set for 30, so he stays there till the user says otherwise.
+export const KLUTZ_MAX_LEVEL = 30;
 export function klutzGainXp(k: KlutzState, gained: number): { state: KlutzState; from: number; to: number } {
-  const from = clampLevel(k.level);
-  const p = addXp({ level: from, xp: k.xp ?? 0 }, gained);
-  return { state: { ...k, level: p.level, xp: p.xp }, from, to: p.level };
+  const from = Math.min(KLUTZ_MAX_LEVEL, clampLevel(k.level));
+  const p = from >= KLUTZ_MAX_LEVEL ? { level: from, xp: 0 } : addXp({ level: from, xp: k.xp ?? 0 }, gained);
+  const top = p.level >= KLUTZ_MAX_LEVEL;
+  return { state: { ...k, level: top ? KLUTZ_MAX_LEVEL : p.level, xp: top ? 0 : p.xp }, from, to: top ? KLUTZ_MAX_LEVEL : p.level };
 }
 
 // Every thing he carries home earns XP: older trips FIND_XP a piece of gear

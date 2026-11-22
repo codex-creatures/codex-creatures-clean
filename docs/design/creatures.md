@@ -53,7 +53,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   the cauldron, lit in the next rarity's colour: the creature to raise in the middle, the offerings
   round it, 4 for the first step (`ASCEND_FIRST` = 5 in all), 2 for each after (`ASCEND_AFTER` =
   3), each tied to the middle by a thread of light. Under it, rarity now → next and its stats
-  now → after (at its level and at Lv 30); then an inspect panel for the creature you tapped (its
+  now → after (at its level and at the top level, Lv 50); then an inspect panel for the creature you tapped (its
   soul stone, birth rolls, moves with codex ones marked, gear, and a Raise / Offer / Take out
   button); then your creatures in a tray you swipe sideways and drag up into the circle (onto a
   slot, or anywhere in it for the next free one; dropped on the middle when one's there, it's an
@@ -67,15 +67,15 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   others are gone, with their soul stones and codex moves; their gear comes off and stays yours. A
   warning first if one given up has a soul stone or an Epic or Legendary codex move
   (`WARN_CODEX_FROM`). The summoning's whirlwind plays with the creatures, climbing to the new
-  rarity, and ends on what it gained: each stat now, its rise, and its rise by Lv 30.
+  rarity, and ends on what it gained: each stat now, its rise, and its rise by Lv 50.
 - ✅ **Its stats** (lib/creatures/ascendStats.ts): each step adds that rarity's budget to its
   species' level-15 values: `ASCEND_STATS` +16 / 24 / 25 / 59 %s and `ASCEND_HP` +15 / 19 / 23 / 23
   base HP for Uncommon / Rare / Epic / Legendary (the gaps between the rarities' average species on
   2026-11-18). The %s follow the species' own shape (a stat it has none of stays none), shared out
   exactly; no randomness, so its birth roll is its only variance. Like the species' %s, the bonus
-  grows with level (`levelFactor`): small at Lv 5, all of it at Lv 15, double by Lv 30. So an
+  grows with level (`levelFactor`): small at Lv 5, all of it at Lv 15, double by Lv 30 and three and a half times by Lv 50. So an
   ascended creature at any level has what that level gives at its rarity, however and whenever it
-  climbed. The ritual's window shows its stats now and after, and at Lv 30.
+  climbed. The ritual's window shows its stats now and after, and at the top level (`MAX_LEVEL`).
 - ✅ **Nothing is stored but the steps** (`ascended` on the creature; missing = none). Its stats are
   worked out from them every time (`proficiencyAt` and `hpAt` take the steps, so nothing that
   shows a creature can leave them out; enemies and cards pass 0), its saved %s are never touched,
@@ -148,7 +148,14 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ## 5. Levels and XP
 
-- ✅ Levels 1–30 (`MAX_LEVEL`). The species' listed %s are its level-15 values (`REF_LEVEL`). At
+- ✅ Levels 1–50 (`MAX_LEVEL`; the user, 2026-11-23: it was 30, which the veterans' whole teams had reached by
+  hour 13 to 24). The curve carries on as it was: Lv 30 to 50 takes about 42,400 XP a creature (Lv 1 to 30:
+  17,300), and a Lv 50 creature has its species' %s three and a half times over and twice its Lv 15 HP.
+  Nothing in the Labyrinth is above Lv 26, so levels past 30 are for getting through the Abyss and for
+  PvP's formats (which set their own level). Klutz stays at 30 (`KLUTZ_MAX_LEVEL`: his trips, points and
+  the campaign's last quest were set for it), and so does your explorer level. The Bestiary shows every
+  creature's stats at Lv 15, 30 or 50 (a row of three buttons over the list; `STAT_LEVELS` in app/guide).
+  The species' listed %s are its level-15 values (`REF_LEVEL`). At
   Lv 1 a creature has only its roll, so two creatures of a rarity are close and the species shows
   as they level. HP is ×1.5 overall (`HP_SCALE`). (lib/creatures/levels.ts)
 - ✅ XP per KO depends on the enemy's level and rarity. A boss part gives 200. A fight's XP is

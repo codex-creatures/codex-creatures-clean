@@ -448,7 +448,7 @@ export default function CreatureDetailModal({
                 const k = st.key as Exclude<StatKey, "hp">;
                 const d = base ? (prof![k] ?? 0) - (base[k] ?? 0) : 0;
                 return (
-                  <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by ${now.f.proficiency[k]}% (at level 30: ${proficiencyAt(template, prof, MAX_LEVEL, creature.ascended ?? 0)[k]}%)`}
+                  <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by ${now.f.proficiency[k]}% (at level ${MAX_LEVEL}: ${proficiencyAt(template, prof, MAX_LEVEL, creature.ascended ?? 0)[k]}%)`}
                     style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
                     <div style={{ fontSize: 13 }}><Glyph icon={st.icon} art={st.art} /></div>
                     <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
@@ -672,8 +672,9 @@ function Slot({ label, labelColor, slot, item, active, hot, onClick, small, glow
 
 // The creature's level: this level on the left, the next on the right, the
 // XP between as a bar (the numbers on hover). An XP scroll, if you have one.
-export function LevelBar({ level, xp, scroll }: { level: number; xp: number; scroll?: { count: number; read: () => void } }) {
-  const max = level >= MAX_LEVEL;
+// top: the level it stops at (Klutz's is his own: lib/klutz.ts KLUTZ_MAX_LEVEL).
+export function LevelBar({ level, xp, scroll, top = MAX_LEVEL }: { level: number; xp: number; scroll?: { count: number; read: () => void }; top?: number }) {
+  const max = level >= top;
   const need = xpToNext(level);
   return (
     <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>

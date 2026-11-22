@@ -40,6 +40,9 @@ describe("creature levels", () => {
     expect(addXp({ level: 1, xp: 0 }, xpToNext(1))).toMatchObject({ level: 2, xp: 0, gained: 1 });
     expect(addXp({ level: 1, xp: 0 }, xpToNext(1) + xpToNext(2) + 5)).toMatchObject({ level: 3, xp: 5 });
     expect(addXp({ level: MAX_LEVEL - 1, xp: 0 }, 1e6)).toMatchObject({ level: MAX_LEVEL, xp: 0 });
+    // The top is 50 (the user, 2026-11-23: it was 30): a Lv 30 creature levels on.
+    expect(MAX_LEVEL).toBe(50);
+    expect(addXp({ level: 30, xp: 0 }, xpToNext(30))).toMatchObject({ level: 31, xp: 0, gained: 1 });
   });
 });
 

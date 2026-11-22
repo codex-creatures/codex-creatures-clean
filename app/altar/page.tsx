@@ -23,6 +23,7 @@ import Help, { HelpSection } from "@/components/Help";
 import { isCardDrop, type CreatureOrItemDrop } from "@/lib/types";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
+import { MAX_LEVEL } from "@/lib/creatures/levels";
 import { ASCEND_AFTER, ASCEND_FIRST, ASCEND_MIN_LEVEL, giveProblem, keepProblem, othersNeeded } from "@/lib/creatures/ascend";
 import { altarMended, loadDungeon } from "@/lib/dungeon/run";
 
@@ -190,7 +191,7 @@ function AltarHelp() {
         <ul>
           <li>Raise a creature a rarity by giving up others of its kind: {ASCEND_FIRST} in all for the first step, {ASCEND_AFTER} for each step after, up to Legendary.</li>
           <li>They must all be the same rarity at the time (so an Uncommon Moss Wolf needs Uncommon Moss Wolves), and Lv {ASCEND_MIN_LEVEL} or more. An XP scroll gets one there.</li>
-          <li>It keeps its level, rolls, moves and soul stone, and grows towards its new rarity&apos;s stats as it levels: a little now, much more by Lv 30.</li>
+          <li>It keeps its level, rolls, moves and soul stone, and grows towards its new rarity&apos;s stats as it levels: a little now, much more by Lv {MAX_LEVEL}.</li>
           <li>The ones given up are gone, with their soul stones and codex moves. Their gear comes back to you.</li>
           <li>Its new rarity counts everywhere, PvP brackets included. ★ marks each step it has climbed.</li>
         </ul>

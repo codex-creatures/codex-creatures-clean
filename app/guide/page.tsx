@@ -35,6 +35,7 @@ import { CORE_MOVES } from "@/lib/creatures/raceKitsV2";
 import { PRIMARY_STATS_BY_ITEMKEY } from "@/lib/items/itemPrimaries";
 import { ARMOR_CEILINGS, ARMOR_KEYS, ARMOR_META, ARMOR_STAT_KEYS, SET_BONUS } from "@/lib/items/armor";
 import { RARITY_BUDGETS, type Rarity } from "@/lib/items/budgets";
+import { MAX_LEVEL, REF_LEVEL, hpAt, proficiencyAt } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { WEAPON_SPRITES, ARMOR_SPRITES } from "@/lib/sprites/items";
 
@@ -182,8 +183,13 @@ const stat = (icon: string, text: string, art?: string) => <><Glyph icon={icon} 
 const PROF_LABELS: [keyof CreatureProficiency, React.ReactNode][] = [["atk", stat("⚔️", "Melee", "stat_atk")], ["rng", stat("🏹", "Ranged")], ["mag", stat("🔮", "Magic", "stat_mag")], ["agil", stat("💨", "Agility", "stat_agil")], ["mdef", stat("🛡️", "M.Def")], ["rdef", stat("🔰", "R.Def")], ["magdef", stat("🧿", "Mg.Def")]];
 const byRarity = (a: CreatureTemplate, b: CreatureTemplate) => RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity) || a.name.localeCompare(b.name);
 
+// The levels a creature's stats can be looked at (the user, 2026-11-23: Lv 50, the new top): its species'
+// listed %s are its Lv 15 ones (REF_LEVEL).
+const STAT_LEVELS = [REF_LEVEL, 30, MAX_LEVEL];
+
 function Creatures({ seen }: { seen: Set<string> }) {
   const [filter, setFilter] = useState<CreatureFilter>(NO_FILTER);
+  const [level, setLevel] = useState(REF_LEVEL);
   const known = (t: CreatureTemplate) => seen.has(t.id);
   // You only know a creature's race and class once you've seen it.
   const filtering = filter.race !== "all" || filter.cls !== "all";
@@ -201,11 +207,19 @@ function Creatures({ seen }: { seen: Set<string> }) {
       <CreatureFilterBar value={filter} onChange={setFilter}
         raceCount={(r) => CREATURE_TEMPLATES.filter((t) => known(t) && (t.races ?? []).includes(r) && (filter.cls === "all" || t.cls === filter.cls)).length}
         classCount={(c) => CREATURE_TEMPLATES.filter((t) => known(t) && t.cls === c && (filter.race === "all" || (t.races ?? []).includes(filter.race))).length} />
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+        <span style={{ fontSize: 13, color: MUTED }}>Stats at</span>
+        {STAT_LEVELS.map((l) => (
+          <button key={l} onClick={() => setLevel(l)} aria-pressed={level === l}
+            style={{ minWidth: 56, minHeight: 44, padding: "0 10px", fontSize: 14, fontWeight: 700, cursor: "pointer", color: level === l ? "#14151b" : "white",
+              background: level === l ? "#f1d9a0" : "#1b1d25", border: "1px solid #3a3d4a" }}>Lv {l}</button>
+        ))}
+      </div>
       {groups.map(([key, title, color, list]) => list.length > 0 && (
         <section key={key}>
           <H><span style={{ color, textTransform: "capitalize" }}>{title}</span> <span style={{ color: MUTED, fontSize: 13 }}>· {list.length}</span></H>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
-            {list.map((t) => (known(t) ? <CreatureCard key={t.id} t={t} /> : <UnseenCard key={t.id} t={t} />))}
+            {list.map((t) => (known(t) ? <CreatureCard key={t.id} t={t} level={level} /> : <UnseenCard key={t.id} t={t} />))}
           </div>
         </section>
       ))}
@@ -232,9 +246,11 @@ function UnseenCard({ t }: { t: CreatureTemplate }) {
   );
 }
 
-function CreatureCard({ t }: { t: CreatureTemplate }) {
+// level: its stats at that level, before gear (no rolls, no ascension).
+function CreatureCard({ t, level }: { t: CreatureTemplate; level: number }) {
   const rc = RARITY_COLORS[t.rarity];
   const stones = stonesFor(t.id);
+  const prof = proficiencyAt(t, undefined, level, 0);
   return (
     <div style={{ ...PANEL, marginTop: 0, borderColor: rc.border }}>
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -246,14 +262,14 @@ function CreatureCard({ t }: { t: CreatureTemplate }) {
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
             <RaceTag race={t.race} races={t.races} /><ClassBadge cls={t.cls} />
           </div>
-          <div style={{ fontSize: 12, color: MUTED, marginTop: 3, textTransform: "capitalize" }}>{t.rarity} · {t.baseHp} base HP</div>
+          <div style={{ fontSize: 12, color: MUTED, marginTop: 3, textTransform: "capitalize" }}>{t.rarity} · {hpAt(t, level, 0)} HP at Lv {level}</div>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 3, marginTop: 8 }}>
         {PROF_LABELS.map(([k, label]) => (
           <div key={k} style={{ background: "#0e0f14", padding: "3px 2px", textAlign: "center" }}>
             <div style={{ fontSize: 10, color: MUTED, whiteSpace: "nowrap", overflow: "hidden" }}>{label}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: t.proficiency[k] > 0 ? "white" : MUTED }}>+{t.proficiency[k]}%</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: prof[k] > 0 ? "white" : MUTED }}>+{prof[k]}%</div>
           </div>
         ))}
       </div>
