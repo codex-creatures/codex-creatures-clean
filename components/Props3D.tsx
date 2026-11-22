@@ -88,7 +88,8 @@ export function Solid({ geometry, material, at, size, outline, hull = HULL }: { 
 // The faces' material: lit (the lab), or plain and tinted by the light where it stands (the game).
 type Make = (o: { map?: THREE.Texture; color?: string; flatShading?: boolean; side?: THREE.Side }, nudge?: number) => THREE.Material;
 export const makeLit: Make = (o, nudge) => leaned(new THREE.MeshLambertMaterial(o), nudge);
-export const makeFlat: Make = (o, nudge) => leaned(new THREE.MeshBasicMaterial({ map: o.map, color: o.color, side: o.side }), nudge); // (unlit: no shading to flatten)
+// (Only what it has: Three.js warns about each setting handed to it as undefined, every time one's made.)
+export const makeFlat: Make = (o, nudge) => leaned(new THREE.MeshBasicMaterial({ ...(o.map ? { map: o.map } : {}), ...(o.color !== undefined ? { color: o.color } : {}), ...(o.side !== undefined ? { side: o.side } : {}) }), nudge); // (unlit: no shading to flatten)
 const lit = (src: string, edges: boolean) => (edges ? src.replace(".png", "-lit.png") : src);
 
 // `colour`: the light's colour, or (the game) where to read it each frame, so a thing follows the

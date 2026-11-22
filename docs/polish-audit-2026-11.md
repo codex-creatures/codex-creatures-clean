@@ -62,6 +62,14 @@ Not in the pages, the save or the network: **in how the Den's props were drawn.*
    The same light to six decimal places (tests/stone3d.test.ts); the Labyrinth's light, where your
    torch moves, is untouched.
 
+3. **Every flat 3D material logged two or three warnings as it was made.** `makeFlat`
+   (components/Props3D.tsx) handed Three.js a picture, a colour and a side whether or not the
+   material had them, and Three.js warns about each one that's undefined: about 60 warnings each
+   time the Den opened (150 ms of a slowed phone's time in the profile), and the same for every
+   chest, crate, barrel and table made in the Labyrinth's 3D rooms.
+   **Fixed** (commit "3D props are made without a stream of warnings"): it hands over only what
+   the material has. tests/propMaterials.test.ts.
+
 ### Timings, before and after
 
 TODO
