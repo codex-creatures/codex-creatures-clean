@@ -8,7 +8,7 @@ import { CREATURE_TEMPLATES, MOVE_BY_NAME, isSteadyMove, type Skill } from "../l
 import { buildFighter } from "../lib/combat/loadout";
 import { MAX_ENERGY, type Fighter } from "../lib/combat/engine";
 import {
-  createBattle, resolveRound, sendInReplacement, cloneBattle, isValidAction, affordableSkills, activeOf, attackTargets, swapTargets, revivable, aliveCount, fieldOf, MAX_ROUNDS,
+  createBattle, resolveRound, sendInReplacement, cloneBattle, isValidAction, affordableSkills, activeOf, attackTargets, swapTargets, revivable, aliveCount, MAX_ROUNDS,
   type BattleAction, type BattleState, type SideKey,
 } from "../lib/combat/battle";
 import { chooseAiAction, chooseAiReplacement, type AiLevel } from "../lib/combat/thinkingAi";
