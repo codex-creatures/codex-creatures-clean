@@ -18,7 +18,8 @@ Start here to find the one file a task needs. Read that file's relevant section,
    rule. [roadmap.md](roadmap.md) is the only list of what's not built.
 5. **Never authoritative:** [history.md](history.md) and [archive/](archive/) (old wording, kept for
    the record), and [ideas/](ideas/) (sketches and references). Something found only there is not a
-   requirement.
+   requirement. Nor is [balance-audit-2026-11.md](balance-audit-2026-11.md): a dated report of
+   findings and options (sims and real data, 2026-11-22), with the user's replies at its top.
 6. [CLAUDE.md](../CLAUDE.md) holds the working rules (hard rules, git, commands, conventions);
    [README.md](../README.md) at the top is for the human (setup, running, the two computers).
 
