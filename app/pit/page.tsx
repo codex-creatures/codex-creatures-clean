@@ -84,6 +84,7 @@ export default function PitPage() {
         onSellOne={game.sellOne}
         headerExtra={<Link href="/battle" className="chip" title="Testing: a battle against an AI team">VS AI</Link>}
         unavailableItems={game.klutzAwayItems}
+        bigBoxes={game.storage}
         guideGearUp={gearUp && part === "creatures"}
       />
       </div>

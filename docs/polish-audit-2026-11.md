@@ -109,16 +109,71 @@ Not in the pages, the save or the network: **in how the Den's props were drawn.*
 
 ### Timings, before and after
 
-TODO
+Tap to screen ready, median of 5, in milliseconds. "Before" is the game as it was at the start of the
+night (commit bec9eec); "after" has all six fixes. Both timed the same way, one after the other.
+
+| Processor | Den → Storehouse, before | after | Storehouse → Den, before | after |
+|---|---|---|---|---|
+| This laptop, unslowed | 1,487 | **148** | 2,654 | **105** |
+| Slowed 4× (a mid-range phone, roughly) | 10,814 | **641** | 12,105 | **806** |
+| Slowed 6× (an old phone, roughly) | 24,693 | **1,572** | 20,737 | **1,723** |
+
+Step by step, slowed 4× (each row adds to the one above):
+
+| | Den → Storehouse | Storehouse → Den |
+|---|---|---|
+| As it was | 10,814 | 12,105 |
+| 1. Props a few drawings each | 1,814 | 2,895 |
+| 2–5. Lights traced once, no warnings, drawing stops on a tap, the Den kept | 833 | 1,107 |
+| 6. The save not walked at every read | 641 | 806 |
+
+Other counts, before → after: drawings a frame in the Den 3,505 → 121; a frame on this laptop
+50–83 ms → 17 ms (12–20 a second → a steady 60); buffers made on the graphics card each visit
+13,900 → 474 the first time and none after; while you're in a place the Den draws nothing (it was
+gone before; now it's parked).
+
+The first opening of each place after loading the site is slower than later ones (the "first run"
+in the raw results: about twice the median), as its code is read for the first time. That was so
+before, too.
 
 ### What to check on a phone
 
-TODO
+A real phone can't be measured from here: slowing a laptop's processor imitates a phone's slower
+processor, not its graphics chip, its memory or its browser. So, on your phone, on the Vercel site
+after you've pushed:
+
+1. **Den → Storehouse → "← Den", three or four times.** The first time after the page loads may
+   take a moment; after that both ways should feel close to instant. If "← Den" is still slow on
+   the second and third try, the kept Den isn't being reused: tell me.
+2. **The Den itself: drag it about.** It should now be smooth. Before, on this laptop it managed
+   12 to 20 frames a second; if it was choppy on your phone, this is the change you'll feel most.
+3. **Does everything in the Den look the same?** The props were compared by picture, before and
+   after, and matched; but that was one graphics chip. Look at the pool's water, the altar's soup
+   and the portal's swirl (they're drawn on their own, as before), and the outlines round things.
+4. **Stay in the Den for a minute, then go into the Labyrinth and walk about, then come home.**
+   The Den is now kept in memory while you're elsewhere, so the Labyrinth's 3D view runs beside
+   it. If the walk stutters more than it did, or the Den comes back black or blank, that's this
+   change (a phone short of memory). It remakes itself if the graphics chip drops it, but only
+   when you next come home.
+5. **Leave the game in the background for a few minutes** (another app), then come back to it
+   while it was in the Den, and once while it was in a place. Same thing to look for: a black Den.
+6. **Tap a place and immediately try to drag the Den.** It holds still from the tap until the
+   place opens (that's the fix); it should never stay frozen (it lets go after 4 seconds).
+7. **Move something in the Den** (hold a thing, drag it), go into a place, come back: it should be
+   where you put it.
 
 ## 2. Inconsistencies
 
-TODO
+Everything a player can do with a creature or an item, against everywhere they can do it. Read from
+the code, each difference checked against the docs for a reason.
 
+### Fixed
+
+1. **The Pit called a box "full" at the size it started.** The Pit's Items list is the Inventory's
+   list, but wasn't told which boxes you've built bigger: with a weapons box built up to 75 and 55
+   weapons in it, the Pit's tab read "55/50" in red ("Full: sell some to go back into the
+   Labyrinth") while the Storehouse and the Inventory showed a plain 55. No reason in the docs.
+   **Fixed** (commit "The Pit no longer calls a bigger box full"). tests/pitItems.test.tsx.
 ## 3. Bugs
 
 TODO
