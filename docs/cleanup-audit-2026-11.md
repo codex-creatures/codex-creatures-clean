@@ -1,8 +1,8 @@
 # Cleanup audit, 2026-11-24
 
 A dated report, like [polish-audit-2026-11.md](polish-audit-2026-11.md): what's old, unused or out
-of date in the repo, ahead of an early alpha. **Nothing has been removed.** Each group says what it
-is, how sure the finding is, and what removing it would take. Not a spec.
+of date in the repo, ahead of an early alpha. Each group says what it is, how sure the finding is, and what removing
+it would take. Not a spec. **What's been done since** is in "Done" at the end.
 
 How it was found: an import map of all 477 code files from the game's 27 screens, the 18 lab
 pages, the 129 test files and the scripts (what nothing reaches); every exported name counted
@@ -11,14 +11,16 @@ named in the docs and in code comments checked to exist; lint's own list.
 
 ## The user's replies (2026-11-24)
 
-1. **Group A: remove it.** (Not done yet: the session was paused for a cheaper model to do it.)
-2. **Labs:** the ones needed on the live site are the 3D viewer that turns a model freely
-   (`/lab/models`) and the in-game view you walk round with lighting (`/lab/propreview`, and
-   `/lab/props` for the Labyrinth's things). The rest can be dev-only. (`/lab/art` still has
-   drafts awaiting review: kept public until the user says.)
+1. **Group A: remove it.** (Done: see "Done".)
+2. **Labs:** only two are needed on the live site: the 3D viewer that turns a model freely on a
+   plain background (`/lab/models`) and the in-game view you walk round with lighting
+   (`/lab/propreview`). The rest are dev-only, `/lab/props` and `/lab/art` included (narrowed by
+   the user later the same day).
 3. **"Testing: heal now": remove it. "VS AI": moves to PvP**, as a queue against five simulated
    players with a rating behind it (a feature of its own: [roadmap.md](roadmap.md)). It stays in
-   the Pit until that's built.
+   the Pit until that's built. **Healing stays instant** (`HEAL_AT_HOME`): the Healing Pool's own
+   "Heal everyone now" goes too. The Abyss is meant to be the first dungeon whose wounds come
+   home with you (the user, 2026-11-24).
 4. **Saves:** older saves keep loading for now; everyone starts over when the game goes live as a
    mobile app. So group D stays until then.
 5. **The laptop is the only computer** the game is developed on now.
@@ -202,3 +204,15 @@ touched none of it.
 4. **B**, one at a time, each its own session: the old Den first (the biggest, and the new one
    has been everyone's for days), then the 2D walk view with its labs and baselines.
 5. **D** only on your say, and only after deciding whether the alpha starts afresh.
+
+## Done
+
+- **Group A** (e67c2f7, 6aad4b4), with two corrections to the list: lib/dungeon/run.ts:1147 wasn't
+  dead (it sets a foe's own-race codex move: rewritten as an if/else, doing the same), and the
+  pictures pool-top.png, sparring-top.png and money_sack.png stay (the prop builder's list and
+  scripts/den-parts.mjs use them; only their unused names in code went). `inRect` (people.ts) and
+  an import in quest.ts went with what used them. Lint's warnings are down to none.
+- **A second sweep** (an import map from every screen, lab, test and script) found nothing else
+  unreachable and no export named nowhere. Every game screen has a way in. What it added:
+  comments calling the walked dungeons "not used by the game yet" or "/lab/newrun only" (fixed),
+  the pool's own heal button (with C3), and E7's list of exports only tests call.

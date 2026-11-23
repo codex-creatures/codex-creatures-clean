@@ -143,7 +143,7 @@ kill theirs.
 
 - `app/<screen>/page.tsx`: screens. `/` is the Den (home); `dungeon` (the Labyrinth), `battle`,
   `scan` (scanning), `altar` (the Soul Altar: summoning and ascension), `chest` (Inventory), `bag`, `bookcase`, `cage`, `pool`, `pit`, `training`,
-  `klutz`, `crate`, `guide`, `board` (quests, leaderboards, friends), `duel`, `pvp`, `settings`,
+  `klutz`, `guide`, `board` (quests, leaderboards, friends), `duel`, `pvp`, `settings`,
   `start` (title screen: components/OnlineStart.tsx online, components/LocalStart.tsx without),
   `privacy` (update it whenever online features change what's stored). `lab/*` are dev tools
   outside the phone frame (`/lab/placement`, `/lab/newrun`, `/lab/walk`, `/lab/three` the 3D prototype, `/lab/chest` the 3D chest draft, `/lab/hero` the 3D hero draft, `/lab/art` the placeholder art drafts, `/lab/props` every 3D thing in the Labyrinth, `/lab/den` the new Den, `/lab/models` its 3D things one at a time, turned freely, `/lab/propbuilder` props built from recipes, lib/props, `/lab/propreview` them lit to walk round…).
@@ -155,7 +155,7 @@ kill theirs.
   - `dungeon/`: runs (`run.ts`), the scroll map (`map.ts`), walkable layouts (`layout.ts`,
     `interior.ts`), walking, foes, torches and candles (`torch.ts`), campfires, `chamber.ts`, `witch.ts`,
     `people.ts` (the people who wander, and the locators), `tutorialRun.ts` (the first quest's hand-made walked run).
-  - `world/`: the walkable world (units, grid, objects, occupancy, policy, place, placements,
+  - `world/`: the walkable world (grid, objects, occupancy, policy, place, placements,
     migrate, version, walkWorld, walkSim, compat). `render/`: projection and the scene builder.
     `render3d/`: the 3D prototype's geometry and its Stone mode's texture and light rules (components/WalkView3D.tsx; world/rendering.md §4.8).
   - `barcodeRegistry.ts`, `scanning.ts`, `drops.ts`, `pvp/`, `online/` (the one Supabase module
