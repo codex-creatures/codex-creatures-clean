@@ -184,8 +184,12 @@ account, kept entirely apart from Vouchee.
     (lib/pvp/rivalSim.ts, `npm run pvp:rivals`): the ten calibration scans and more as it goes, the Encampment, the
     Cyclops and the Hydra on the scroll map with the Normal AI, loot carried home in its bag, gear and codexes that
     fit each creature (melee attackers melee weapons and moves; hybrids may mix; each rival's taste for utility
-    moves is its own), cards summoned, junk sold. Each stops about where the user's test account was on 2026-11-24
-    (`TARGET`: one Hydra clear, about 34 runs, 36 to 50 scans; main team Lv 15 to 24). Their rosters are fixed in
+    moves is its own), cards summoned, junk sold. Each plays a little past where the user's test account was on
+    2026-11-24 (`TARGET`, pushed further on the user's word that day: up to 50 runs, 55 to 75 scans, every rival
+    past the Cyclops before the Hydra opens, as in the game; they came out explorer Lv 26 to 30 with main teams
+    Lv 19 to 28). Their teams follow the user's guidance: the sturdiest melee creature leads as the tank for the
+    Cyclops's hands, a ranged or magic attacker comes next for his floating eye, and potions bring everyone up
+    before a boss (`teamFor`, `BOSS_DRINK_TO`). Their rosters are fixed in
     the repo (lib/pvp/rivals.json: creatures, worn gear and some Rare spares for the 3v3 queue, move slots, a
     player's numbers, and its path: each run's dungeon, outcome, rooms and explorer level), so everyone meets the
     same rivals and the fight itself needs no connection: the rival is the duel machine's guest in your own

@@ -82,13 +82,21 @@ import { KLUTZ } from "../creatures/creatureData";
 // runs), then moves on; after a death it goes back a dungeon for a run, as
 // a player does. Scans: the calibration ten first, then one most runs, and
 // a batch once it's explorer Lv 12 (the user: "roughly 50 ... once level 12").
+// Pushed further on the user's word (2026-11-24: "more scans and some more playtime", "all beat
+// the cyclops"): every rival keeps at the Cyclops till it has beaten him (CYCLOPS_TRIES at most),
+// and the Hydra opens only then, as in the game.
 export const TARGET = {
   clears: { 0: 5, 1: 3, 2: 1 } as Record<DungeonId, number>,
-  maxRuns: { 0: 9, 1: 16, 2: 12 } as Record<DungeonId, number>,
-  scans: [36, 50] as [number, number],
+  maxRuns: { 0: 9, 1: 24, 2: 14 } as Record<DungeonId, number>,
+  scans: [55, 75] as [number, number],
   scanBatchAt: 12,
-  totalRuns: 34,
+  totalRuns: 50,
 };
+export const CYCLOPS_TRIES = 40;
+// The team's shape (the user, 2026-11-24): a melee tank up front for the Cyclops's hands, and a ranged or
+// magic attacker for his floating eye; the strongest of the rest fill the team.
+// Before a boss, potions bring everyone up to this share of their HP while they last.
+const BOSS_DRINK_TO = 0.8;
 // Their warm-up: battles among themselves before anyone meets them (the
 // user, 2026-11-24), which set their first ratings (lib/pvp/elo.ts).
 export const WARMUP_BATTLES = 10;
@@ -148,6 +156,19 @@ const templateOf = (d: CreatureOrItemDrop) => findCreatureTemplate(d.creatureId,
 const power = (d: CreatureOrItemDrop) => (d.level ?? 1) * 10 + order(d.rarity) * 7;
 // The creatures it fights with: the strongest, in order.
 const roster = (s: Sim, n = PARTY_SIZE) => [...creatures(s)].sort((a, b) => power(b) - power(a)).slice(0, n);
+
+// The team for a run, in fighting order: the best melee tank first (melee style, the sturdiest by its
+// defence rolls and level), then the best ranged or magic attacker, then the strongest of the rest.
+function teamFor(s: Sim, n: number): string[] {
+  const pool = roster(s, PARTY_SIZE + 4);
+  const prof = (d: CreatureOrItemDrop) => d.proficiency ?? templateOf(d).proficiency;
+  const sturdy = (d: CreatureOrItemDrop) => { const p = prof(d); return power(d) + (p.mdef + p.rdef + p.magdef) / 3; };
+  const tank = pool.filter((d) => templateOf(d).cls === "melee").sort((a, b) => sturdy(b) - sturdy(a))[0];
+  const caster = pool.filter((d) => templateOf(d).cls !== "melee" && d !== tank)[0];
+  const picked = [tank, caster].flatMap((d) => (d ? [d] : []));
+  for (const d of pool) if (picked.length < n && !picked.includes(d)) picked.push(d);
+  return picked.slice(0, n).map((d) => d.id);
+}
 
 // ── A new player ──────────────────────────────────────────────────────
 export function newSim(seed: number, name: string): Sim {
@@ -257,9 +278,13 @@ const SLOT_FIELD: Record<ArmorSlot, "helmetId" | "chestId" | "legsId"> = { helme
 function fightRoom(s: Sim, run: DungeonRun, room: Room): { run: DungeonRun; won: boolean } {
   const ids = run.team.filter((id) => (run.hp[id] ?? 0) > 0);
   const drops = ids.map((id) => s.inventory.find((d) => d.id === id) as CreatureOrItemDrop);
-  // A potion first for anyone badly hurt.
-  for (const id of ids) {
-    if (s.potions > 0 && (run.hp[id] ?? 1) < DRINK_AT) { s.potions--; run = { ...run, hp: { ...run.hp, [id]: Math.min(1, run.hp[id] + POTIONS.lesser.heal / Math.max(1, fighterOf(s, s.inventory.find((d) => d.id === id) as CreatureOrItemDrop).maxHp)) } }; }
+  // A potion first for anyone badly hurt; before a boss, everyone's brought up to BOSS_DRINK_TO while they last.
+  const drink = (id: string) => { s.potions--; run = { ...run, hp: { ...run.hp, [id]: Math.min(1, run.hp[id] + POTIONS.lesser.heal / Math.max(1, fighterOf(s, s.inventory.find((d) => d.id === id) as CreatureOrItemDrop).maxHp)) } }; };
+  for (const id of ids) if (s.potions > 0 && (run.hp[id] ?? 1) < DRINK_AT) drink(id);
+  if (room.boss) for (let guard = 0; s.potions > 0 && guard < 12; guard++) {
+    const low = ids.filter((id) => (run.hp[id] ?? 1) < BOSS_DRINK_TO).sort((a, b) => (run.hp[a] ?? 1) - (run.hp[b] ?? 1))[0];
+    if (!low) break;
+    drink(low);
   }
   const A = drops.map((d) => fighterOf(s, d));
   const dungeon = dungeonOf(run);
@@ -373,7 +398,7 @@ export function simRun(s: Sim, dungeon: DungeonId): "cleared" | "dead" | "retrea
   const fee = entryFee(dungeon, s.meta);
   if (s.gold < fee) return "skipped";
   s.gold -= fee;
-  const team = roster(s, teamSize({ dungeon })).map((d) => d.id);
+  const team = teamFor(s, teamSize({ dungeon }));
   const party = team;
   const runs = (s.stats.runs[dungeon] = (s.stats.runs[dungeon] ?? 0) + 1);
   if (dungeon === 0) s.meta.campRuns = (s.meta.campRuns ?? 0) + 1;
@@ -545,8 +570,10 @@ export function goHome(s: Sim) {
 // would, and when it can't pay the fee.
 function nextDungeon(s: Sim, lastDied: boolean): DungeonId | null {
   const dungeons: DungeonId[] = [0, 1, 2];
-  const room = (d: DungeonId) => (s.stats.runs[d] ?? 0) < TARGET.maxRuns[d];
-  const open = dungeons.find((d) => (s.stats.clears[d] ?? 0) < TARGET.clears[d] && room(d));
+  // The Cyclops: room for more while he's unbeaten (CYCLOPS_TRIES), as the user wants every rival past him.
+  const room = (d: DungeonId) => (s.stats.runs[d] ?? 0) < (d === 1 && !(s.stats.clears[1] ?? 0) ? CYCLOPS_TRIES : TARGET.maxRuns[d]);
+  // The Hydra opens once the Cyclops is beaten, as in the game.
+  const open = dungeons.find((d) => (d !== 2 || (s.stats.clears[1] ?? 0) > 0) && (s.stats.clears[d] ?? 0) < TARGET.clears[d] && room(d));
   if (open === undefined) return null;
   const back = dungeons[Math.max(0, dungeons.indexOf(open) - 1)];
   if (back !== open && room(back) && ((lastDied && s.rng() < 0.6) || s.gold < entryFee(open, s.meta))) return back;
@@ -563,7 +590,8 @@ export function simulateRival(seed: number, name: string, onLog?: (line: string)
     for (let i = 0; i < firstBatch; i++) simScan(s);
     goHome(s);
     let died = false, total = 0, batched = false;
-    for (; total < TARGET.totalRuns; total++) {
+    // (The run cap gives way while the Cyclops is unbeaten: everyone gets past him, CYCLOPS_TRIES allowing.)
+    for (; total < TARGET.totalRuns || (!(s.stats.clears[1] ?? 0) && (s.stats.runs[1] ?? 0) < CYCLOPS_TRIES); total++) {
       const d = nextDungeon(s, died);
       if (d === null) break;
       const out = simRun(s, d);
