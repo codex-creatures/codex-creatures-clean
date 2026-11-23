@@ -41,6 +41,8 @@ import { bringMax, ineligibleReason, parseFormat, TURN_SECONDS, type PvpFormat }
 import { RivalGuest } from "@/lib/pvp/rivalGuest";
 import { rivalById, rivalName, rivalTeam, type Rival } from "@/lib/pvp/rivals";
 import { reportRanked, type RatingMove } from "@/lib/online/ranked";
+import { startSideMatch } from "@/lib/pvp/sideMatch";
+import { sidePlayer } from "@/lib/pvp/workerPlay";
 import { PVP_TEAM_SLOTS, readPvpTeams, teamPicks } from "@/lib/pvp/teams";
 import { loadSave } from "@/hooks/useGameState";
 import { loadTavern } from "@/lib/tavern";
@@ -250,7 +252,11 @@ export default function DuelPage() {
     reported.current = true;
     const client = onlineClient();
     const r = params.rival;
-    Promise.resolve(client ? reportRanked(client, { rival: r.id, format: params.format.id, result: view.result, reason: view.reason, log: view.state?.log ?? [] }) : null).then(setRating);
+    Promise.resolve(client ? reportRanked(client, { rival: r.id, format: params.format.id, result: view.result, reason: view.reason, log: view.state?.log ?? [] }) : null).then((move) => {
+      setRating(move);
+      // Your result saved, two random rivals fight each other too, in the background (lib/pvp/sideMatch.ts): the ladder keeps moving.
+      if (client && move) void startSideMatch(client, params.format, sidePlayer);
+    });
   }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const left = (deadline: number) => (deadline - now) / 1000;

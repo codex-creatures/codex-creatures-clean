@@ -213,6 +213,11 @@ account, kept entirely apart from Vouchee.
       lib/pvp/dailyRound.ts; they carry on wherever that player goes in the game) and posts them; the server takes
       one round a day (`rival_round`, `pvp_rounds`). Before anyone met them, the rivals played ten warm-up battles
       among themselves (`WARMUP_BATTLES`, in the sim), which set their first ratings (the migration's seeds).
+    - **A side match after every ranked match** (the user, 2026-11-24: "every time you play a battle, 2 random
+      AI also battle, meaning that it continues to move"): once your result is saved, two random rivals fight each
+      other in the format you played, on your machine in the same worker (lib/pvp/sideMatch.ts, lib/pvp/workerPlay.ts),
+      and the result is posted (`rival_match`, kept as kind `side`; the server takes one only within 10 minutes of a
+      ranked match you reported). Nothing is shown: the ladder moves in the background.
     - **Ranked needs sign-in** (the ladder's online); the rest of the game plays offline as before. A ranked match
       changes nothing in your save: no XP, gold or injuries; it goes in your battle history as "Ranked vs …".
       Leaving loses, on the ladder too. **No rewards yet** (the user: skip for now). Rivals never appear on the

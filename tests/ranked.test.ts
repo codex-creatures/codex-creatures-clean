@@ -5,8 +5,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { RANKED_FORMATS, RANKED_QUEUES, rankedQueueOf } from "../lib/pvp/ranked";
 import { parseFormat } from "../lib/pvp/formats";
 import { ELO_K, eloUpdate } from "../lib/pvp/elo";
-import { LOG_EVENTS_KEPT, fetchLadder, logToKeep, parseLadder, parseRatingMove, postRivalRound, reportRanked } from "../lib/online/ranked";
+import { LOG_EVENTS_KEPT, fetchLadder, logToKeep, parseLadder, parseRatingMove, postRivalMatch, postRivalRound, reportRanked } from "../lib/online/ranked";
 import { playRound, roundPairs, startDailyRound } from "../lib/pvp/dailyRound";
+import { pickSidePair, startSideMatch } from "../lib/pvp/sideMatch";
 import { RIVALS } from "../lib/pvp/rivals";
 import type { BattleEvent } from "../lib/combat/battle";
 
@@ -116,4 +117,49 @@ describe("the rivals' daily round", () => {
     expect(post.args.day).toBe("2026-11-25");
     expect((post.args.results as unknown[]).length).toBe(RIVALS.length);
   });
+});
+
+describe("the side match after a ranked match", () => {
+  const f = RANKED_FORMATS["3v3"];
+
+  it("picks two different rivals at random, in the format you played", () => {
+    const ids = ["blaze", "cinder", "dusk"];
+    for (let i = 0; i < 50; i++) {
+      const p = pickSidePair(f, ids)!;
+      expect(ids).toContain(p.a); expect(ids).toContain(p.b); expect(p.a).not.toBe(p.b); expect(p.format).toBe(f);
+    }
+    // (A fixed roll picks a fixed pair; the second roll is among the others.)
+    expect(pickSidePair(f, ids, () => 0)).toEqual({ a: "blaze", b: "cinder", format: f });
+    expect(pickSidePair(f, ids, () => 0.99)).toEqual({ a: "dusk", b: "cinder", format: f });
+    expect(pickSidePair(f, ["blaze"])).toBeNull();
+    expect(pickSidePair(f)).not.toBeNull();
+  });
+
+  it("plays the pair and posts it as one rival match; nothing is posted if the battle couldn't be played", async () => {
+    const posting = fakeClient({ rival_match: { aBefore: 1000, aAfter: 1016, bBefore: 1000, bAfter: 984 } });
+    const log = Array.from({ length: LOG_EVENTS_KEPT + 5 }, (_, i) => ({ type: "round", round: i } as BattleEvent));
+    const ok = await startSideMatch(posting.client, f, async (p) => ({ a: p.a, b: p.b, format: p.format.id, winner: "b", log }), { a: "blaze", b: "dusk", format: f });
+    expect(ok).toBe(true);
+    expect(posting.calls.map((c) => c.fn)).toEqual(["rival_match"]);
+    expect(posting.calls[0].args).toMatchObject({ a: "blaze", b: "dusk", format: f.id, winner: "b" });
+    expect((posting.calls[0].args.log as unknown[]).length).toBe(LOG_EVENTS_KEPT);
+    const quiet = fakeClient({ rival_match: {} });
+    expect(await startSideMatch(quiet.client, f, async () => null)).toBe(false);
+    expect(await startSideMatch(quiet.client, f, async () => { throw new Error("no worker"); })).toBe(false);
+    expect(quiet.calls).toHaveLength(0);
+    // (Offline, or refused by the server: false, and the player's own result stands.)
+    expect(await postRivalMatch(fakeClient({}).client, { a: "blaze", b: "dusk", format: f.id, winner: "a", log: [] })).toBe(false);
+    expect(await postRivalMatch(fakeClient({ rival_match: new Error("offline") }).client, { a: "blaze", b: "dusk", format: f.id, winner: "a", log: [] })).toBe(false);
+  });
+
+  it.skipIf(RIVALS.length < 2)("a pair plays out as a real battle (the easy AI here)", async () => {
+    const posting = fakeClient({ rival_match: {} });
+    const { playRoundBattle } = await import("../lib/pvp/dailyRound");
+    const ok = await startSideMatch(posting.client, f, async (p) => playRoundBattle(p, "easy"));
+    expect(ok).toBe(true);
+    const args = posting.calls[0].args;
+    expect(RIVALS.map((r) => r.id)).toContain(args.a);
+    expect(["a", "b", "draw"]).toContain(args.winner);
+    expect((args.log as unknown[]).length).toBeGreaterThan(0);
+  }, 30_000);
 });

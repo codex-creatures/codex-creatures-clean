@@ -87,6 +87,16 @@ export async function reportRanked(client: SupabaseClient, m: { rival: string; f
 
 export type RoundResult = { a: string; b: string; format: string; winner: "a" | "b" | "draw"; log: readonly BattleEvent[] };
 
+// One rival-against-rival match (the side match after a ranked match you played, lib/pvp/sideMatch.ts). true if it counted.
+export async function postRivalMatch(client: SupabaseClient, r: RoundResult): Promise<boolean> {
+  try {
+    const { error } = await timeout(client.rpc("rival_match", { a: r.a, b: r.b, format: r.format, winner: r.winner, log: logToKeep(r.log) }));
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 // The rivals' round for a day. true: taken; false: someone had posted that day already; null: couldn't be posted.
 export async function postRivalRound(client: SupabaseClient, day: string, results: RoundResult[]): Promise<boolean | null> {
   try {

@@ -29,26 +29,12 @@ import { BRING_EXTRA, eligibleCount, type PvpFormat } from "@/lib/pvp/formats";
 import { QUEUE_SECONDS, RANKED_FORMATS, RANKED_QUEUES, type RankedQueue } from "@/lib/pvp/ranked";
 import { ELO_START, pickRival, ratingChange } from "@/lib/pvp/elo";
 import { AI_SUFFIX, RIVALS, rivalById, rivalName } from "@/lib/pvp/rivals";
-import { startDailyRound, watchRound, type RoundPlayer, type RoundState } from "@/lib/pvp/dailyRound";
-import type { RoundOut } from "@/lib/pvp/roundWorker";
+import { startDailyRound, watchRound, type RoundState } from "@/lib/pvp/dailyRound";
+// The rivals' daily round is played in a worker so the game doesn't stall (lib/pvp/workerPlay.ts).
+import { roundPlayer } from "@/lib/pvp/workerPlay";
 
 // sessionStorage (per tab, never in saves): the rival you fought last, so the next match is someone else.
 const LAST_RIVAL_KEY = "codex_creatures_ranked_last";
-
-// The rivals' daily round, played in a worker so the game doesn't stall (lib/pvp/roundWorker.ts).
-const playInWorker: RoundPlayer = (day, ids, onBattle) => new Promise((resolve, reject) => {
-  try {
-    const w = new Worker(new URL("../../lib/pvp/roundWorker.ts", import.meta.url));
-    w.onmessage = (e: MessageEvent<RoundOut>) => {
-      if ("done" in e.data) onBattle(e.data.done);
-      else { resolve(e.data.results); w.terminate(); }
-    };
-    w.onerror = (e) => { reject(e); w.terminate(); };
-    w.postMessage({ day, ids });
-  } catch (e) { reject(e); }
-});
-// (Without workers, the battles play here, one a breath.)
-const roundPlayer: RoundPlayer | undefined = typeof Worker === "undefined" ? undefined : playInWorker;
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
@@ -262,7 +248,7 @@ function Ranked() {
             <li>For now the other players are the game&apos;s own: seven <b>rivals</b> marked <b>{AI_SUFFIX.trim()}</b>, each played through the game by the computer, with creatures, gear and moves of their own. They fight with the hard AI.</li>
             <li><b>3v3:</b> Rare the rarest creature or gear, everyone at Lv 15. <b>5v5:</b> up to Legendary, everyone at Lv 25. Bring the size and {BRING_EXTRA} more, then pick who fights.</li>
             <li>A ranked match changes nothing in your game but your rating: no XP, gold or injuries. Leaving loses.</li>
-            <li>The rivals fight each other once a day too, so their ratings move. Whoever opens the portal first runs those battles in the background.</li>
+            <li>The rivals fight each other too: once a day, and two of them after every match you play, so their ratings keep moving. Whoever opens the portal first runs the daily battles in the background.</li>
             <li>Each match is kept, with its moves, to teach a better AI later.</li>
           </ul>
         </Help>

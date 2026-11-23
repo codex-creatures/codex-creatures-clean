@@ -61,7 +61,7 @@ interesting situations, real decisions, progression and surprises, not feel they
 
 - ✅ **PvP against simulated rivals, with a rating** (the user, 2026-11-24, decision 58; built 2026-11-24: seven
   rivals played through the game by the AI, two ranked queues at the portal, one Elo ladder of players and rivals
-  on Supabase, the rivals' daily round; it took "VS AI" out of the Pit). Still to come: rewards (the user: skip for
+  on Supabase, the rivals' daily round and a rival-against-rival side match after every ranked match; it took "VS AI" out of the Pit). Still to come: rewards (the user: skip for
   now), seasons, rivals scaled up for the Legendary queue, real players in the queue.
   [design/online.md](design/online.md) §12
 - 🚧 **Den progression: things in the Den grow in stages, each its own 3D look** (the user, 2026-11-20; a sim
