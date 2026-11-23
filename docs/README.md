@@ -24,7 +24,7 @@ Start here to find the one file a task needs. Read that file's relevant section,
    polish pass found, fixed and left for the user. Nor is [cleanup-audit-2026-11.md](cleanup-audit-2026-11.md):
    a dated list (2026-11-24) of what's old, unused or out of date, for the user to pick from.
 6. [CLAUDE.md](../CLAUDE.md) holds the working rules (hard rules, git, commands, conventions);
-   [README.md](../README.md) at the top is for the human (setup, running, the two computers).
+   [README.md](../README.md) at the top is for the human (setup, running, saves, git).
 
 ## The game design (`design/`)
 

@@ -15,9 +15,9 @@ It works **fully offline** once it's installed.
 
 1. Install **Git for Windows**: https://git-scm.com/download/win
    Keep the defaults, especially *"Checkout Windows-style, commit Unix-style line endings"*,
-   so both computers treat line endings the same way.
+   so line endings match the repo's.
 2. Install **Node.js 24 LTS** (the "LTS" button): https://nodejs.org
-   Next.js needs at least Node 20.9; both computers should use 24.
+   Next.js needs at least Node 20.9; the project uses 24.
 3. Install **Cursor**: https://cursor.com (and Claude Code, if you use it).
 4. Open **PowerShell** (or Cursor's terminal) and run:
 
@@ -105,46 +105,29 @@ Importing is safe:
 Only the *last* save before an import is kept as the backup. For anything you care about, keep
 exported files (one per day is plenty). They're small.
 
-## 4. Working on two computers (PC ↔ laptop)
+## 4. Working on the code
 
-GitHub is the meeting point. The one rule is: **pull when you sit down, push when you get up.**
-
-**Starting a session** (in the project folder):
-
-```powershell
-git status                       # should say "nothing to commit, working tree clean"
-git pull --ff-only origin main   # get what you did on the other computer
-npm ci                           # only if package.json / package-lock.json changed
-npm run dev
-```
-
-(`Update.bat` does the first three lines for you, then `Start Game.bat` the last.)
-
-**Finishing a session:**
+The game is developed on one computer, the laptop (since 2026-11-24). GitHub holds the copy that
+Vercel deploys: **a push to `main` goes live for players straight away.**
 
 ```powershell
 git status                       # see what changed
 git add -A
 git commit -m "What I changed"
-git push origin main
+git push origin main             # a release: players get it now
 git status                       # should say "up to date with 'origin/main'"
 ```
 
-And if you want to carry on *playing* where you left off, export your save (section 3).
-
 **Tips**
 
-- Don't leave work uncommitted on one computer and then start editing the same files on the other.
-  That's how you end up merging by hand.
-- If `git pull` says your local changes would be overwritten, commit them first, then pull again.
-- `--ff-only` means a pull only ever moves forward. If it refuses ("Not possible to fast-forward"),
-  both computers have new commits: the histories have split. Don't force anything; ask Claude to
-  look (it will explain before changing anything).
-- If `git push` is rejected ("fetch first"), the other computer pushed first: run
+- `Update.bat` (or `git pull --ff-only origin main`) is still safe to run: it only ever moves
+  forward. If it refuses ("Not possible to fast-forward"), the histories have split. Don't force
+  anything; ask Claude to look (it will explain before changing anything).
+- If `git push` is rejected ("fetch first"), GitHub has commits this computer hasn't: run
   `git pull --ff-only origin main` and push again. If that pull refuses, see the point above.
 - Never use `git push --force`, `git reset --hard` or similar here.
 - Working offline is fine: commit as usual (commits are stored locally) and `git push` once you're
-  back online. Pull on the other computer before working there.
+  back online.
 
 ## 5. Offline: what works and what doesn't
 
@@ -161,12 +144,12 @@ Needs the internet:
   are the same. You can still edit code by hand.
 - **PixelLab** (new art): an online service. Art already in `public/sprites` keeps working offline.
 
-Per-computer setup that isn't in GitHub:
+Setup on this computer that isn't in GitHub:
 
 - Claude Code's own memory for this project lives in your user folder
-  (`%USERPROFILE%\.claude\projects\…`), not in the repo. Anything both computers need is in
-  `CLAUDE.md` and `docs/` instead, so Claude starts with it on either computer.
-- The PixelLab connection (its API key) is set up in Claude Code on each computer. **Never put that
+  (`%USERPROFILE%\.claude\projects\…`), not in the repo. Anything a fresh session must know is in
+  `CLAUDE.md` and `docs/` instead.
+- The PixelLab connection (its API key) is set up in Claude Code's own settings. **Never put that
   key, or any other key, in this repo.** (`.gitignore` already ignores `.env*` files.)
 
 ## 6. Project layout
@@ -182,5 +165,5 @@ Per-computer setup that isn't in GitHub:
 - `Start Game.bat` / `Update.bat`: the double-click launchers (their logic is in `scripts/`).
 - `CLAUDE.md` (how to work on the project) and `docs/` (the game design and the walkable world's
   spec, one file per subsystem; `docs/README.md` says what's where, `docs/roadmap.md` what's
-  planned but not built): these are what Claude Code reads on either computer.
+  planned but not built): these are what Claude Code reads.
 - `tests/`: `npm test`.

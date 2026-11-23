@@ -1,6 +1,6 @@
 # Codex Creatures: notes for Claude Code
 
-Read this first, on either computer. It holds the working rules. The design and technical specs are
+Read this first. It holds the working rules. The design and technical specs are
 split by subsystem: **[docs/README.md](docs/README.md)** says which file covers what and which one
 wins. Setup, running and the two-computer routine for the human are in [README.md](README.md).
 
@@ -36,7 +36,9 @@ own: everything else runs in the browser.
    game's own Supabase project, Google sign-in (in use, 2026-10-31) and Resend (approved 2026-10-31
    for sign-in emails once the game has a domain; set up in Supabase's SMTP settings, not in code).
    Dev-time services (GitHub, Claude, PixelLab) are fine.
-2. **Saves stay compatible.** Saves are the user's progress, kept separately on each computer.
+2. **Saves stay compatible.** Saves are the players' progress, kept separately on each device and address.
+   Older saves keep loading until the game launches as a mobile app, when everyone starts over
+   (the user, 2026-11-24).
    - Don't rename or reshape the storage keys without code that reads the old data:
      `codex_creatures_save_v3` (lib/save.ts), `codex_creatures_registry_v3`
      (lib/barcodeRegistry.ts), `codex_creatures_battles_v2` (lib/battleHistory.ts),
@@ -98,11 +100,12 @@ own: everything else runs in the browser.
 6. **Stay small:** targeted changes and focused tests while working; no re-reading, no exploring
    past the task, short summaries.
 
-## Git and the two computers
+## Git
 
-The user develops on a **main PC** and a **travel laptop** (both Windows, Node 24, Cursor + Claude
-Code), with GitHub (`origin`, https://github.com/codex-creatures/codex-creatures-clean) between
-them. **`main` is the working branch.** Other old branches exist; leave them alone.
+The user develops on one computer, a **laptop** (Windows, Node 24, Cursor + Claude Code; since
+2026-11-24, the old main PC is retired), with GitHub (`origin`,
+https://github.com/codex-creatures/codex-creatures-clean) as the copy that Vercel deploys.
+**`main` is the working branch.** Other old branches exist; leave them alone.
 
 - **At the start of a session:** run `git status`, then, when online, `git fetch origin`. If
   behind, run `git pull --ff-only origin main` (or the user's `Update.bat`). Don't pull over
@@ -117,8 +120,8 @@ them. **`main` is the working branch.** Other old branches exist; leave them alo
   pushing if the user hasn't asked for it: a push also goes live on Vercel.
 - Line endings are set by `.gitattributes`: LF in the repo, CRLF only for `.bat`/`.cmd`. Don't
   mass-convert files.
-- Claude's memory folder is per machine. Anything both computers need goes in this file or in
-  `docs/`.
+- Claude's memory folder is per machine. Anything a future session must know goes in this file
+  or in `docs/`.
 
 ## Commands
 
