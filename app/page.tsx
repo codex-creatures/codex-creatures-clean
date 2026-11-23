@@ -17,7 +17,7 @@ import { loadDungeon, altarMended } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den3d/objects";
 import { canBlast, tavernVisitors, visitorNews } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
-import { campaignUnseen, canClaimNext, loadCampaign, readCampaignCtx } from "@/lib/campaign";
+import { campaignUnseen, claimReady, loadCampaign, readCampaignCtx } from "@/lib/campaign";
 import { DAILY_ONLINE, dailyNews, todayDaily } from "@/lib/daily";
 import { canClaimChallenge, currentChallenge } from "@/lib/challenge";
 import { useTour } from "@/hooks/useTour";
@@ -59,9 +59,12 @@ export default function Home() {
   const rubble = game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut";
   const pit = hasPit(game.tavern) ? { ready: game.hydrated && game.trainingStatuses(now).some((x) => x.full) } : undefined;
   const tavernNews = game.hydrated && tavernVisitors(game.tavern, now).some((v) => visitorNews(game.tavern, v, now));
-  // (A daily quest to claim, and nothing on the campaign: the board opens on today's quests, where it is.)
-  const campaignNews = game.hydrated && ((klutzHelping(game.quest) && (canClaimNext(loadCampaign(), readCampaignCtx()) || campaignUnseen(loadCampaign()))) || hydraStep(game.tavern, clears, deepClears) === "claim");
-  const boardNews = campaignNews || (game.hydrated && (dailyNews(todayDaily(DAILY_ONLINE), !!game.tavern.repaired) || canClaimChallenge(currentChallenge())) && "daily"); // (or the Challenge's reward: lib/challenge.ts)
+  // The board opens on the campaign only for a reward you can take this moment (lib/campaign.ts claimReady; a codex
+  // crate with no room on the bookcase doesn't count) or the Hydra's plans; else on today's quests when one's to
+  // claim (or the Challenge's reward: lib/challenge.ts); else the campaign, till it's first been looked at.
+  const campaignClaim = game.hydrated && ((klutzHelping(game.quest) && claimReady(loadCampaign(), readCampaignCtx(), game.shelfFree)) || hydraStep(game.tavern, clears, deepClears) === "claim");
+  const dailyClaim = game.hydrated && (dailyNews(todayDaily(DAILY_ONLINE), !!game.tavern.repaired) || canClaimChallenge(currentChallenge()));
+  const boardNews = campaignClaim || (dailyClaim && "daily") || (game.hydrated && klutzHelping(game.quest) && campaignUnseen(loadCampaign()));
   const crateNews = game.hydrated && game.crate.length > 0;
   const cageNews = game.hydrated && game.caged.length > 0 && highlight !== OBJ.cage;
 

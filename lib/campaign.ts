@@ -402,6 +402,15 @@ export const claimedCount = (s: CampaignState) => Math.max(0, Math.min(CAMPAIGN.
 // The next quest to claim (undefined: all claimed), and whether it's ready.
 export const nextQuest = (s: CampaignState) => CAMPAIGN[claimedCount(s)];
 export const canClaimNext = (s: CampaignState, c: CampaignCtx) => { const n = nextQuest(s); return !!n && questDone(n, c); };
+// Claimable this moment: its quest's done, and nothing holds the reward back (only a codex crate can be: it needs
+// shelfFree room on the bookcase, rewardBlocked). The Den's ❗ sends you to the campaign only for this; a daily
+// quest to claim wins otherwise (the user, 2026-11-24: it took him to the campaign for a reward he couldn't take).
+export function claimReady(s: CampaignState, c: CampaignCtx, shelfFree: number): boolean {
+  const n = nextQuest(s);
+  if (!n || !questDone(n, c)) return false;
+  const r = n.reward;
+  return !("crate" in r && r.crate === "codex") || r.n <= shelfFree;
+}
 // The chapter you're on: the next quest's (or the last, when everything's claimed).
 export const currentChapter = (s: CampaignState) => nextQuest(s)?.chapter ?? CHAPTERS.length - 1;
 // Claim the next reward (only that one, and only when its quest's done).

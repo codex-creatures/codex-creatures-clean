@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
-  CAMPAIGN, CHAPTERS, SUPPLIES, campaignCtx, canClaimNext, claimNext, claimedCount, currentChapter, nextQuest, noteCampaign, onlyEffective,
+  CAMPAIGN, CHAPTERS, SUPPLIES, campaignCtx, canClaimNext, claimReady, claimNext, claimedCount, currentChapter, nextQuest, noteCampaign, onlyEffective,
   questDone, rewardBlocked, noteDrank, drankOn, loadCampaign, rewardText, rollCampaignReward, upToDate, CAMPAIGN_V, type CampaignCtx, type CampaignState, campaignUnseen, lookedAtCampaign,
 } from "../lib/campaign";
 import { weaponDrop, armorDrop, codexDrop, randomCodexMove } from "../lib/drops";
@@ -113,6 +113,18 @@ describe("progress and claiming", () => {
     expect(claimedCount(s1)).toBe(1);
     expect(nextQuest(s1)).toBe(CAMPAIGN[1]);
     expect(canClaimNext(s1, both)).toBe(true);
+  });
+
+  it("claimReady: the Den's ❗ counts a reward only when it can be taken now: a codex crate needs its room on the bookcase (the user, 2026-11-24)", () => {
+    const i = CAMPAIGN.findIndex((q) => q.id === "fights100");
+    const s: CampaignState = { claimed: i };
+    const done = ctx({ tally: { battle: 100 } });
+    expect(canClaimNext(s, done)).toBe(true);
+    expect(claimReady(s, done, 2)).toBe(true);
+    expect(claimReady(s, done, 1)).toBe(false); // (two codexes, one shelf)
+    expect(claimReady(s, ctx({ tally: { battle: 99 } }), 5)).toBe(false);
+    // Any other reward: never held back, however full the bookcase.
+    expect(claimReady({}, ctx({ campRuns: 1 }), -3)).toBe(true);
   });
 
   it("starts with an Encampment run; a save from before it came in keeps every claim on the quest it was", () => {
