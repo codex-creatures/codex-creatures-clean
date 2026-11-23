@@ -1,5 +1,5 @@
 "use client";
-// app/lab/movetext/page.tsx — does every move's text fit? (dev tool, not in the game)
+// app/lab/movetext/page.dev.tsx — does every move's text fit? (dev tool, not in the game)
 // Every move drawn as MoveTile in each place the game shows tablets (lib/uiText.ts TABLET_PLACES,
 // on its small PHONE), and its details window (MoveDetails, with EXTRA_LINES of a fight's effect
 // lines). Names: no word split, two lines at most. Details: nothing cut off. It also measures what

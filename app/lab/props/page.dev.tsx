@@ -1,5 +1,5 @@
 "use client";
-// app/lab/props/page.tsx — 🧪 every 3D thing you can find in the Labyrinth (the user, 2026-11-17: "a lab of all
+// app/lab/props/page.dev.tsx — 🧪 every 3D thing you can find in the Labyrinth (the user, 2026-11-17: "a lab of all
 // 3D assets that can be found in the labyrinth"), drawn with the game's own models: all of them laid out on
 // the floor, or one at a time up close under a torch, opened or shut. Nothing is saved; the game doesn't use it.
 // Three.js is loaded on this page only.

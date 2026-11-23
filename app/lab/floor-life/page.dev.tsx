@@ -1,5 +1,5 @@
 "use client";
-// app/lab/floor-life/page.tsx — PixelLab samples for the user to judge (dev tool, not in the game):
+// app/lab/floor-life/page.dev.tsx — PixelLab samples for the user to judge (dev tool, not in the game):
 // a wet puddle and a rat with its mouse hole for the walkable dungeon's floors, and the Gold Key's
 // icon (the user, 2026-11-13); a cobweb for rooms' top corners and floor moss (the user, 2026-11-15).
 // Samples live in public/sprites/walk/samples/ and nothing imports them.

@@ -1,5 +1,5 @@
 "use client";
-// app/lab/walk/page.tsx — walking round a rolled Encampment (lib/dungeon/layout.ts,
+// app/lab/walk/page.dev.tsx — walking round a rolled Encampment (lib/dungeon/layout.ts,
 // lib/dungeon/walk.ts): tap anywhere to walk there, the camera following you,
 // in a phone-shaped view, zoomed in close (Zoom flicks between sizes).
 //

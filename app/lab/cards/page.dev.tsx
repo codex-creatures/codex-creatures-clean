@@ -1,5 +1,5 @@
 "use client";
-// app/lab/cards/page.tsx — the creature card (CardFace) across every rarity,
+// app/lab/cards/page.dev.tsx — the creature card (CardFace) across every rarity,
 // and a run's stack of cards, for checking their look (dev tool). The
 // Skull Raven is the benchmark.
 

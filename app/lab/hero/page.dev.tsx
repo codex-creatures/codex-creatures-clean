@@ -1,5 +1,5 @@
 "use client";
-// app/lab/hero/page.tsx — 🧪 a draft 3D you (the user, 2026-11-14), beside the sprite the game draws
+// app/lab/hero/page.dev.tsx — 🧪 a draft 3D you (the user, 2026-11-14), beside the sprite the game draws
 // now, walking round on the game's floor under the game's camera, to judge before it goes anywhere
 // near the dungeon. Nothing is saved, and the game doesn't use it.
 // Dev tool: Three.js is loaded on this page only.

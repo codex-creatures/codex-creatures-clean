@@ -1,5 +1,5 @@
 "use client";
-// app/lab/propbuilder/Builder.tsx — 🧪 the prop builder (app/lab/propbuilder/page.tsx): a recipe being edited
+// app/lab/propbuilder/Builder.tsx — 🧪 the prop builder (app/lab/propbuilder/page.dev.tsx): a recipe being edited
 // (lib/props/edit.ts, with undo), drawn as the game will draw it (./Preview.tsx), its parts edited in ./Editor.tsx.
 // Tap a part in the middle copy to pick it. Keys: arrows move it a snap step (Shift: up and down), Ctrl+Z / Ctrl+Y
 // undo and redo, Ctrl+D duplicates, Delete deletes. An unsaved draft of each recipe (a new one too) is kept in this

@@ -1,5 +1,5 @@
 "use client";
-// app/lab/art/page.tsx — 🧪 the art drafts (the user, 2026-11-16): every placeholder in the game
+// app/lab/art/page.dev.tsx — 🧪 the art drafts (the user, 2026-11-16): every placeholder in the game
 // with the PixelLab draft made for it (docs/design/art.md, "The placeholder audit"), laid out on
 // plinths in a stone room you walk round by torchlight (round 2: the redrafts; the approved ones listed below).
 // At the top, the Labyrinth's props rendered in 3D as the game draws them (the chest lab's scene). Walk up to one and its card shows the

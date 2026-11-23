@@ -169,15 +169,15 @@ describe("today's placers are called from one place (world-spec §7: the isolate
     // The old placers live on only as frozen copies (compat/v0Placers.ts) for the
     // converter, and for /lab/walk: the old walking test bed, a dev tool on
     // made-up layouts, never a saved run. New runs: lib/world/place.ts.
-    placeSconces: ["lib/world/compat/v0.ts", "app/lab/walk/page.tsx"],
+    placeSconces: ["lib/world/compat/v0.ts", "app/lab/walk/page.dev.tsx"],
     placeCandles: ["lib/world/compat/v0.ts"],
     cageSpots: ["lib/world/compat/v0.ts"],
     legacyPlacements: ["lib/world/compat/v0.ts", "lib/world/migrate.ts"],
     // (The foe fix, phase 2a′: foes' starts are saved too.)
-    placeFoes: ["lib/world/compat/v0.ts", "app/lab/walk/page.tsx"],
+    placeFoes: ["lib/world/compat/v0.ts", "app/lab/walk/page.dev.tsx"],
     placeWaiter: ["lib/world/compat/v0.ts"],
     legacyFoePlacements: ["lib/world/compat/v0.ts", "lib/world/migrate.ts"],
-    v0Placers: ["lib/world/compat/v0.ts", "app/lab/walk/page.tsx"],
+    v0Placers: ["lib/world/compat/v0.ts", "app/lab/walk/page.dev.tsx"],
   };
   it("nothing else in the game imports them", () => {
     const bad: string[] = [];

@@ -1,5 +1,5 @@
 "use client";
-// app/lab/den/page.tsx — 🧪 the new Den (components/Den3D.tsx; the user, 2026-11-18) in a phone-sized
+// app/lab/den/page.dev.tsx — 🧪 the new Den (components/Den3D.tsx; the user, 2026-11-18) in a phone-sized
 // box, with switches for what the game would hand it: the old wall (shut, the Labyrinth Stone in hand, gone),
 // Klutz home, resting or away, visitors in the tavern, the tavern repaired and its pit. Taps go where
 // the game's would. Nothing is saved; the game doesn't use it.

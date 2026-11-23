@@ -1,5 +1,5 @@
 "use client";
-// app/lab/three/page.tsx — 🧪 the 3D prototype (components/WalkView3D.tsx) beside the game's own
+// app/lab/three/page.dev.tsx — 🧪 the 3D prototype (components/WalkView3D.tsx) beside the game's own
 // walk view (components/WalkView.tsx), on the same made-up run held in memory: the same seed gives
 // the same layout, placements and foes in both. Nothing is saved, and the game doesn't use any of
 // it. The switches try the camera's pitch, a perspective camera, sharp art-sized pixels, your

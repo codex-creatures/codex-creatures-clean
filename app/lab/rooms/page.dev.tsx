@@ -1,5 +1,5 @@
 "use client";
-// app/lab/rooms/page.tsx — every kind of labyrinth room, as you'd stand in
+// app/lab/rooms/page.dev.tsx — every kind of labyrinth room, as you'd stand in
 // it, from a made-up run (dev tool; nothing is saved). For checking the
 // room art without playing a run.
 

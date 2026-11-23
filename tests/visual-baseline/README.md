@@ -10,7 +10,7 @@ exception to the no-browser rule, run locally on a scratch port, nothing deploye
 ## The scenes (`app/lab/baseline`, `?s=<scene>`)
 
 The page is never on the live site: it's shown by the dev server, or a local build made with
-`LAB_BASELINE=1`; any other build makes it "not found" (app/lab/baseline/page.tsx).
+`LAB_BASELINE=1`; any other build makes it "not found" (app/lab/baseline/page.dev.tsx).
 
 Each is a saved run from `tests/fixtures/walk/`, with you stood at a chosen spot and the view
 frozen (busy), so nothing moves. "Seen all": every tile shows as seen (dim where your torch isn't).

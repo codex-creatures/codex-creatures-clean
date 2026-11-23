@@ -1,5 +1,5 @@
 "use client";
-// app/lab/chest/page.tsx — 🧪 a draft 3D chest (the user, 2026-11-11), on the game's floor under the
+// app/lab/chest/page.dev.tsx — 🧪 a draft 3D chest (the user, 2026-11-11), on the game's floor under the
 // game's camera, to judge the look before any 3D object goes in the dungeon. Boxes for the shape
 // (lib/render3d/chest3d.ts) with PixelLab's painted faces, a dark outline and lit top edges (or plain
 // stand-ins, to compare); the old flat chest and you beside it for

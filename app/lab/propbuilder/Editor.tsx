@@ -1,5 +1,5 @@
 "use client";
-// app/lab/propbuilder/Editor.tsx — 🧪 the prop builder's parts panel (app/lab/propbuilder/page.tsx): the list of
+// app/lab/propbuilder/Editor.tsx — 🧪 the prop builder's parts panel (app/lab/propbuilder/page.dev.tsx): the list of
 // parts (tap one to pick it; ▲▼ move it in the list), adding, duplicating and deleting, and the picked part's
 // fields: where it stands, its size and turn (each typed, or nudged a snap step with − and +), a cylinder's sides
 // and taper, its light and glow; and its faces' paint (./FacePicker.tsx). Every change goes through lib/props/edit.ts.

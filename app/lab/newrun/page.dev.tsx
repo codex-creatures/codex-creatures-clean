@@ -1,5 +1,5 @@
 "use client";
-// app/lab/newrun/page.tsx — the Labyrinth's "New" (the walkable Encampment,
+// app/lab/newrun/page.dev.tsx — the Labyrinth's "New" (the walkable Encampment,
 // components/WalkView.tsx) on a made-up run held in memory: to see the
 // game's walk view without a save. Being seen, walking into rooms and
 // tapping things only say so here (the real screen plays them out). A

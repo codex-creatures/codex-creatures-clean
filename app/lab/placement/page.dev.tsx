@@ -1,5 +1,5 @@
 "use client";
-// app/lab/placement/page.tsx — the placement debugging view (docs/world-spec.md
+// app/lab/placement/page.dev.tsx — the placement debugging view (docs/world-spec.md
 // §8 2b-2 stage A): a made-up run's rooms, one at a time, as the placer saw
 // them (lib/world/placementView.ts): the grid and subcells, every occupancy
 // layer, clearances, reservations, panels blocked to walking, attachment
