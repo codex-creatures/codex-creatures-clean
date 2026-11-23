@@ -406,9 +406,6 @@ export default function DungeonPage() {
     setNotes([]);
   }
 
-  function healAll() {
-    if (lab) update({ ...lab, meta: { ...lab.meta, injuries: {} } });
-  }
 
   // ── Room rewards ──────────────────────────────────────────────────
   function give(drops: Drop[], also: (r: DungeonRun) => DungeonRun = (r) => r) {
@@ -1370,7 +1367,7 @@ export default function DungeonPage() {
     return frame(<p className="pixel-font" style={{ color: "#f1d9a0", textAlign: "center", marginTop: "30cqh", fontSize: 18 }}>🔥 Lighting the torches…</p>);
   }
   if (!run) {
-    return frame(<Entrance lab={lab} owned={owned} game={game} full={fullBoxes(game.inventory, game.storage)} quest={wantsClub(game.quest) || wantsThief(game.quest)} scans={game.totalScans} onBegin={begin} onHeal={healAll} onSave={update} />, { fill: true }); // (fill: its creatures' panel takes what's left of the screen)
+    return frame(<Entrance lab={lab} owned={owned} game={game} full={fullBoxes(game.inventory, game.storage)} quest={wantsClub(game.quest) || wantsThief(game.quest)} scans={game.totalScans} onBegin={begin} onSave={update} />, { fill: true }); // (fill: its creatures' panel takes what's left of the screen)
   }
 
   // A fight in progress (or just finished).

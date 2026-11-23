@@ -49,7 +49,7 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 
 | # | Decision | Why | Status | Rule |
 |---|---|---|---|---|
-| 15 | For now, everyone comes home at full health (`HEAL_AT_HOME`) | Kept by the user, 2026-10-20; a testing convenience, not the settled design (the user, 2026-11-09) | 🧪 | [design/labyrinth.md](design/labyrinth.md) §7 |
+| 15 | Everyone comes home at full health (`HEAL_AT_HOME`), in every dungeon for the alpha; the Abyss is meant to be the first whose wounds come home, to heal in the pool | Kept by the user, 2026-10-20; settled for the alpha, with the Abyss as the planned exception (the user, 2026-11-24) | ✅ (the Abyss: 📌) | [design/labyrinth.md](design/labyrinth.md) §7 |
 | 54 | The Minotaur: a dungeon between the Hydra and the Abyss (open after the Hydra; the Abyss now opens after it), the first fought 5 against 5, crawlable; its boss charges at random (a round's warning, then whoever is in front falls) and sweeps your creature aside for a random teammate | The user, 2026-11-21: the next step after the Hydra | ✅ built 2026-11-21, numbers 🧪, art a stand-in | [design/labyrinth.md](design/labyrinth.md) |
 | 16 | Mystery rooms stay high risk, high reward | Don't soften them | ✅ | [design/labyrinth.md](design/labyrinth.md) §7 |
 | 56 | Creatures level to 50 (`MAX_LEVEL`; it was 30). Klutz and the explorer level stay at 30. Gear is still meant to be the end-game chase: its random rolls leave marginal gains to find long after levels run out, and PvP's formats set their own level, so raising the cap stays fair there | The user, 2026-11-23 | ✅ | [design/creatures.md](design/creatures.md) §5 |
@@ -148,8 +148,8 @@ Settled by the user on 2026-11-09, or by the code and approved decisions; the fi
    (the torchbearer picked).
 8. **When the v0 converter may go:** "a sunset" in sign-off decision 6 means no date; only the two
    triggers in world §7 (evidence no supported save needs it, or the user's explicit decision).
-9. **`HEAL_AT_HOME`:** a testing convenience kept on for now (the game labels it "🧪 Testing … for
-   now"); the healing pool is what it switches back to. ([design/labyrinth.md](design/labyrinth.md) §7)
+9. **`HEAL_AT_HOME`:** on for the alpha in every dungeon, the Abyss to be the first exception
+   (the user, 2026-11-24: decision 15); the healing pool is what it switches back to. ([design/labyrinth.md](design/labyrinth.md) §7)
 10. **Creature footprints:** the set values (large 5 × 5, huge 8 × 8, as in code) win over the
     older proposal table, now marked. ([world/space.md](world/space.md) §2)
 11. **`states` in v1 saves:** left out as built; §7 now says so.

@@ -74,9 +74,9 @@ function Showcase({ d, n, status, info }: { d: DungeonId; n: number; status: str
 // ── The entrance: choose your party ─────────────────────────────────
 // quest: Klutz's box is still to fetch (the quest's short run, walked: lib/dungeon/tutorialRun.ts). scans: barcodes scanned.
 // Two tabs: the party (picked freely, or one of your teams: lib/teams.ts) and the bag to pack.
-export default function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSave }: {
+export default function Entrance({ lab, owned, game, full, quest, scans, onBegin, onSave }: {
   lab: DungeonSave; owned: OwnedCreature[]; game: ReturnType<typeof useGameState>; full: CappedBox[]; quest: boolean; scans: number;
-  onBegin: (party: string[], dungeon: DungeonId, walk?: boolean) => void; onHeal: () => void; onSave: (next: DungeonSave) => void;
+  onBegin: (party: string[], dungeon: DungeonId, walk?: boolean) => void; onSave: (next: DungeonSave) => void;
 }) {
   const gold = game.gold;
   const healthy = (id: string) => (lab.meta.injuries[id] ?? 1) > 0;
@@ -192,7 +192,6 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
       {injured.length > 0 && (
         <div className="stone-panel" style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, color: MUTED }}>⛲ {injured.length} hurt — healing in the Den&apos;s pool.</span>
-          <button className="chip" onClick={onHeal} title="A shortcut for playtesting">Testing: heal now</button>
         </div>
       )}
 

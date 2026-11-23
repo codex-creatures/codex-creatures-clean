@@ -51,8 +51,9 @@ interesting situations, real decisions, progression and surprises, not feel they
   4. Goals after the tavern questline: bounties for the Hydra and the Abyss on the quest board
      (the Cyclops bounty's machinery), and Den upgrades as material and gold sinks (the fireplace,
      📌 below; its art waits for PixelLab).
-  5. ❓ Whether coming home at full health (`HEAL_AT_HOME`) turns off, so the pool, potions and
-     rotating creatures matter between runs (Open, below).
+  5. 📌 Wounds that come home from the Abyss (the user, 2026-11-24): its team heals in the pool,
+     so potions and rotating creatures matter between runs; every other dungeon keeps coming home
+     at full health (decision 15).
 
 ## The game
 
@@ -178,8 +179,8 @@ interesting situations, real decisions, progression and surprises, not feel they
   trader. [design/creatures.md](design/creatures.md)
 - A 10-item battle bag; bags for Klutz. [design/items.md](design/items.md)
 - Cards showing level-15 %s; Pit fights giving no XP. [design/creatures.md](design/creatures.md) §5
-- Whether coming home at full health (`HEAL_AT_HOME`, a testing convenience) ever turns off, and
-  what the healing pool becomes then (the user's planned upgrades and elixirs).
+- What the healing pool becomes once the Abyss's wounds come home (the user's planned upgrades
+  and elixirs).
   [design/labyrinth.md](design/labyrinth.md) §7
 
 ### ⏸ Shelved

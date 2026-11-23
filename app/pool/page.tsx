@@ -44,7 +44,6 @@ export default function PoolPage() {
   const level = poolLevel(lab.meta);
   const injured = owned.filter((c) => lab.meta.injuries[c.id] !== undefined);
   const away = new Set(lab.run?.party ?? []);
-  const healAll = () => { const s = { ...lab, meta: { ...lab.meta, injuries: {} } }; saveDungeon(s); setLab(s); };
 
   return (
     <DenFrame title="Healing Pool" icon="⛲">
@@ -94,7 +93,6 @@ export default function PoolPage() {
               </div>
             );
           })}
-          <button className="chip" onClick={healAll} style={{ justifySelf: "start" }} >Heal everyone now</button>
         </div>
       )}
     </DenFrame>

@@ -202,10 +202,14 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   it was junk). The Cyclops' first rugged backpack goes on straight away.
 - ✅ **Healing pool (Den):** heals 25% HP an hour on one global clock, runs included.
   - 🧪 The rate is Claude's default (the user said "slowly"). The user plans upgrades and elixirs,
-    and may use it as a monetisation lever later. The instant heal at the entrance is a testing
-    shortcut.
-  - 🧪 **For testing, everyone comes home at full health** (`HEAL_AT_HOME` in lib/dungeon/run.ts,
-    on since 2026-10-19). Set it to `false` to bring the pool back.
+    and may use it as a monetisation lever later. (The entrance's "Testing: heal now" and the
+    pool's "Heal everyone now" were removed ahead of the alpha, 2026-11-24.)
+  - ✅ **Everyone comes home at full health** (`HEAL_AT_HOME` in lib/dungeon/run.ts, on since
+    2026-10-19), in every dungeon for the alpha (the user, 2026-11-24). Set it to `false` to bring
+    the pool back.
+  - 📌 **The Abyss is meant to be the first dungeon whose wounds come home** (the user,
+    2026-11-24): its team heals in the pool, the others' still at once. Not built: today the switch
+    is one for every dungeon.
   - 🧪 Kept on for now (the user, 2026-10-20: healing after death "stays as it is now"; the other
     options, a slow pool 25%/h, a faster pool 50%/h or a quick heal to half then the pool, set
     aside). **It's a testing convenience, not the settled design** (the user, 2026-11-09): the game
