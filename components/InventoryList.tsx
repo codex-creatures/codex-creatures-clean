@@ -22,6 +22,8 @@ import TileGrid, { groupTiles, RARITY_ORDER } from "./TileGrid";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { CreatureToolbar, NO_INV_FILTER, gearMarks, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
 import { boxCap, type CappedBox } from "@/lib/items/storage";
+import type { MaterialKey } from "@/lib/items/materials";
+import { useScrollKeep } from "@/hooks/useScrollKeep";
 
 // Tabs shown as a grid of sprite squares (sorted by rarity) rather than rows.
 const GRID_TABS = new Set<GameTabKey>(["roster", "creatures", "weapons", "armor", "materials", "consumables", "codexes"]);
@@ -73,6 +75,9 @@ type Props = {
   klutzReads?: number;   // Klutz's level, once he's helping: he can read a scroll from here too
   perRow?: number;       // creatures and gear this many a row (the Inventory: 4); else as many as fit
   guideGearUp?: boolean; // Klutz wants armour on a creature (lib/quest.ts needsGearUp): glow the way to it
+  materials?: Partial<Record<MaterialKey, number>>; // your materials: a schematic's window shows have/need
+  wornBy?: Map<string, string>; // item id → who wears it (a worn piece sold from its window asks twice)
+  onRename?: (creatureId: string, name: string) => void; // your creatures can be named from their window
 };
 
 const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "materials", "consumables", "codexes"];
@@ -84,13 +89,17 @@ export default function InventoryList({
   favoriteIds, onToggleFavorite, teams, onToggleTeam, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
   sellTotal, onOpenSellConfirm, onToggleSellMode, onSellOne, onResetAll, onGlobalReset,
-  tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems, bigBoxes = [], guideGearUp, perRow, klutzReads,
+  tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems, bigBoxes = [], guideGearUp, perRow, klutzReads, materials, wornBy, onRename,
 }: Props) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [readingScroll, setReadingScroll] = useState<string | null>(null); // a scroll waiting for its reader
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
-  // How far down the creature window is scrolled: flicking to the next creature stays there.
+  // How far down the creature window is scrolled, and which tab it's on: flicking to the next creature stays there.
   const creatureScroll = useRef(0);
+  const creatureWinTab = useRef<"gear" | "moves">("gear");
+  // Changing tab keeps the screen about as far down as it was (hooks/useScrollKeep.ts).
+  const { ref: keepRef, before: keepBefore } = useScrollKeep(activeTab);
+  const changeTab = (tab: GameTabKey) => { keepBefore(); onTabChange(tab); };
   // Keep the card itself (not just its id): after summoning it's gone from
   // the inventory, but the window stays open to show what was summoned.
   const [openCard, setOpenCard] = useState<CreatureOrItemDrop | null>(null);
@@ -158,7 +167,7 @@ export default function InventoryList({
       return;
     }
     if (isCreatureDrop(d)) {
-      creatureScroll.current = 0; // (opened from the list: from the top)
+      creatureScroll.current = 0; creatureWinTab.current = "gear"; // (opened from the list: from the top, on its gear)
       setOpenCreatureId(d.id);
       return;
     }
@@ -169,7 +178,7 @@ export default function InventoryList({
   }
 
   return (
-    <div>
+    <div ref={keepRef}>
       {/* Header */}
       {/* (A title can be a whole control, like the Inventory's Items / Creatures / Klutz tabs.) */}
       <div style={{ marginTop: typeof title === "string" ? 30 : 0, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
@@ -213,7 +222,7 @@ export default function InventoryList({
           const on = activeTab === tab;
           const glow = tab === "cards" && summonable ? RARITY_COLORS[summonable].text : undefined;
           return (
-            <button key={tab} role="tab" aria-selected={on} onClick={() => onTabChange(tab)}
+            <button key={tab} role="tab" aria-selected={on} onClick={() => changeTab(tab)}
               className={`pixel-font${glow ? " tab-glow" : ""}${guideGearUp && !creatureTab && tab === "creatures" ? " tutorial-pulse" : ""}`}
               title={glow ? `You can summon a ${summonable} creature` : undefined}
               style={{ flex: 1, minHeight: 44, padding: "6px 4px", fontSize: 14, cursor: "pointer", border: "none", ["--glow" as string]: glow,
@@ -228,7 +237,7 @@ export default function InventoryList({
       </div>
 
       {!sellMode && !creatureTab && activeTab !== "cards" && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.35 }}>Tap any item for its full details.</p>}
-      {sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.45 }}>★ Favourited and equipped items are protected and cannot be sold.</p>}
+      {sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.45 }}>★ Favourited pieces, and worn gear above Rare, can&apos;t be sold. A worn piece asks twice.</p>}
 
       {/* Creature cards: a binder of trading cards. */}
       {activeTab === "cards" && filteredInventory.length > 0 && (
@@ -353,6 +362,8 @@ export default function InventoryList({
           onPrev={() => stepCreature(-1)}
           onNext={() => stepCreature(1)}
           scrollMemo={creatureScroll}
+          tabMemo={creatureWinTab}
+          onRename={onRename && openCreature.dropType === "creature" ? (name) => onRename(openCreature.id, name) : undefined}
           teachArmour={guideGearUp}
           teams={teams && onToggleTeam ? { teams, onToggle: (team) => onToggleTeam(team, openCreature.id) } : undefined}
           loadout={equipment[openCreature.id]}
@@ -396,6 +407,8 @@ export default function InventoryList({
           currentIndex={detailIndex}
           onNavigate={(idx) => setDetailIndex(idx)}
           locked={lockedIds.has(navigableItems[detailIndex].id)}
+          wornBy={wornBy?.get(navigableItems[detailIndex].id)}
+          materials={materials}
           onRead={onReadScroll && (() => setReadingScroll(navigableItems[detailIndex].id))}
           // Sold: the window stays open on the next piece (or the one before,
           // at the end), and closes once there's nothing left.

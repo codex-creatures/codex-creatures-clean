@@ -22,8 +22,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useEscape } from "@/hooks/useEscape";
+import { useScrollKeep } from "@/hooks/useScrollKeep";
 import { startTour, TOUR_CHOICES } from "@/lib/tour";
 import DenFrame from "@/components/DenFrame";
+import KlutzHead from "@/components/klutz/KlutzHead";
 import PixelSprite, { creatureSprite, PotionIcon } from "@/components/PixelSprite";
 import { POTIONS } from "@/lib/dungeon/run";
 import { LevelBar } from "@/components/CreatureDetailModal";
@@ -81,7 +83,11 @@ export default function KlutzPage() {
   const [gearOpen, setGearOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [recallArmed, setRecallArmed] = useState(false);
-  const [tab, setTab] = useState<Tab>("chest");
+  const [tab, setTabState] = useState<Tab>("chest");
+  // Switching tabs keeps the screen about as far down as it was (hooks/useScrollKeep.ts); the tabs themselves
+  // stick to the top as you scroll, so you can switch from anywhere (the user, 2026-11-24).
+  const { ref: keepRef, before: keepBefore } = useScrollKeep(tab);
+  const setTab = (t: Tab) => { keepBefore(); setTabState(t); };
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(t); }, []);
   // ?tab=crate (the Den's crate) and the like: open on that tab.
   useEffect(() => {
@@ -91,7 +97,7 @@ export default function KlutzPage() {
     if (t && (TABS as string[]).includes(t)) setTab(t as Tab);
   }, []);
 
-  if (!game.hydrated) return <DenFrame title="Klutz's Den" icon="👺"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
+  if (!game.hydrated) return <DenFrame title="Klutz's Den" icon={<KlutzHead size={22} />}><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
 
   const f = game.klutzFighter;
   const status = klutzStatus(game.klutz, f.maxHp, now);
@@ -106,7 +112,7 @@ export default function KlutzPage() {
   const first = klutzFirstStep(game.quest, game.equipment[KLUTZ_DROP_ID], !!game.klutz.expedition || !!game.klutz.trips?.length);
 
   return (
-    <DenFrame title="Klutz's Den" icon="👺" gold={game.gold}>
+    <DenFrame title="Klutz's Den" icon={<KlutzHead size={22} />} gold={game.gold}>
       <div className="stone-panel" style={{ display: "flex", gap: 14, alignItems: "center" }}>
         {/* Out, his bedroll's empty: just his shadow where he'd be. */}
         <div style={{ flexShrink: 0, opacity: status.kind === "away" ? 0.3 : 1, filter: status.kind === "away" ? "grayscale(1) brightness(0.4)" : undefined }}>
@@ -132,7 +138,7 @@ export default function KlutzPage() {
 
       {helping && (
         <>
-          <div className="dock-tabs" style={{ marginTop: 12 }}>
+          <div ref={keepRef} className="dock-tabs" style={{ marginTop: 12, position: "sticky", top: -12, zIndex: 5, background: "#0c0a08", boxShadow: "0 6px 10px -4px rgba(0,0,0,0.7)", padding: "6px 0" }}>
             <button className="dock-tab" data-active={tab === "chest"} onClick={() => setTab("chest")} title="His crate" aria-label="Crate">📦 {game.crate.length}</button>
             <button className={`dock-tab${first === "kit" && tab !== "kit" ? " tutorial-pulse" : pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} data-active={tab === "kit"} onClick={() => setTab("kit")} title="His stats and gear">⚔️ Kit</button>
             <button className={`dock-tab${first === "send" && tab !== "send" ? " tutorial-pulse" : ""}`} data-active={tab === "send"} onClick={() => setTab("send")} title={status.kind === "away" ? "His trip" : "Send him hunting"}>🌀 {status.kind === "away" ? "Out" : "Hunt"}</button>
@@ -550,6 +556,15 @@ function QuestTalk({ game, first, onKit, onHunt }: { game: ReturnType<typeof use
   if (first === "send") {
     return say(<>&ldquo;Looking sharp! Now send me hunting. The <b>Encampment</b>&apos;s free.&rdquo;</>,
       <button className="pixel-btn" onClick={onHunt}>🌀 To the Hunt tab</button>);
+  }
+  // Naming a creature (the user, 2026-11-24): once he's helping and none's named yet, Klutz suggests it, till
+  // you've heard him or named one (lib/creatures/nickname.ts; the name box is in the creature's window).
+  if (game.nameTipDue && !game.nameTipRead) {
+    return say(<>&ldquo;Give that creature a <b>name</b>! Tap its name in the Pit and type one. Then you&apos;ll know who&apos;s who when there&apos;s a crowd of them.&rdquo;</>,
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Link href="/pit" className="pixel-btn">🐾 To the Pit</Link>
+        <button className="chip" style={{ minHeight: 44 }} onClick={game.readNameTip}>Maybe later</button>
+      </div>);
   }
   // The tavern questline (lib/tavern.ts): Klutz wants the Labyrinth Stone for the wall (the dynamite, till 2026-11-19).
   if (game.tavern.accepted && !game.tavern.dynamite) {

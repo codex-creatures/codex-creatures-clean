@@ -18,6 +18,9 @@ import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import { AFFINITY_BONUS, damageTypesOn } from "@/lib/combat/engine";
 import EnchantLine from "./EnchantLine";
+import { MaterialIcon } from "./PixelSprite";
+import { MATERIALS, SCHEMATICS, STORAGE_PLANS, STORAGE_TIER, countMaterial, type MaterialKey, type StoragePlan } from "@/lib/items/materials";
+import { BOX_CAPS, BOX_NAMES } from "@/lib/items/storage";
 
 type Props = {
   item: CreatureOrItemDrop;
@@ -29,8 +32,10 @@ type Props = {
   onNavigate: (index: number) => void;
   // Selling from here (the Inventory). Without it, only the price shows.
   onSell?: (id: string) => void;
-  locked?: boolean; // favourited, worn or packed: not for sale
+  locked?: boolean; // favourited, packed, or worn and above Rare: not for sale
+  wornBy?: string;  // who's wearing it (a worn piece of Rare or less sells, after a second "take it off?": the user, 2026-11-24)
   onRead?: () => void; // an XP scroll: pick who reads it (components/ScrollTargetPicker)
+  materials?: Partial<Record<MaterialKey, number>>; // yours, for a schematic's have/need
 };
 
 // How far a finger must travel sideways to flick to the next item.
@@ -101,11 +106,16 @@ function RarityBadge({ rarity }: { rarity: Rarity }) {
   );
 }
 
-export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, onClose, items, currentIndex, onNavigate, onSell, locked, onRead }: Props) {
-  // "Sell for …?" waiting for a yes. Flicking to another item cancels it.
-  const [confirmFor, setConfirmFor] = useState<string | null>(null);
-  const confirming = confirmFor === item.id;
-  const setConfirming = (on: boolean) => setConfirmFor(on ? item.id : null);
+export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, onClose, items, currentIndex, onNavigate, onSell, locked, wornBy, onRead, materials }: Props) {
+  // "Sell for …?" waiting for a yes (then, worn, "take it off?"). Flicking to another item cancels it.
+  const [confirmFor, setConfirmFor] = useState<{ id: string; step: 1 | 2 } | null>(null);
+  const confirming = confirmFor?.id === item.id ? confirmFor.step : 0;
+  const setConfirming = (step: 0 | 1 | 2) => setConfirmFor(step ? { id: item.id, step } : null);
+  // Gear shows its stat bars; a schematic what it builds and costs; anything else (a potion, a Revival Elixir,
+  // a scroll, a tool) just its words (the user, 2026-11-24: they showed empty stat bars).
+  const gear = item.itemCategory === "weapon" || item.itemCategory === "armor";
+  const plan = item.schematic ? SCHEMATICS[item.schematic] : undefined;
+  const storageTo = item.schematic && item.schematic in STORAGE_PLANS ? BOX_CAPS[STORAGE_TIER[item.schematic as StoragePlan]] : undefined;
   const touch = useRef<{ x: number; y: number } | null>(null);
   const stats = item.stats ?? {};
   const statDefs = item.itemCategory === "armor" ? ARMOR_STATS : WEAPON_STATS;
@@ -176,31 +186,58 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
 
         <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 20 }} />
 
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, opacity: 0.4, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>Stats</div>
-          {statDefs.map(({ label, key }) => {
-            const value = (stats as any)[key] ?? 0;
-            const cap   = getStatCapForDrop(item as any, key) ?? 0;
-            return <StatBar key={key} label={label} value={value} cap={cap} />;
-          })}
-        </div>
+        {gear && <>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, opacity: 0.4, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>Stats</div>
+            {statDefs.map(({ label, key }) => {
+              const value = (stats as any)[key] ?? 0;
+              const cap   = getStatCapForDrop(item as any, key) ?? 0;
+              return <StatBar key={key} label={label} value={value} cap={cap} />;
+            })}
+          </div>
 
-        <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
-          {[
-            { label: "0–29",  color: "rgba(255,255,255,0.25)" },
-            { label: "30–49", color: "#22c55e" },
-            { label: "50–69", color: "#4ea1ff" },
-            { label: "70–89", color: "#a855f7" },
-            { label: "90+",   color: "#f5c542" },
-          ].map(({ label, color }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, opacity: 0.6 }}>
-              <div style={{ width: 10, height: 10, borderRadius: 2, background: color }} />
-              {label}
+          <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+            {[
+              { label: "0–29",  color: "rgba(255,255,255,0.25)" },
+              { label: "30–49", color: "#22c55e" },
+              { label: "50–69", color: "#4ea1ff" },
+              { label: "70–89", color: "#a855f7" },
+              { label: "90+",   color: "#f5c542" },
+            ].map(({ label, color }) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, opacity: 0.6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: color }} />
+                {label}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 20 }} />
+        </>}
+
+        {/* A schematic: what it builds (a box: its size now and after) and each material it takes, have/need
+            when your materials are to hand, else just the need. Built where it goes (the Storehouse, the cage…). */}
+        {plan && item.schematic && <>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, opacity: 0.4, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>Builds</div>
+            <div style={{ fontSize: 14, color: "#f1d9a0", marginBottom: 10 }}>
+              {storageTo !== undefined ? `Your ${BOX_NAMES[STORAGE_PLANS[item.schematic as StoragePlan]]} box: up to ${storageTo}` : plan.desc.replace(/^Plans (for|to) /, "")}
             </div>
-          ))}
-        </div>
-
-        <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 20 }} />
+            <div style={{ fontSize: 11, opacity: 0.4, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Costs</div>
+            <div style={{ display: "grid", gap: 6 }}>
+              {(Object.entries(plan.cost) as [MaterialKey, number][]).map(([k, n]) => {
+                const have = materials ? countMaterial(materials, k) : undefined;
+                return (
+                  <div key={k} className="pixel-font" style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: have === undefined ? "#d8d4c8" : have >= n ? "#5ee08a" : "#ff8a80" }}>
+                    <span><MaterialIcon k={k} /> {MATERIALS[k].name}</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{have === undefined ? n : `${have}/${n}`}</span>
+                  </div>
+                );
+              })}
+              {(plan.gold ?? 0) > 0 && <div className="pixel-font" style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#d8d4c8" }}><span>🪙 Gold</span><span>{plan.gold!.toLocaleString()}</span></div>}
+            </div>
+          </div>
+          <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 20 }} />
+        </>}
 
         {/* (Kept in place, hidden, for things that don't sell: so nothing below moves.) */}
         {/* Sell: tap, then Yes. The box is the same height whichever it shows. */}
@@ -212,17 +249,18 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
               <span style={{ fontSize: 18, fontWeight: 700, color: "#f5c542" }}>{sellValue.toLocaleString()}g</span>
             </div>
           ) : confirming ? <>
-            <div style={{ ...sellBox, flex: 2, justifyContent: "center", fontSize: 14, color: "#f5c542", fontWeight: 700 }}>
-              Sell for {sellValue.toLocaleString()}g?
+            {/* Worn: a second question names who wears it before it comes off (the user, 2026-11-24). */}
+            <div style={{ ...sellBox, flex: 2, justifyContent: "center", fontSize: 14, color: "#f5c542", fontWeight: 700, textAlign: "center", lineHeight: 1.2 }}>
+              {confirming === 2 ? `It's on ${wornBy}. Take it off and sell?` : `Sell for ${sellValue.toLocaleString()}g?`}
             </div>
-            <button onClick={() => setConfirming(false)} style={{ ...sellBtn, flex: 1 }}>No</button>
-            <button onClick={() => { setConfirming(false); onSell(item.id); }}
+            <button onClick={() => setConfirming(0)} style={{ ...sellBtn, flex: 1 }}>No</button>
+            <button onClick={() => { if (wornBy && confirming === 1) { setConfirming(2); return; } setConfirming(0); onSell(item.id); }}
               style={{ ...sellBtn, flex: 1, background: "#f5c542", color: "#1a1a1a", border: "none" }}>Yes</button>
           </> : (
-            <button onClick={() => setConfirming(true)} disabled={locked}
-              title={locked ? "Favourited, worn or packed pieces can't be sold" : undefined}
+            <button onClick={() => setConfirming(1)} disabled={locked}
+              title={locked ? "Favourited or packed pieces, and worn gear above Rare, can't be sold" : wornBy ? `Worn by ${wornBy}: it would come off` : undefined}
               style={{ ...sellBtn, flex: 1, opacity: locked ? 0.4 : 1, cursor: locked ? "not-allowed" : "pointer" }}>
-              {locked ? "🔒 Can't sell" : <>Sell · <span style={{ color: "#f5c542" }}>{sellValue.toLocaleString()}g</span></>}
+              {locked ? "🔒 Can't sell" : <>Sell · <span style={{ color: "#f5c542" }}>{sellValue.toLocaleString()}g</span>{wornBy ? <span style={{ fontSize: 12, opacity: 0.7 }}> (worn)</span> : null}</>}
             </button>
           )}
         </div>

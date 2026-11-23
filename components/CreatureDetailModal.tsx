@@ -4,7 +4,7 @@
 // - Gear & stats: the creature on its pedestal with its weapon on one side
 //   and its armour (helmet, chest, legs) on the other, its set bonus if it
 //   wears a full set, its stats as bars and its gear multipliers;
-// - Moves: its 4 move slots, and the moves it could swap in.
+// - Moves: its 4 move slots (all it knows), and the codexes it could read.
 // Tap a slot to browse your gear: tapping an item previews the change on
 // every stat before you equip it; dragging it onto its slot equips it.
 
@@ -30,6 +30,7 @@ import RaceTag from "./RaceTag";
 import ClassBadge from "./ClassBadge";
 import { SOUL_STONES, SOUL_STONE_KEYS, setStoneCost, type SoulStoneKey } from "@/lib/creatures/soulStones";
 import { SOUL_COLOR } from "./SoulStoneTag";
+import { NICK_MAX } from "@/lib/creatures/nickname";
 import PixelSprite, { creatureSprite, itemSprite, StoneIcon } from "./PixelSprite";
 import { useDragDrop } from "@/hooks/useDragDrop";
 import { doubleTapper } from "@/lib/doubleTap";
@@ -60,6 +61,8 @@ type Props = {
   onPrev?: () => void;
   onNext?: () => void;
   scrollMemo?: { current: number }; // how far down the window is: kept when flicking to the next creature
+  tabMemo?: { current: "gear" | "moves" }; // which tab is open: kept too (the user, 2026-11-24: left/right on the moves page stays on it)
+  onRename?: (name: string) => void; // your creatures: tap the name to give it one (lib/creatures/nickname.ts; "" clears it)
   teachArmour?: boolean; // Klutz wants armour on a creature (lib/quest.ts needsGearUp): glow the way through
   // Klutz: his %s are points you spend (lib/klutz.ts), shown in place of the gear multipliers.
   points?: { free: number; onSpend: (add: Partial<Record<ProfKey, number>>) => void; respec: { cost: number; can: boolean; run: () => boolean } };
@@ -106,7 +109,7 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 
 export default function CreatureDetailModal({
   creature, teams, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, scrollMemo, teachArmour, unavailable, locked, points, stones,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, scrollMemo, tabMemo, onRename, teachArmour, unavailable, locked, points, stones,
 }: Props) {
   // Flicked here from another creature: open as far down as that one was.
   const panelRef = useRef<HTMLDivElement>(null);
@@ -131,8 +134,14 @@ export default function CreatureDetailModal({
   const [stonePicking, setStonePicking] = useState(false); // the soul stone picker (your loose stones)
   const canSetStone = !!stones && !locked; // else tapping the stone just says what it does
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
-  const [tab, setTab] = useState<"gear" | "moves">("gear");
+  const [tab, setTabState] = useState<"gear" | "moves">(tabMemo?.current ?? "gear");
+  const setTab = (t: "gear" | "moves") => { setTabState(t); if (tabMemo) tabMemo.current = t; };
   const [teaching, setTeaching] = useState<CreatureOrItemDrop | null>(null); // a codex being read, waiting for a move to forget
+  // Naming it: tap the name and it's a text box (NICK_MAX letters); Enter or tapping away keeps what's typed, Esc drops it.
+  const [naming, setNaming] = useState<string | null>(null);
+  const nameBox = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (naming !== null) nameBox.current?.select(); }, [naming]);
+  const keepName = () => { if (naming !== null) { if (naming.trim() !== creature.name) onRename?.(naming); setNaming(null); } };
   const pickerRef = useRef<HTMLDivElement>(null); // tapping anywhere else in the window closes the picker
   // Gear dragged from the picker onto its slot goes straight on (a tap only previews it).
   const { box: dragBox, ...dnd } = useDragDrop<CreatureOrItemDrop>({ onDrop: (opt, t) => {
@@ -248,10 +257,26 @@ export default function CreatureDetailModal({
             {template?.neutral && <ClassBadge neutral />}
             {template && prof && !(template.neutral && creatureRoles(prof)[0] === "Balanced") && <TypeTags roles={creatureRoles(prof)} />}
           </div>
-          {/* One line (a long name ends in "…"), so flicking between creatures never moves anything below it. */}
-          <h2 className="pixel-font" title={creature.name} style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {creature.name} <span style={{ fontSize: 18, color: "#f1d9a0" }}>Lv {level}</span>{creature.ascended ? <span title={`Ascended ${creature.ascended} rarit${creature.ascended === 1 ? "y" : "ies"} at the Soul Altar`} style={{ fontSize: 16, color: "#ffd66e" }}> {"★".repeat(creature.ascended)}</span> : null}
+          {/* One line (a long name ends in "…"), so flicking between creatures never moves anything below it.
+              Your own creatures: tap the name to give it one of your own (it becomes a text box in the same place). */}
+          <h2 className="pixel-font" title={onRename ? "Tap to name it" : creature.name} style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "baseline", gap: 8 }}>
+            {naming !== null ? (
+              <input ref={nameBox} value={naming} maxLength={NICK_MAX} aria-label="Its name" className="pixel-font"
+                onChange={(e) => setNaming(e.target.value)} onBlur={keepName}
+                onKeyDown={(e) => { if (e.key === "Enter") keepName(); else if (e.key === "Escape") { e.stopPropagation(); setNaming(null); } }}
+                style={{ flex: 1, minWidth: 0, font: "inherit", color: c.text, background: "rgba(0,0,0,0.35)", border: `2px solid ${c.border}`, borderRadius: 6, padding: "0 6px", outline: "none" }} />
+            ) : (
+              <span onClick={onRename ? () => setNaming(creature.nick ?? "") : undefined} role={onRename ? "button" : undefined}
+                style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", cursor: onRename ? "text" : undefined, borderBottom: onRename ? `1px dashed ${c.border}` : undefined }}>
+                {creature.name}
+              </span>
+            )}
+            <span style={{ fontSize: 18, color: "#f1d9a0", flexShrink: 0 }}>Lv {level}</span>{creature.ascended ? <span title={`Ascended ${creature.ascended} rarit${creature.ascended === 1 ? "y" : "ies"} at the Soul Altar`} style={{ fontSize: 16, color: "#ffd66e", flexShrink: 0 }}>{"★".repeat(creature.ascended)}</span> : null}
           </h2>
+          {/* Named: its species, small, under the name (the line's there either way, so nothing below moves). */}
+          <div style={{ fontSize: 12, color: MUTED, height: 16, lineHeight: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {creature.nick && template ? template.name : naming !== null ? `Up to ${NICK_MAX} letters. Leave it empty for its own name.` : ""}
+          </div>
         </div>
 
         {!template || !now ? (
@@ -271,7 +296,7 @@ export default function CreatureDetailModal({
 
             {tab === "moves" && (
               <>
-                <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} born={creature.moves} learned={creature.learned} onChange={onSetMoves}
+                <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} learned={creature.learned}
                   teaching={teaching ? {
                     move: teaching.codexMove!,
                     onPick: (i) => {

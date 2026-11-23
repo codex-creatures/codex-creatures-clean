@@ -2,20 +2,23 @@
 // components/klutz/KlutzTrips.tsx
 // Klutz's Den, the Trips tab: his trips, newest first (lib/klutz.ts tripLog,
 // the last TRIP_LOG). A row each: where, when, why he came home and what it
-// came to. Tap one to open it: what he set off with (level, HP, his %s, gear,
-// soul stone, moves), every fight, and what he brought home.
+// came to. Tap one to open it: each fight and what it cost him, and what he
+// brought home as small pictures (as his pack shows them). Simpler since
+// 2026-11-24 (the user): what he wore, his %s and his moves are still recorded
+// on the trip (kit), just not shown.
 
 import { useState } from "react";
 import { KLUTZ_DESTS, tripLog, TRIP_LOG, type KlutzDest, type KlutzTrip } from "@/lib/klutz";
 import { CREATURE_BY_ID } from "@/lib/creatures/creatureData";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { SOUL_STONES } from "@/lib/creatures/soulStones";
+import PixelSprite, { itemSprite } from "@/components/PixelSprite";
+import { GOLD_SPRITE } from "@/lib/sprites/items";
+import type { CreatureOrItemDrop } from "@/lib/types";
 import type { KlutzState } from "@/lib/klutz";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
 const DEST_ICON: Record<KlutzDest, string> = { 0: "⛺", 1: "👁️", 2: "🐍", 3: "🕳️" };
-const SHORT: Record<string, string> = { atk: "Mel", rng: "Rng", mag: "Mag", agil: "Agi", mdef: "MDef", rdef: "RDef", magdef: "MgDef" };
 
 const why = (t: KlutzTrip) => (t.recalled ? "you called him back" : t.home === "pack" ? "his pack was full" : t.home === "hurt" ? "he was hurt"
   : t.home === "ko" ? "something beat him" : t.home === "limit" ? "he'd been out long enough" : "the hunt was over");
@@ -63,31 +66,24 @@ export default function KlutzTrips({ klutz }: { klutz: KlutzState }) {
 
 function TripDetail({ t }: { t: KlutzTrip }) {
   const head: React.CSSProperties = { fontSize: 12, color: GOLD, margin: "8px 0 4px", fontFamily: "inherit" };
-  const k = t.kit;
-  const stone = k?.soulStone ? SOUL_STONES[k.soulStone] : undefined;
-  // What he brought home, counted by name.
-  const finds = new Map<string, { rarity: KlutzTrip["finds"][number]["rarity"]; n: number }>();
-  for (const f of t.finds) { const x = finds.get(f.name); finds.set(f.name, { rarity: f.rarity, n: (x?.n ?? 0) + (f.qty ?? 1) }); }
+  // What he brought home, counted by name (gold as one line).
+  const finds = new Map<string, { find: KlutzTrip["finds"][number]; n: number }>();
+  for (const f of t.finds) { const x = finds.get(f.name); finds.set(f.name, { find: f, n: (x?.n ?? 0) + (f.qty ?? 1) }); }
+  const start = t.startHp ?? t.maxHp;
   return (
     <div style={{ padding: "0 12px 12px", fontSize: 13, borderTop: "1px solid #2a2d38" }}>
-      <div className="pixel-font" style={head}>He set off with</div>
-      {k ? (
-        <div style={{ display: "grid", gap: 3 }}>
-          <div>Lv {k.level} · ❤️ {t.startHp ?? k.maxHp}/{k.maxHp} <span style={{ color: MUTED }}>(home on {t.hpEnd})</span></div>
-          <div style={{ color: "#c8c4b8" }}>{Object.entries(k.proficiency).filter(([, v]) => v).map(([key, v]) => `${SHORT[key] ?? key} +${v}%`).join(" · ") || "No % points spent"}</div>
-          <div>{k.gear.length ? k.gear.map((g) => <span key={g.name} style={{ color: RARITY_COLORS[g.rarity].text, marginRight: 8 }}>{g.name}</span>) : <span style={{ color: MUTED }}>No gear</span>}</div>
-          <div style={{ color: "#c8c4b8" }}>{stone ? <span style={{ color: "#b9e6ff" }}>{stone.icon} {stone.name} · </span> : null}{k.moves.join(" · ")}</div>
-        </div>
-      ) : <div style={{ color: MUTED }}>Not recorded: this trip was before his trips were kept. ❤️ home on {t.hpEnd}/{t.maxHp}.</div>}
+      <div style={{ marginTop: 8, color: "#c8c4b8" }}>❤️ {start} → <b style={{ color: t.hpEnd <= 0 ? "#ff8a80" : "#e8e2d0" }}>{t.hpEnd}</b> <span style={{ color: MUTED }}>of {t.maxHp}</span></div>
 
       <div className="pixel-font" style={head}>Fights ({t.fights.length})</div>
       {t.fights.length ? (
         <div style={{ display: "grid", gap: 2 }}>
           {t.fights.map((f, i) => (
-            <div key={i} style={{ display: "flex", gap: 6 }}>
+            <div key={i} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
               <span style={{ color: f.won ? "#7CFC9A" : "#ff8a80", width: 16 }}>{f.won ? "✓" : "✗"}</span>
               <span style={{ color: RARITY_COLORS[f.rarity].text, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{CREATURE_BY_ID[f.creatureId]?.name ?? f.creatureId}</span>
-              <span style={{ color: MUTED }}>{f.won ? (f.caught ? "caught" : "beaten") : "beat him"}</span>
+              {/* What the fight cost him (older trips didn't keep it). */}
+              <span style={{ color: f.hpLost ? "#ff8a80" : MUTED, fontVariantNumeric: "tabular-nums", minWidth: 44, textAlign: "right" }}>{f.hpLost !== undefined ? `−${f.hpLost} HP` : ""}</span>
+              <span style={{ color: MUTED, minWidth: 52, textAlign: "right" }}>{f.won ? (f.caught ? "caught" : "beaten") : "beat him"}</span>
             </div>
           ))}
         </div>
@@ -96,8 +92,20 @@ function TripDetail({ t }: { t: KlutzTrip }) {
 
       <div className="pixel-font" style={head}>Brought home ({t.finds.length})</div>
       {finds.size ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 10px" }}>
-          {[...finds].map(([name, f]) => <span key={name} style={{ color: name === "gold" ? "#f5c542" : RARITY_COLORS[f.rarity].text }}>{name === "gold" ? `${f.n} gold` : `${name}${f.n > 1 ? ` ×${f.n}` : ""}`}</span>)}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: 5 }}>
+          {[...finds].map(([name, { find: f, n }]) => {
+            const gold = name === "gold";
+            const sprite = gold ? GOLD_SPRITE : itemSprite(f as unknown as CreatureOrItemDrop);
+            const col = gold ? "#f5c542" : RARITY_COLORS[f.rarity]?.border ?? "#3a3e4b";
+            return (
+              <div key={name} title={gold ? `${n} gold` : `${name}${n > 1 ? ` ×${n}` : ""}`}
+                style={{ position: "relative", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", background: "#12131a", border: `2px solid ${col}` }}>
+                {sprite ? <PixelSprite sprite={sprite} scale={1.4} />
+                  : <span style={{ fontSize: 9, color: RARITY_COLORS[f.rarity]?.text ?? "white", textAlign: "center", lineHeight: 1.1, padding: 2, overflow: "hidden" }}>{name}</span>}
+                {n > 1 && <span className="pixel-font" style={{ position: "absolute", right: 2, bottom: 0, fontSize: 11, color: "#f1d9a0", textShadow: "1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000" }}>×{n}</span>}
+              </div>
+            );
+          })}
         </div>
       ) : <div style={{ color: MUTED }}>Nothing.</div>}
     </div>

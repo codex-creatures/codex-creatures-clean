@@ -25,7 +25,8 @@ export type CreatureOrItemDrop = {
   // Missing on older creatures → the species' standard values.
   proficiency?: import("./creatures/creatureData").CreatureProficiency;
   moves?: string[];
-  learned?: string[];   // creatures: race moves learned from codexes
+  learned?: string[];   // creatures: the moves in its slots that came from codexes (every move it knows is in its slots since 2026-11-24: lib/creatures/instance.ts pruneMoves)
+  nick?: string;        // creatures: the name you gave it (lib/creatures/nickname.ts); its `name` is set to it on load. Missing: the species' name
   moveSet?: number;     // creatures/cards: MOVE_SET (lib/creatures/instance.ts) once on Combat V2's 3 starting moves; missing: reset on load
   codexSet?: number;   // creatures/cards: CODEX_SET (lib/creatures/instance.ts) once an old Smite or Ambush is wiped; missing: checked on load
   styleSet?: number;    // creatures/cards: STYLE_SET (lib/creatures/instance.ts) once moved over to its species' current style; missing: checked on load

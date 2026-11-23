@@ -50,7 +50,7 @@ import { ITEM_KEYS, type ItemKey } from "./items/ceilings";
 import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { materialBundle } from "./items/materials";
-import { isCreatureDrop, type Drop } from "./types";
+import { isCreatureDrop, type CreatureOrItemDrop, type Drop } from "./types";
 import type { CreatureProficiency } from "./creatures/creatureData";
 import { setStoneCost, type SoulStoneKey } from "./creatures/soulStones";
 import { addXp, canFind, clampLevel, xpForEnemy } from "./creatures/levels";
@@ -200,15 +200,20 @@ export type KlutzState = {
 // TRIP_LOG of them.
 export const TRIP_LOG = 20;
 export type TripKit = { level: number; maxHp: number; proficiency: CreatureProficiency; moves: string[]; soulStone?: SoulStoneKey; gear: { name: string; rarity: Rarity }[] };
+// A find's look: just enough of the drop for its picture (components/PixelSprite.tsx itemSprite), from 2026-11-24
+// (the user: the trips log shows finds as small icons, as his pack does). Older trips have none: their names show.
+export type TripLook = Pick<CreatureOrItemDrop, "potion" | "tool" | "material" | "stone" | "codexMove" | "scroll" | "schematic" | "itemKey" | "armorKey" | "armorSlot" | "enchant">;
 export type KlutzTrip = {
   startedAt: number; endsAt: number; dest?: KlutzDest;
   home?: Expedition["home"]; recalled?: boolean;
-  kit?: TripKit;
+  kit?: TripKit; // (recorded, not shown since 2026-11-24: the log is simpler)
   xp: number; startHp?: number; hpEnd: number; maxHp: number;
-  fights: { creatureId: string; rarity: Rarity; won: boolean; caught?: boolean }[];
-  finds: { name: string; rarity: Rarity; qty?: number }[]; // what he brought home that isn't a creature (gold: a "gold" line)
+  fights: { creatureId: string; rarity: Rarity; won: boolean; caught?: boolean; hpLost?: number }[]; // hpLost: what the fight cost him (from 2026-11-24)
+  finds: ({ name: string; rarity: Rarity; qty?: number } & TripLook)[]; // what he brought home that isn't a creature (gold: a "gold" line)
   caged?: number; letGo?: boolean;
 };
+const LOOK_KEYS: (keyof TripLook)[] = ["potion", "tool", "material", "stone", "codexMove", "scroll", "schematic", "itemKey", "armorKey", "armorSlot", "enchant"];
+const lookOf = (d: CreatureOrItemDrop): TripLook => Object.fromEntries(LOOK_KEYS.filter((k) => d[k] !== undefined).map((k) => [k, d[k]])) as TripLook;
 // A finished trip's record.
 export function tripOf(ex: Expedition, xp: number, loot: Drop[]): KlutzTrip {
   return {
@@ -216,9 +221,11 @@ export function tripOf(ex: Expedition, xp: number, loot: Drop[]): KlutzTrip {
     ...(ex.dest !== undefined ? { dest: ex.dest } : {}), ...(ex.home ? { home: ex.home } : {}), ...(ex.recalled ? { recalled: true } : {}),
     ...(ex.kit ? { kit: ex.kit } : {}),
     xp, ...(ex.startHp !== undefined ? { startHp: ex.startHp } : {}), hpEnd: hpBy(ex, ex.endsAt), maxHp: ex.maxHp,
-    fights: ex.encounters.map((e) => ({ creatureId: e.creatureId, rarity: e.rarity, won: e.won, ...(e.caught !== undefined ? { caught: e.caught } : {}) })),
+    // (Each fight's cost: his HP before it, less after. The first starts from what he set off with.)
+    fights: ex.encounters.map((e, i) => ({ creatureId: e.creatureId, rarity: e.rarity, won: e.won, ...(e.caught !== undefined ? { caught: e.caught } : {}),
+      hpLost: Math.max(0, (i ? ex.encounters[i - 1].hpAfter : ex.startHp ?? ex.maxHp) - e.hpAfter) })),
     finds: loot.filter((d) => !isCreatureDrop(d)).map((d) => d.dropType === "reward" ? { name: "gold", rarity: "common" as Rarity, qty: d.amount }
-      : { name: d.name, rarity: d.rarity, ...(d.material ? { qty: d.qty ?? 1 } : {}) }),
+      : { name: d.name, rarity: d.rarity, ...(d.material ? { qty: d.qty ?? 1 } : {}), ...lookOf(d as CreatureOrItemDrop) }),
     ...(ex.caged !== undefined ? { caged: ex.caged } : {}), ...(ex.letGo ? { letGo: true } : {}),
   };
 }

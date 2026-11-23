@@ -102,3 +102,10 @@ export function computeSellGold({ drop, getStatCapForDrop }: ComputeSellGoldArgs
   const charm = enchantOf(drop) ? ENCHANT_SELL_BONUS : 1;
   return Math.max(1, Math.floor(RARITY_BASE[drop.rarity] * clampedEfficiency * share * charm));
 }
+
+// A piece a creature is wearing can be sold up to this rarity (the user, 2026-11-24: Rare or less, unless
+// it's favourited), behind a second "take it off and sell?" confirmation. Epic and Legendary gear stays on
+// till you take it off yourself.
+const WORN_RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
+export const WORN_SELL_MAX: Rarity = "rare";
+export const canSellWorn = (rarity: Rarity) => WORN_RARITIES.indexOf(rarity) <= WORN_RARITIES.indexOf(WORN_SELL_MAX);

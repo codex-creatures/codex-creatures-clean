@@ -4,10 +4,10 @@ import type { Drop } from "@/lib/types";
 import { ARMOR_SLOTS, type ArmorSlot } from "@/lib/items/armor";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
-import { computeSellGold } from "@/lib/items/economy/sell";
+import { canSellWorn, computeSellGold } from "@/lib/items/economy/sell";
 import { ownedSpecies, ownedCreatureSpecies, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearBattles } from "@/lib/battleHistory";
-import { findCreatureTemplate, isRetiredMove, KLUTZ, renamedMove, replaceRetired, REUSED_NAMES, type CreatureProficiency } from "@/lib/creatures/creatureData";
+import { defaultMoveNames, findCreatureTemplate, isRetiredMove, KLUTZ, renamedMove, replaceRetired, REUSED_NAMES, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { findPrice, isSellableConsumable } from "@/lib/scanReveal";
 import { clearDungeon, loadDungeon, saveDungeon, altarMended, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, POTIONS, type Ware } from "@/lib/dungeon/run";
@@ -21,7 +21,8 @@ import { VISITORS, tavernVisitors, guestOf, tavernNow, upgradeVisitor, blast, fo
 import { clearDaily, countDaily } from "@/lib/daily";
 import { clearChallenge } from "@/lib/challenge";
 import { clearCampaign, countCampaign, loadCampaign } from "@/lib/campaign";
-import { fighterFor, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
+import { fighterFor, pruneMoves, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
+import { cleanNick } from "@/lib/creatures/nickname";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { rarityAfter, stepsOf } from "@/lib/creatures/ascendStats";
 import { ascend, ritualProblem } from "@/lib/creatures/ascend";
@@ -100,6 +101,7 @@ type SaveState = {
   sealed?: string[];                   // barcodes scanned with the global registry out of reach: sealed Code Caches, opened once online
   crate?: Drop[];                      // Klutz's crate: gear he brought home, to keep or sell
   scanTipRead?: boolean;               // …and you've heard Klutz's tip about it
+  nameTipRead?: boolean;               // Klutz's tip to name your first creature has been seen (or one's been named)
   player?: Progress;                   // your own level and XP (it decides what you can find when you scan)
   bookcase?: number;                   // (before 2026-11-20) the bookcase's level: read once into shelf (shelfFromOld)
   shelf?: number;                      // the bookcase's stage (1: the old shelf; lib/items/materials.ts BOOKCASE_STAGES)
@@ -148,7 +150,7 @@ export function loadSave(): SaveState | null {
     // (An ascended creature's rarity is its species' plus its steps: lib/creatures/ascendStats.ts. Cards never climb.)
     if (t) {
       if (c.dropType === "creature" && c.ascended) c.ascended = stepsOf(t, c.ascended) || undefined; else delete c.ascended;
-      c.rarity = rarityAfter(t, c.ascended); c.name = t.name; c.desc = t.flavour;
+      c.rarity = rarityAfter(t, c.ascended); c.name = (c.dropType === "creature" && c.nick) || t.name; c.desc = t.flavour; // (its own name, if you gave it one)
     }
     c.soulStone = soulStoneOf(c, t);
     delete c.ability;
@@ -162,6 +164,8 @@ export function loadSave(): SaveState | null {
       if (eq?.moves) equipment[c.id] = { ...eq, moves: retireMoves(eq.moves, t) };
       // An old Smite or Ambush (the names now the 2026-11 codex moves'): wiped once.
       if (wipeReusedNames(c, t) && equipment[c.id]?.moves) equipment[c.id] = { ...equipment[c.id], moves: undefined };
+      // Every move it knows is in its slots (the user, 2026-11-24): the rest are cut away.
+      if (c.dropType === "creature") pruneMoves(c, equipment[c.id]?.moves, t);
     }
   }
   // Codexes of a renamed move (RENAMED_MOVES) carry its new name, and an old
@@ -181,6 +185,9 @@ export function loadSave(): SaveState | null {
   if (klutz.learned) klutz.learned = klutz.learned.filter((n) => !(n in REUSED_NAMES));
   const kl2 = equipment[KLUTZ_DROP_ID];
   if (kl2?.moves?.some((n) => n in REUSED_NAMES)) equipment[KLUTZ_DROP_ID] = { ...kl2, moves: replaceRetired(KLUTZ, kl2.moves, REUSED_NAMES) };
+  // Klutz too knows only the moves in his slots (2026-11-24).
+  const klutzSlots = equipment[KLUTZ_DROP_ID]?.moves ?? defaultMoveNames(KLUTZ);
+  if (klutz.learned) klutz.learned = klutz.learned.filter((n) => klutzSlots.includes(n));
   return {
     gold:       typeof parsed.gold === "number" ? parsed.gold : 0,
     inventory,
@@ -195,6 +202,7 @@ export function loadSave(): SaveState | null {
     seen: Array.isArray(parsed.seen) ? parsed.seen : [],
     deathsSinceScan: typeof parsed.deathsSinceScan === "number" ? parsed.deathsSinceScan : 0,
     scanTipRead: parsed.scanTipRead === true,
+    nameTipRead: parsed.nameTipRead === true,
     player: parsed.player && typeof parsed.player === "object" ? (parsed.player as Progress) : { level: 1, xp: 0 },
     scanMode: parsed.scanMode === "store" || parsed.scanMode === "loot" ? parsed.scanMode : defaultScanMode(),
     caches,
@@ -240,6 +248,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [seen, setSeen]            = useState<string[]>([]);
   const [deathsSinceScan, setDeathsSinceScan] = useState(0);
   const [scanTipRead, setScanTipRead] = useState(false);
+  const [nameTipRead, setNameTipRead] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>("loot");
   const [caches, setCaches] = useState<Drop[]>([]);
   const [sealed, setSealed] = useState<string[]>([]);
@@ -289,6 +298,7 @@ export function useGameState(initialTab: TabKey = "all") {
       setSeen(saved.seen ?? []);
       setDeathsSinceScan(saved.deathsSinceScan ?? 0);
       setScanTipRead(saved.scanTipRead ?? false);
+      setNameTipRead(saved.nameTipRead ?? false);
       setScanMode(saved.scanMode ?? "loot");
       setCaches(saved.caches ?? []);
       setSealed(saved.sealed ?? []);
@@ -313,8 +323,8 @@ export function useGameState(initialTab: TabKey = "all") {
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, shelf: bookcase, cage, storage, storageV: STORAGE_V, materials, found, owned, ownedCreatures, teams, pvpTeams, scanCharges: charges, firstScans });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, ownedCreatures, teams, pvpTeams, charges, firstScans]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, nameTipRead, scanMode, caches, sealed, crate, player, shelf: bookcase, cage, storage, storageV: STORAGE_V, materials, found, owned, ownedCreatures, teams, pvpTeams, scanCharges: charges, firstScans });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, nameTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, ownedCreatures, teams, pvpTeams, charges, firstScans]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -323,6 +333,21 @@ export function useGameState(initialTab: TabKey = "all") {
   function noteLabyrinthDeath() { setDeathsSinceScan((n) => n + 1); }
   const scanTipDue = deathsSinceScan >= SCAN_TIP_DEATHS;
   const readScanTip = () => setScanTipRead(true);
+
+  // ── Naming a creature (the user, 2026-11-24) ──────────
+  // Tap its name in its window and type one (lib/creatures/nickname.ts): it shows everywhere in place of its
+  // species' name. Klutz suggests it once you've a creature and none is named yet, till you've heard him or named one.
+  function renameCreature(creatureId: string, raw: string) {
+    const nick = cleanNick(raw);
+    setInventory((prev) => prev.map((d) => {
+      if (d.id !== creatureId || !isCreatureDrop(d)) return d;
+      const t = findCreatureTemplate(d.creatureId, d.name);
+      const rest: CreatureOrItemDrop = { ...d }; delete rest.nick;      return { ...rest, ...(nick ? { nick } : {}), name: nick ?? t?.name ?? d.name };
+    }));
+    if (nick) setNameTipRead(true);
+  }
+  const nameTipDue = klutzHelping(quest) && inventory.some((d) => isCreatureDrop(d)) && !inventory.some((d) => isCreatureDrop(d) && !!(d as CreatureOrItemDrop).nick);
+  const readNameTip = () => setNameTipRead(true);
 
   // ── The Bestiary: creatures you've come across ────────
   // Anything you own (or hold a card of) or have waiting in the cage counts,
@@ -755,11 +780,28 @@ export function useGameState(initialTab: TabKey = "all") {
     const creatures = new Set(inventory.filter((d) => !isRewardDrop(d) && d.dropType === "creature").map((d) => d.id));
     return new Set([...[...favoriteIds].filter((id) => !creatures.has(id)), ...teamIds]);
   }, [favoriteIds, teamIds, inventory]);
-  // Items that can't be sold: favourited, equipped, packed in your bag, or a creature in a team.
-  const lockedIds = useMemo(
-    () => new Set([...shownFavorites, ...equippedOn.keys(), ...packedIds]),
-    [shownFavorites, equippedOn, packedIds]
-  );
+  // Items that can't be sold: favourited, packed in your bag, out with Klutz, or worn and above Rare (a worn piece of
+  // Rare or less can be sold, behind a second confirmation: the user, 2026-11-24; lib/items/economy/sell.ts canSellWorn).
+  const lockedIds = useMemo(() => {
+    const rarityOf = new Map(inventory.map((d) => [d.id, (d as CreatureOrItemDrop).rarity]));
+    const wornLocked = [...equippedOn.keys()].filter((id) => { const r = rarityOf.get(id); return !r || !canSellWorn(r); });
+    return new Set([...shownFavorites, ...wornLocked, ...packedIds, ...klutzAwayItems]);
+  }, [shownFavorites, equippedOn, packedIds, klutzAwayItems, inventory]);
+  // Who wears each worn item (by name), for the second "take it off and sell?" confirmation.
+  const wornBy = useMemo(() => {
+    const names = new Map(inventory.filter(isCreatureDrop).map((c) => [c.id, c.name]));
+    return new Map([...equippedOn].map(([itemId, cid]) => [itemId, cid === KLUTZ_DROP_ID ? "Klutz" : names.get(cid) ?? "a creature"]));
+  }, [equippedOn, inventory]);
+  // Sold (or otherwise gone): off whoever wore it.
+  const unequipIds = (ids: Set<string>) => setEquipment((prev) => {
+    let changed = false;
+    const next: Record<string, Loadout> = {};
+    for (const [cid, l] of Object.entries(prev)) {
+      const hit = EQUIP_SLOTS.filter((s) => { const id = l[SLOT_FIELD[s]]; return !!id && ids.has(id); });
+      if (hit.length) { changed = true; next[cid] = { ...l }; for (const s of hit) next[cid][SLOT_FIELD[s]] = undefined; } else next[cid] = l;
+    }
+    return changed ? next : prev;
+  });
 
   // ── Inventory filters ─────────────────────────────────
   const creaturesOnly   = useMemo(() => inventory.filter((d) => !isRewardDrop(d) && d.dropType === "creature"), [inventory]);
@@ -1168,8 +1210,18 @@ export function useGameState(initialTab: TabKey = "all") {
     });
   }
 
+  // Its move slots. A creature knows only what's in them (2026-11-24): its own list follows, and its codex
+  // moves are those of them that came from codexes (lib/creatures/instance.ts pruneMoves). Klutz's the same.
   function setMoves(creatureId: string, moves: string[]) {
     setEquipment((prev) => ({ ...prev, [creatureId]: { ...prev[creatureId], moves } }));
+    if (creatureId === KLUTZ_DROP_ID) { setKlutz((k) => (k.learned ? { ...k, learned: k.learned.filter((n) => moves.includes(n)) } : k)); return; }
+    setInventory((prev) => prev.map((d) => {
+      if (d.id !== creatureId || !isCreatureDrop(d)) return d;
+      const t = findCreatureTemplate(d.creatureId, d.name);
+      if (!t) return d;
+      const c = { ...d };
+      return pruneMoves(c, moves, t) ? c : d;
+    }));
   }
 
   // Read a codex: the creature learns its race move for good, and the codex is used up.
@@ -1255,6 +1307,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setGold((g) => g + sellTotal);
     countDaily("sell", sellTotal);
     setInventory((prev) => prev.filter((d) => !selectedForSale.has(d.id)));
+    unequipIds(selectedForSale);
     setSelectedForSale(new Set());
     setShowSellConfirm(false);
     setSellMode(false);
@@ -1269,6 +1322,7 @@ export function useGameState(initialTab: TabKey = "all") {
     const price = d && !lockedIds.has(id) ? findValue(d) : 0;
     if (!price) return;
     removeDrop(id);
+    unequipIds(new Set([id]));
     setGold((g) => g + price);
     countDaily("sell", price);
   }
@@ -1279,6 +1333,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setGold((g) => g + crateSellValue(d));
     countDaily("sell", crateSellValue(d));
     setInventory((prev) => prev.filter((x) => x.id !== id));
+    unequipIds(new Set([id]));
     setSelectedForSale((prev) => { if (!prev.has(id)) return prev; const n = new Set(prev); n.delete(id); return n; });
   }
 
@@ -1336,7 +1391,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatuses, trainCreature, levelUpTraining, takeOutOfTraining, findBookPlans, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, upgradeTavernVisitor, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, creaturesOwned, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatuses, trainCreature, levelUpTraining, takeOutOfTraining, findBookPlans, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, upgradeTavernVisitor, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, nameTipDue, nameTipRead, readNameTip, renameCreature, wornBy, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, creaturesOwned, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

@@ -29,6 +29,9 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 
 | # | Decision | Why | Status | Rule |
 |---|---|---|---|---|
+| 61 | A creature knows only the moves in its slots: a codex replaces a move for good, nothing waits in reserve; on load, older saves' spare moves are cut to the slots | The user, 2026-11-24: "moves a creature used to know should be removed"; option 1 (cut on load) was his pick over keeping old pools | ✅ built 2026-11-24 | [design/combat.md](design/combat.md) §6 |
+| 62 | You can name a creature (tap its name in its window, up to 14 letters, the longest species name's), and the name stands in for the species' everywhere | The user, 2026-11-24: to tell who's who in menus | ✅ built 2026-11-24 | [design/creatures.md](design/creatures.md) §4 |
+| 63 | Worn gear of Rare or less can be sold (not favourited), behind a second confirmation; Epic and Legendary stay locked while worn. Every schematic is Epic or better | The user, 2026-11-24 | ✅ built 2026-11-24 | [design/items.md](design/items.md) §3 |
 | 6 | The barcode number never decides the outcome: the first-ever scan rolls it and registers it; later scanners get the same outcome with their own stat roll | Fairness, and "being first" means something | ✅ | [design/scanning.md](design/scanning.md) §2 |
 | 7 | A global registry rolled on the server, from a copy of the game's rules (`npm run registry:rules` after changing them) | Being first works between players | ✅ (2026-10-31) | [design/online.md](design/online.md) §12 |
 | 8 | Stat rolling: rarity weights 40/30/20/9/1, budgets 60–150, the chunked roller. Never changed unasked | The user's most carefully balanced system | ✅ locked by tests | [design/items.md](design/items.md) §3 |
@@ -41,6 +44,7 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 
 | # | Decision | Why | Status | Rule |
 |---|---|---|---|---|
+| 60 | Caltrops hurt the Cyclops's hands as they tear free, never its floating Eye | The user, 2026-11-24 | ✅ built 2026-11-24 | [design/combat.md](design/combat.md) §6 |
 | 11 | Combat V2: 7 races replace the class triangle and damage types; magic stays a third style | Team building and matchups over raw rarity | ✅ (2026-10-26), multipliers 🧪 | [design/combat.md](design/combat.md) §6 |
 | 12 | Agility only decides who strikes first | Players judge how much to invest; don't "fix" it | ✅ | [design/combat.md](design/combat.md) §6 |
 | 13 | No resting: every move set keeps a steady move (≤ 30 energy, no cooldown) | A creature can always attack | ✅ | [design/combat.md](design/combat.md) §6 |
@@ -51,6 +55,7 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 
 | # | Decision | Why | Status | Rule |
 |---|---|---|---|---|
+| 64 | The Den's quest-board ❗ sends you to the campaign only for a reward you can take this moment; a daily quest to claim wins otherwise. Spotted in the Labyrinth, the bag and scroll shut and stay off till the fight | The user, 2026-11-24 | ✅ built 2026-11-24 | [design/den.md](design/den.md) §9, [design/walkable-play.md](design/walkable-play.md) |
 | 15 | Everyone comes home at full health (`HEAL_AT_HOME`), in every dungeon for the alpha; the Abyss is meant to be the first whose wounds come home, to heal in the pool | Kept by the user, 2026-10-20; settled for the alpha, with the Abyss as the planned exception (the user, 2026-11-24) | ✅ (the Abyss: 📌) | [design/labyrinth.md](design/labyrinth.md) §7 |
 | 54 | The Minotaur: a dungeon between the Hydra and the Abyss (open after the Hydra; the Abyss now opens after it), the first fought 5 against 5, crawlable; its boss charges at random (a round's warning, then whoever is in front falls) and sweeps your creature aside for a random teammate | The user, 2026-11-21: the next step after the Hydra | ✅ built 2026-11-21, numbers 🧪, art a stand-in | [design/labyrinth.md](design/labyrinth.md) |
 | 16 | Mystery rooms stay high risk, high reward | Don't soften them | ✅ | [design/labyrinth.md](design/labyrinth.md) §7 |

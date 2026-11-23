@@ -73,7 +73,11 @@ to do there (Bounty in a duel, with no gold) just does nothing.
   chest's 10% (`enchantOldGear`, lib/save.ts). Only gear made before `ENCHANT_ROLL_BEFORE`; the roll
   is seeded by the item's id, so it comes out the same on every load and every device.
 - ✅ **Selling** (the user, 2026-11-16): an enchanted item sells for 20% more (`ENCHANT_SELL_BONUS`,
-  lib/items/economy/sell.ts), wherever it's sold.
+  lib/items/economy/sell.ts), wherever it's sold. ✅ **Selling what's worn** (the user, 2026-11-24): a piece of
+  Rare or less can be sold while a creature (or Klutz, at home) wears it, unless it's favourited, behind a second
+  confirmation that names who wears it ("take it off and sell?"); it comes off as it's sold. Epic and Legendary gear
+  stays locked while worn (`WORN_SELL_MAX`, `canSellWorn`; hooks/useGameState.ts `lockedIds`, `wornBy`). Sell mode is
+  in the Storehouse's dock and the Pit's items dock alike; both show gear four a row.
 - **Rerolling:** only the Enchantress, a tavern visitor ([den.md](den.md) §9): 1 essence crystal
   plus 1,000 / 2,000 / 5,000 gold by the item's rarity.
 - **Look:** an enchanted item's picture has a moving shine over it (like Minecraft's), drawn in
@@ -158,7 +162,9 @@ to do there (Bounty in a duel, with no gold) just does nothing.
   or 3,000 gold) (`CAGE_LEVELS`).
 - ✅ **The Training Pit's slots:** [den.md](den.md) §9, step 8 (the pits).
 - ✅ **The Den's ladders of schematics** (lib/items/plans.ts; the user, 2026-11-20). Each thing's stages are a
-  ladder, a schematic a stage. Only the next one you need turns up, and none on a ladder while you're holding one
+  ladder, a schematic a stage. Every schematic is Epic or Legendary (the user, 2026-11-24; the two racks and the iron
+  cage were Rare). A schematic's window shows what it builds (a box: its size after) and each material it costs,
+  have/need, not stat bars; so does a Revival Elixir's (and every consumable's) show only its words (the user, 2026-11-24). Only the next one you need turns up, and none on a ladder while you're holding one
   of its plans: in chests (a chest room's, a mini boss's, a boss's; none in the Encampment) and on wandering
   merchants' carts (each ladder's plan on 20% of carts, `STORAGE_PLAN_CHANCE`). 🧪 Claude's numbers
   (`PLAN_FINDS`, `PLAN_PRICES`), but the reinforced cage's (the user's):

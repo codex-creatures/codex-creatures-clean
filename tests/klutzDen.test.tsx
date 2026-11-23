@@ -58,19 +58,20 @@ describe("Klutz's Den", () => {
     expect(host.textContent).toContain("Weapon");
   });
 
-  it("keeps his trips: each opens on what he set off with, his fights and his finds", async () => {
+  it("keeps his trips: each opens on his HP, his fights and his finds as pictures (not his kit: the user, 2026-11-24)", async () => {
     await open();
     await tap(host.querySelector('button[aria-label="Trips"]'));
     const text = host.textContent ?? "";
     expect(text).toContain("1/2 won · 1 caught · 2 found");
     expect(text).toContain("+120 XP");
     expect(text).toContain("his pack was full");
-    expect(text).toContain("He set off with");
-    expect(text).toContain("Lv 6 · ❤️ 90/120");
-    expect(text).toContain("Klutz's Club");
+    expect(text).toContain("❤️ 90 → 41 of 120");
+    expect(text).not.toContain("He set off with"); // (his kit is recorded on the trip, not shown)
+    expect(text).not.toContain("Klutz's Club");
     expect(text).toContain("Moss Wolf");
-    expect(text).toContain("Nails ×3");
     expect(text).toContain("1 went in the cage");
+    // His finds: a picture each, named on hover (this trip's were recorded before looks were kept: their names show).
+    expect([...host.querySelectorAll("[title]")].map((el) => el.getAttribute("title"))).toEqual(expect.arrayContaining(["Iron Sword", "Nails ×3"]));
   });
 
   it("while he's out, tapping a stat says why his points can't be spent", async () => {

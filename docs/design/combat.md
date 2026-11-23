@@ -291,7 +291,15 @@ power counts for less as attack grows.
   HP from each creature that comes in), and nothing but Force Push moves them: a Rare Geo codex (magic, 5 power, 60
   energy; learned by the Geo and the magic-looking creatures) that hits, shoves the caltrops and any cloud off your
   side (blood and gore stay), and hurls the caltrops at the target for 10% of its max HP, past armour. Without
-  caltrops under you it's just the small hit.
+  caltrops under you it's just the small hit. ✅ (the user, 2026-11-24) Caltrops hurt the Cyclops's hands as they
+  tear free (each steps in for 10%), but never its Eye, which floats (`bossOnFoot`, bossAi.ts); the Hydra's heads and
+  the Minotaur never come in after the start.
+- ✅ **A creature knows only the moves in its slots** (the user, 2026-11-24: "moves a creature used to know should
+  be removed"; option 1). Its Moves tab is the 4 slots and nothing else: no list of other moves to swap in. Reading
+  a codex puts the move in a free slot, or in place of one you pick (and confirm), and the move it replaces is gone
+  for good; codex moves are tagged in their slots. A save from before kept its born moves and every codex move
+  beside its chosen slots: on load those are cut to the slots (`pruneMoves`, lib/creatures/instance.ts; `learned`
+  becomes the slot moves that came from codexes). Klutz the same. Ascension carries the codex moves still in its slots.
 - **Poison** keeps whichever has the most left (dose × rounds); a new one never shortens it.
 - **Bleed** (Obsidian, Razor Arrows): until it leaves the field; Undead don't bleed. **Weaken**
   (Nullifying Voice, Haunting Scream's fallback): an attack style, or all, down. **Ward** (Crystal

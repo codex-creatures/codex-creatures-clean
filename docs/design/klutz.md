@@ -66,11 +66,18 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     in view. Under it while he's out, his pack: a slot for each it holds, filled with what he's picked up (full: he's
     heading home). (The testing "skip to the end" button went the same day.)
   - ✅ **His trips are kept** (`trips`, `TRIP_LOG` = 20, newest first; lib/klutz.ts `tripOf`, `tripLog`): each, once
-    he's home, as a short record: where, when and how long, why he came home, his XP, every fight (won, caught) and
-    every find (names and rarities), how many went in the cage, and his **kit** as he set off (level, HP, his %s,
-    gear, soul stone and moves: `Expedition.kit`, stored when he's sent). The Trips tab lists them; tap one to open
-    it. A save from before shows its last trip (with no kit). Planned: art for his den (a den within the Den, the
-    user: UI first, art and its place in the room later).
+    he's home, as a short record: where, when and how long, why he came home, his XP, every fight (won, caught, and
+    what it cost him in HP: `hpLost`, from 2026-11-24) and every find (name, rarity, and enough of the drop for its
+    picture: `TripLook`, from 2026-11-24), how many went in the cage, and his **kit** as he set off (level, HP, his
+    %s, gear, soul stone and moves: `Expedition.kit`, stored when he's sent). The Trips tab lists them; tap one to
+    open it: his HP from setting off to home, each fight with its HP cost, and his finds as small pictures as his
+    pack shows them (the user, 2026-11-24: simpler; his kit, %s and moves are recorded but not shown; older trips'
+    finds show their names). A save from before shows its last trip (with no kit). Planned: art for his den (a den
+    within the Den, the user: UI first, art and its place in the room later).
+  - ✅ **His tabs stick** to the top of his screen as it scrolls, and switching one keeps your place down the page
+    (the user, 2026-11-24; hooks/useScrollKeep.ts, as the Storehouse's tabs do). Everything that stands for Klutz
+    (his Den's title, "Back to Klutz", the cage's note) shows his own head, cropped from his sprite
+    (components/klutz/KlutzHead.tsx), not the 👺 it used to.
   - Trips planned before v2 keep their own rules (fights with a find each) and still hand over what they held.
   - His gear is locked while he's away.
 - ✅ **The cage** holds 1, then 3 (the iron cage) and 5 (the reinforced cage), each from a schematic

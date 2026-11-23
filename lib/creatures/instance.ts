@@ -78,6 +78,23 @@ export function upgradeStyle(c: CreatureOrItemDrop, t?: CreatureTemplate): boole
   return true;
 }
 
+// A creature knows only the moves in its slots (the user, 2026-11-24: "moves a
+// creature used to know should be removed": teaching a codex replaces a move
+// for good; nothing waits in reserve). A save from before kept its born moves
+// and every codex move beside its chosen slots: on load those are cut to the
+// slots (the user's choice, option 1), and `learned` to the slot moves that
+// came from codexes. Idempotent, so it runs on every load. Returns whether
+// anything changed. (slots: its chosen move slots, loadout.moves.)
+export function pruneMoves(c: { moves?: string[]; learned?: string[] }, slots: string[] | undefined, t: CreatureTemplate): boolean {
+  const kept = resolveMoves(t, slots ?? c.moves).map((m) => m.name);
+  const learned = (c.learned ?? []).filter((n) => kept.includes(n));
+  const same = (a: string[] | undefined, b: string[]) => (a?.length ?? 0) === b.length && b.every((n, i) => a?.[i] === n);
+  if (same(c.moves, kept) && (c.learned === undefined ? learned.length === 0 : same(c.learned, learned))) return false;
+  c.moves = kept;
+  if (c.learned !== undefined || learned.length) c.learned = learned;
+  return true;
+}
+
 // Moves chosen in the move slots win; otherwise the creature's starting moves.
 export function movesOf(drop: CreatureOrItemDrop, t: CreatureTemplate, chosen?: string[]): Skill[] {
   return resolveMoves(t, chosen ?? drop.moves);
@@ -90,5 +107,6 @@ export function fighterFor(drop: CreatureOrItemDrop, t: CreatureTemplate, weapon
   const worn = wornArmor(armor);
   const f = buildFighter(t, weapon, worn.stats, chosenMoves ?? drop.moves, drop.proficiency, worn.set, weaponKey, drop.level ?? 1, drop.ascended ?? 0);
   const enchant = fighterEnchants(weaponItem, armor);
-  return { ...f, ...(drop.soulStone ? { soulStone: drop.soulStone } : {}), ...(enchant ? { enchant } : {}) };
+  // (Its own name, if you gave it one: lib/creatures/nickname.ts.)
+  return { ...f, ...(drop.nick ? { name: drop.nick } : {}), ...(drop.soulStone ? { soulStone: drop.soulStone } : {}), ...(enchant ? { enchant } : {}) };
 }

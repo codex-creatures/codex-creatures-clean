@@ -157,7 +157,7 @@ kill theirs.
 - `hooks/useGameState.ts`: the game state, plus load/save. `hooks/useDropGeneration.ts`: scan drops.
 - `lib/`: the rules, kept pure where possible and tested.
   - `combat/` (engine, battle, teamBattle, AIs, loadout); `creatures/` (species and moves, levels,
-    rolls, summoning, ascension, bosses, starter, soul stones); `items/` (stat rolling: `rollConfig.ts`,
+    rolls, summoning, ascension, bosses, starter, soul stones, nicknames); `items/` (stat rolling: `rollConfig.ts`,
     `budgets.ts`, `ceilings.ts`, **the user's most carefully balanced system**; armour, materials).
   - `dungeon/`: runs (`run.ts`), the scroll map (`map.ts`), walkable layouts (`layout.ts`,
     `interior.ts`), walking, foes, torches and candles (`torch.ts`), campfires, `chamber.ts`, `witch.ts`,

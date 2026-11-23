@@ -75,6 +75,7 @@ export type SchematicKey = "crooked_bookcase" | "carved_bookcase" | "iron_cage" 
   | "weapon_storage_1" | "weapon_storage" | "weapon_storage_3" | "weapon_storage_2"
   | "armor_storage_1" | "armor_storage" | "armor_storage_3" | "armor_storage_2"
   | "pit_slot_2" | "pit_slot_3";
+// Every schematic is Epic or Legendary (the user, 2026-11-24; the racks and the iron cage were Rare).
 export const SCHEMATICS: Record<SchematicKey, { name: string; rarity: Rarity; cost: Partial<Record<MaterialKey, number>>; gold?: number; desc: string }> = {
   // The bookcase (BOOKCASE_STAGES). The key crooked_bookcase is the Sturdy Bookcase's plan since 2026-11-20 (saves
   // and the campaign's reward for the rubble hold it): the crooked bookcase takes no plan now (BOOKCASE_CROOKED_COST).
@@ -83,14 +84,14 @@ export const SCHEMATICS: Record<SchematicKey, { name: string; rarity: Rarity; co
   carved_bookcase:  { name: "Carved Bookcase Schematic", rarity: "legendary", cost: { planks: 25, nails: 15, metal_bars: 10, essence_stones: 2, essence: 1 }, gold: 1000,
                       desc: "Plans for a carved bookcase: it holds 50 codexes." },
   // The cage (CAGE_LEVELS).
-  iron_cage:        { name: "Iron Cage Schematic", rarity: "rare", cost: { metal_bars: 10 },
+  iron_cage:        { name: "Iron Cage Schematic", rarity: "epic", cost: { metal_bars: 10 },
                       desc: "Plans for a bigger cage: it holds 3 creatures instead of 1." },
   reinforced_cage:  { name: "Reinforced Cage Schematic", rarity: "legendary", cost: { metal_bars: 25, essence: 2 },
                       desc: "Plans for a reinforced cage: it holds 5 creatures instead of 3." },
   // The weapon and armour boxes (lib/items/storage.ts BOX_CAPS): 50 → 60 → 75 → 85 → 100, dearer each time, the
   // last with essence crystals (the user, 2026-11-20). The keys weapon_storage (75) and weapon_storage_2 (100) are
   // the merchant's two plans from before; _1 and _3 came in between.
-  weapon_storage_1: { name: "Weapon Rack Schematic", rarity: "rare", cost: { planks: 10, nails: 5 },
+  weapon_storage_1: { name: "Weapon Rack Schematic", rarity: "epic", cost: { planks: 10, nails: 5 },
                       desc: "Plans for a weapon rack: your weapon box holds 60." },
   weapon_storage:   { name: "Weapon Storage Schematic", rarity: "epic", cost: { planks: 15, nails: 10, metal_bars: 3 },
                       desc: "Plans for a bigger weapon box: it holds 75." },
@@ -98,7 +99,7 @@ export const SCHEMATICS: Record<SchematicKey, { name: string; rarity: Rarity; co
                       desc: "Plans for an iron weapon box: it holds 85." },
   weapon_storage_2: { name: "Reinforced Weapon Storage Schematic", rarity: "legendary", cost: { metal_bars: 15, essence_stones: 5, essence: 2 },
                       desc: "Plans for an iron-bound weapon box: it holds 100." },
-  armor_storage_1:  { name: "Armour Rack Schematic", rarity: "rare", cost: { planks: 10, nails: 5 },
+  armor_storage_1:  { name: "Armour Rack Schematic", rarity: "epic", cost: { planks: 10, nails: 5 },
                       desc: "Plans for an armour rack: your armour box holds 60." },
   armor_storage:    { name: "Armour Storage Schematic", rarity: "epic", cost: { planks: 15, nails: 10, metal_bars: 3 },
                       desc: "Plans for a bigger armour box: it holds 75." },

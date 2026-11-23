@@ -64,6 +64,7 @@ export default function InventoryPage() {
         <SellConfirmModal
           items={game.selectedItemsForModal}
           totalGold={game.sellTotal}
+          worn={game.wornBy}
           onConfirm={game.confirmSell}
           onCancel={() => game.setShowSellConfirm(false)}
         />
@@ -76,6 +77,8 @@ export default function InventoryPage() {
       <StorageBuild game={game} />
       <InventoryList
         perRow={4}
+        materials={game.materials}
+        wornBy={game.wornBy}
         tabs={STORE_TABS}
         showSell={false}
         sellBar={false}

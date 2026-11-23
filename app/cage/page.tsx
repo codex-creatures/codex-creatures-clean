@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { klutzStatus } from "@/lib/klutz";
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
+import KlutzHead from "@/components/klutz/KlutzHead";
 import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
 import RaceTag from "@/components/RaceTag";
 import SoulStoneTag from "@/components/SoulStoneTag";
@@ -65,7 +66,7 @@ export default function CagePage() {
           <p style={{ color: "#c8c4b8", fontSize: 14 }}>It&apos;s in your Creatures. Open it to add it to a Labyrinth team, and give it some gear in the Pit.</p>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
             {game.quest.stage === "start"
-              ? <Link href="/klutz" className="pixel-btn tutorial-pulse">👺 Back to Klutz</Link>
+              ? <Link href="/klutz" className="pixel-btn tutorial-pulse"><KlutzHead size={18} /> Back to Klutz</Link>
               : <Link href="/pit" className="pixel-btn">To the Pit</Link>}
             <Link href="/" className="pixel-btn">Back to the Den</Link>
           </div>
@@ -158,7 +159,7 @@ function KlutzWhere({ game, now }: { game: ReturnType<typeof useGameState>; now:
     ? <>🌀 <b>Klutz is out hunting in the Labyrinth</b> — {mins(now - s.expedition.startedAt)} so far. Whatever he catches ends up in here.</>
     : s.kind === "healing"
       ? <>💤 <b>Klutz is soaking in the pool</b> — back on his feet in {mins(s.fullAt - now)}.</>
-      : <>👺 <b>Klutz is wandering the Den.</b> Send him hunting and he&apos;ll bring what he catches back to this cage.</>;
+      : <><KlutzHead size={18} /> <b>Klutz is wandering the Den.</b> Send him hunting and he&apos;ll bring what he catches back to this cage.</>;
   return (
     <div className="stone-panel" style={{ marginBottom: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
       <span style={{ fontSize: 14, color: "#d8d4c8", lineHeight: 1.45, flex: "1 1 240px" }}>{line}</span>

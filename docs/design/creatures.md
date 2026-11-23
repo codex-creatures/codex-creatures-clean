@@ -33,6 +33,12 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   codexes still follow their learners). Releasing a creature gives nothing. A captured creature joins
   your creatures (the starter is also the first free pick at the Labyrinth's entrance).
 - ✅ **Ascension** (see below): give up creatures of a kind at the Soul Altar to raise one a rarity.
+- ✅ **Naming** (the user, 2026-11-24; lib/creatures/nickname.ts): tap a creature's name in its window and it's a
+  text box; what you type (up to `NICK_MAX` = 14 letters, the longest species name's; empty puts the species' name
+  back) stands in for its species' name everywhere (lists, cards' owners, battles, the Labyrinth, Klutz's crate,
+  PvP: a fighter built from it carries it). Kept on the drop as `nick`; its `name` is set to it on load, so every
+  screen shows it without knowing. The species shows small under a given name. Klutz suggests naming your first
+  creature once he's helping (`nameTipDue`, till you've heard him or named one: `nameTipRead`).
 - ✅ The card design is settled (CardFace, the stone card). The Skull Raven (id `storm_phoenix`) is
   the quality benchmark for sprites and cards.
 - ✅ Races have 5 creatures each, one per rarity (a dual-race creature counts under its first race).

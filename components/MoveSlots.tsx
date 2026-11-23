@@ -1,20 +1,20 @@
 "use client";
 // components/MoveSlots.tsx
-// A creature's moves. Its 4 move slots sit on top; below are the other moves
-// it knows — the ones it was born with (3–4) and any learned from a codex
-// (codexes on the bookcase are offered under these, in the creature
-// window). Tap a slot, then tap a move below to swap it in.
-// Reading a codex with all 4 slots full: `teaching` asks you to tap the
-// move it replaces, then Confirm.
+// A creature's moves: its 4 move slots, and nothing else. It knows only what's
+// in them (the user, 2026-11-24: nothing waits in reserve; a move taught from a
+// codex replaces one for good). Reading a codex with all 4 slots full:
+// `teaching` asks you to tap the move it replaces, then Confirm. Moves that
+// came from a codex are tagged.
 
 import { useState } from "react";
-import { CLASS_INFO, MOVE_BY_NAME, MOVE_SLOTS, STEADY_MAX_ENERGY, hasSteadyMove, isUtility, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
+import { CLASS_INFO, MOVE_BY_NAME, MOVE_SLOTS, STEADY_MAX_ENERGY, hasSteadyMove, isUtility, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
 import { MoveKind, moveTag } from "./ClassBadge";
 import Glyph from "./Glyph";
 import { MoveTile } from "./MoveTile";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", fontWeight: 700, fontVariantNumeric: "tabular-nums" };
+const CODEX_TAG = { text: "codex", color: "#c7b8ff" };
 
 // A one-line summary (used on cards and other compact lists).
 export function MoveInfo({ m }: { m: Skill }) {
@@ -61,36 +61,18 @@ export function MoveCard({ m, slot, tag, selected, dim, onClick }: {
   );
 }
 
-export default function MoveSlots({ template, moves, born, learned, onChange, teaching }: {
+export default function MoveSlots({ template, moves, learned, teaching }: {
   template: CreatureTemplate;
   moves?: string[];   // what's in its slots
-  born?: string[];    // the moves it was born with (its roll)
-  learned?: string[]; // moves learned from codexes
-  onChange?: (moves: string[]) => void;
+  learned?: string[]; // which of them came from a codex (tagged)
   teaching?: { move: string; onPick: (slot: number) => void; onCancel: () => void };
 }) {
-  const [editing, setEditing] = useState<number | null>(null);
   const [forget, setForget] = useState<number | null>(null); // teaching: the slot picked to forget, awaiting Confirm
   const [warn, setWarn] = useState(false); // tried to give up its last steady move
   const current = resolveMoves(template, moves);
   // Would putting this move in this slot leave the set without a steady move (STEADY_MAX_ENERGY)?
   const breaks = (slot: number, m?: Skill) => !!m && !hasSteadyMove(current.map((c, i) => (i === slot ? m : c)));
-  const options = movesAvailableTo(template, learned, born).filter((m) => !current.some((c) => c.name === m.name));
   const fromCodex = new Set(learned ?? []);
-  const groups: [string, Skill[], { text: string; color: string } | undefined][] = [
-    ["Its other moves", options.filter((m) => !fromCodex.has(m.name)), undefined],
-    ["Learned from a codex", options.filter((m) => fromCodex.has(m.name)), { text: "codex", color: "#c7b8ff" }],
-  ];
-
-  function choose(name: string) {
-    if (editing === null) return;
-    if (breaks(editing, options.find((m) => m.name === name))) { setWarn(true); return; }
-    setWarn(false);
-    const next = current.map((m) => m.name);
-    next[editing] = name;
-    onChange?.(next);
-    setEditing(null);
-  }
 
   return (
     <div>
@@ -104,7 +86,7 @@ export default function MoveSlots({ template, moves, born, learned, onChange, te
           ) : (
             <>
               {/* Reading the codex uses it up, so the swap waits for a Confirm. */}
-              <span>Forget <b>{current[forget].name}</b> for <b>{teaching.move}</b>?</span>
+              <span>Forget <b>{current[forget].name}</b> for <b>{teaching.move}</b>? It&apos;s gone for good.</span>
               <span style={{ display: "flex", gap: 6 }}>
                 <button className="chip" onClick={() => { const i = forget; setForget(null); teaching.onPick(i); }}>✓ Confirm</button>
                 <button className="chip" onClick={() => setForget(null)}>Back</button>
@@ -115,32 +97,18 @@ export default function MoveSlots({ template, moves, born, learned, onChange, te
       )}
       <div style={{ fontSize: 13, color: MUTED, marginBottom: 8, display: teaching && !warn ? "none" : undefined }}>
         {warn ? <span style={{ color: "#ff8a80" }}>Keep one move of {STEADY_MAX_ENERGY}⚡ or less: it always has one it can afford.</span>
-          : onChange ? (editing === null ? "Tap one of your moves to swap it out." : `Now pick a move below to put in slot ${editing + 1}.`) : "Its moves in battle."}
+          : "Its moves in battle. A codex teaches a new one in place of one of these."}
       </div>
       <div className="move-grid">
         {Array.from({ length: MOVE_SLOTS }, (_, i) => current[i]).map((m, i) => m ? (
-          <MoveTile key={i} m={m} slot={i} selected={teaching ? forget === i : editing === i}
-            onClick={teaching ? () => { const no = breaks(i, MOVE_BY_NAME[teaching.move]); setWarn(no); if (!no) setForget(forget === i ? null : i); }
-              : onChange ? () => { setWarn(false); setEditing(editing === i ? null : i); } : undefined} />
+          <MoveTile key={i} m={m} slot={i} selected={teaching ? forget === i : false} tag={fromCodex.has(m.name) ? CODEX_TAG : undefined}
+            onClick={teaching ? () => { const no = breaks(i, MOVE_BY_NAME[teaching.move]); setWarn(no); if (!no) setForget(forget === i ? null : i); } : undefined} />
         ) : (
-          <button key={i} disabled={!onChange} onClick={() => setEditing(editing === i ? null : i)}
-            style={{ padding: 12, borderRadius: 10, border: `2px dashed ${editing === i ? "#ffd66e" : "#2a2d38"}`, background: "transparent", color: MUTED, cursor: "pointer" }}>
+          <div key={i} style={{ padding: 12, borderRadius: 10, border: "2px dashed #2a2d38", color: MUTED, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
             Empty slot {i + 1}
-          </button>
+          </div>
         ))}
       </div>
-
-      {onChange && !teaching && groups.map(([title, list, tag]) => list.length > 0 && (
-        <div key={title} style={{ marginTop: 16 }}>
-          <div className="pixel-font" style={{ fontSize: 14, color: "#f1d9a0", marginBottom: 8 }}>{title}</div>
-          <div className="move-grid">
-            {list.map((m) => (
-              <MoveTile key={m.name} m={m} tag={tag} dim={editing === null}
-                onClick={() => (editing === null ? undefined : choose(m.name))} />
-            ))}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
