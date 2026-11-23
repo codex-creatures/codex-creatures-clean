@@ -1,7 +1,7 @@
 // lib/dungeon/torch.ts
 // What your torch shows in the walkable Labyrinth (floorplan.ts), and the
-// tunnels that fall in behind you. Pure rules, no drawing (the lab draws:
-// app/lab/walk).
+// tunnels that fall in behind you. Pure rules, no drawing (the game draws:
+// components/WalkView3D.tsx).
 //
 // - The torch lights what it can reach in a straight line within
 //   TORCH_RADIUS: rock blocks it, so you walk round a corner to see past it.

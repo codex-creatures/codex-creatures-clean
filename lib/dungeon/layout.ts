@@ -105,7 +105,7 @@ export const LAYOUT_REROLLS = 3000;
 // CAMP_ROUTE rooms or more fit (3 × 6 rooms between = 18).
 // Rolled guided (rollRooms, 2026-11-09): about 0.2 s a layout, against 0.25 s (2 s at worst) before.
 export const WALK_SPEC = { rooms: 19, minRoute: CAMP_ROUTE, large: 0, block: BLOCK, guided: true };
-// The walkable Labyrinth (the Cyclops; in /lab/newrun only, for now). 🧪
+// The walkable Labyrinth (the Cyclops). 🧪
 // Provisional, smaller than the scroll map's (36 rooms, 15 to the lair): with
 // ROUTES separate ways, 15 rooms each needs 44+ rooms, and those layouts take
 // ~15 s to roll and mostly fail. 30 rooms with 10 to the lair roll in ~1 s.

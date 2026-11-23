@@ -3,7 +3,7 @@
 // 🧪 A prop drawn from its recipe (lib/props/recipe.ts): each part's faces as flat polygons, painted with their
 // crops at the art density, leaning as the rock does (Props3D's PROP_LEAN), unlit and tinted by the light where
 // the prop stands as the game's 3D things are; a part that glows is drawn full bright; toon parts carry their
-// band of light in each face's colour. /lab/propbuilder draws with it; the game will (world/art-pipeline.md §6.6).
+// band of light in each face's colour. The game draws with it (the Den, components/Den3DPlaces.tsx, and the Labyrinth's things, Decor3D), and so does /lab/propbuilder.
 // The game draws a prop's faces gathered into a few drawings (lib/props/batch.ts: a face a drawing was thousands a
 // frame in the Den, too many for a phone); only its moving faces (a swirl, a ripple) are drawn on their own.
 // The builder, which picks parts and repaints faces, draws each part from its own recipe object and each face

@@ -1,7 +1,7 @@
 // lib/dungeon/foes.ts
 // Foes in the walkable Labyrinth, and being seen (the user, 2026-11-05: a
-// fight starts when a room's foes see you). Pure rules, no drawing (previewed
-// in app/lab/walk); not used by the game yet.
+// fight starts when a room's foes see you). Pure rules, no drawing (the game's
+// walked runs: components/WalkView3D.tsx, lib/world/walkWorld.ts).
 //
 // - A fight room's foes (walkRooms.ts: the live room roll) stand in it as
 //   markers, one each, spread out and away from its doors, so none is on top

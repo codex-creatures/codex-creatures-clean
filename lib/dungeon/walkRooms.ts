@@ -4,7 +4,7 @@
 // balance: makeRoom for each room (its foes, gold, a stash's sack), the
 // chief's cages (campCages), and the loot a beaten room or an opened chest
 // leaves (the same rolls as the Labyrinth screen, app/dungeon/page.tsx).
-// Pure; not used by the game yet (previewed in app/lab/walk).
+// Pure; the game's walked runs roll with it (walkRun.ts).
 //
 // - Every room is rolled at the start, not as you walk in (the live game
 //   rolls on entering), because its foes stand in it where you can see them

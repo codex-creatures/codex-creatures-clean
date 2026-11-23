@@ -1,8 +1,8 @@
 // lib/dungeon/decor.ts
 // Things lying about the walkable Labyrinth's rooms, so they're less alike
 // (🚧 the user, 2026-11-06: "upgrades to the art, things that make the rooms
-// less repetitive and more engaging"; samples, shown in /lab/newrun only
-// until the user has picked). Pure rules, no drawing (components/WalkView.tsx).
+// less repetitive and more engaging"). Placed in the game's walked runs
+// (lib/world/walkWorld.ts). Pure rules, no drawing (components/WalkView3D.tsx).
 //
 // - Each room gets a few bits of decor (DECOR_PER, at most DECOR_MOST), more
 //   in bigger rooms, picked from its kind's theme (THEMES: bones and nests in

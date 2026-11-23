@@ -2,7 +2,7 @@
 // Drawing the walkable Labyrinth (floorplan.ts) with PixelLab tile sheets, in
 // the three-quarter top-down look of docs/ideas/future-dungeon-direction.png:
 // floors seen from above, walls showing their front faces. Pure rules, no
-// drawing (the lab draws: app/lab/walk). The grid, collision and paths don't
+// drawing (the game draws: components/WalkView3D.tsx). The grid, collision and paths don't
 // change; only the picture does.
 //
 // - The sheets are PixelLab "Wang" tilesets with walls (transition size 1):

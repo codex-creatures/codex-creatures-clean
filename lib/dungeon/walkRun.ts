@@ -63,7 +63,7 @@ export const SECOND_DEN = 0.35;
 
 // A new walkable run. The Encampment (dungeon 0): its room mix on a walkable
 // layout, every room rolled, its chief's cages the ones given. The Labyrinth
-// (dungeon 1, the Cyclops; /lab/newrun only for now): its own mix and large
+// (dungeon 1, the Cyclops): its own mix and large
 // rooms (layout.ts labyrinthMap) on a bigger layout (WALK_LABYRINTH), the
 // Cyclops waiting at the top. The Deep Labyrinth (dungeon 2, the Hydra): the
 // Labyrinth's way, with two large rooms (WALK_HYDRA) and the Hydra at the top. The
