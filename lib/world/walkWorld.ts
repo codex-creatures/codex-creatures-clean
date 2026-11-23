@@ -16,7 +16,7 @@
 
 import { roomCentre, floorsOf, stepRule, type Layout, type Progress } from "../dungeon/layout";
 import type { Sconce, Candle } from "../dungeon/torch";
-import { placeDecor, placeBanners, placeFloorLife, type Decor, type RatHole, type CobWeb } from "../dungeon/decor";
+import { placeFloorLife, type RatHole, type CobWeb } from "../dungeon/decor";
 import { spawnOf, parentOf, WAIT_FROM_TOP, type Foe } from "../dungeon/foes";
 import { findPath, walkable, type CanStep } from "../dungeon/walk";
 import { hasFight, fightContainer, type DungeonId, type Room } from "../dungeon/run";
@@ -51,16 +51,6 @@ export const centresOf = (layout: Layout) => Object.fromEntries(Object.values(la
 
 // Every room, and a big room's second den (foes.ts spawnOf) where it has one.
 export const roomIds = (layout: Layout, map: DungeonMap) => Object.keys(layout.rooms).sort().flatMap((id) => (map.nodes[spawnOf(id)] ? [id, spawnOf(id)] : [id]));
-
-// 🚧 The lab's decor samples (/lab/newrun): where they lie, and banners on the rooms' top walls clear of the wall torches.
-export function placeLabDecor(walk: WalkRun, plan: Floorplan, map: DungeonMap, candles: Candle[], sconces: Sconce[]): { decor: Decor[]; banners: Pt[] } {
-  const layout = walk.layout;
-  const kinds = Object.fromEntries(Object.keys(layout.rooms).map((id) => [id, map.nodes[id].kind]));
-  return {
-    decor: placeDecor(plan, kinds, centresOf(layout), [...(walk.fires ?? []), ...candles], [layout.start, layout.boss], seeded(walk.seed + 707)),
-    banners: placeBanners(plan, sconces.filter((c) => !c.wall || c.wall === "top"), [layout.start], seeded(walk.seed + 808)),
-  };
-}
 
 // The puddles and mouse holes the game draws (decor.ts placeFloorLife), clear of the things standing
 // in the rooms (not the people who wander), the campfires, candles and wall torches.
@@ -250,7 +240,7 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
 // The cells nothing may walk into: solid things, campfires, solid decor. (A
 // thing off its panel's middle, from world version 4, blocks the panel it's in:
 // the generator keeps each solid thing inside one.)
-export const solidCells = (things: Thing[], fires: Campfire[], decor: Decor[]) =>
+export const solidCells = (things: Thing[], fires: Campfire[], decor: { x: number; y: number; solid: boolean }[]) =>
   new Set([...things.filter((t) => t.solid), ...fires, ...decor.filter((d) => d.solid)].map((t) => `${panelAt(t.x)},${panelAt(t.y)}`));
 
 // Where you may walk: what the forward rule allows (layout.ts stepRule), only

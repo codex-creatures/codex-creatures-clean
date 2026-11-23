@@ -103,9 +103,9 @@ describe("phase 0: the walkable dungeons, pinned (world-spec §8)", () => {
   for (const name of NAMES) {
     // (The Cyclops's layouts are bigger: its two run in the full suite.)
     const it = name.startsWith("cyclops") ? slowIt : quickIt;
-    it(`${name}: what the walk screen works out, live and with the lab's decor`, () => {
+    it(`${name}: what the walk screen works out`, () => {
       const run = fixture(name);
-      golden(`${name}.scene`, { live: sceneInputs(run, false), decor: sceneInputs(run, true) });
+      golden(`${name}.scene`, { live: sceneInputs(run) });
     });
     it(`${name}: foes going about and walking up to things`, () => {
       golden(`${name}.motion`, motion(fixture(name)));
@@ -153,7 +153,7 @@ describe("phase 0: the walkable dungeons, pinned (world-spec §8)", () => {
   // Fresh runs of each dungeon, ten seeds each: what's rolled and placed.
   const sweep = (make: (seed: number) => DungeonRun) => Array.from({ length: 10 }, (_, i) => {
     const run = make(1000 + i);
-    const s = sceneInputs(run, true);
+    const s = sceneInputs(run);
     const plan = layoutFloorplan(run.walk!.layout);
     return { tiles: digest(plan.tiles), rooms: Object.keys(run.map.nodes).length, kinds: digest(JSON.stringify(Object.values(run.map.nodes).map((n) => n.kind))), scene: digest(JSON.stringify(s)) };
   });

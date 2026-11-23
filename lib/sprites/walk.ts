@@ -24,7 +24,6 @@ export type KitSize = { px: number; row: number; north: number; cap: number; sid
 export type KitArt = { floor: string; north: string; cap: string; east: string; west: string; size: KitSize;
   corners?: { nw: string; ne: string; sw: string; se: string };
   edges?: { n: string; w: string };
-  worn?: { floors: string[]; walls: string[] };
   lights?: KitLights };
 // The lights drawn in the kit's style (PixelLab, round 3: PIXELLAB.md), at its art size: a wall torch
 // (its head, where the flame burns, `head` px down its middle) and a floor candle cluster (its three
@@ -56,8 +55,7 @@ export const WALK_TILES: WalkTiles[] = [
       corners: { nw: `${KIT_E}nw.png`, ne: `${KIT_E}ne.png`, sw: `${KIT_E}sw.png`, se: `${KIT_E}se.png` }, lights: KIT_LIGHTS } },
   { name: "Kit: mossy dungeon", floor: `${KIT_A}floor.png`, tunnel: `${KIT_A}floor.png`,
     kit: { floor: `${KIT_A}floor.png`, north: `${KIT_A}north.png`, cap: `${KIT_A}cap.png`, east: `${KIT_A}east.png`, west: `${KIT_A}west.png`,
-      size: { px: KIT_PX, row: KIT_ROW, north: KIT_NORTH, cap: KIT_CAP, side: KIT_SIDE },
-      worn: { floors: Array.from({ length: 12 }, (_, i) => `/sprites/walk/floor-worn-${i}.png`), walls: Array.from({ length: 3 }, (_, i) => `/sprites/walk/wall-worn-${i}.png`) } } },
+      size: { px: KIT_PX, row: KIT_ROW, north: KIT_NORTH, cap: KIT_CAP, side: KIT_SIDE } } },
   { name: "Mossy brick", floor: "/sprites/walk/tiles-a.png", tunnel: "/sprites/walk/tunnel-a.png" },
   { name: "Ivy blocks", floor: "/sprites/walk/tiles-b.png", tunnel: "/sprites/walk/tiles-b.png" },
 ];
@@ -116,10 +114,9 @@ export const WALK_STANDING_TORCH: WalkProp = { src: "/sprites/walk/standing-torc
 export const STANDING_TORCH_U = 1.2; // how tall it stands, in units (its object's height)
 export const STANDING_TORCH_FLAME: [number, number] = [8.5, 3];
 
-// 🚧 Decor samples (2026-11-06, /lab/newrun's Decor switch only, for the user
-// to judge; lib/dungeon/decor.ts places them): PixelLab map objects matched
-// to the kit's floor, trimmed, drawn `size` px wide. And worn floor tiles
-// (the kit's floor, edited: cracks, chips, moss), mixed in at random.
+// The decor's pictures (2026-11-06; lib/world/objects.ts, placed in rooms' corners by
+// lib/world/place.ts): PixelLab map objects matched to the kit's floor, trimmed,
+// drawn `size` px wide.
 export const WALK_DECOR: Record<"barrels" | "crates" | "skull" | "nest" | "pots" | "pillar", WalkProp> = {
   barrels: { src: "/sprites/walk/decor/barrels.png", w: 35, h: 26, size: 20 },
   crates: { src: "/sprites/walk/decor/crates.png", w: 34, h: 42, size: 16 },
@@ -128,8 +125,5 @@ export const WALK_DECOR: Record<"barrels" | "crates" | "skull" | "nest" | "pots"
   pots: { src: "/sprites/walk/decor/pots.png", w: 26, h: 26, size: 12 },
   pillar: { src: "/sprites/walk/decor/pillar.png", w: 37, h: 33, size: 24 },
 };
-export const WALK_FLOOR_WORN: string[] = Array.from({ length: 12 }, (_, i) => `/sprites/walk/floor-worn-${i}.png`);
-// Worn north wall faces (the kit's, edited: cracks, chips, cobwebs, ivy),
-// each two tiles wide (KIT_PX × 2 by KIT_NORTH), and a banner hung on a wall.
-export const WALK_WALL_WORN: string[] = Array.from({ length: 3 }, (_, i) => `/sprites/walk/wall-worn-${i}.png`);
+// A banner hung on a wall.
 export const WALK_BANNER: WalkProp = { src: "/sprites/walk/decor/banner.png", w: 32, h: 43, size: 14 };

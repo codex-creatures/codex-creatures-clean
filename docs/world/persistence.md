@@ -213,8 +213,9 @@ From phase 0 and later phases (archive §8), still how the walkable world is pro
 - **Goldens** (`tests/golden/walk/`, by tests/walkBaseline.test.ts): for each fixture, everything
   the walk works out from it (floorplan, forward rule, closed plan, rubble, what you've seen, light,
   torches, candles, campfires, foe starts, the witch, every thing to tap and its path, being
-  spotted, the lab's decor), ten seconds of foes moving, walking up to each thing, paths to every
-  room; each fixture's `*.placed.json`; and draw lists for fixed states (`*.draw.json`).
+  spotted), ten seconds of foes moving, walking up to each thing, paths to every room; and each
+  fixture's `*.placed.json`. (The 2D view's draw lists, `*.draw.json`, its depth edges, worn tiles
+  and the lab's decor left them with it on 2026-11-24.)
   `UPDATE_GOLDEN=1` rewrites them, only for a change the user approved (see "Reviewing goldens").
 - **Side-by-side checks**: the walk sim and the scene builder are each run beside the code they
   replaced, frame for frame, on every fixture.

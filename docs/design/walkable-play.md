@@ -382,23 +382,11 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   light needs you to see it, like a wall torch's). Placed from the run's seed and kept lit with the wall torches' list, so
   nothing new is saved. PixelLab art (the unlit one is the lit one with its flame taken off).
   > ⚠️ This is the candle rule for runs made before world version 5. New runs (v5 to v8) place candles, and extra wall torches, by each room's darkness: [world/placement.md](../world/placement.md#candles-and-extra-torches-world-versions-58).
-- 🚧 **Decor samples** (the user, 2026-11-06: "upgrades to the art, things that make the rooms
-  less repetitive and more engaging"; `lib/dungeon/decor.ts`; **only in `/lab/newrun`**, its
-  Decor switch, until the user picks; a still: [decor-samples.png](../ideas/decor-samples.png)):
-  - **Worn floor tiles**: a quarter of floor tiles (`FLOOR_WORN`) are one of 12 worn versions
-    of the kit's floor (cracks, chips, moss tufts), picked by place and seed. They tile with
-    the plain one without seams.
-  - **Worn walls**: 30% (`WALL_WORN`) of a top wall's face, in pairs of tiles, is one of 3
-    worn versions (cracks, a broken-out brick, cobwebs, creeping ivy).
-  - **Banners**: 35% of rooms (`BANNER_CHANCE`) have a tattered red banner on the top wall,
-    never over a door or a wall torch.
-  - **Things lying about**, by the room's kind (`THEMES`): skulls, pots and a nest (with eggs)
-    in dens; barrels and crates in storehouses, by merchants and in camps; a bit of everything
-    elsewhere. One per `DECOR_PER` 28 floor tiles, 8 at most, two of a kind at most, one nest;
-    a big room's fallen pillar (a heap of mossy blocks) half the time. Barrels, crates and the
-    pillar are solid and only stand against a wall, so no way through is ever blocked (tested:
-    every door still reaches every other); the rest are walked over. Never on a room's middle,
-    its fire or candle, or by a door.
+- **Decor** (the user, 2026-11-06: "upgrades to the art, things that make the rooms less repetitive
+  and more engaging"; `lib/dungeon/decor.ts`). The first samples (worn floor and wall tiles, banners, and
+  things lying about by the room's kind, only ever in `/lab/newrun`'s Decor switch) went with the 2D view
+  on 2026-11-24. In the game, bones, pots, nests, barrels and crates stand in rooms' corners, placed by the
+  world's rules (`CORNER_THEMES`, lib/world/place.ts), and:
   - **Floor life (in the game, 2026-11-14; samples first in `/lab/chest`):** in 35% of rooms
     (`PUDDLE_CHANCE`) a sewer puddle lies on the floor, your torch glinting on its water, rippling
     as you walk through it and now and then on its own; in 25% (`RAT_CHANCE`) a mouse hole sits at

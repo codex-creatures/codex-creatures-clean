@@ -8,20 +8,18 @@
 //
 // Nothing here draws. "Scene inputs" are the facts the drawing reads (where
 // each thing stands, what's lit, what's solid, what can be walked); the
-// picture itself is pinned in phase 1, once there's a scene builder to test.
+// picture itself was pinned by the 2D view's scene builder, removed with it on 2026-11-24, when
+// its depth edges, worn tiles and the lab's decor samples left these recordings too.
 
 import { layoutFloorplan, roomCentre, startProgress, waysOn, cutOffY, type Layout, type Progress } from "../lib/dungeon/layout";
 import { torchLit, shutPlan, rubbleOf, fallenSoFar, sconceInSight, TORCH_RADIUS } from "../lib/dungeon/torch";
-import { floorVariant, wallVariant, type Decor } from "../lib/dungeon/decor";
 import { spottedBy } from "../lib/dungeon/foes";
-import { placeLabDecor, foeStarts, roomIds, thingsOf, solidCells, walkRule, seeded, toRuns, fromRuns } from "../lib/world/walkWorld";
+import { foeStarts, roomIds, thingsOf, solidCells, walkRule, seeded, toRuns, fromRuns } from "../lib/world/walkWorld";
 import { byFire, type Campfire } from "../lib/dungeon/campfire";
 import { findPath, roomAt, walkable } from "../lib/dungeon/walk";
 import { walkRoom, walkInto } from "../lib/dungeon/walkRun";
 import { hasFight, type DungeonId, type DungeonRun, type Room } from "../lib/dungeon/run";
-import { depthEdges } from "../lib/dungeon/tileArt";
-import { FLOOR, ROCK, type Floorplan, type Pt } from "../lib/dungeon/floorplan";
-import { WALK_FLOOR_WORN, WALK_WALL_WORN } from "../lib/sprites/walk";
+import { FLOOR, type Floorplan, type Pt } from "../lib/dungeon/floorplan";
 import { migrateWalkRun, placementsOfWalk } from "../lib/world/migrate";
 import { placeSconces, placeCandles } from "../lib/world/compat/v0Placers";
 
@@ -47,9 +45,8 @@ const progressOf = (run: DungeonRun): Progress => ({ room: run.walk!.room, line:
 const WHAT: Record<string, string> = { chest: "chest", sack: "sack", "loot-sack": "sack", "rickety-chest": "rickety", "loot-chest": "rickety", "card-deck": "cards", pool: "pool", merchant: "merchant", librarian: "librarian", witch: "witch", cage: "cage" };
 type ThingFact = { key: string; room: string; x: number; y: number; what: string; open: boolean; solid: boolean; npc?: boolean; inert?: boolean; flag?: boolean };
 
-// Everything WalkView works out when it opens on this run. decor: the lab's
-// decor switch (/lab/newrun); the live game has it off.
-export function walkSetup(run0: DungeonRun, decor = false) {
+// Everything the walk screen works out when it opens on this run.
+export function walkSetup(run0: DungeonRun) {
   // The run as the Labyrinth screen opens it: given its placements (phase 2a) if it has none yet.
   const run = migrateWalkRun(run0).run;
   const walk = run.walk!;
@@ -59,12 +56,10 @@ export function walkSetup(run0: DungeonRun, decor = false) {
   const live = shutPlan(plan, layout, progress);
   const known = fromRuns(walk.known, plan.w * plan.h);
   const room = (id: string): Room | undefined => walkRoom(run, id);
-  // Wall torches (lit as saved), candles (never by a campfire), decor and banners.
+  // Wall torches (lit as saved), candles (never by a campfire).
   const placed = placementsOfWalk(walk, map, dungeon, room);
   const { sconces, candles } = placed;
   const fires: Campfire[] = (walk.fires ?? []).map((f) => ({ ...f }));
-  const lab = decor ? placeLabDecor(walk, plan, map, candles, sconces) : { decor: [] as Decor[], banners: [] as Pt[] };
-  const decorItems: Decor[] = lab.decor, banners: Pt[] = lab.banners;
   // Every room, and a big room's second den; each fight room's foes where they start; the witch.
   const ids = roomIds(layout, map);
   const foes = foeStarts(placed, ids, room), npcs = placed.witches;
@@ -74,23 +69,19 @@ export function walkSetup(run0: DungeonRun, decor = false) {
     ...(npc ? { npc } : {}), ...(inert !== undefined ? { inert } : {}), ...(flag !== undefined ? { flag } : {}),
   }));
   // Where you may walk (WalkView's rule()): forward, seen, and not into anything solid.
-  const solid = solidCells(thingsOf(layout, placed, ids, room, npcs, walk.spots, dungeon), fires, decorItems);
+  const solid = solidCells(thingsOf(layout, placed, ids, room, npcs, walk.spots, dungeon), fires, []);
   const canStep = walkRule(layout, plan, progress, known, solid);
   // (The same without what you've seen: the walking rules alone, for the baselines.)
   const canWalk = walkRule(layout, plan, progress, null, solid);
-  return { canWalk, placed, layout, map, dungeon, plan, live, progress, known, sconces, candles, fires, decorItems, banners, ids, foes, npcs, things, canStep, room };
+  return { canWalk, placed, layout, map, dungeon, plan, live, progress, known, sconces, candles, fires, ids, foes, npcs, things, canStep, room };
 }
 
 // The facts to pin for one saved run.
-export function sceneInputs(run: DungeonRun, decor = false) {
-  const s = walkSetup(run, decor);
+export function sceneInputs(run: DungeonRun) {
+  const s = walkSetup(run);
   const walk = run.walk!;
   const { plan, live, layout } = s;
   const at = walk.at;
-  const edges = depthEdges(live);
-  // Worn floor and wall tiles (decor only): which variant each floor tile gets.
-  const worn = decor ? Array.from(plan.tiles, (t, i) => (t === ROCK ? 0 : floorVariant(i % plan.w, Math.floor(i / plan.w), walk.seed, WALK_FLOOR_WORN.length))) : [];
-  const wornWalls = decor ? Array.from(plan.tiles, (_, i) => wallVariant(Math.floor((i % plan.w) / 2), Math.floor(i / plan.w), walk.seed, WALK_WALL_WORN.length)) : [];
   // Paths from where you stand to each thing (as WalkView walks you up to one): steps, or null.
   const pathTo = (q: Pt) => {
     const p = findPath(live, at, q, s.canStep);
@@ -106,7 +97,6 @@ export function sceneInputs(run: DungeonRun, decor = false) {
     },
     progress: { room: s.progress.room, line: walk.line ?? null, ways: waysOn(layout, s.progress).map((w) => `${w.tunnel.key}>${w.to.room}`) },
     live: { tiles: digest(live.tiles), rubble: rubbleOf(plan, layout, s.progress).map((r) => `${r.key}@${r.room}:${r.wall}:${r.tiles.length}`), fallen: fallenSoFar(plan, layout, s.progress, walk.cuts ?? [], s.known).sort() },
-    edges: { left: edges.left.length, right: edges.right.length, south: edges.south.length, digest: digest(JSON.stringify(edges)) },
     known: { cells: count(s.known), digest: digest(s.known) },
     you: { at, room: roomAt(plan, at), walkable: walkable(live, at.x, at.y) },
     torch: digest(torchLit(live, at, TORCH_RADIUS)),
@@ -118,9 +108,6 @@ export function sceneInputs(run: DungeonRun, decor = false) {
     npcs: s.npcs.map((f) => `${f.room}@${f.x},${f.y}`),
     things: s.things.map((t) => `${t.key} ${t.what}@${t.x},${t.y}${t.solid ? " solid" : ""}${t.open ? " open" : ""}${t.npc ? " npc" : ""}${t.inert ? " inert" : ""}${t.flag ? " !" : ""} path ${pathTo(t)}`),
     spotted: spottedBy(live, s.foes, at, awake),
-    decor: s.decorItems.map((d) => `${d.room} ${d.kind}@${d.x},${d.y}${d.solid ? " solid" : ""}`),
-    banners: s.banners.map((b) => `${b.x},${b.y}`),
-    worn: decor ? { floor: digest(worn), walls: digest(wornWalls) } : null,
   };
 }
 

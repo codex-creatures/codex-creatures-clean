@@ -263,6 +263,13 @@ touched none of it.
   `artPxAcross` / `artPxDown` / `ArtDensity`, foes.ts `visionCone` and walkRooms.ts
   `fightSack` / `chestSack` (the game's loot is the Labyrinth screen's `finishFight` and
   `openChest`), and the tests that only checked them.
+- **The walk baselines' 2D fields** (the user, 2026-11-24): tests/walkBaseline.ts no longer records
+  depth edges, worn tiles or the lab's decor; the 6 `.scene` recordings and the 2 sweeps were
+  re-recorded (checked: each equals today's recording with just those fields taken out), the 4
+  `.draw.json` the 2D scene test wrote were deleted, and nothing else in tests/golden/walk changed.
+  With them went `depthEdges`, `placeLabDecor`, decor.ts's sample placer, themes, banners and worn
+  tiles (`placeDecor`, `placeBanners`, `floorVariant`, `wallVariant`), and the kit's worn tiles in
+  lib/sprites/walk.ts (their pictures stay: the prop builder's list has them).
 - **Still open:** D, E1, E2, E5.
   README.md's opening still says the game has no server or accounts (untrue since the Supabase
   work): a line to fix with E5.

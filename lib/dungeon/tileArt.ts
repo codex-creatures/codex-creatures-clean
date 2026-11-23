@@ -4,8 +4,6 @@
 // (The 2D view drew the dungeon from PixelLab tile sheets with rules that were here, the sheet's tiles,
 // the corners, the wall faces and depth: removed with it, 2026-11-24.)
 
-import { ROCK, type Floorplan } from "./floorplan";
-
 // Facing, from a step: the way you're mostly going (straight up or down
 // wins a tie, so diagonals in a room look like walking up or down it).
 export type Facing = "south" | "east" | "north" | "west";
@@ -55,20 +53,4 @@ export function facing8(dx: number, dy: number, was: Facing8 = "south"): Facing8
 export const STRIDE = 1.5; // tiles per walk cycle
 export function walkFrame(tiles: number, moving: boolean, frames: number): number {
   return moving ? Math.floor(((tiles % STRIDE) / STRIDE) * frames) % frames : -1;
-}
-
-// The wall edges a floorplan's depth is drawn along: side walls (rock with
-// walkable to its right, "left" walls, or to its left, "right" walls) and
-// south walls (rock with walkable right above). Each as the rock tile.
-export type DepthEdges = { left: { x: number; y: number }[]; right: { x: number; y: number }[]; south: { x: number; y: number }[] };
-export function depthEdges(fp: Floorplan): DepthEdges {
-  const open = (x: number, y: number) => x >= 0 && y >= 0 && x < fp.w && y < fp.h && fp.tiles[y * fp.w + x] !== ROCK;
-  const out: DepthEdges = { left: [], right: [], south: [] };
-  for (let y = 0; y < fp.h; y++) for (let x = 0; x < fp.w; x++) {
-    if (open(x, y)) continue;
-    if (open(x + 1, y)) out.left.push({ x, y });
-    if (open(x - 1, y)) out.right.push({ x, y });
-    if (open(x, y - 1)) out.south.push({ x, y });
-  }
-  return out;
 }

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, startProgress, waysOn, isOpen, cutOffY, WALK_SPEC } from "../lib/dungeon/layout";
 import { torchLit, torchGlow, shutPlan, rubbleOf, showsRubble, fallenIn, fallenSoFar, tunnelShut, canIgnite, sconceInSight, TORCH_RADIUS, REMEMBERED, IGNITE_REACH } from "../lib/dungeon/torch";
-import { depthEdges } from "../lib/dungeon/tileArt";
 import { placeSconces } from "../lib/world/compat/v0Placers";
 
 function seeded(seed: number) {
@@ -134,18 +133,6 @@ describe("the scroll's red lines", () => {
     }
     expect(fails).toEqual([]);
     expect(kept).toBeGreaterThan(0); // (some only show because they're kept)
-  });
-});
-
-describe("depth", () => {
-  it("finds the walls' edges", () => {
-    const room = plan(["#####", "#...#", "#...#", "#####"]);
-    const e = depthEdges(room);
-    expect(e.left.map((q) => q.y)).toEqual([1, 2]);
-    expect(e.left.every((q) => q.x === 0)).toBe(true);
-    expect(e.right.every((q) => q.x === 4)).toBe(true);
-    expect(e.south.map((q) => q.x)).toEqual([1, 2, 3]);
-    expect(e.south.every((q) => q.y === 3)).toBe(true);
   });
 });
 
