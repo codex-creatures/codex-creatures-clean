@@ -191,12 +191,12 @@ so far, with an in-memory test team; nothing touches a save.)
     (up tunnels are one way); a room still reachable sideways can still see you if you go back.
 - **A room plays out** (the lab, 2026-11-06): seen, you fight that room's foes in the real
   battle screen. Win: they're gone, and what the live game's win leaves (gold, dropped gear,
-  the chief's mini boss extras: `fightSack`) is left in a sack where you stand; your team
+  the chief's mini boss extras: the Labyrinth screen's `finishFight`) is left in a sack where you stand; your team
   keeps its HP to the next fight. Lose: the run's over, back to the entrance on a fresh roll.
   **Anything you can loot opens when you tap it** (the user, 2026-11-06): chests, stashes
   and fight spoils. Tap one and you walk up beside it (chests are solid), then the game's
   loot window opens (`LootWindow`, with a 6-slot test bag; gold and cards take no room).
-  A chest rolls the live chest roll (`chestSack`), a stash its sack; what you leave stays
+  A chest rolls the live chest roll (the Labyrinth screen's `openChest`), a stash its sack; what you leave stays
   in it. Later, with the art, the chest should fit the room.
   **The test team** 🧪: three Uncommons in Uncommon gear at level 5, rolled with the layout.
 - **Your spot** is kept for the browser tab (the lab's own sessionStorage key, never a

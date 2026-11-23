@@ -36,12 +36,6 @@ export const FEET_U = 0.25;    // units: where a standing thing's feet are drawn
 export const LEGACY_PX_PER_U = 16;
 export const legacyU = (px: number) => px / LEGACY_PX_PER_U;
 
-// A piece of art's pixel density. Square pixels: perU art pixels a unit, both
-// ways. Legacy art (the kit) has rows squashed into a square cell: rowsPerU
-// art rows a unit down, so its pixels show perU ÷ rowsPerU taller than wide
-// (the kit's 4⁄3: its pixelAspect, §4.2).
-export type ArtDensity = { perU: number; rowsPerU?: number };
-
 // The view this frame: the camera's spot (in units) and the sums onto the
 // screen. jitter: the screen shake, in px (0 when still).
 export type View = {
@@ -79,10 +73,6 @@ export const across = (v: View, u: number) => u * v.T;
 
 // A legacy size (px at 16px a cell) on screen.
 export const legacyPx = (v: View, px: number) => px * v.scale;
-
-// One art pixel on screen, across and down.
-export const artPxAcross = (v: View, art: ArtDensity) => v.T / art.perU;
-export const artPxDown = (v: View, art: ArtDensity) => (v.T * DEPTH) / (art.rowsPerU ?? art.perU);
 
 // A tap (px from the view's top-left) to the cell it's on.
 export const tapCell = (v: View, px: number, py: number): Pt => ({ x: Math.floor(v.cam.x + px / v.T), y: Math.floor(v.cam.y + py / (v.T * DEPTH)) });

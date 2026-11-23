@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { walkView, tapCell, artPxAcross, artPxDown, legacyPx, legacyU, across, WALK_ACROSS, FEET_U } from "../lib/render/projection";
+import { walkView, tapCell, legacyPx, legacyU, across, WALK_ACROSS, FEET_U } from "../lib/render/projection";
 import { cameraAt } from "../lib/dungeon/walk";
 import { layoutFloorplan } from "../lib/dungeon/layout";
-import { KIT_PX, KIT_ROW, KIT_SIDE, KIT_NORTH } from "../lib/sprites/walk";
+import { KIT_PX, KIT_ROW, KIT_SIDE } from "../lib/sprites/walk";
 import { seeded } from "./walkBaseline";
 import fs from "node:fs";
 import path from "node:path";
@@ -46,10 +46,6 @@ describe("the projection: today's walk screen, exactly (world-spec §4.3)", () =
         const px = rng() * cw, py = rng() * ch, still = walkView(plan, me, cw, ch);
         expect(tapCell(still, px, py)).toEqual(before(cw, ch, me, 0, 0).tap(px, py));
       }
-      same("kit row", a.vy, artPxDown(b, { perU: KIT_PX, rowsPerU: KIT_ROW }));
-      same("kit side", a.side, Math.round(KIT_SIDE * artPxAcross(b, { perU: KIT_PX, rowsPerU: KIT_ROW })));
-      same("kit north", Math.round(KIT_NORTH * a.vy), Math.round(KIT_NORTH * artPxDown(b, { perU: KIT_PX, rowsPerU: KIT_ROW })));
-      same("hero px", a.heroPx, artPxAcross(b, { perU: KIT_PX }));
       for (const n of [7, 11, 14, 16, 22, 24, 26, 28, 40]) same(`legacy ${n}`, n * a.scale, legacyPx(b, n));
       for (const n of [7, 11, 14, 16, 22, 24, 26, 28, 40]) same(`legacy ${n} in u`, n * a.scale, across(b, legacyU(n)));
     }

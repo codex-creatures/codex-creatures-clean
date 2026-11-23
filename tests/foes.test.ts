@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, campMap, WALK_SPEC } from "../lib/dungeon/layout";
-import { lineOfSight, sees, spottedBy, stepFoe, visionCone, chargePath, chargeFoe, fightReady, arrivalOrder, GUARD_REACH, DOOR_CLEAR, SIGHT_RANGE, SIGHT_NEAR, ALARM_MAX, LATE_GRACE, CHARGE_SPEED, type Foe } from "../lib/dungeon/foes";
-import { chestSack, fightSack, rollWalkRooms, roomDepth } from "../lib/dungeon/walkRooms";
+import { lineOfSight, sees, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, arrivalOrder, GUARD_REACH, DOOR_CLEAR, SIGHT_RANGE, SIGHT_NEAR, ALARM_MAX, LATE_GRACE, CHARGE_SPEED, type Foe } from "../lib/dungeon/foes";
+import { rollWalkRooms, roomDepth } from "../lib/dungeon/walkRooms";
 import { routeLength } from "../lib/dungeon/map";
-import { CHEST_DROPS, fightEnemies, type Room } from "../lib/dungeon/run";
+import { fightEnemies, type Room } from "../lib/dungeon/run";
 import { placeFoes } from "../lib/world/compat/v0Placers";
 
 function seeded(seed: number) {
@@ -47,7 +47,6 @@ describe("being seen", () => {
     expect(sees(open, foe(10, 2, 0, { allRound: true }), { x: 5, y: 2 })).toBe(true); // behind it
     expect(sees(open, foe(1, 2, Math.PI / 2, { allRound: true }), { x: 7, y: 2 })).toBe(true);
     expect(sees(open, foe(1, 2, 0, { allRound: true }), { x: 1 + SIGHT_RANGE + 1, y: 2 })).toBe(false); // too far
-    expect(visionCone(open, foe(5, 2, 0, { allRound: true })).length).toBeGreaterThan(2);
   });
 
   it("notices you right beside it whichever way it faces", () => {
@@ -74,12 +73,6 @@ describe("being seen", () => {
     expect(spottedBy(open, foes, { x: 5, y: 2 }, () => true)).toBe("r");
     expect(spottedBy(open, foes, { x: 5, y: 2 }, (r) => r === "s")).toBe("s");
     expect(spottedBy(open, foes, { x: 5, y: 2 }, () => false)).toBe(null);
-  });
-
-  it("draws its cone stopped by walls", () => {
-    const cone = visionCone(dogLeg, foe(2, 1, 0));
-    expect(cone.every((p) => p.x <= 10.5 && p.y >= 0.5 && p.y <= 5.5)).toBe(true);
-    expect(Math.max(...cone.map((p) => p.x))).toBeGreaterThan(7);
   });
 });
 
@@ -159,13 +152,6 @@ describe("the walkable Encampment's rooms", () => {
       expect(d).toBeLessThan(Infinity);
     }
     expect(roomDepth(map, map.start)).toBe(0);
-  });
-
-  it("leaves gold (and the chief's extras) when beaten, and a chest's drops", () => {
-    const den = Object.values(rooms).find((r) => r.kind === "easy")!;
-    expect(fightSack(den, seeded(1))[0]).toEqual({ gold: den.gold });
-    expect(fightSack(rooms[map.boss], seeded(1)).length).toBeGreaterThan(1);
-    expect(chestSack().length).toBeGreaterThanOrEqual(CHEST_DROPS);
   });
 });
 

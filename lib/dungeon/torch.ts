@@ -143,7 +143,6 @@ export const SCONCE_EVERY = 8;        // tiles of top wall per sconce (at least 
 export const TUNNEL_SCONCE_CHANCE = 0.4; // a tunnel has torches (one every SCONCE_EVERY tiles of it, at least one) 🧪
 export const SCONCE_LIT_SHARE = 0.2;  // of the rest are already burning 🧪
 export const SCONCE_RADIUS = 4;       // tiles a sconce lights 🧪
-export const SCONCE_BRIGHT = 0.15;    // its darkness right under it (your torch: 0)
 export const IGNITE_REACH = TORCH_RADIUS / 2;
 export const SCONCE_SEEN = 12;        // tiles: a burning sconce in sight this close shows you what it lights
 
@@ -165,14 +164,6 @@ export function sconceInSight(fp: Floorplan, s: Sconce, you: Pt): boolean {
 }
 // …or any fire (a campfire too: campfire.ts).
 export const fireInSight = (fp: Floorplan, at: Pt, you: Pt) => Math.hypot(at.x - you.x, at.y - you.y) <= SCONCE_SEEN && reaches(fp, you, { x: at.x, y: at.y });
-
-// How dark a tile a sconce lights is, `d` tiles from it (1 when it doesn't
-// reach). radius: a campfire's reach in place of a sconce's.
-export function sconceGlow(d: number, flicker = 1, radius = SCONCE_RADIUS): number {
-  const r = radius * flicker;
-  if (d >= r) return 1;
-  return Math.min(REMEMBERED, SCONCE_BRIGHT + (REMEMBERED - SCONCE_BRIGHT) * Math.pow(d / r, 1.6));
-}
 
 // Candles (the user, 2026-11-06: "the odd candle in the middle-ish of the
 // rooms, unlit"): now and then a room has one standing on its floor near the

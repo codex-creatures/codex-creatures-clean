@@ -211,20 +211,3 @@ export function stepFoe(fp: Floorplan, foe: Foe, seconds: number, rng: Rng = Mat
   return { ...foe, x, y, facing, path: foe.path.slice(i) };
 }
 
-// What a foe can see, to draw: points round the edge of its cone, each ray
-// stopped by the first rock (from the foe's middle, in tiles). rays: how many.
-export function visionCone(fp: Floorplan, foe: Foe, rays = 16): Pt[] {
-  const half = foe.allRound ? Math.PI : (SIGHT_CONE * Math.PI) / 360;
-  const pts: Pt[] = [{ x: foe.x, y: foe.y }];
-  for (let i = 0; i <= rays; i++) {
-    const a = foe.facing - half + (2 * half * i) / rays;
-    let reach = 0;
-    for (let d = 0.25; d <= SIGHT_RANGE; d += 0.25) {
-      const tx = Math.round(foe.x + Math.cos(a) * d), ty = Math.round(foe.y + Math.sin(a) * d);
-      if (tx < 0 || ty < 0 || tx >= fp.w || ty >= fp.h || fp.tiles[ty * fp.w + tx] === ROCK) break;
-      reach = d;
-    }
-    pts.push({ x: foe.x + Math.cos(a) * reach, y: foe.y + Math.sin(a) * reach });
-  }
-  return pts;
-}

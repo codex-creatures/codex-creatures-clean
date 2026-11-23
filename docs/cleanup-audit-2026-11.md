@@ -256,6 +256,13 @@ touched none of it.
 - **B5, the local barcode roll:** not dead. A copy with no online settings (the tests, an offline
   build without .env.local, the no-account title screen) still rolls scans locally; the user's
   "local barcodes are no more" holds wherever the game is online-capable. Asked.
-- **Still open:** B5, D, E1, E2, E5, and the 2D helpers above.
+- **B5** (the user: "everything is online until we make an app"): the local roll went; a copy with
+  no online settings keeps new scans sealed.
+- **The 2D helpers:** tileArt.ts keeps only the hero's facing and turning (the tile-sheet rules,
+  wall faces and depth went), with torch.ts `sconceGlow` and `SCONCE_BRIGHT`, projection.ts
+  `artPxAcross` / `artPxDown` / `ArtDensity`, foes.ts `visionCone` and walkRooms.ts
+  `fightSack` / `chestSack` (the game's loot is the Labyrinth screen's `finishFight` and
+  `openChest`), and the tests that only checked them.
+- **Still open:** D, E1, E2, E5.
   README.md's opening still says the game has no server or accounts (untrue since the Supabase
   work): a line to fix with E5.

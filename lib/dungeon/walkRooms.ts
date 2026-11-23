@@ -2,9 +2,9 @@
 // What's in the walkable Encampment's rooms (layout.ts campMap says which
 // kind each is), rolled by the live game's own code so the numbers match its
 // balance: makeRoom for each room (its foes, gold, a stash's sack), the
-// chief's cages (campCages), and the loot a beaten room or an opened chest
-// leaves (the same rolls as the Labyrinth screen, app/dungeon/page.tsx).
-// Pure; the game's walked runs roll with it (walkRun.ts).
+// chief's cages (campCages), and a golden chest's finds (goldenDrops). What a
+// beaten room or an opened chest leaves is rolled by the Labyrinth screen
+// (app/dungeon/page.tsx). Pure; the game's walked runs roll with it (walkRun.ts).
 //
 // - Every room is rolled at the start, not as you walk in (the live game
 //   rolls on entering), because its foes stand in it where you can see them
@@ -15,16 +15,11 @@
 //   by any route.
 
 import { routeLength, type DungeonMap } from "./map";
-import {
-  makeRoom, campCages, minibossExtras, capSack, toolFinds, droppedPieceStats,
-  CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, GOLDEN_DROPS, GOLDEN_RARITY, GOLDEN_LEGENDARY_FROM, type Room, type SackItem, type DungeonId,
-} from "./run";
-import { CHEST_ODDS, REGISTRY_RULES, rollBarcodeOutcome, rollFromRules } from "../barcodeRegistry";
-import { enchanted, CHEST_ENCHANT, GOLDEN_ENCHANT } from "../items/enchantments";
-import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "../drops";
+import { makeRoom, campCages, GOLDEN_DROPS, GOLDEN_RARITY, GOLDEN_LEGENDARY_FROM, type Room, type DungeonId } from "./run";
+import { CHEST_ODDS, REGISTRY_RULES, rollFromRules } from "../barcodeRegistry";
+import { enchanted, GOLDEN_ENCHANT } from "../items/enchantments";
+import { dropFromOutcome } from "../drops";
 import type { Drop } from "../types";
-import type { ItemKey } from "../items/ceilings";
-import type { ArmorKey } from "../items/armor";
 
 type Rng = () => number;
 
@@ -63,23 +58,6 @@ export function rollWalkRooms(map: DungeonMap, rng: Rng = Math.random, firstClea
   return rooms;
 }
 
-const goldDrop = (amount: number): Drop => ({ id: crypto.randomUUID(), barcode: "", dropType: "reward", rewardKind: "resource", amount, createdAt: new Date().toISOString() });
-
-// What a beaten room leaves (the Labyrinth screen's finishFight): its gold,
-// the gear its foes drop, and, for the Encampment's chief, a mini boss's
-// extras (never the cage schematic from him).
-export function fightSack(room: Room, rng: Rng = Math.random): SackItem[] {
-  const drops: Drop[] = [goldDrop(room.gold ?? 0)];
-  for (const e of room.enemies ?? []) for (const p of e.gear) {
-    if (!p.drops) continue;
-    const slot = p.dropSlot ?? randomArmorSlot();
-    drops.push(p.slot === "weapon" ? weaponDrop(p.key as ItemKey, p.rarity, "", p.stats) : armorDrop(p.key as ArmorKey, p.rarity, "", droppedPieceStats(p, slot), slot));
-  }
-  const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
-  if (room.kind === "encampment") sack.push(...minibossExtras(rng));
-  return sack;
-}
-
 // A golden chest's finds: GOLDEN_DROPS weapons and armour (as often as each turns up in a chest), at
 // GOLDEN_RARITY. Before the Hydra (GOLDEN_LEGENDARY_FROM) Legendary is left out, so Rare and Epic
 // share its odds.
@@ -97,14 +75,3 @@ export function goldenDrops(dungeon: DungeonId, rng: Rng = Math.random): Drop[] 
   return drops;
 }
 
-// A chest, opened (the Labyrinth screen's openChest): CHEST_DROPS scan-style
-// drops, now and then a codex in place of the last, and the chest's tools.
-export function chestSack(): SackItem[] {
-  const drops: Drop[] = [];
-  while (drops.length < CHEST_DROPS) {
-    const d = enchanted(dropFromOutcome(rollBarcodeOutcome(CHEST_ODDS)), CHEST_ENCHANT);
-    if (d) drops.push(d);
-  }
-  if (Math.random() < CHEST_CODEX_CHANCE) drops[drops.length - 1] = codexDrop(randomCodexMove());
-  return capSack([...drops.map((d): SackItem => (d.dropType === "reward" ? { gold: d.amount } : { gear: d })), ...toolFinds(CHEST_TOOLS)]);
-}

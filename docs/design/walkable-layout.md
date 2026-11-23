@@ -88,7 +88,7 @@ layout comes first and the scroll is made from it (`layoutMap`), not the other w
   rooms' top walls (one per `SCONCE_EVERY` 8 tiles of wall, at least one a room, never over
   a tunnel), the entrance's burning and `SCONCE_LIT_SHARE` 20% of the rest. Walk within half
   your torch's reach of an unlit one, in sight of it, and it lights (`canIgnite`); a burning
-  one lights `SCONCE_RADIUS` 4 tiles round it for good (`sconceGlow`, a little dimmer than
+  one lights `SCONCE_RADIUS` 4 tiles round it for good (a little dimmer than
   your torch), seen from up to 12 tiles away. PixelLab art in the walls' style (round 3, the kit's
   `lights`; a smaller one on a tunnel's side wall), with its flame drawn in code over it.
   > ⚠️ The original torch rule. New runs (world version 8) also get extra torches on rooms' side walls and pillars by each room's darkness: [world/placement.md](../world/placement.md#candles-and-extra-torches-world-versions-58).

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, startProgress, waysOn, isOpen, cutOffY, WALK_SPEC } from "../lib/dungeon/layout";
-import { torchLit, torchGlow, shutPlan, rubbleOf, showsRubble, fallenIn, fallenSoFar, tunnelShut, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, REMEMBERED, IGNITE_REACH, SCONCE_RADIUS, SCONCE_BRIGHT } from "../lib/dungeon/torch";
-import { sideFace, capFade, depthEdges, SIDE_FACE_MAX, CAP_FAINT, FACE_TILE, TOP_TILE, WANG_TILES } from "../lib/dungeon/tileArt";
+import { torchLit, torchGlow, shutPlan, rubbleOf, showsRubble, fallenIn, fallenSoFar, tunnelShut, canIgnite, sconceInSight, TORCH_RADIUS, REMEMBERED, IGNITE_REACH } from "../lib/dungeon/torch";
+import { depthEdges } from "../lib/dungeon/tileArt";
 import { placeSconces } from "../lib/world/compat/v0Placers";
 
 function seeded(seed: number) {
@@ -138,18 +138,6 @@ describe("the scroll's red lines", () => {
 });
 
 describe("depth", () => {
-  it("side faces grow as you go across the room, up to a limit", () => {
-    expect(sideFace(-2)).toBe(0);
-    expect(sideFace(0)).toBe(0);
-    expect(sideFace(3)).toBeGreaterThan(sideFace(1));
-    expect(sideFace(100)).toBe(SIDE_FACE_MAX);
-  });
-  it("south walls go see-through only when you're close", () => {
-    expect(capFade(0.5)).toBe(CAP_FAINT);
-    expect(capFade(2.2)).toBeGreaterThan(CAP_FAINT);
-    expect(capFade(2.2)).toBeLessThan(1);
-    expect(capFade(5)).toBe(1);
-  });
   it("finds the walls' edges", () => {
     const room = plan(["#####", "#...#", "#...#", "#####"]);
     const e = depthEdges(room);
@@ -158,11 +146,6 @@ describe("depth", () => {
     expect(e.right.every((q) => q.x === 4)).toBe(true);
     expect(e.south.map((q) => q.x)).toEqual([1, 2, 3]);
     expect(e.south.every((q) => q.y === 3)).toBe(true);
-  });
-  it("draws faces and tops with real sheet tiles", () => {
-    expect(WANG_TILES[FACE_TILE]).toBeDefined();
-    expect(WANG_TILES[TOP_TILE]).toBeDefined();
-    expect(FACE_TILE).not.toBe(TOP_TILE);
   });
 });
 
@@ -188,8 +171,6 @@ describe("torches on the walls", () => {
     expect(canIgnite(room, s, { x: 2 + Math.floor(IGNITE_REACH), y: 1 })).toBe(true);
     expect(canIgnite(room, s, { x: 2 + Math.ceil(IGNITE_REACH) + 1, y: 1 })).toBe(false);
     expect(canIgnite(room, { ...s, lit: true }, { x: 2, y: 2 })).toBe(false);
-    expect(sconceGlow(0)).toBe(SCONCE_BRIGHT);
-    expect(sconceGlow(SCONCE_RADIUS + 1)).toBe(1);
     expect(sconceInSight(room, { ...s, lit: true }, { x: 8, y: 3 })).toBe(true);
   });
   it("can't be lit through a wall", () => {
