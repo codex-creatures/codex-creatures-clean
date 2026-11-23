@@ -35,6 +35,8 @@ export type RivalStats = {
   playTime: number;               // seconds, estimated from what it did
   species: number;
   gold: number;
+  path?: string[];                // each run, in order: "<dungeon>:<outcome>:<rooms>:L<explorer level>" (E the Encampment, C the Cyclops, H the Hydra)
+  klutz?: { level: number; trips: number; learned: string[] }; // its Klutz (he isn't a fighter in PvP; his finds are in its bag)
 };
 
 export type Rival = {

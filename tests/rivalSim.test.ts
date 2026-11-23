@@ -48,10 +48,14 @@ describe("a rival plays", () => {
       expect(s.stats.fights).toBeGreaterThan(0);
       expect(s.stats.runs[0]).toBe(3);
       expect(s.player.level).toBeGreaterThanOrEqual(1);
+      // Its path is kept, a line a run; Klutz is about (sent out once the camp's beaten and the fee's there).
+      expect(s.path).toHaveLength(3);
+      expect(s.path[0]).toMatch(/^E:(cleared|dead|retreated):\d+:L\d+$/);
+      expect(s.klutz.level ?? 1).toBeGreaterThanOrEqual(1);
       // Everything worn is owned; every creature's moves are its own.
       const items = s.inventory.filter(isItemDrop);
       for (const [id, l] of Object.entries(s.equipment)) {
-        expect(s.inventory.some((d) => d.id === id)).toBe(true);
+        expect(id === "klutz-companion" || s.inventory.some((d) => d.id === id)).toBe(true); // (Klutz wears gear too, from outside the inventory)
         for (const g of [l.weaponId, l.helmetId, l.chestId, l.legsId]) if (g) expect(items.some((x) => x.id === g)).toBe(true);
         expect((l.moves ?? []).length).toBeGreaterThan(0);
       }
@@ -80,7 +84,7 @@ it.skipIf(!process.env.WRITE_RIVALS)("writes lib/pvp/rivals.json", () => {
   for (const r of rivals) {
     const cs = r.inventory.filter(isCreatureDrop);
     const top = [...cs].sort((a, b) => (b.level ?? 1) - (a.level ?? 1)).slice(0, 5);
-    console.log(`${r.name}: explorer ${r.player.level}, ${r.stats.scans} scans, runs ${JSON.stringify(r.stats.runs)}, clears ${JSON.stringify(r.stats.clears)}, ${Math.round(r.stats.playTime / 60)} min, ${r.stats.gold}g; ${cs.length} creatures: ${top.map((c) => `${c.name} Lv${c.level} ${c.rarity[0]}`).join(", ")}`);
+    console.log(`${r.name}: explorer ${r.player.level}, ${r.stats.scans} scans, runs ${JSON.stringify(r.stats.runs)}, clears ${JSON.stringify(r.stats.clears)}, ${Math.round(r.stats.playTime / 60)} min, ${r.stats.gold}g; Klutz Lv${r.stats.klutz?.level} after ${r.stats.klutz?.trips} trips; ${cs.length} creatures: ${top.map((c) => `${c.name} Lv${c.level} ${c.rarity[0]}`).join(", ")}`);
   }
   console.log(`ratings after the warm-up: ${rivals.map((r) => `${r.name} ${r.rating}`).join(", ")}`);
   const problems = rivals.flatMap(checkRival);

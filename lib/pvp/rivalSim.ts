@@ -12,10 +12,18 @@
 // far as the user's test account had on 2026-11-24 (TARGET: one Hydra
 // clear, about 25 runs, 36 to 50 scans).
 //
-// What it leaves out (so it stays small): Klutz, the campaign's rewards,
-// the Den's building, the witch's game, the tavern, bag upgrades beyond the
-// backpack, and merchants beyond potions. The walkable layouts aren't
-// walked: the scroll map has the same rooms and foes.
+// Klutz goes too (the user, 2026-11-24: "Klutz is a core part"): between runs
+// the rival sends him to the furthest dungeon it has beaten, with the real
+// trip rules (lib/klutz.ts), spends his points and skills as he levels,
+// gears him and teaches him codexes nobody else wants, and empties his pack
+// into its bag when he's back. A sim clock runs (each run's estimated time,
+// and a night's break every SESSION_RUNS runs) so his trips and healing take
+// the time they take. He isn't in its PvP teams.
+//
+// What it leaves out (so it stays small): the campaign's rewards, the Den's
+// building, the witch's game, the tavern, bag upgrades beyond the backpack,
+// and merchants beyond potions. The walkable layouts aren't walked: the
+// scroll map has the same rooms and foes.
 //
 // Each rival has a taste of its own (the user: melee attackers favour melee
 // weapons and moves, hybrids may mix, some use utility), so seven seeds
@@ -63,6 +71,11 @@ import {
   type DungeonId, type DungeonMeta, type DungeonRun, type Room, type SackItem,
 } from "../dungeon/run";
 import type { Rival, RivalLoadout, RivalStats } from "./rivals";
+import {
+  KLUTZ_DESTS, NEW_KLUTZ, collectKlutz, destCost, destOpen, klutzGainXp, klutzProficiency, klutzStatus, pickTrait, canPickTrait, pointsFree, repairShack,
+  sendKlutz, skillPointsFree, spendPoints, spendSkill, type KlutzDest, type KlutzState,
+} from "../klutz";
+import { KLUTZ } from "../creatures/creatureData";
 
 // ── The target: about where the user's test account was (2026-11-24) ────
 // A rival plays each dungeon until it has these clears (or has had these
@@ -87,8 +100,15 @@ export const RIVAL_COUNT = RIVAL_NAMES.length;
 export const RIVAL_AI: AiLevel = "normal";
 // Potions it carries at most, and when it drinks one (share of HP).
 const POTIONS_MAX = 6, DRINK_AT = 0.45;
-// Seconds of real play each thing stands for, to give a rival a play time.
+// Seconds of real play each thing stands for, to give a rival a play time (and to run Klutz's clock).
 const SECONDS = { fight: 45, room: 12, scan: 25, home: 90 };
+// A session is this many runs; then a night's break, while Klutz's trip goes on and he heals.
+export const SESSION_RUNS = 5;
+// XP scrolls go to Klutz until he's this level (lib/klutz.ts XP_SHARE: "so you use more books"), then to the team's lowest.
+export const KLUTZ_SCROLLS_TO = 10;
+const NIGHT_MS = 12 * 60 * 60 * 1000;
+// Klutz's id in a save's equipment (hooks/useGameState.ts KLUTZ_DROP_ID; he isn't in the inventory).
+const KLUTZ_ID = "klutz-companion";
 
 type Rng = () => number;
 const dice = (seed: number): Rng => () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -115,6 +135,11 @@ type Sim = {
   potions: number;
   stats: RivalStats;
   log: string[];
+  path: string[];
+  klutz: KlutzState;
+  klutzTrips: number;
+  clock: number;      // the sim's time, ms (Klutz's trips and healing run on it)
+  runsPlayed: number;
 };
 
 const creatures = (s: Sim) => s.inventory.filter(isCreatureDrop);
@@ -139,8 +164,44 @@ export function newSim(seed: number, name: string): Sim {
     meta: { runs: 0, clears: 0, injuries: {}, bag: [], bagSize: BINDLE },
     potions: 0,
     stats: { scans: 0, runs: {}, clears: {}, fights: 0, wins: 0, playTime: 0, species: 0, gold: 0 },
-    log: [],
+    log: [], path: [],
+    klutz: { ...NEW_KLUTZ }, klutzTrips: 0, clock: 1_700_000_000_000, runsPlayed: 0,
   };
+}
+
+// ── Klutz ─────────────────────────────────────────────────────────────
+// Him as a creature of the rival's (for his gear, codexes and fights), as the game builds him.
+const klutzDropOf = (s: Sim): CreatureOrItemDrop => ({
+  id: KLUTZ_ID, barcode: "", dropType: "creature", creatureId: KLUTZ.id, rarity: KLUTZ.rarity, roll: 0, name: KLUTZ.name, desc: KLUTZ.flavour,
+  level: s.klutz.level ?? 1, xp: s.klutz.xp ?? 0, proficiency: klutzProficiency(s.klutz.points), learned: s.klutz.learned, soulStone: s.klutz.soulStone ?? null,
+  createdAt: new Date(s.clock).toISOString(),
+});
+const klutzFighterOf = (s: Sim) => fighterOf(s, klutzDropOf(s));
+
+// Between runs: his pack emptied if he's back, his points and skills spent (a brawler: melee and melee
+// defence; the Armourer and the Scholar; the Bigger Pack, then Selective), and off again to the furthest
+// dungeon the rival has beaten, if he's fit and the fee's there.
+function klutzStep(s: Sim) {
+  let k = s.klutz;
+  const maxHp = klutzFighterOf(s).maxHp;
+  if (k.expedition && !k.expedition.collected && s.clock >= k.expedition.endsAt) {
+    const r = collectKlutz(k, s.clock);
+    k = r.state;
+    s.klutzTrips++;
+    for (const d of r.loot) take(s, d);
+  }
+  for (let n = pointsFree(k), i = 0; n > 0; n--, i++) k = spendPoints(k, i % 2 ? { mdef: 1 } : { atk: 1 });
+  for (let n = skillPointsFree(k), i = 0; n > 0; n--, i++) k = spendSkill(k, i % 2 ? "scholar" : "armourer");
+  for (const t of ["pack", "selective"] as const) if (canPickTrait(k, t)) k = pickTrait(k, t);
+  s.klutz = k;
+  if (klutzStatus(k, maxHp, s.clock).kind !== "home") return;
+  const clears = { cyclops: s.stats.clears[1] ?? 0, hydra: s.stats.clears[2] ?? 0, abyss: 0 };
+  const dests: KlutzDest[] = [2, 1, 0];
+  const dest = dests.find((d) => destOpen(d, clears) && s.gold >= destCost(d) + 300);
+  if (dest === undefined) return;
+  s.gold -= destCost(dest);
+  s.klutz = sendKlutz(k, klutzFighterOf(s), s.clock, s.rng, dest, s.player.level);
+  void KLUTZ_DESTS;
 }
 
 // ── Scanning ──────────────────────────────────────────────────────────
@@ -320,7 +381,7 @@ export function simRun(s: Sim, dungeon: DungeonId): "cleared" | "dead" | "retrea
   else s.meta.runs++;
   const cages = dungeon === 0 ? campCages(runs === 1, [...new Set(creatures(s).flatMap((c) => SPECIES_RACES[c.creatureId!] ?? []))]) : undefined;
   let run = startRun(party, team, {}, s.meta.runs + (s.meta.campRuns ?? 0) + (s.meta.deepRuns ?? 0), Math.random, dungeon, false, (s.meta.bagSize ?? BINDLE) < BACKPACK, cages);
-  const bagBefore = s.inventory.length;
+  const bagBefore = s.inventory.length, timeBefore = s.stats.playTime;
   for (let guard = 0; run.status === "exploring" && guard < 80; guard++) {
     if (!run.current) {
       // Hurt and no potions: home, unless the top's a step away.
@@ -351,8 +412,14 @@ export function simRun(s: Sim, dungeon: DungeonId): "cleared" | "dead" | "retrea
   }
   const cleared = run.status === "cleared" || atTheTop(run) && run.status !== "dead";
   if (cleared) s.stats.clears[dungeon] = (s.stats.clears[dungeon] ?? 0) + 1;
-  s.log.push(`${DUNGEONS[dungeon].name}: ${cleared ? "cleared" : run.status} after ${run.room} rooms`);
-  return cleared ? "cleared" : run.status === "dead" ? "dead" : "retreated";
+  if (cleared && dungeon === 0 && s.klutz.shack) s.klutz = repairShack(s.klutz); // (the shack's mended once the camp's beaten: planks and nails from the runs)
+  const out = cleared ? "cleared" : run.status === "dead" ? "dead" : "retreated";
+  s.log.push(`${DUNGEONS[dungeon].name}: ${out} after ${run.room} rooms`);
+  s.path.push(`${"ECH"[dungeon] ?? dungeon}:${out}:${run.room}:L${s.player.level}`);
+  // The clock: the run's time, and a night's break at each session's end.
+  s.clock += (s.stats.playTime - timeBefore) * 1000;
+  if (++s.runsPlayed % SESSION_RUNS === 0) s.clock += NIGHT_MS;
+  return out;
 }
 
 // ── At home ───────────────────────────────────────────────────────────
@@ -397,6 +464,8 @@ const gearScore = (g: CreatureOrItemDrop, t: CreatureTemplate, setWith?: string)
 
 export function goHome(s: Sim) {
   s.stats.playTime += SECONDS.home;
+  s.clock += SECONDS.home * 1000;
+  klutzStep(s);
   // Cards: three of a kind summon the creature.
   for (;;) {
     const cards = s.inventory.filter((d) => d.dropType === "card");
@@ -416,24 +485,31 @@ export function goHome(s: Sim) {
     to.soulStone = stone.stone;
     s.inventory = s.inventory.filter((d) => d !== stone);
   }
-  // XP scrolls: read to the team's lowest.
+  // XP scrolls: read to Klutz till he's KLUTZ_SCROLLS_TO, then to the team's lowest.
   for (const scroll of items(s).filter((d) => d.scroll)) {
-    const to = [...team].sort((a, b) => (a.level ?? 1) - (b.level ?? 1))[0];
-    const p = addXp({ level: to.level ?? 1, xp: to.xp ?? 0 }, SCROLL_XP);
-    to.level = p.level; to.xp = p.xp;
+    if ((s.klutz.level ?? 1) < KLUTZ_SCROLLS_TO) {
+      s.klutz = klutzGainXp(s.klutz, SCROLL_XP).state;
+    } else {
+      const to = [...team].sort((a, b) => (a.level ?? 1) - (b.level ?? 1))[0];
+      const p = addXp({ level: to.level ?? 1, xp: to.xp ?? 0 }, SCROLL_XP);
+      to.level = p.level; to.xp = p.xp;
+    }
     s.inventory = s.inventory.filter((d) => d !== scroll);
   }
-  // Codexes: taught to whoever on the team they'd help most.
+  // Codexes: taught to whoever on the team they'd help most; one nobody wants goes to Klutz, who can learn any.
+  const klutz = klutzDropOf(s);
   for (const codex of items(s).filter((d) => d.codexMove)) {
     const move = codex.codexMove!;
-    const to = team.filter((c) => wouldLearn(s, c, move)).sort((a, b) => moveScore(s, templateOf(b), b, MOVE_BY_NAME[move]) - moveScore(s, templateOf(a), a, MOVE_BY_NAME[move]))[0];
+    const to = team.filter((c) => wouldLearn(s, c, move)).sort((a, b) => moveScore(s, templateOf(b), b, MOVE_BY_NAME[move]) - moveScore(s, templateOf(a), a, MOVE_BY_NAME[move]))[0]
+      ?? (wouldLearn(s, klutz, move) ? klutz : undefined);
     if (!to) continue;
     to.learned = [...(to.learned ?? []), move];
+    if (to === klutz) s.klutz = { ...s.klutz, learned: klutz.learned };
     s.inventory = s.inventory.filter((d) => d !== codex);
   }
-  // Gear: the team, strongest first, each takes the best of what's not worn by someone above it.
+  // Gear: the team, strongest first, each takes the best of what's not worn by someone above it; Klutz after them.
   const worn = new Set<string>();
-  for (const c of team) {
+  for (const c of [...team, klutz]) {
     const t = templateOf(c);
     const l: RivalLoadout = { ...(s.equipment[c.id] ?? {}) };
     const free = items(s).filter((g) => !worn.has(g.id));
@@ -530,7 +606,10 @@ function toRival(s: Sim): Rival {
   const inventory = [...keep, ...items(s).filter((g) => wornIds.has(g.id)), ...spares];
   return {
     id: s.name.toLowerCase(), name: s.name, seed: s.seed, player: { level: s.player.level, xp: s.player.xp }, rating: ELO_START,
-    stats: { ...s.stats, scans: s.scans, gold: s.gold, species: new Set(creatures(s).map((c) => c.creatureId)).size },
+    stats: {
+      ...s.stats, scans: s.scans, gold: s.gold, species: new Set(creatures(s).map((c) => c.creatureId)).size, path: [...s.path],
+      klutz: { level: s.klutz.level ?? 1, trips: s.klutzTrips, learned: [...(s.klutz.learned ?? [])] },
+    },
     inventory,
     equipment,
   };

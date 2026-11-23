@@ -187,11 +187,14 @@ account, kept entirely apart from Vouchee.
     moves is its own), cards summoned, junk sold. Each stops about where the user's test account was on 2026-11-24
     (`TARGET`: one Hydra clear, about 34 runs, 36 to 50 scans; main team Lv 15 to 24). Their rosters are fixed in
     the repo (lib/pvp/rivals.json: creatures, worn gear and some Rare spares for the 3v3 queue, move slots, a
-    player's numbers), so everyone meets the same rivals and the fight itself needs no connection: the rival is
-    the duel machine's guest in your own browser, answering with the **hard AI** after a short pause
-    (lib/pvp/rivalGuest.ts), on the duel screen unchanged (bring the size and 2 more, the lead room, the battle).
-    The sim leaves out Klutz, the campaign's rewards, the Den's building and the witch; its gold is left out of
-    what's shown.
+    player's numbers, and its path: each run's dungeon, outcome, rooms and explorer level), so everyone meets the
+    same rivals and the fight itself needs no connection: the rival is the duel machine's guest in your own
+    browser, answering with the **hard AI** after a short pause (lib/pvp/rivalGuest.ts), on the duel screen
+    unchanged (bring the size and 2 more, the lead room, the battle). **Klutz goes too** (the user, 2026-11-24:
+    "a core part"): between runs each rival sends him to the furthest dungeon it has beaten with the real trip
+    rules, spends his points and skills, gears him and teaches him the codexes nobody else wants, and his finds
+    (gear, codexes, creatures) go in its bag; he isn't in its PvP teams (the user). The sim leaves out the
+    campaign's rewards, the Den's building and the witch; its gold is left out of what's shown.
     - **The rating** (lib/pvp/elo.ts): Elo, everyone from 1000, K 32, players and rivals on **one ladder on
       Supabase** (`pvp_ratings`; supabase/migrations/…_ranked.sql): the server works each match's Elo out itself
       from the result (`ranked_result`), so a copy can't invent a rating (it can still invent a result: not hardened,
