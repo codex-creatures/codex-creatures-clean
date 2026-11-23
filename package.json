@@ -17,7 +17,8 @@
     "build:offline": "node offline/build.js",
     "setup:google": "node scripts/setup-google-login.mjs",
     "registry:rules": "node scripts/registry-rules.mjs",
-    "props:sprites": "node scripts/props-sprites.mjs"
+    "props:sprites": "node scripts/props-sprites.mjs",
+    "pvp:rivals": "node scripts/pvp-rivals.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "9.8.2",
