@@ -12,7 +12,7 @@ const ABILITY: Record<MoveEffect["kind"], string> = {
   empower: "Attack up", blood: "Blood pool",
   agility: "Agility up", weaken: "Attack down", smoke: "Hit and swap", lifesteal: "Life steal",
   chain: "Builds up", ward: "Status immunity", bleed: "Bleed", caltrops: "Caltrops", cleanse: "Cleanse",
-  septic: "Bleed combo", execute: "Finisher", cloud: "Poison cloud", ignite: "Ignite cloud",
+  septic: "Bleed combo", execute: "Finisher", cloud: "Poison cloud", ignite: "Ignite cloud", forcepush: "Clears hazards",
   ambush: "Ambush", surge: "Magic up", poison: "Poison", implode: "Self-destruct", flamebody: "Burn attackers",
   gore: "Toxic weakness", recoil: "Recoil", slap: "Wipe buffs", charge: "Wind-up",
   burn: "Burn", fright: "Fear", bounce: "Hit and swap", curse: "Curse", sweep: "Knock aside",

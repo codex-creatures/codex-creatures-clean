@@ -106,7 +106,9 @@ export const isSealed = (f: Combatant) => f.statuses.some((s) => s.id === "seal"
 //   poisoned. Clouds don't stack: a new one replaces the old. Blood (a pool
 //   or Haemorrhage's) under a cloud is soaked up: the blood goes and the
 //   cloud's poison is CLOUD_BLOOD_BOOST stronger.
-// - Caltrops: each creature that comes in loses entry of its max HP.
+// - Caltrops: each creature that comes in loses entry of its max HP. They last the
+//   whole fight; only Force Push (the user, 2026-11-24) shoves them off, hurling
+//   them at its target for the same share of its max HP (the cloud goes too).
 // - Gore (Haemorrhage): for some rounds, toxic damage on that side (toxic
 //   moves, venom, poison) is amp higher; Undead are untouched.
 export type GroundEffect =
@@ -701,6 +703,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       let damage = missed ? 0 : calcDamage(skill, actor, target, precise, PRECISE_IGNORE, rollDamage()).damage;
       if (pounced && fx?.kind === "pounce") damage = Math.round(damage * (1 + fx.lowHpBonus));
       let burnt: Extract<GroundEffect, { kind: "cloud" }> | undefined; // Emulate: the cloud it set alight
+      let hurled = 0; // Force Push: the caltrops' damage to the target
       if (!missed && damage > 0) {
         let m = 1;
         if (fx?.kind === "execute" && target.hp < target.maxHp * fx.below) m *= 1 + fx.bonus;
@@ -708,6 +711,8 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         if (fx?.kind === "septic" && (target.statuses.some((s) => s.id === "bleed") || groundOf(foe, "blood") || groundOf(foe, "gore"))) m *= fx.mult;
         if (fx?.kind === "ignite" && groundOf(foe, "cloud")) { m *= fx.mult; burnt = groundOf(foe, "cloud"); clearGroundLogged(state, foeKey, ["cloud"]); }
         if (fx?.kind === "chain") m *= 1 + Math.min(fx.cap, fx.step * (streak.hits - 1));
+        // Force Push: the caltrops under your team are hurled at the target (a share of its max HP, added after armour).
+        if (fx?.kind === "forcepush" && groundOf(state.sides[key], "caltrops")) hurled = Math.max(1, Math.round(target.maxHp * fx.burst));
         if (foe.boss && actor.enchant?.bossbane) m *= 1 + actor.enchant.bossbane; // (a Bossbane weapon)
         const gore = groundOf(foe, "gore");
         if (gore && !cannotBleed(target) && raceOfMove(skill) === "toxic") m *= 1 + gore.amp;
@@ -730,6 +735,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         damage = Math.ceil(damage / 2);
         armorFx.push(`${SET_BONUS.colossal_shellarmor.name} halves it`);
       }
+      if (hurled) { damage += hurled; armorFx.push(`Caltrops hurled back: ${hurled}`); } // (past armour and brace; a last stand still counts)
       if (actor.gentle && damage >= target.hp) damage = Math.max(0, target.hp - 1);
       if (damage >= target.hp && target.hp > 1 && hasSet(target, "juggernaut_platemail") && !target.setUsed) {
         target.setUsed = true;
@@ -853,6 +859,8 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         changed.length = 0;
       }
       if (changed.length) state.log.push({ type: "effect", side: foeKey, index: targetIdx, name: target.name, text: changed.join(" · ").toLowerCase(), hp: target.hp, statuses: target.statuses.map((s) => ({ ...s })), kind: "ability" });
+      // Force Push: whatever it can shove lying under your team goes (caltrops and the cloud; blood and gore stay), hit or miss.
+      if (fx?.kind === "forcepush") clearGroundLogged(state, key, ["caltrops", "cloud"]);
       // Flame Body: a melee attacker takes a share of its hit (before armour).
       const flame = target.statuses.find((s) => s.id === "flame");
       if (flame && !missed && skill.type === "melee" && skill.damage > 0 && actor.hp > 0) {

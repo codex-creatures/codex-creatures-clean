@@ -131,7 +131,13 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   Common codex is Meditate, so half of Common consumables are Meditate until new Common moves are added.
 - Dropped for now (2026-10-19): the **Codex of Stances** (Aerial Assault, Dig In), once a planned
   Cyclops reward. (Meditate is now a special move.)
-- ✅ **Thinking AI** (Monte Carlo) with Easy / Normal / Hard.
+- ✅ **Thinking AI** (Monte Carlo) with Easy / Normal / Hard. Since 2026-11-24 (the user, after his seven ranked wins:
+  the rivals swapped onto his caltrops all match) three nudges lie over the lookahead, each scaled by a random
+  ±50% so it misjudges now and then "to be more human-like": a voluntary swap costs the entry damage of what lies
+  under its field (`entryCost`); a debuff is worth more when the foe looks about to swap (hurt, or swapped in the
+  last two rounds: `foeSwapChance`), since it sticks to whoever comes in; laying a hazard is worth more while the
+  foe has creatures benched. Hard plays 48 futures an option (was 32: too few to tell a hazard's cost from the
+  noise). Numbers: `HAZARD_SWAP_WEIGHT`, `DEBUFF_BONUS`, `HAZARD_LAY_BONUS`, `NUDGE_JITTER` in lib/combat/thinkingAi.ts 🧪.
 - ✅ **Enemies' moves** (`enemyMoves`, `ENEMY_MOVE_LEVELS` in lib/dungeon/run.ts): its core moves,
   as yours (and now and then a rare cripple move it was born with). From Lv 5 a hybrid's empty
   fourth slot holds its second style's heavy move. (Until 2026-11-12 foes drew more of their race
@@ -265,9 +271,10 @@ power counts for less as attack grows.
   the Underkin creatures; the name is Claude's). Uncommon too: Blessed Bolt (the user, 2026-11-20: Divine's basic hit, ranged, 30 energy; 15
   power 🧪; learned by the Divine creatures). Nibble: +10% each time in a row, up to 10 times (+100%; the
   user, 2026-11-20; it was 5, +50%). A move with no damage (Caltrops, Crystal Armour…) shows as Utility
-  everywhere, never by the style it's filed under (`isUtility`; Caltrops showed as Magic). Uncommon: Nullifying Voice, Vampiric Bite, Caltrops, Ambush, Bolas Shot, Enfeeble, Razor
+  everywhere, never by the style it's filed under (`isUtility`; Caltrops showed as Magic). Uncommon: Nullifying Voice, Vampiric Bite, Ambush, Bolas Shot, Enfeeble, Razor
   Arrows. Rare: Smoke Bomb, Obsidian Arrows, Septic Shock, Mega Smash, Emulate, Voltage Surge, Flame
-  Body, Haemorrhage, Soul Snatch, Bone Javelin. Epic: Smite, Implode, Fissure. ✅ Legendary (the v2
+  Body, Haemorrhage, Soul Snatch, Bone Javelin, Force Push. Epic: Smite, Implode, Fissure, Caltrops (Uncommon until 2026-11-24; the user, after
+  watching the ranked rivals walk onto them every swap: they last the whole fight and had no answer). ✅ Legendary (the v2
   review): Choking Smog, Haunting Scream. Legendary codexes cost 2,500 gold at a librarian
   (`codexPrice`), come from a library's bookcases 1 in 100 (`CODEX_ODDS`) and the other places
   every codex does, and are never on foes (no dungeon goes past Epic). The Choking Smog codexes
@@ -280,6 +287,11 @@ power counts for less as attack grows.
   one replaces the old). Blood under a cloud (a Blood Sacrifice pool, Haemorrhage's) is soaked up: the
   blood goes and the cloud is 50% stronger. Cleansing Water washes the cloud under your team away,
   Flame Body burns only your own team's, Emulate burns the one under the target: it hits double, and the cloud goes up in flames for one more tick of it, as fire (so Toxic creatures take it too; the user, 2026-11-13).
+- ✅ **Caltrops and Force Push** (the user, 2026-11-24): caltrops lie under the foes for the rest of the fight (10% of max
+  HP from each creature that comes in), and nothing but Force Push moves them: a Rare Geo codex (magic, 5 power, 60
+  energy; learned by the Geo and the magic-looking creatures) that hits, shoves the caltrops and any cloud off your
+  side (blood and gore stay), and hurls the caltrops at the target for 10% of its max HP, past armour. Without
+  caltrops under you it's just the small hit.
 - **Poison** keeps whichever has the most left (dose × rounds); a new one never shortens it.
 - **Bleed** (Obsidian, Razor Arrows): until it leaves the field; Undead don't bleed. **Weaken**
   (Nullifying Voice, Haunting Scream's fallback): an attack style, or all, down. **Ward** (Crystal

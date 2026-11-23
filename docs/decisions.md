@@ -45,6 +45,7 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 | 12 | Agility only decides who strikes first | Players judge how much to invest; don't "fix" it | ✅ | [design/combat.md](design/combat.md) §6 |
 | 13 | No resting: every move set keeps a steady move (≤ 30 energy, no cooldown) | A creature can always attack | ✅ | [design/combat.md](design/combat.md) §6 |
 | 14 | PvP: the inviting player's browser runs the fight; Supabase Realtime only, no duel tables | Two browsers must agree; simplest that works | ✅ built, not yet tried by two players | [design/online.md](design/online.md) §12 |
+| 59 | Caltrops is an Epic codex, and **Force Push** (Rare, Geo, magic, 5 power, 60 energy) is its only answer: it shoves the caltrops and any cloud off your side and hurls the caltrops at the target for 10% of its max HP. The thinking AI weighs entry hazards before a swap, values a debuff more when the foe looks about to swap, and values laying a hazard while the foe has a bench, each nudge jittered so it isn't perfect | The user, 2026-11-24, after seven ranked wins: the Hard rivals swapped onto caltrops all match (100–230 damage a match, free) and nothing in the game removed them; "the variance helps it feel like a human" | ✅ built 2026-11-24 🧪 (the nudge sizes are Claude's) | [design/combat.md](design/combat.md) §6 |
 
 ## Runs and accounts
 

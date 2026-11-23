@@ -90,6 +90,8 @@ export type MoveEffect =
   | { kind: "burn"; chance: number; tick: number; minRounds: number; maxRounds: number } // a chance to burn the target (like poison; Geo are immune; it puts out a bleed)
   | { kind: "fright"; chance: number }                   // a chance the target loses its attack this round (Haunting Presence's fear), only if it hasn't acted yet
   | { kind: "bounce" }                                   // a small hit, then it swaps out to a teammate the player picks (not first)
+  // Force Push (the user, 2026-11-24).
+  | { kind: "forcepush"; burst: number }                 // a small hit; the caltrops and cloud under your team go, and caltrops are hurled at the target for this share of its max HP
   | { kind: "curse"; power: number; minRounds: number; maxRounds: number; spread: number }; // no hit: the target takes a power-`power` hit each round; swapping out, it may pass to a benched teammate
 
 export type Skill = {

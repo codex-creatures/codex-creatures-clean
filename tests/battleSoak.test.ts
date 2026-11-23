@@ -196,7 +196,7 @@ describe("battles at random", () => {
   });
   it("150 battles: HP and energy in bounds, nobody acts knocked out, every one ends, and ends as it should", () => {
     expect(sweep(1, 150).slice(0, 12)).toEqual([]);
-  });
+  }, 90_000); // (about 45 s on the laptop since the Hard AI plays 48 futures a move, 2026-11-24)
   // (BATTLE_SWEEP=12000 for a long soak, about 12 minutes; BATTLE_FROM for other battles than the usual ones.
   // Run so on 2026-11-23, with the 4,000 before it: 16,000 battles, nothing wrong.)
   const many = Number(process.env.BATTLE_SWEEP) || 600, first = Number(process.env.BATTLE_FROM) || 10_000;

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { createBattle, resolveRound, sendInReplacement, activeOf, poisonWith, CRIPPLE, CRIPPLE_ROUNDS, CRIPPLE_ROUNDS_MAX, type BattleAction, type Combatant } from "../lib/combat/battle";
+import { createBattle, resolveRound, sendInReplacement, activeOf, poisonWith, CRIPPLE, CRIPPLE_ROUNDS, CRIPPLE_ROUNDS_MAX, type BattleAction, type BattleEvent, type Combatant } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage } from "../lib/combat/engine";
 import { CREATURE_BY_ID, CREATURE_TEMPLATES, MOVE_BY_NAME, SPECIAL_MOVES, RACE_MOVES, LEARNABLE_MOVES, canLearnFromCodex, isRetiredMove, REUSED_NAMES } from "../lib/creatures/creatureData";
@@ -18,8 +18,8 @@ const has = (f: Combatant, id: string) => f.statuses.some((s) => s.id === id);
 afterEach(() => vi.restoreAllMocks());
 
 describe("the 2026-11 codex moves: who, what rarity, where they come from", () => {
-  it("all 37 are special-move codexes, each with learners, a rarity and a short description", () => {
-    expect(CODEX_MOVES_2026).toHaveLength(37);
+  it("all 38 are special-move codexes, each with learners, a rarity and a short description", () => {
+    expect(CODEX_MOVES_2026).toHaveLength(38);
     for (const m of CODEX_MOVES_2026) {
       expect(SPECIAL_MOVES).toContain(m);
       expect(MOVE_BY_NAME[m.name], m.name).toBe(m);
@@ -186,6 +186,36 @@ describe("the 2026-11 codex moves in a fight", () => {
     resolveRound(s, { A: attack("Caltrops"), B: attack("Strike") });
     resolveRound(s, { A: attack("Strike"), B: swap(1) });
     expect(999 - s.sides.B.team[1].hp).toBeGreaterThanOrEqual(100);
+  });
+
+  it("Caltrops is an Epic codex now (the user, 2026-11-24: they last the whole fight); Force Push, its answer, is Rare", () => {
+    expect(codexRarityOf("Caltrops")).toBe("epic");
+    expect(codexRarityOf("Force Push")).toBe("rare");
+    expect(MOVE_BY_NAME["Force Push"]).toMatchObject({ type: "magic", damage: 5, energyCost: 60, race: "geo" });
+  });
+
+  it("Force Push: a small hit; the caltrops under your team are hurled at the target for 10% of its max HP and go; the cloud goes; blood stays", () => {
+    const s = createBattle([big(fighter("flicker_wisp", ["Zap", "Force Push"]))], [big(fighter("cave_bat", ["Strike", "Caltrops"])), big(fighter("glob", ["Strike"]))]);
+    const round = (a: string, b: string) => { s.sides.A.team[0].energy = 100; resolveRound(s, { A: attack(a), B: attack(b) }); };
+    const lastHit = () => s.log.filter((e) => e.type === "attack" && e.attacker === "Flicker Wisp").at(-1)! as Extract<BattleEvent, { type: "attack" }>;
+    const blood = { kind: "blood" as const, move: "Blood Sacrifice", by: 0, count: 0, tick: 0.05, entry: 0.05, entries: 3, burst: 40, leech: 0.1 };
+    // Nothing under A yet: just a weak hit, nothing hurled.
+    round("Force Push", "Strike");
+    expect(lastHit().armorFx).toBeUndefined();
+    expect(lastHit().damage).toBeGreaterThan(0);
+    round("Zap", "Caltrops");
+    s.sides.A.ground = [...s.sides.A.ground!, { kind: "cloud", move: "Choking Smog", rounds: 5, tick: 0.1, tailMin: 1, tailMax: 3 }];
+    expect(s.sides.A.ground.map((g) => g.kind)).toEqual(["caltrops", "cloud"]);
+    const before = s.sides.B.team[0].hp;
+    round("Force Push", "Strike");
+    expect(lastHit().armorFx).toContain("Caltrops hurled back: 100");
+    expect(before - s.sides.B.team[0].hp).toBeGreaterThanOrEqual(100);
+    expect(s.sides.A.ground).toEqual([]); // caltrops and cloud both gone
+    // Blood alone under A: Force Push leaves it, and hurls nothing.
+    s.sides.A.ground = [blood];
+    round("Force Push", "Strike");
+    expect(lastHit().armorFx).toBeUndefined();
+    expect(s.sides.A.ground.map((g) => g.kind)).toEqual(["blood"]);
   });
 
   it("Haunting Scream: 70% they flee for a random teammate (who doesn't act this round); otherwise their attacks are halved", () => {

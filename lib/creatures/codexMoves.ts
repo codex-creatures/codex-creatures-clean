@@ -54,7 +54,7 @@ export const CODEX_MOVES_2026: Skill[] = [
   move("Bone Javelin", "ranged", "underkin", 25, 40, "rare", undefined,
     ["cave_bat", "hollow_matriarch", "rattlebones", "shambler", "storm_phoenix", "thicket_archer", "aurelius", "sylvaran", "deep_angler", "pale_rider"],
     "A heavy throw for little energy: 1.3× a heavy hit.", { cooldown: 3, mult: 1.3 }),
-  utility("Caltrops", "humanoid", 40, "uncommon", { kind: "caltrops", entry: 0.1 },
+  utility("Caltrops", "humanoid", 40, "epic", { kind: "caltrops", entry: 0.1 }, // (Epic since 2026-11-24, the user: they last the whole fight)
     ["ironhide", "cave_bat", "crystal_golem", "hollow_matriarch", "rattlebones", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran", "flame_imp", "tunnel_wyrm", "dreadpox", "pale_rider"],
     "Under the foes for the rest of the fight: each creature that comes in loses 10% of its max HP."),
   utility("Cleansing Water", "geo", 60, "common", { kind: "cleanse" },
@@ -78,6 +78,10 @@ export const CODEX_MOVES_2026: Skill[] = [
   utility("Choking Smog", "toxic", 90, "legendary", { kind: "cloud", tick: 0.1, minRounds: 5, maxRounds: 7, tailMin: 1, tailMax: 3 }, 
     ["bellow_toad", "crystal_golem", "the_watcher", "void_serpent", "mr_shadows", "swamp_witch", "plague_rat", "glob", "dreadpox"],
     "A poison cloud under the foes for 5–7 rounds: 10% max HP a round to the one out, and 1–3 rounds more after. Toxic are immune."),
+  // The user's answer to Caltrops (2026-11-24): a weak magic hit that shoves the hazards off your side of the field.
+  move("Force Push", "magic", "geo", 5, 60, "rare", { kind: "forcepush", burst: 0.1 },
+    ["crystalback", "crystal_golem", "dust_sprite", "flicker_wisp", "the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "gleamling", "thunderhead", "tunnel_wyrm", "sylvaran"],
+    "A small hit that shoves any caltrops or cloud off your side; caltrops are hurled at the target for 10% of its max HP."),
   move("Emulate", "magic", "geo", 20, 50, "rare", { kind: "ignite", mult: 2 },
     ["crystalback", "crystal_golem", "dust_sprite", "flicker_wisp", "the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "gleamling", "flame_imp", "thunderhead", "dreadpox"],
     "Double damage if a cloud lies under the target's team: it goes up in flames, for one more tick of it."),
