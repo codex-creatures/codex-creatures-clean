@@ -3,7 +3,7 @@ import { createBattle, resolveRound, sendInReplacement, currentAgility, fieldOf,
 import { effectiveAgil, calcDamage, setCombatRules, LIVE_RULES } from "../lib/combat/engine";
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
 import { CYCLOPS, HYDRA, BOSS_CLEANSE } from "../lib/combat/bossAi";
-import { bossTeam, cyclopsTeam } from "../lib/creatures/bosses";
+import { bossTeam } from "../lib/creatures/bosses";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, MOVE_BY_NAME } from "../lib/creatures/creatureData";
 // Battle mechanics tests use the older species, with the moves they were written with.
@@ -12,7 +12,7 @@ const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 // A sturdy player creature with plain moves.
 const hero = (hp = 5000) => ({ ...buildFighter(CREATURE_BY_ID.ironhide, { melee: 30, ranged: 30 }, { mDef: 10, rDef: 10, magDef: 10 }, ["Slash", "Heavy Blow", "Crush", "Devastator"]), hp, maxHp: hp });
 const pass = { kind: "pass" } as const;
-const fight = () => createBattle([hero(), hero(), hero()], cyclopsTeam(), {}, "cyclops");
+const fight = () => createBattle([hero(), hero(), hero()], bossTeam("cyclops"), {}, "cyclops");
 
 function toPhase2(s: BattleState) {
   const body = s.sides.B.team[CYCLOPS.BODY];
@@ -72,7 +72,7 @@ describe("the Cyclops", () => {
   });
 
   it("the Eye's Float stance: ranged hits it harder than the same melee hit", () => {
-    const eye = cyclopsTeam()[CYCLOPS.EYE];
+    const eye = bossTeam("cyclops")[CYCLOPS.EYE];
     const base = buildFighter(CREATURE_BY_ID.void_serpent, { melee: 30, ranged: 30 }, {});
     const a = { ...base, proficiency: { ...base.proficiency, atk: 30, rng: 30 } }; // equal melee and ranged %
     const flat = { ...eye, stance: "float" as const, armor: { ...eye.armor, mdef: 0, rdef: 0 } };
@@ -101,7 +101,7 @@ describe("the Cyclops", () => {
   it("full battles against the AI always finish, with a winner", () => {
     for (let i = 0; i < 20; i++) {
       const A = [0, 1, 2].map(() => buildFighter(CREATURE_BY_ID.dire_wolf, { melee: 30, ranged: 10 }, { mDef: 20, rDef: 20, agility: 20 }));
-      const s = createBattle(A, cyclopsTeam(), {}, "cyclops");
+      const s = createBattle(A, bossTeam("cyclops"), {}, "cyclops");
       while (!s.winner) {
         resolveRound(s, { A: chooseAiAction(s, "A", "easy"), B: pass });
         for (const k of [...s.needsReplacement]) sendInReplacement(s, k, chooseAiReplacement(s, k, "easy"));

@@ -8,8 +8,8 @@
 //    creature you can recruit. The cage glows until you do (the starter
 //    waits in it: lib/creatures/starter.ts). (Still the "start" stage.)
 // 1. "start":    Klutz has something to tell you (talk to him).
-// 2. "hunt":     into the Labyrinth: a short run of its own (questMap in
-//                lib/dungeon/map.ts), one tunnel to a "?" room with Klutz's
+// 2. "hunt":     into the Labyrinth: a short run of its own, walked
+//                (lib/dungeon/tutorialRun.ts), one tunnel to a "?" room with Klutz's
 //                old club on the floor, dropped by the fleeing thief (picked
 //                up like any loot: a tutorial in the loot window walks you
 //                through taking it and equipping it, by tap or by drag), then

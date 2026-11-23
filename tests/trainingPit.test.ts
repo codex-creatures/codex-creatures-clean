@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PIT_COST, SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, buildPit, canBuildPit, canTrain, claimPlans, hasPit, hoursToLevel, hydraStep, lifetimeXp, logTrained, pitRate, restartTraining, startTraining, stopTraining, trained, training, trainingIds, buildSlots, pitSlots, PIT_SLOTS } from "../lib/trainingPit";
+import { PIT_COST, SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, buildPit, canBuildPit, canTrain, claimPlans, hasPit, hydraStep, lifetimeXp, logTrained, pitRate, restartTraining, startTraining, stopTraining, trained, training, trainingIds, buildSlots, pitSlots, PIT_SLOTS } from "../lib/trainingPit";
 import { MAX_LEVEL, xpToNext } from "../lib/creatures/levels";
 import { MATERIALS, materialBundle, SCHEMATICS } from "../lib/items/materials";
 import { MERCHANT_MATERIALS, merchantOffer, lootEntry, rollWares } from "../lib/dungeon/run";
@@ -83,8 +83,6 @@ describe("the Sparring Pit and the Training Pit", () => {
     const room = xpToNext(10) - 38;
     expect(training(p, since, at(1))).toEqual({ earned: 100, room, full: false });
     expect(training(p, since, at(1), SPARRING_XP_PER_HOUR).earned).toBe(50);
-    expect(hoursToLevel(p, since, at(1))).toBeCloseTo((room - 100) / 100);
-    expect(hoursToLevel(p, since, at(1), 50)).toBeCloseTo((room - 50) / 50);
     expect(training(p, since, at(500))).toEqual({ earned: room, room, full: true }); // never more than one level
     expect(trained(p, since, at(500))).toEqual({ level: 11, xp: 0 });
     expect(trained(p, since, at(1))).toEqual({ level: 10, xp: 138 });

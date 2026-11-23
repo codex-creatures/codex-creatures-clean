@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan, type Pt } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, layoutMap, WALK_SPEC } from "../lib/dungeon/layout";
-import { advance, cameraAt, closestReachable, entranceSpot, findPath, isWalkKey, keysPush, nearestWalkable, roomAt, stickNext, walkable, walkStick, walkTo, walkToward, WALK_SPEED, type Walker } from "../lib/dungeon/walk";
+import { advance, cameraAt, closestReachable, findPath, isWalkKey, keysPush, nearestWalkable, roomAt, stickNext, walkable, walkStick, walkTo, walkToward, WALK_SPEED, type Walker } from "../lib/dungeon/walk";
+
+// A spot to start from: the middle of the entrance.
+const entranceSpot = (fp: Floorplan, map: { start: string }): Pt => {
+  const r = fp.rooms[map.start][0];
+  return { x: r.x + Math.floor(r.w / 2), y: r.y + Math.floor(r.h / 2) };
+};
 
 function seeded(seed: number) {
   let s = seed;

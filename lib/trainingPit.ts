@@ -66,11 +66,6 @@ export function trained(p: Progress, since: string, now = Date.now(), rate = TRA
   const out = addXp(p, earned);
   return { level: out.level, xp: out.xp };
 }
-// How long until the bar's full (hours; 0 once it is).
-export function hoursToLevel(p: Progress, since: string, now = Date.now(), rate = TRAINING_XP_PER_HOUR): number {
-  const { earned, room } = training(p, since, now, rate);
-  return Math.max(0, (room - earned) / rate);
-}
 
 // Who's in it: the first in `training` (as saves always had it), the others in `more`.
 export type Trainee = { id: string; since: string };

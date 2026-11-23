@@ -35,7 +35,7 @@ import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
 import { rollGear, RARITIES } from "../items/gear";
 import type { BossKind } from "../combat/bossAi";
-import { questMap, rollMap, routeLength, waysOn, type DungeonMap, type MapSpec } from "./map";
+import { rollMap, routeLength, waysOn, type DungeonMap, type MapSpec } from "./map";
 import { newWitchGame, type WitchGame } from "./witch";
 import { BOSS_XP, REF_LEVEL } from "../creatures/levels";
 import { readSave, writeSaveField } from "../save";
@@ -494,7 +494,6 @@ export function bossChest(dungeon: DungeonId, rng: Rng = Math.random): SackItem[
   const essence = Math.floor(loot.essence) + (loot.essence % 1 > 0 && rng() < loot.essence % 1 ? 1 : 0);
   return [...chest, ...Array.from({ length: gear }, (_, i): SackItem => ({ gear: piece(i) })), ...(essence > 0 ? [{ gear: materialDrop("essence", essence) }] : [])];
 }
-export const cyclopsChest = (rng: Rng = Math.random): SackItem[] => bossChest(1, rng);
 // (World version 17, the user, 2026-11-17) A crate in a room's corner, searched once: CORNER_FIND of the time it
 // holds one thing, a material bundle (Common, sometimes Uncommon) or a consumable (CORNER_CONSUMABLES: a
 // Lesser or Healing Potion, a torch, a clairvoyance scroll); the rest of the time it's empty. 🧪
@@ -1368,19 +1367,6 @@ export function startRun(party: string[], team: string[], hp: Record<string, num
     cleared: first ? [] : [map.start],
     current: first ? makeRoom("treasure", rng) : null,
     loot: [], status: "exploring", inside: false, ...(bindle ? { bindle } : {}), ...(cages ? { campCages: cages } : {}),
-  };
-}
-
-// The first quest's run (lib/quest.ts): the short questMap, starting at the
-// entrance. What's in its two rooms is set as you walk in (the club, then
-// the thief).
-export function startQuestRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number): DungeonRun {
-  const map = questMap();
-  return {
-    id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(),
-    party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),
-    room: 0, map, path: [map.start], cleared: [map.start], current: null,
-    loot: [], status: "exploring", inside: false,
   };
 }
 

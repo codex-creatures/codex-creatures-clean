@@ -17,7 +17,6 @@
 //   closed rooms and one-way tunnels (layout.ts stepRule).
 
 import { ROCK, type Floorplan, type Pt } from "./floorplan";
-import type { DungeonMap } from "./map";
 
 export const WALK_SPEED = 6;  // tiles a second
 export const TAP_REACH = 3;   // a tap on rock looks this many tiles round for somewhere to walk
@@ -27,12 +26,6 @@ export type CanStep = (from: Pt, to: Pt) => boolean;
 
 export const walkable = (fp: Floorplan, x: number, y: number) =>
   x >= 0 && y >= 0 && x < fp.w && y < fp.h && fp.tiles[y * fp.w + x] !== ROCK;
-
-// Where a walk starts: the middle of the entrance.
-export function entranceSpot(fp: Floorplan, map: DungeonMap): Pt {
-  const r = fp.rooms[map.start][0];
-  return { x: r.x + Math.floor(r.w / 2), y: r.y + Math.floor(r.h / 2) };
-}
 
 // The room a spot is in (its floor, not its doors), or null in a tunnel.
 export function roomAt(fp: Floorplan, p: Pt): string | null {

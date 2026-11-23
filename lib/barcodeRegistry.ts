@@ -169,14 +169,6 @@ export function lookupLocal(code: string): Lookup {
   saveRegistry(registry);
   return { entry, first: true };
 }
-export const resolveBarcode = (code: string): BarcodeEntry => lookupLocal(code).entry;
-
-// Your first scan of a barcode, in the local registry: what it holds, whether
-// it's sealed (tooRare), and whether you were the first ever to scan it.
-export function scanBarcode(code: string, playerLevel: number): { entry: BarcodeEntry; sealed: boolean; first: boolean } {
-  const found = lookupLocal(code);
-  return { ...found, sealed: tooRare(found, playerLevel) };
-}
 
 // "Global Reset" — every barcode will roll fresh on its next scan.
 export function clearRegistry() {

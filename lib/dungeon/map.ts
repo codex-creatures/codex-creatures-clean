@@ -81,7 +81,7 @@ export type DungeonMap = {
   boss: string;                   // the lair (top)
   nodes: Record<string, MapNode>;
   knownLinks?: string[];          // corridors marked on the scroll from the start ("a|b", sorted)
-  quest?: boolean;                // the first quest's short run: no lair (see questMap)
+  quest?: boolean;                // the first quest's short run: no lair (lib/dungeon/tutorialRun.ts; a run saved before it, on the old scroll map, too)
 };
 
 type Rng = () => number;
@@ -316,24 +316,6 @@ function placeLarge(map: DungeonMap, count: number, rng: Rng, dynamite = false) 
     Object.assign(n, { kind, large: true, mystery: !stash && rng() >= LARGE_KNOWN, ...(stash ? { dynamite: true } : {}) });
     if (!n.mystery) n.known = true;
   }
-}
-
-// The first quest's run: just the first bit of the Labyrinth. One tunnel
-// from the entrance to a "?" room (Klutz's club), one on to another "?"
-// (the thief, a Baby Cyclops, with his box), and that's all: no lair on the scroll,
-// so the Cyclops is a surprise for the first real run. (Its "boss" is the
-// thief's room, only because every map names one.)
-export function questMap(): DungeonMap {
-  const node = (id: string, y: number, kind: RoomKind, links: string[]): MapNode => ({ id, x: MAP_W / 2, y, kind, links, mystery: kind !== "entrance" });
-  const h = 140;
-  return {
-    h, start: "start", boss: "thief", quest: true,
-    nodes: {
-      start: node("start", h - 20, "entrance", ["club"]),
-      club: node("club", h - 60, "treasure", ["start", "thief"]),
-      thief: node("thief", h - 100, "easy", ["club"]),
-    },
-  };
 }
 
 export const neighbours = (map: DungeonMap, id: string): MapNode[] => map.nodes[id].links.map((l) => map.nodes[l]);

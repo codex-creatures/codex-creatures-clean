@@ -11,7 +11,7 @@ import { enchantOldGear, ENCHANT_ROLL_BEFORE } from "../lib/save";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, type Fighter } from "../lib/combat/engine";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
-import { cyclopsTeam } from "../lib/creatures/bosses";
+import { bossTeam } from "../lib/creatures/bosses";
 import { fighterFor } from "../lib/creatures/instance";
 import { wornArmor } from "../lib/items/armor";
 import { dropFromOutcome, weaponDrop, armorDrop } from "../lib/drops";
@@ -179,7 +179,7 @@ describe("in a fight", () => {
   it("Bossbane: more damage to a boss", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     const first = (enchant?: Fighter["enchant"]) => {
-      const s = createBattle([fighter(enchant), fighter(), fighter()], cyclopsTeam(), {}, "cyclops");
+      const s = createBattle([fighter(enchant), fighter(), fighter()], bossTeam("cyclops"), {}, "cyclops");
       resolveRound(s, { A: attack, B: attack });
       return hitsBy(s.log, "A")[0].damage;
     };

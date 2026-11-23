@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, bagWantsPotions, cyclopsChest, bossChest, BOSS_LOOT, withMoney, MONEY_STASH, MONEY_GOLD, DUNGEONS, type SackItem, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
+import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, bagWantsPotions, bossChest, BOSS_LOOT, withMoney, MONEY_STASH, MONEY_GOLD, DUNGEONS, type SackItem, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
 import { createBattle, resolveRound, isValidAction, revivable, swapTargets } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES } from "../lib/creatures/creatureData";
@@ -181,7 +181,7 @@ describe("money stashes (the user, 2026-11-23)", () => {
 describe("the Cyclops' chest", () => {
   it("holds 1–2 codexes, 1–2 potions and then 3–5 gear, never more than 10 rolls (gear is cut first)", () => {
     for (let i = 0; i < 200; i++) {
-      const chest = cyclopsChest();
+      const chest = bossChest(1);
       const gear = chest.filter((x) => "gear" in x && (x.gear.dropType !== "item" || !x.gear.codexMove)).length;
       const codexes = chest.filter((x) => "gear" in x && x.gear.dropType === "item" && !!x.gear.codexMove).length;
       const potions = chest.filter((x) => "potion" in x).length;

@@ -57,10 +57,6 @@ export const MINOTAUR_PARTS: Part[] = [
 export const BOSS_PARTS_OF: Record<BossKind, Part[]> = { cyclops: CYCLOPS_PARTS, hydra: HYDRA_PARTS, minotaur: MINOTAUR_PARTS };
 
 // level: how strong it is (the Labyrinth's CYCLOPS_LEVEL; missing = REF_LEVEL).
-export function cyclopsTeam(level?: number): Fighter[] {
-  return bossTeam("cyclops", level);
-}
-
 export function bossTeam(kind: BossKind, level?: number): Fighter[] {
   return BOSS_PARTS_OF[kind].map((p) => {
     const f = buildFighter(CREATURE_BY_ID[p.id], p.weapon, p.armor, undefined, undefined, undefined, undefined, level);

@@ -224,8 +224,13 @@ touched none of it.
 - **The stale comments** (dc09e4f).
 - **E4** (ff3115f): one computer in CLAUDE.md and README.md, and decision 59 (older saves load
   until the app's launch).
-- **Still open:** B, D, E1–E3, E5, and E7's old ways in (`startQuestRun`, `cyclopsChest`,
-  `cyclopsTeam`, `scanBarcode` / `resolveBarcode`, `backupSave`, `hoursToLevel`,
-  `entranceSpot`), each to be checked against the game's newer path before it and its test go.
+- **E7's old ways in**, each checked against what the game does now: `startQuestRun` and its
+  `questMap` (the first quest is walked: tutorialRun.ts; `map.quest` stays, the tutorial sets it),
+  `cyclopsChest` and `cyclopsTeam` (one-line copies of `bossChest(1)` and `bossTeam("cyclops")`,
+  which their tests use now), `scanBarcode` / `resolveBarcode` (wrappers of `lookupLocal`, which
+  the game calls), `backupSave` (a new game is backed up by `startNewGame`, already tested),
+  `hoursToLevel`, and `entranceSpot` (a walk starts at `roomCentre`; the walking tests keep it as
+  their own helper). The tests that only checked them went with them.
+- **Still open:** B, D, E1–E3, E5.
   README.md's opening still says the game has no server or accounts (untrue since the Supabase
   work): a line to fix with E5.
