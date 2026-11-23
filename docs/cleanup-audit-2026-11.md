@@ -216,3 +216,16 @@ touched none of it.
   unreachable and no export named nowhere. Every game screen has a way in. What it added:
   comments calling the walked dungeons "not used by the game yet" or "/lab/newrun only" (fixed),
   the pool's own heal button (with C3), and E7's list of exports only tests call.
+- **C1** (0a5808c): 16 labs are `page.dev.tsx`; `npm run build` and the offline export have only
+  `/lab/models` and `/lab/propreview` (decision 58). The labs' pictures still ship in
+  public/sprites (about 250 KB, walk/samples): a build can't tell they're unused.
+- **C3** (3f3c356): "Testing: heal now" and the pool's "Heal everyone now" are gone; healing stays
+  instant (decision 15). **C2** ("VS AI") stays until the PvP queue.
+- **The stale comments** (dc09e4f).
+- **E4** (ff3115f): one computer in CLAUDE.md and README.md, and decision 59 (older saves load
+  until the app's launch).
+- **Still open:** B, D, E1–E3, E5, and E7's old ways in (`startQuestRun`, `cyclopsChest`,
+  `cyclopsTeam`, `scanBarcode` / `resolveBarcode`, `backupSave`, `hoursToLevel`,
+  `entranceSpot`), each to be checked against the game's newer path before it and its test go.
+  README.md's opening still says the game has no server or accounts (untrue since the Supabase
+  work): a line to fix with E5.
