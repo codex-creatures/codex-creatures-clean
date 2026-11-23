@@ -238,6 +238,11 @@ touched none of it.
   in the stylesheet, `loadArt` and the pixel loaders only it used, three of its tests, and 8 of
   its pictures in public/sprites/den/ (about 90 KB; the ones other screens use stay). Found on the
   way: the new Den doesn't draw the Cyclops Head (`headUp` is kept for when it does).
-- **Still open:** B2–B5, D, E1–E3, E5.
+- **B3, the old three-part Inventory** (the user, 2026-11-24: "everything should be running to the
+  new one that is found by clicking the storehouse"): `/chest` is the Storehouse only (weapons,
+  armour, consumables, and the box schematics), so every link that opened the old screen opens it.
+  Its Creatures part is the Pit's, its Klutz button his own page's. Klutz's tour and his crate's
+  link say Storehouse. **B4, `/bag`, stays** (the user: intended).
+- **Still open:** B2, B5, D, E1–E3, E5.
   README.md's opening still says the game has no server or accounts (untrue since the Supabase
   work): a line to fix with E5.

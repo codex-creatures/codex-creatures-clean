@@ -64,7 +64,7 @@ the old Den hung once `headUp`, lib/tavern.ts, says so.)
   signed in, shown even with names off; nothing when signed out or offline). All the rock south of the hall is the low rim, so nothing hides the hall's front.
 - **What's where:** room 1: **Klutz's Cabin** (its name in the new Den, the user, 2026-11-19) in the hall's top-left corner (his page: gear, crate, trips), the
   **storehouse** turned along the west wall, doors facing into the room, far enough down that the cabin's front shows (the Inventory's weapons, armour and
-  consumables: `/chest?store=1`), the Bestiary in the nook, and what you can move. Room 2: the tavern in the
+  consumables: `/chest`), the Bestiary in the nook, and what you can move. Room 2: the tavern in the
   hall's top-right corner, the portal, the Sparring/Training Pit (once the tavern has its pit).
 - **Moving things** (the user, 2026-11-19): hold a movable thing still (`LIFT_MS` 450 ms) and it lifts; drag
   it and let go. Floor things (the Soul Altar with its two braziers, the healing pool, the Pit, the standing

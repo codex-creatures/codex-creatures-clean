@@ -59,7 +59,7 @@ const BASICS: TourStep[] = [
   { path: "/bag", say: "Pack potions to heal between rooms, and spare gear to swap in. Room's tight, and anything you find down there needs a free slot to come home." },
 
   // Around the Den
-  { path: "/", target: den(OBJ.chest), say: "Your Inventory: every weapon, piece of armour, potion and codex you own. The gear from my box is in there." },
+  { path: "/", target: den(OBJ.chest), say: "Your Storehouse: every weapon, piece of armour and potion you own. The gear from my box is in there." },
   { path: "/", target: den(OBJ.cage), say: "The cage. Creatures I catch wait in here for you: keep them, or let them go." },
   { path: "/", target: den(OBJ.crate), say: "My den, behind my crate. What I bring back from hunting waits in it, with my kit and the tales of my trips." },
 
@@ -99,8 +99,8 @@ const COMBAT: TourStep[] = [
 // ── Items ─────────────────────────────────────────────────────────
 const b = RARITY_BUDGETS;
 const ITEMS: TourStep[] = [
-  { path: "/", target: den(OBJ.chest), say: "Now, gear. It all lives in your Inventory. Let's look." },
-  { path: "/chest", target: "tabs", say: "Weapons, armour, potions and codexes, each in its own box. Boxes fill up, so sell what you don't need." },
+  { path: "/", target: den(OBJ.chest), say: "Now, gear. It all lives in your Storehouse. Let's look." },
+  { path: "/chest", target: "tabs", say: "Weapons, armour and potions, each in its own box; codexes go on the bookcase. Boxes fill up, so sell what you don't need." },
   { path: "/chest", target: "grid", say: "Here's the gear from my box. Tap a piece to see its stats." },
   { path: "/chest", target: "grid", say: `Every piece rolls its stats when it's found. Rarer gear has more points to share out: common ${b.common}, uncommon ${b.uncommon}, rare ${b.rare}, epic ${b.epic}, legendary ${b.legendary}.` },
   { path: "/chest", target: "grid", say: "What it is decides where the points tend to go: a scythe leans to melee, a bow to ranged, a staff to magic. Two of the same can still roll quite differently." },

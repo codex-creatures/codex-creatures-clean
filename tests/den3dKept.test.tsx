@@ -86,7 +86,7 @@ describe("the Den, kept between visits", () => {
     await visit();
     expect(tag("storehouse")).toBeTruthy();
     await act(async () => { tag("storehouse")!.click(); });
-    expect(push).toHaveBeenCalledWith("/chest?store=1");
+    expect(push).toHaveBeenCalledWith("/chest");
     expect(canvas()!.dataset.drawing).toBe("never");
   });
 

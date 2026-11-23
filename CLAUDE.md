@@ -145,7 +145,7 @@ kill theirs.
 ## Code map
 
 - `app/<screen>/page.tsx`: screens. `/` is the Den (home); `dungeon` (the Labyrinth), `battle`,
-  `scan` (scanning), `altar` (the Soul Altar: summoning and ascension), `chest` (Inventory), `bag`, `bookcase`, `cage`, `pool`, `pit`, `training`,
+  `scan` (scanning), `altar` (the Soul Altar: summoning and ascension), `chest` (the Storehouse), `bag`, `bookcase`, `cage`, `pool`, `pit`, `training`,
   `klutz`, `guide`, `board` (quests, leaderboards, friends), `duel`, `pvp`, `settings`,
   `start` (title screen: components/OnlineStart.tsx online, components/LocalStart.tsx without),
   `privacy` (update it whenever online features change what's stored). `lab/*` are dev tools

@@ -61,7 +61,7 @@ export default function KlutzCrate({ game, intro = true }: { game: ReturnType<ty
               game.sellFromCrate(items.map((d) => d.id));
             }}>{sellAllArmed ? <>Tap again: sell all for <Coin /> {total}</> : <>Sell all · <Coin /> {total}</>}</button>
           </div>
-          {left && <p style={{ fontSize: 13, color: "#ff8a80", margin: "0 0 10px" }}>{left} <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Inventory</Link></p>}
+          {left && <p style={{ fontSize: 13, color: "#ff8a80", margin: "0 0 10px" }}>{left} <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Storehouse</Link></p>}
           <div style={{ display: "grid", gap: 8 }}>
             {items.map((it) => {
               const fits = roomFor(game.inventory, [it], game.storage, game.shelfFree).fit.length > 0;

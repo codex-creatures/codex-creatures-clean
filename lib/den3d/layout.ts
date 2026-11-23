@@ -336,7 +336,7 @@ export function stations(s: DenState, p: Placed = placed(undefined, s.opened)): 
   };
   const out: Station[] = [
     { key: "shack", obj: OBJ.crate, label: "Klutz's Cabin", href: "/klutz", x: 2.15, y: back(HALL_N, 2.7), w: 3.25, d: 2.7, tall: 3, room: 1 },
-    { key: "storehouse", obj: OBJ.chest, label: "Storehouse", href: "/chest?store=1", x: 2.05, y: 15.2, w: 3.1, d: 3.45, tall: 3, turn: "east", room: 1 },
+    { key: "storehouse", obj: OBJ.chest, label: "Storehouse", href: "/chest", x: 2.05, y: 15.2, w: 3.1, d: 3.45, tall: 3, turn: "east", room: 1 },
     { key: "arch", obj: OBJ.arch, label: "The Labyrinth", href: "/dungeon", x: mid(ARCH), y: NOOK_N, w: 2.9, d: 0.2, tall: 3, wall: true, room: 1 },
     { key: "lectern", obj: OBJ.scroll, label: "Bestiary", href: "/guide", x: 11.6, y: 4.6, w: 0.8, d: 0.6, tall: 1.3, room: 1 },
     { key: "board", obj: OBJ.quests, label: "Quest Board", href: "/board", ...wallAt("board"), tall: 2.45, wall: true, move: "wall" },
