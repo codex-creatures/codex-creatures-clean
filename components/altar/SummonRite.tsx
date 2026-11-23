@@ -72,8 +72,12 @@ export default function SummonRite({ cards, onSummon, onDone, top }: {
           return (
             <div key={i} style={{ position: "relative", aspectRatio: "5 / 7" }}>
               {k ? (
-                <div style={{ filter: k.id === keep ? `drop-shadow(0 0 10px ${GOLD})` : "drop-shadow(0 0 8px rgba(127,216,255,0.5))" }}>
+                // The glow is a shadow on a box over the card, not a filter on the card: a filter on the drawn card
+                // didn't always repaint when ★ moved, so the first card kept its gold top (the user, 2026-11-24).
+                <div style={{ position: "relative" }}>
                   <CardFace t={t} creatureId={k.creatureId ?? t.id} soulStone={k.soulStone} mini />
+                  <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", borderRadius: 4,
+                    boxShadow: k.id === keep ? `0 0 10px 3px ${GOLD}` : "0 0 8px 2px rgba(127,216,255,0.5)" }} />
                 </div>
               ) : (
                 <div style={{ position: "absolute", inset: 0, border: "2px dashed rgba(127,216,255,0.4)" }} />
