@@ -24,8 +24,9 @@ named in the docs and in code comments checked to exist; lint's own list.
 5. **The laptop is the only computer** the game is developed on now.
 
 > **A correction (2026-11-24):** the first survey skipped the art lab's folder, and so called
-> components/RewardReveal.tsx and RewardScene3D.tsx dead. They aren't: `/lab/art` uses them. They
-> are off group A's list below, and raise a question of their own (group A, last item).
+> components/RewardReveal.tsx and RewardScene3D.tsx dead. They weren't: `/lab/art` uses them. The
+> user has since settled that the 3D reveal isn't wanted, so they're in group A after all, with
+> the lab's use of them (group A, last item).
 
 ## A. Certainly dead: safe to remove, no decision in it
 
@@ -73,12 +74,18 @@ Nothing in the game, the labs or the tests uses these.
 About 100 lines in all. One commit, tests and type check after. **Check each with a search before
 deleting it:** the survey has been wrong once.
 
-**Not dead, but a question:** den.md says a campaign crate reward "is shown in 3D first
-(components/RewardReveal.tsx)" before its loot window (the user, 2026-11-16). The quest board
-stopped doing that the next day, in the commit that reworked how rewards are shown (7013f58), whose
-message doesn't mention it. Today only `/lab/art` draws it. Either the board should show it again,
-or den.md should stop saying so and the component can go. In
-[decisions.md](decisions.md#conflicts-to-resolve).
+**The campaign's 3D reward reveal: settled, so it joins this group** (the user, 2026-11-24: "we
+moved from 3D to 2D, which is better"). The quest board has shown crate rewards as 2D pictures
+since 2026-11-17; den.md now says so. What's left of the 3D reveal can go, as one more commit:
+
+- components/RewardReveal.tsx and components/RewardScene3D.tsx;
+- their one user, the reveal buttons in app/lab/art/page.tsx (take those out; the page stays);
+- `rewardModel`, `RewardModel` and the `MODELS` table in lib/campaign.ts, with their test in
+  tests/campaign.test.ts (line 235 on), once nothing else names them;
+- the comment at lib/campaign.ts:188 that points at the component.
+
+Check app/lab/chest/ChestScene.tsx first: the art lab's page borrows types from it, and it may
+use the same model names for its own lab view.
 
 ## B. Old versions kept beside the new one: your call on each
 

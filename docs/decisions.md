@@ -118,11 +118,6 @@ file, with a ⚠️ note, until settled; then move it to "Resolved" and fix the 
 2. **Phase 1's last check:** its "done when" asked the user to play a run in each dungeon and
    confirm it looked and played as before; nothing records that it happened. Nothing to do unless
    the user remembers otherwise.
-3. **Campaign crate rewards in 3D** (code vs spec): den.md says each crate reward is shown in 3D
-   before its loot (components/RewardReveal.tsx, the user, 2026-11-16). The quest board hasn't
-   drawn it since 2026-11-17 (commit 7013f58, which reworked how rewards are shown and doesn't
-   say it took this out); only `/lab/art` does. Put it back on the board, or drop it from the doc
-   and the code? [cleanup-audit-2026-11.md](cleanup-audit-2026-11.md)
 
 Undefined standards (not conflicts, but not to be invented) are listed in
 [world/art-pipeline.md](world/art-pipeline.md#still-undefined).
@@ -158,3 +153,7 @@ Settled by the user on 2026-11-09, or by the code and approved decisions; the fi
     older proposal table, now marked. ([world/space.md](world/space.md) §2)
 11. **`states` in v1 saves:** left out as built; §7 now says so.
     ([world/persistence.md](world/persistence.md))
+12. **Campaign crate rewards in 3D** (the user, 2026-11-24): the 3D reveal of 2026-11-16 was dropped
+    for the 2D pictures on the quest board the next day, "which is better". den.md now says so;
+    components/RewardReveal.tsx and RewardScene3D.tsx, which only `/lab/art` still draws, can go
+    ([cleanup-audit-2026-11.md](cleanup-audit-2026-11.md), group A).
