@@ -176,8 +176,12 @@ account, kept entirely apart from Vouchee.
     2 more), in order. Each shows its **rarest** creature or gear. When picking your team in a
     duel, tapping a team brings its members that fit the format, in order, up to what you may
     bring. The collector won't buy a creature in a PvP team either.
-  - ⏸️ **Ranked ladders with Elo**: shelved for now (the user, 2026-11-04). They'll live at the
-    portal; the tab shows "Coming soon". Not designed yet (format, matchmaking, K-factor, seasons).
+  - 📌 **Ranked, against simulated players first** (the user, 2026-11-24; shelved 2026-11-04 till then): five
+    fake players, each played through the game to the late game by the hard AI so it has its own creatures,
+    move sets and soul stones; you queue at the portal and are matched with one, with a rating (Elo) kept
+    behind it; rewards to follow. It replaces the Pit's "VS AI". Not designed yet (what you queue for,
+    matchmaking, K-factor, where the rating lives, seasons, rewards): [roadmap.md](../roadmap.md). The tab
+    still shows "Coming soon".
   - Later: challenging players who aren't friends.
   - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
 - 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the

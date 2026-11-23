@@ -9,6 +9,24 @@ pages, the 129 test files and the scripts (what nothing reaches); every exported
 across the code (what nothing names); every picture's path looked for in the code; every file
 named in the docs and in code comments checked to exist; lint's own list.
 
+## The user's replies (2026-11-24)
+
+1. **Group A: remove it.** (Not done yet: the session was paused for a cheaper model to do it.)
+2. **Labs:** the ones needed on the live site are the 3D viewer that turns a model freely
+   (`/lab/models`) and the in-game view you walk round with lighting (`/lab/propreview`, and
+   `/lab/props` for the Labyrinth's things). The rest can be dev-only. (`/lab/art` still has
+   drafts awaiting review: kept public until the user says.)
+3. **"Testing: heal now": remove it. "VS AI": moves to PvP**, as a queue against five simulated
+   players with a rating behind it (a feature of its own: [roadmap.md](roadmap.md)). It stays in
+   the Pit until that's built.
+4. **Saves:** older saves keep loading for now; everyone starts over when the game goes live as a
+   mobile app. So group D stays until then.
+5. **The laptop is the only computer** the game is developed on now.
+
+> **A correction (2026-11-24):** the first survey skipped the art lab's folder, and so called
+> components/RewardReveal.tsx and RewardScene3D.tsx dead. They aren't: `/lab/art` uses them. They
+> are off group A's list below, and raise a question of their own (group A, last item).
+
 ## A. Certainly dead: safe to remove, no decision in it
 
 Nothing in the game, the labs or the tests uses these.
@@ -17,11 +35,8 @@ Nothing in the game, the labs or the tests uses these.
 
 | File | Lines | What it was |
 |---|---|---|
-| components/RewardReveal.tsx | 34 | A campaign reward's container shown in 3D before its loot (2026-11-16). Nothing draws it now. |
-| components/RewardScene3D.tsx | 64 | Its 3D scene. Only RewardReveal used it. |
 | lib/world/units.ts | 20 | `CELL_U` and `WorldPt`: neither is imported anywhere. Its comment (what a unit is) is worth keeping, in lib/render/projection.ts or world/space.md. |
 | app/crate/page.tsx | 17 | Klutz's crate on its own page, "the old way in". Nothing links to `/crate`; the crate is a tab of Klutz's Den. |
-| scripts/shot-diff.mjs | 25 | Compares two folders of screenshots. Named only by tests/visual-baseline/README.md (see E). |
 
 **Exports nothing names** (not even their own file)
 
@@ -55,7 +70,15 @@ Nothing in the game, the labs or the tests uses these.
   tab". Only the Bookcase shows it; the Inventory's Codexes tab is a grid of tiles.
 - components/klutz/KlutzCrate.tsx:7 says "and on its own (app/crate)": goes with that page.
 
-About 200 lines in all. One commit, tests and type check after.
+About 100 lines in all. One commit, tests and type check after. **Check each with a search before
+deleting it:** the survey has been wrong once.
+
+**Not dead, but a question:** den.md says a campaign crate reward "is shown in 3D first
+(components/RewardReveal.tsx)" before its loot window (the user, 2026-11-16). The quest board
+stopped doing that the next day, in the commit that reworked how rewards are shown (7013f58), whose
+message doesn't mention it. Today only `/lab/art` draws it. Either the board should show it again,
+or den.md should stop saying so and the component can go. In
+[decisions.md](decisions.md#conflicts-to-resolve).
 
 ## B. Old versions kept beside the new one: your call on each
 
@@ -91,7 +114,7 @@ tidying.
 
 For an alpha these are the ones I'd settle first.
 
-1. **The 18 lab pages are in the live build.** `/lab/art`, `/lab/three`, `/lab/props`,
+1. **The 19 lab pages are in the live build.** `/lab/art`, `/lab/three`, `/lab/props`,
    `/lab/propreview` and the rest (about 4,300 lines, with components/Drafts3D.tsx,
    lib/render3d/hero3d.ts, lib/world/placementView.ts and 120 sample pictures, 625 KB, that only
    they use) are ordinary pages, so anyone who types the address gets them. The repo already has
@@ -133,7 +156,8 @@ touched none of it.
    `models-pixel-test` (1 commit: the 3D model trial), and `origin/klutz-and-cards` on GitHub
    (2026-10-19). CLAUDE.md says to leave old branches alone, so I have.
 3. **tests/visual-baseline/** (3.5 MB of screenshots from 2026-11-07, "references, not automated
-   tests") and the lab page that takes them (`/lab/baseline`). They compare the 2D walk view, so
+   tests"), scripts/shot-diff.mjs (named only by its README) and the lab page that takes them
+   (`/lab/baseline`). They compare the 2D walk view, so
    they go with B2 if that goes.
 4. **CLAUDE.md and README.md still describe two computers** (a main PC and a travel laptop: a
    whole section in each). If the laptop is the only one now, those sections can shrink to a
@@ -156,7 +180,7 @@ touched none of it.
   `happy-dom` by the page tests).
 - **The docs:** all 198 code files named in CLAUDE.md, README.md and the design and world docs
   exist.
-- **Scripts:** all but shot-diff.mjs are named by package.json, a launcher or a doc.
+- **Scripts:** all but shot-diff.mjs (E3) are named by package.json, a launcher or a doc.
 - **Art:** public/sprites is 3.5 MB in all, so there's little to win there beyond the labs'
   samples (C1). Most paths are built from ids at run time, so "unused" can't be read off the
   code; nothing was flagged.

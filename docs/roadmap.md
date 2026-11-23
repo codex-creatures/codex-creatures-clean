@@ -58,6 +58,14 @@ interesting situations, real decisions, progression and surprises, not feel they
 
 ### 📌 Decided, not built
 
+- **PvP against simulated players, with a rating** (the user, 2026-11-24; it takes "VS AI" out of the Pit and
+  un-shelves the ranked ladder). The user's words: "create 5 fake players, all of which use hard AI and run the game
+  naturally until towards the late game (to simulate a real player's moves, creatures, etc): each have their own
+  creatures that way and own move sets / soul stones. Then you can queue in the PvP on each sim level and that will
+  allow you to match with one of the fake players, and we'll make some kind of Elo in the background to start
+  testing that. This adds a PvP loop where we can add rewards to and an Elo system that players can actually vs."
+  ❓ Not designed: what a "sim level" is, where the rating is kept, K-factor and matchmaking, rewards, whether it
+  plays offline. [design/online.md](design/online.md)
 - 🚧 **Den progression: things in the Den grow in stages, each its own 3D look** (the user, 2026-11-20; a sim
   of the costs, scans, runs and Klutz's trips, in the commit that added this). Mostly built (below). Dungeon gates are
   "that dungeon or harder". (Players reach the Hydra in about 4–5 hours; the Minotaur, between it and the Abyss, is built: 2026-11-21.)
@@ -177,7 +185,6 @@ interesting situations, real decisions, progression and surprises, not feel they
 ### ⏸ Shelved
 
 - The re-entry cooldown (the gold fee is the bar). [design/labyrinth.md](design/labyrinth.md)
-- Ranked ladders with Elo (the portal's tab says "Coming soon"). [design/online.md](design/online.md)
 - The intro (Klutz drags you in, you tip him gold), until the art direction settles.
   [design/klutz.md](design/klutz.md)
 
