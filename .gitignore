@@ -42,3 +42,6 @@ next-env.d.ts
 
 # offline build (npm run build:offline)
 /codex-offline
+
+# the 3D model trial of 2026-11-18 (Meshy and Rodin .glb files, 57 MB): kept on this laptop only
+/art/models-samples/
