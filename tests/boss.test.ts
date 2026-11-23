@@ -71,6 +71,25 @@ describe("the Cyclops", () => {
     expect(s.winner).toBeNull();
   });
 
+  it("caltrops laid under it hurt the hands as they tear free (10% each), but not the floating Eye (the user, 2026-11-24)", () => {
+    const s = fight();
+    const trops = { kind: "caltrops" as const, move: "Caltrops", entry: 0.1 };
+    s.sides.B.ground = [trops];
+    toPhase2(s);
+    const [l, r] = CYCLOPS.HANDS.map((i) => s.sides.B.team[i]);
+    expect(l.hp).toBe(l.maxHp - Math.round(l.maxHp * 0.1));
+    expect(r.hp).toBe(r.maxHp - Math.round(r.maxHp * 0.1));
+    expect(s.log.filter((e) => e.type === "effect" && e.text.includes("steps on the caltrops")).length).toBe(2);
+    s.sides.B.ground = [trops];
+    for (const i of CYCLOPS.HANDS) s.sides.B.team[i].hp = 1;
+    resolveRound(s, { A: { kind: "attack", skillName: "Slash", target: 1 }, B: pass });
+    resolveRound(s, { A: { kind: "attack", skillName: "Slash" }, B: pass });
+    expect(s.sides.B.boss!.phase).toBe(3);
+    const eye = s.sides.B.team[CYCLOPS.EYE];
+    expect(eye.hp).toBe(eye.maxHp);
+    expect(s.log.filter((e) => e.type === "effect" && e.text.includes("steps on the caltrops")).length).toBe(2);
+  });
+
   it("the Eye's Float stance: ranged hits it harder than the same melee hit", () => {
     const eye = bossTeam("cyclops")[CYCLOPS.EYE];
     const base = buildFighter(CREATURE_BY_ID.void_serpent, { melee: 30, ranged: 30 }, {});

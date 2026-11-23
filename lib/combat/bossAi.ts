@@ -226,6 +226,14 @@ export function bossMinHp(state: BattleState, key: SideKey, index: number): numb
   return boss?.kind === "cyclops" && boss.phase === 1 && index === CYCLOPS.BODY ? 1 : 0;
 }
 
+// A boss part that comes onto the field on foot, so it steps on whatever lies
+// there (caltrops): the Cyclops's hands. Its Eye floats; the Hydra's heads and
+// the Minotaur never come in after the start (the user, 2026-11-24).
+export function bossOnFoot(state: BattleState, key: SideKey, index: number): boolean {
+  const boss = state.sides[key].boss;
+  return boss?.kind === "cyclops" && CYCLOPS.HANDS.includes(index);
+}
+
 // End of round: change phase if it's time. Returns the events to log.
 export function bossEndOfRound(state: BattleState, key: SideKey): BattleEvent[] {
   const side = state.sides[key];

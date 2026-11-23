@@ -33,7 +33,7 @@ import {
 } from "./engine";
 import type { CombatClass, Skill } from "../creatures/creatureData";
 import { raceOfMove, raceVsAll } from "./raceChart";
-import { bossActions, bossEndOfRound, bossMinHp, bossSelfMove, bossSetup, type BossKind, type BossState } from "./bossAi";
+import { bossActions, bossEndOfRound, bossMinHp, bossOnFoot, bossSelfMove, bossSetup, type BossKind, type BossState } from "./bossAi";
 import { DEFLECT_CHANCE, NULLIFY_REFLECT, SET_BONUS, type ArmorKey } from "../items/armor";
 import { HAUNT_CHANCE, PERFECTIONIST_STEP, REVITALISE_HEAL, SOUL_STONES, TOXIC_SKIN, type SoulStoneKey } from "../creatures/soulStones";
 
@@ -997,7 +997,12 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   //    main creature fell, the partner takes its place).
   for (const k of ["A", "B"] as SideKey[]) {
     const s = state.sides[k];
-    if (s.boss) state.log.push(...bossEndOfRound(state, k));
+    if (s.boss) {
+      const events = bossEndOfRound(state, k);
+      state.log.push(...events);
+      // A part that runs in on foot steps on the caltrops (the Cyclops's hands; not its Eye, which floats: the user, 2026-11-24).
+      for (const e of events) if (e.type === "lineup") for (const i of e.reveal ?? []) if (bossOnFoot(state, k, i)) caltropsOnEntry(state, k, i);
+    }
     if (s.partner == null) continue;
     if (s.team[s.partner].hp <= 0) s.partner = null;
     else if (activeOf(s).hp <= 0) { s.active = s.partner; s.partner = null; }
@@ -1098,21 +1103,27 @@ function bloodLeech(state: BattleState, key: SideKey, pool: BloodPool, damage: n
   state.log.push({ type: "effect", side: key, index: s.active, name: me.name, text: `drinks from the blood (+${healed} HP)`, hp: me.hp, statuses: me.statuses.map((x) => ({ ...x })), kind: "heal", damage: healed });
 }
 
+// Creature `index` steps onto side `key`'s caltrops, if any lie there: entry
+// damage. (Also the Cyclops's hands as they run in; not its Eye, which floats.)
+function caltropsOnEntry(state: BattleState, key: SideKey, index: number) {
+  const s = state.sides[key];
+  const f = s.team[index];
+  const trops = groundOf(s, "caltrops");
+  if (!trops || !f || f.hp <= 0 || f.hidden) return;
+  const damage = Math.min(f.hp - bossMinHp(state, key, index), Math.max(1, Math.round(f.maxHp * trops.entry)));
+  if (damage <= 0) return;
+  f.hp -= damage;
+  state.log.push({ type: "effect", side: key, index, name: f.name, text: `steps on the caltrops (${damage} damage)`, hp: f.hp, statuses: f.statuses.map((x) => ({ ...x })), kind: "blood", damage });
+  if (f.hp <= 0) knockedOut(state, key, index);
+}
+
 // Creature `index` has just come onto side `key`'s field: whatever lies
 // there greets it. Blood: entry damage (an Undead walks through untouched,
 // and doesn't count); the last comer sets off the burst, and the pool's gone.
 function groundOnEntry(state: BattleState, key: SideKey, index: number) {
   const s = state.sides[key];
   const f = s.team[index];
-  const trops = groundOf(s, "caltrops");
-  if (trops && f && f.hp > 0 && !f.hidden) {
-    const damage = Math.min(f.hp - bossMinHp(state, key, index), Math.max(1, Math.round(f.maxHp * trops.entry)));
-    if (damage > 0) {
-      f.hp -= damage;
-      state.log.push({ type: "effect", side: key, index, name: f.name, text: `steps on the caltrops (${damage} damage)`, hp: f.hp, statuses: f.statuses.map((x) => ({ ...x })), kind: "blood", damage });
-      if (f.hp <= 0) knockedOut(state, key, index);
-    }
-  }
+  caltropsOnEntry(state, key, index);
   cloudPoison(state, key, index);
   const pool = groundOf(s, "blood");
   if (!pool || !f || f.hp <= 0 || untouchedByBlood(f)) return;

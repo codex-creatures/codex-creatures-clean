@@ -6,7 +6,7 @@
 //   button. Gold and creature cards have nothing to see: a tap takes them.
 // - Tap something in your bag to see it too (to compare), or put it back.
 // - Drag it onto a bag slot to take it there; a slot that's full swaps:
-//   what was in it goes into the chest.
+//   what was in it goes into the chest. Two bag slots dragged one onto the other swap places.
 // - Drag something from your bag into the chest to leave it there.
 // - Drag a weapon or armour piece from your bag onto one of your creatures
 //   (the row under the bag, with each one's HP %) to equip it, or tap it and
@@ -73,7 +73,7 @@ const hurt = (c: TeamMember) => standing(c) && (c.hp ?? 0) < 1;
 const takes = (u: Use | undefined, c: TeamMember) =>
   u === "gear" ? standing(c) : u === "potion" ? hurt(c) : u === "scroll" ? true : u === "revival" ? !standing(c) : false;
 
-export default function LootWindow({ name, sprite, items, bag, slots, bagName, onTake, onTakeAll, onSwap, onPutBack, onClose, party = [], onEquip, onDrink, onDrinkLoot, onEquipLoot, onGive, onUseTool, teach, putLabel = "Put in the chest" }: {
+export default function LootWindow({ name, sprite, items, bag, slots, bagName, onTake, onTakeAll, onSwap, onPutBack, onMove, onClose, party = [], onEquip, onDrink, onDrinkLoot, onEquipLoot, onGive, onUseTool, teach, putLabel = "Put in the chest" }: {
   name: string; sprite: Sprite;
   items: SackItem[];
   bag: SlotLook[];          // what's in each filled slot, in order
@@ -82,6 +82,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   onTakeAll: () => void;
   onSwap: (lootIndex: number, bagIndex: number) => void; // into that slot (swapping if it's full)
   onPutBack: (bagIndex: number) => void;                 // from the bag into the chest
+  onMove?: (from: number, to: number) => void;           // one bag slot dragged onto another: the two swap places (the user, 2026-11-24)
   onClose: () => void;
   party?: TeamMember[];                                  // your creatures (hp 0: knocked out): drop things on them
   onEquip?: (bagIndex: number, creatureId: string) => void; // (asks first: see EquipPreview)
@@ -122,6 +123,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
       setTriedAll(false);
       if (d.kind === "loot" && t?.startsWith("bag:")) { onSwap(d.i, Number(t.slice(4))); return; }
       if (d.kind === "bag" && t === "loot") { onPutBack(d.i); setPicked(null); return; }
+      if (d.kind === "bag" && t?.startsWith("bag:")) { const to = Number(t.slice(4)); if (to !== d.i && to < slots) onMove?.(d.i, to); setPicked(null); return; }
       const c = t?.startsWith("who:") ? party.find((m) => m.id === t.slice(4)) : undefined;
       const u = purposeOf(thing(d));
       const fn = giver(d.kind, u);
@@ -158,7 +160,9 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   const glowBg = (glow?: string) => `radial-gradient(circle, ${glow ?? "rgba(255,255,255,0.05)"} 0%, transparent 62%)`;
 
   return (
-    <div ref={dragBox} onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 190, background: "rgba(4,5,9,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 6 }}>
+    // Anchored to the top, not centred: a closer look opens under the chest and the window grows, and centred it
+    // slid up under your finger, so the second tap of a double-tap missed (the user, 2026-11-24).
+    <div ref={dragBox} onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 190, background: "rgba(4,5,9,0.72)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "1.5cqh 6px 6px" }}>
       <div role="dialog" aria-label={name} onClick={(e) => e.stopPropagation()} className="title-bar sheet-up"
         style={{ width: "100%", maxHeight: "97cqh", overflowY: "auto", overflowX: "hidden", padding: 10, display: "grid", gap: 8, userSelect: "none", WebkitUserSelect: "none" }}>
         {/* The chest */}

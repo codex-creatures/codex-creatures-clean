@@ -709,6 +709,14 @@ export default function DungeonPage() {
     if (!roomless && cur.meta.bag[bagIndex]) putInSack(bagIndex); // (it goes on the end: lootIndex still points at the same thing)
     takeFromSack(lootIndex);
   }
+  // Two bag slots dragged one onto the other swap places (onto an empty slot: it goes to the end) (the user, 2026-11-24).
+  function moveInBag(from: number, to: number) {
+    const cur = loadDungeon();
+    const bag: (BagEntry | undefined)[] = [...cur.meta.bag];
+    if (!bag[from] || from === to) return;
+    [bag[from], bag[to]] = [bag[to], bag[from]];
+    update({ ...cur, meta: { ...cur.meta, bag: bag.filter((e): e is BagEntry => e !== undefined) } });
+  }
   function takeAllFromSack() {
     // Whatever takes no space first (gold, the backpack, cards, materials
     // that join a stack), then the rarest things, while they fit.
@@ -972,7 +980,13 @@ export default function DungeonPage() {
   // tunnel (an opened sack's leftovers stay on the floor).
   const [walkPanel, setWalkPanel] = useState(false);   // the room's window (what's here, the cages…)
   const [walkScroll, setWalkScroll] = useState(false); // the scroll, out
-  const walkTo = (r: DungeonRun, id: string) => (runPosition(r) === id ? r : walkInto(leaveSack(leavePending(r)), id));
+  // Foes have seen you: no rummaging in the bag or reading the scroll till the fight (the user, 2026-11-24).
+  // Whatever's open is shut, and both buttons stay off while they come at you.
+  function walkAlarm(on: boolean) {
+    setAlarmed(on);
+    if (on) { setWalkScroll(false); setSheet((s) => (s === "bag" ? null : s)); }
+  }
+  const walkTo =(r: DungeonRun, id: string) => (runPosition(r) === id ? r : walkInto(leaveSack(leavePending(r)), id));
   // Worth opening the room's window as you walk in: treasure to take. (Not a camp: you walk up to its cages, the user, 2026-11-09.)
   const shopHere = (c: Room | null | undefined) => !!c && (c.kind === "merchant" || c.kind === "librarian" || (c.kind === "library" && !!c.librarian));
   // (Not a storehouse with Klutz's dynamite either: you walk up and find it, the user, 2026-11-14.)
@@ -1412,13 +1426,13 @@ export default function DungeonPage() {
         {haulOpen === "boss" && c && (
           <LootWindow name={chestName(c)} sprite={c.container === "strongbox" ? STRONGBOX_OPEN : RICKETY_CHEST_OPEN}
             items={c.sack ?? []} bag={bagLooks} slots={bagSize(lab.meta)} bagName={bagName(lab.meta)}
-            onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack} onClose={() => setHaulOpen(null)} />
+            onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack} onMove={moveInBag} onClose={() => setHaulOpen(null)} />
         )}
         {haulOpen === "floor" && (
           <LootWindow name="Left on the floors" sprite={TREASURE_PILE}
             items={(run.floor ?? []).map((f): SackItem => (f.drop ? { gear: f.drop } : { potion: f.potion! }))}
             bag={bagLooks} slots={bagSize(lab.meta)} bagName={bagName(lab.meta)} putLabel="Leave it here"
-            onTake={floorTake} onTakeAll={floorTakeAll} onSwap={floorSwap} onPutBack={floorPut} onClose={() => setHaulOpen(null)} />
+            onTake={floorTake} onTakeAll={floorTakeAll} onSwap={floorSwap} onPutBack={floorPut} onMove={moveInBag} onClose={() => setHaulOpen(null)} />
         )}
       </>,
     );
@@ -1504,7 +1518,7 @@ export default function DungeonPage() {
         onTapClose={walkPanel ? () => setWalkPanel(false) : undefined}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
-        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onShelf={walkShelf} onPickup={walkPickup} onCrate={walkCrate} onBox={walkBox} onHeal={walkHeal} onKeep={walkSave} onAlarm={setAlarmed} />
+        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onShelf={walkShelf} onPickup={walkPickup} onCrate={walkCrate} onBox={walkBox} onHeal={walkHeal} onKeep={walkSave} onAlarm={walkAlarm} />
       {wonAtTop(run) && run.status === "exploring" && !walkPanel && (
         <button className="pixel-btn" onClick={walkHome} style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", minHeight: 44, zIndex: 3 }}>🏠 Head home</button>
       )}
@@ -1577,7 +1591,7 @@ export default function DungeonPage() {
                 sprite={lootFrom === "bookcase" ? BOOKCASE_LOOT : c.quest === "club" ? WEAPON_SPRITES.klutz_club : c.kind === "chest" ? TREASURE_CHEST_OPEN : c.container === "strongbox" ? STRONGBOX_OPEN : c.container === "chest" ? RICKETY_CHEST_OPEN : c.money ? MONEY_SACK_OPEN : BURLAP_SACK_OPEN}
                 items={c.sack ?? []} bag={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))}
                 slots={bagSize(lab.meta)} bagName={bagName(lab.meta)}
-                onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack}
+                onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack} onMove={moveInBag}
                 party={wholeParty} onEquip={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e) askEquip(e, id); }}
                 onDrink={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e && isPotionEntry(e)) drink(e, id); }}
                 onDrinkLoot={drinkFromSack} onEquipLoot={equipFromSack} onGive={giveFrom} onUseTool={toolFrom}
@@ -1679,7 +1693,7 @@ export default function DungeonPage() {
             if (walking ? walkScroll : mapOpen === "view") { if (walking) setWalkScroll(false); else setMapOpen(null); return; }
             setSheet(null); if (walking) setWalkScroll(true); else setMapOpen("view"); updateRun((r) => ({ ...r, scrollLooks: (r.scrollLooks ?? 0) + 1 }));
           }}
-            disabled={!!clubTutorial || !run.inside /* (the map's already open at the entrance) */ || (scrollLooksLeft(run) === 0 && !(walking ? walkScroll : mapOpen === "view"))}>
+            disabled={!!clubTutorial || alarmed || !run.inside /* (the map's already open at the entrance) */ || (scrollLooksLeft(run) === 0 && !(walking ? walkScroll : mapOpen === "view"))}>
             📜 Scroll <span className="count">{scrollLooksLeft(run)}/{SCROLL_LOOKS}</span>
           </button>
           {/* Retreat: tap twice (it ends the run). */}

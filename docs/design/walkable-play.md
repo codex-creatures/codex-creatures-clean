@@ -195,7 +195,10 @@ so far, with an in-memory test team; nothing touches a save.)
   keeps its HP to the next fight. Lose: the run's over, back to the entrance on a fresh roll.
   **Anything you can loot opens when you tap it** (the user, 2026-11-06): chests, stashes
   and fight spoils. Tap one and you walk up beside it (chests are solid), then the game's
-  loot window opens (`LootWindow`, with a 6-slot test bag; gold and cards take no room).
+  loot window opens (`LootWindow`, with a 6-slot test bag; gold and cards take no room). The window sits at the top
+  of the screen, not centred (the user, 2026-11-24: a closer look opening under the chest made it grow and slide up,
+  so a double-tap's second tap missed); double-tap a thing to take it, drag it onto a full bag slot to swap, and drag
+  one bag slot onto another to swap their places (`onMove`).
   A chest rolls the live chest roll (the Labyrinth screen's `openChest`), a stash its sack; what you leave stays
   in it. Later, with the art, the chest should fit the room.
   **The test team** 🧪: three Uncommons in Uncommon gear at level 5, rolled with the layout.
@@ -229,7 +232,8 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   over it only if there's no other way: walkSim `foeClear`, the user, 2026-11-12; wandering foes and
   the witch keep round them too), and it fades to black into the fight (`FADE_TIME` 0.6 s)
   once they've all reached you, or a second after the first has (`LATE_GRACE`), or 4 s after
-  they saw you whatever happens (`ALARM_MAX`). You can't walk meanwhile. They line up for the
+  they saw you whatever happens (`ALARM_MAX`). You can't walk meanwhile, nor open your bag or the scroll: whichever
+  was open shuts, and both buttons stay off till the fight (the user, 2026-11-24; `walkAlarm`, app/dungeon). They line up for the
   fight in the order they reached you, the first there coming out first (foes.ts `arrivalOrder`,
   kept as the room's `foeOrder`, read by run.ts `fightEnemies`; the user, 2026-11-20): together,
   the nearer first; still on their way, after, nearest first. (`/lab/walk` still
