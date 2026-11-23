@@ -155,5 +155,5 @@ Settled by the user on 2026-11-09, or by the code and approved decisions; the fi
     ([world/persistence.md](world/persistence.md))
 12. **Campaign crate rewards in 3D** (the user, 2026-11-24): the 3D reveal of 2026-11-16 was dropped
     for the 2D pictures on the quest board the next day, "which is better". den.md now says so;
-    components/RewardReveal.tsx and RewardScene3D.tsx, which only `/lab/art` still draws, can go
+    the 3D reveal's components (RewardReveal.tsx, RewardScene3D.tsx) and `rewardModel` were removed
     ([cleanup-audit-2026-11.md](cleanup-audit-2026-11.md), group A).

@@ -185,12 +185,6 @@ export function rewardText(r: CampaignReward): string {
 
 // The bookcase's plans when you have them already (or the bookcase is built): gold instead.
 export const PLANS_TAKEN_GOLD = 500;
-// What a crate reward is shown as in 3D before its loot (components/RewardReveal.tsx): the Materials and
-// Supplies Crates, the Gear Barrel, the Codex Bookcase. Anything else goes straight to its loot.
-export type RewardModel = "crate-materials" | "crate-supplies" | "barrel" | "bookcase";
-const MODELS: Record<CrateKind, RewardModel> = { materials: "crate-materials", supplies: "crate-supplies", gear: "barrel", codex: "bookcase" };
-export const rewardModel = (r: CampaignReward): RewardModel | undefined => ("crate" in r ? MODELS[r.crate] : undefined);
-
 export const SUPPLIES = 5; // a supplies crate: 2 Lesser Potions, a Healing Potion, a Revival Elixir and a torch
 function codexOf(r: Rarity): Drop {
   return codexDrop(r === "common" ? randomBasicMove() : r === "uncommon" ? randomUncommonMove() : r === "rare" ? randomStrongMove() : randomCodexMove());

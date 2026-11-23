@@ -12,8 +12,6 @@ import { Stick } from "@/components/WalkView";
 import { VISITOR_SPEED } from "@/lib/den/scene";
 import { CHEST_W } from "@/lib/render3d/chest3d";
 import type { ChestView, Thing3D } from "../chest/ChestScene";
-import RewardReveal from "@/components/RewardReveal";
-import type { RewardModel } from "@/lib/campaign";
 
 // The world props in 3D, through the chest lab's scene (the game's camera, floor, wall and lean, a torch
 // carried round them, you for scale, and the flat picture the game draws now beside each). Three.js loads
@@ -76,7 +74,6 @@ export default function ArtLab() {
   const [view3d, setView3d] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true, at: 0, lean: true,
     thing: "decor-cage", turned: false, candle: false, rarity: "rare", lit: true, life: false, splash: 0 });
   const set3d = (v: Partial<ChestView>) => setView3d((x) => ({ ...x, ...v }));
-  const [reveal, setReveal] = useState<{ title: string; model: RewardModel } | null>(null); // the campaign's reward reveal, previewed
   const litRef = useRef(lit);
   useEffect(() => { litRef.current = lit; }, [lit]);
 
@@ -207,14 +204,6 @@ export default function ArtLab() {
         <button style={btn(view3d.old)} onClick={() => set3d({ old: !view3d.old })}>{view3d.old ? "Now shown" : "Now hidden"}</button>
         <button style={btn(view3d.across === 7)} onClick={() => set3d({ across: view3d.across === 7 ? 15 : 7 })}>{view3d.across === 7 ? "Close" : "Game zoom"}</button>
       </div>
-
-      <h2 style={{ fontSize: 15, margin: "20px 0 4px" }}>The campaign&apos;s reward reveal (in the game)</h2>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxWidth: 520 }}>
-        {([["Materials Crate", "crate-materials"], ["Supplies Crate", "crate-supplies"], ["Gear Barrel", "barrel"], ["Codex Bookcase", "bookcase"]] as [string, RewardModel][]).map(([title, model]) => (
-          <button key={model} style={btn(false)} onClick={() => setReveal({ title, model })}>{title}</button>
-        ))}
-      </div>
-      {reveal && <RewardReveal title={reveal.title} model={reveal.model} onOpen={() => setReveal(null)} />}
 
       <h2 style={{ fontSize: 15, margin: "20px 0 4px" }}>The gallery: walk round the drafts</h2>
       <p style={{ fontSize: 13, color: "#aaa", margin: "0 0 8px", maxWidth: 520 }}>

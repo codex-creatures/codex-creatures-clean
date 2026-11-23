@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
-  CAMPAIGN, CHAPTERS, SUPPLIES, campaignCtx, rewardModel, canClaimNext, claimNext, claimedCount, currentChapter, nextQuest, noteCampaign, onlyEffective,
+  CAMPAIGN, CHAPTERS, SUPPLIES, campaignCtx, canClaimNext, claimNext, claimedCount, currentChapter, nextQuest, noteCampaign, onlyEffective,
   questDone, rewardBlocked, noteDrank, drankOn, loadCampaign, rewardText, rollCampaignReward, upToDate, CAMPAIGN_V, type CampaignCtx, type CampaignState, campaignUnseen, lookedAtCampaign,
 } from "../lib/campaign";
 import { weaponDrop, armorDrop, codexDrop, randomCodexMove } from "../lib/drops";
@@ -230,14 +230,8 @@ describe("the rewards", () => {
   });
 });
 
-describe("the 3D reveal (the user, 2026-11-16)", () => {
-  it("each crate reward shows as its 3D model first: the crates, the gear barrel, the codex bookcase; other rewards don't", () => {
-    expect(rewardModel({ crate: "materials", lo: "common", hi: "rare", n: 3 })).toBe("crate-materials");
-    expect(rewardModel({ crate: "supplies", lo: "common", hi: "rare", n: SUPPLIES })).toBe("crate-supplies");
-    expect(rewardModel({ crate: "gear", lo: "rare", hi: "epic", n: 3 })).toBe("barrel");
-    expect(rewardModel({ crate: "codex", lo: "rare", hi: "epic", n: 2 })).toBe("bookcase");
-    expect(rewardModel({ gold: 100 })).toBeUndefined();
-    expect(rewardModel({ enchanted: "weapon", rarity: "epic" })).toBeUndefined();
+describe("crate rewards' names", () => {
+  it("the gear barrel and the codex bookcase", () => {
     expect(rewardText({ crate: "gear", lo: "rare", hi: "epic", n: 3 })).toBe("Gear Barrel (Rare–Epic)");
     expect(rewardText({ crate: "codex", lo: "rare", hi: "epic", n: 2 })).toBe("Codex Bookcase (Rare–Epic)");
   });
