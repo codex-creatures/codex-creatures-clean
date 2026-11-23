@@ -36,8 +36,6 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import type { Enemy, Room } from "./dungeon/run";
 import { CREATURE_BY_ID } from "./creatures/creatureData";
-import type { RaceV2 } from "./creatures/racesV2";
-import { raceOfMove, raceVsAll } from "./combat/raceChart";
 
 export type QuestStage = "start" | "hunt" | "boxFound" | "stash" | "lend" | "done";
 export type QuestState = {
@@ -85,12 +83,6 @@ export function thiefRoom(): Room {
   };
   return { kind: "easy", quest: "thief", enemies: [thief], level: "easy", gold: 0, done: false };
 }
-
-// Does this move's race land well on these races?
-export const effectiveOn = (move: { name: string }, races: readonly RaceV2[]) => {
-  const r = raceOfMove(move);
-  return !!r && raceVsAll(r, [...races]) > 1;
-};
 
 // The box: Common gear, with the odd Uncommon (a weapon a third of the
 // time, otherwise an armour piece).

@@ -54,7 +54,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     room (labelled Klutz's Den) or from him when he's in, and opens on the Crate tab. His card says where he is (home,
     resting with his HP, or out and when he's back: greyed out while he's away), with his tours on a button. Five tabs, in this order (the user, 2026-11-20: his finds first, Hunt in the middle):
     **Crate** (its fill and upgrade, and what's in it to
-    keep or sell: components/klutz/KlutzCrate.tsx; app/crate still shows it on its own), **Kit** (his stats with gear on and his own % under each, what he's wearing, his soul stone and
+    keep or sell: components/klutz/KlutzCrate.tsx), **Kit** (his stats with gear on and his own % under each, what he's wearing, his soul stone and
     moves, and Equip: components/klutz/KlutzKit.tsx), **Hunt** (the dungeons as fixed rows, best rarity and cost, one button that says why he can't go; while he's out,
     his HP, his trip told as a story, his pack's slots and Call back: see below), **Skills** and **Trips**.
   - ✅ **His trip, as a story** (the user, 2026-11-18; components/klutz/KlutzStory.tsx): every fight and find in

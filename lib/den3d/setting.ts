@@ -43,9 +43,6 @@ export function parseDenOptions(raw: string | null): DenOptions {
     };
   } catch { return { ...DEN_DEFAULTS }; }
 }
-export function readDenOptions(store: Store): DenOptions {
-  try { return parseDenOptions(store.getItem(DEN_OPTIONS_KEY)); } catch { return { ...DEN_DEFAULTS }; }
-}
 export function writeDenOptions(store: Store, o: DenOptions): DenOptions {
   try { store.setItem(DEN_OPTIONS_KEY, JSON.stringify(o)); } catch { /* storage full or blocked */ }
   return o;

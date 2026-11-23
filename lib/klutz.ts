@@ -110,12 +110,6 @@ export const TRAIT_KEYS: TraitKey[] = ["pack", "selective", "cageFilter"];
 // picked: the traits he's picked, in order; pack: the Bigger Pack is his; selective, cageFilter: their settings.
 export type KlutzTraits = { picked?: TraitKey[]; pack?: boolean; selective?: Rarity | null; cageFilter?: Rarity | null };
 
-// Older constants (trips planned before v2 still read with them).
-export const WALK_MIN_MS = 20 * 60 * 1000;
-export const WALK_MAX_MS = 60 * 60 * 1000;
-export const TOUGHER_AFTER_MS = 6 * 60 * 60 * 1000;
-export const TOUGHER_LEVELS_PER_HOUR = 1;
-export const MAX_ENCOUNTERS = 60;
 export const HEAL_MS_PER_HP = 10_000;  // in the pool: 1 HP every 10 seconds
 export const HUNT_BELOW = 2;           // what he meets is his level, up to this many under…
 export const HUNT_ABOVE = 1;           // …or this many over
@@ -128,9 +122,6 @@ export const FIND_XP = 20;             // for each thing he brings home (× XP_S
 // A re-spec hands them all back (his skill points too) for RESPEC_COST gold.
 export const POINTS_PER_LEVEL = 6;
 export const RESPEC_COST = 1000;
-
-// What Klutz is wearing, slot by slot (older trips' finds).
-export type WornPiece = { slot: "weapon" | ArmorSlot; rarity: Rarity };
 
 const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 const ri = (r: Rarity) => RARITIES.indexOf(r);
@@ -291,7 +282,6 @@ export const catchChance = (r: Rarity, trapping = 0) => Math.min(1, CATCH_CHANCE
 
 // ── His pack and chest (v2) ──
 export const packSize = (k: KlutzState) => Math.min(PACK_MAX, PACK_START + (k.traits?.pack ? PACK_TRAIT.slots : 0) + (k.packs ?? 0));
-export const packUpgradePrice = (k: KlutzState) => PACK_UPGRADE_PRICES[Math.min(PACK_UPGRADE_PRICES.length - 1, k.packs ?? 0)];
 
 export const chestSize = (k: KlutzState) => (k.shack ? SHACK_CHEST : CHEST_START + CHEST_STEP * (k.chestUps ?? 0));
 export const chestUpgradePrice = (k: KlutzState) => (k.shack ? undefined : CHEST_PRICES[k.chestUps ?? 0]); // undefined: fully built (or still the shack)
@@ -312,7 +302,6 @@ export function pickTrait(k: KlutzState, t: TraitKey): KlutzState {
   if (!canPickTrait(k, t)) return k;
   return { ...k, traits: { ...k.traits, picked: [...traitsPicked(k), t], ...(t === "pack" ? { pack: true } : {}) } };
 }
-export const canBuyPackTrait = (k: KlutzState) => canPickTrait(k, "pack");
 export const selectiveOpen = (k: KlutzState) => traitsPicked(k).includes("selective");
 export const cageFilterOpen = (k: KlutzState) => traitsPicked(k).includes("cageFilter");
 
@@ -329,12 +318,6 @@ function rollRarity(rng: Rng): Rarity {
 }
 const oneLower = (r: Rarity): Rarity => RARITIES[Math.max(0, ri(r) - 1)];
 
-// The rarest thing he can meet at his level (like scanning: SCAN_UNLOCK).
-export function huntRarity(rolled: Rarity, level = 1): Rarity {
-  let r = rolled;
-  while (!canFind(clampLevel(level), r)) r = oneLower(r);
-  return r;
-}
 // (v2) A roll capped by where he is, his level and your explorer level.
 export function capRarity(rolled: Rarity, dest: KlutzDest, level: number, explorer: number): Rarity {
   let r = ri(rolled) > ri(KLUTZ_DESTS[dest].best) ? KLUTZ_DESTS[dest].best : rolled;

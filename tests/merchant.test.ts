@@ -3,12 +3,10 @@ import {
   rollWares, waresFor, priceUp, wareDrop, minibossExtras, bagUpgradePrice,
   BACKPACK, BAG_MAX, BAG_UPGRADE_PRICES, MERCHANT_SLOTS, type Ware,
 } from "../lib/dungeon/run";
-import { TOOLS, toolDrop } from "../lib/items/materials";
-import { dropTakenBack } from "../lib/save";
+import { TOOLS } from "../lib/items/materials";
 import { BOX_CAP, BOX_CAPS, boxCap, buildBox, fullBoxes, forFullBox, fitInBoxes, storageFromOld } from "../lib/items/storage";
 import { LADDERS, PLAN_PRICES } from "../lib/items/plans";
-import { weaponDrop, armorDrop, codexDrop } from "../lib/drops";
-import type { CreatureOrItemDrop } from "../lib/types";
+import { weaponDrop, armorDrop } from "../lib/drops";
 
 // The bigger merchant (the user, 2026-10-23): steps 1 and 2 of the cart plan.
 const share = (n: number, test: (w: Ware[]) => boolean, backpack = false) => {

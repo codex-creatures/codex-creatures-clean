@@ -1,7 +1,7 @@
 "use client";
 // components/CodexShelf.tsx
 // Your codexes, on the bookcase's shelves (size: how many it holds). Shown in
-// the Bookcase and the Inventory's Codex tab. Each is a book on the shelf;
+// the Bookcase. Each is a book on the shelf;
 // tap one to see it in the box on top: its title (and race, for a race
 // codex), then the move it teaches (CodexMove). Teach shows your creatures,
 // with their levels, greyed out where one can't learn it; tap one to teach it (if its move

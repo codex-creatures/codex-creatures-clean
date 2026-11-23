@@ -24,7 +24,7 @@ import Link from "next/link";
 import { useEscape } from "@/hooks/useEscape";
 import { startTour, TOUR_CHOICES } from "@/lib/tour";
 import DenFrame from "@/components/DenFrame";
-import PixelSprite, { creatureSprite, PotionIcon, MaterialIcon } from "@/components/PixelSprite";
+import PixelSprite, { creatureSprite, PotionIcon } from "@/components/PixelSprite";
 import { POTIONS } from "@/lib/dungeon/run";
 import { LevelBar } from "@/components/CreatureDetailModal";
 import CodeCache from "@/components/CodeCache";

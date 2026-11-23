@@ -27,9 +27,6 @@ export const buildingWalls = (b: BuildingArt) => b.front.h / FACE_PX;
 // Standing pictures (the altar), flat tops (the pool, the pits, seen from above, their dummy and spikes in the
 // picture) and pictures on the north wall (the passage's arch, the portal, the board's notes).
 export const ALTAR = pic("altar", 105, 122);
-export const POOL_TOP = pic("pool-top", 95, 63);
-export const PIT_TOP = pic("pit-top", 125, 115);
-export const SPARRING_TOP = pic("sparring-top", 125, 129);
 export const ARCH = pic("arch", 138, 73);
 export const PORTAL = pic("portal", 76, 81);
 export const NOTES = pic("board", 53, 39);

@@ -21,8 +21,6 @@ export const CORE_NUMBERS: Record<CoreSlot, { damage: number; energyCost: number
   heavy: { damage: 25, energyCost: 50 },
   first: { damage: 15, energyCost: 50 },
 };
-// (The first-strike numbers, by their older name.)
-export const NEUTRAL_QUICK_NUMBERS = CORE_NUMBERS.first;
 
 // The light moves (the old kits' shared light move, by its older name).
 export const BALANCED_MOVES: Record<CombatClass, Skill> = {

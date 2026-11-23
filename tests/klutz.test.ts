@@ -237,7 +237,7 @@ describe("sending Klutz (v2)", () => {
   });
 });
 
-import { klutzGainXp, CAPTURE_XP, CATCH_MAX_LEVEL } from "../lib/klutz";
+import { klutzGainXp, CAPTURE_XP } from "../lib/klutz";
 import { xpForEnemy, xpToNext } from "../lib/creatures/levels";
 describe("Klutz's levels", () => {
   it("his first catch (the weakest there is) takes him to level 2", () => {

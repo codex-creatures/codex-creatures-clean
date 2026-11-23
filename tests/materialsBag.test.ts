@@ -3,7 +3,7 @@ import {
   stowDrop, needsSlot, rareLeftBehind, wipedOut, lootIdOf, BINDLE, startRun,
   type DungeonMeta, type DungeonRun,
 } from "../lib/dungeon/run";
-import { materialDrop, addMaterials, canAfford, countMaterial, SCHEMATICS, BOOKCASE_CROOKED_COST } from "../lib/items/materials";
+import { materialDrop, addMaterials, canAfford, countMaterial, BOOKCASE_CROOKED_COST } from "../lib/items/materials";
 import { weaponDrop, potionDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
 

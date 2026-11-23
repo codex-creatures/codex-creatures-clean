@@ -1,8 +1,15 @@
 // lib/render/projection.ts
 // The one projection (docs/world-spec.md §4): how world units
-// (lib/world/units.ts) become pixels on the walk screen. The renderer
+// become pixels on the walk screen. The renderer
 // (components/WalkView.tsx), the scene builder and, later, the art templates
 // and checks all read it; nothing else turns world sizes into pixels.
+//
+// World units (u): every position, size, height and distance in the world is
+// in them; gameplay never deals in pixels. x runs east and y south, along the
+// floor; z is up from it (z = 0). A cell of the gameplay grid is 1 u across,
+// and its centre is the whole number: cell (3, 4) covers x 2.5–3.5, y 3.5–4.5.
+// Facing is an angle in the floor plane: 0 east, π/2 south (foes.ts). No
+// real-world scale is assumed: a cell is not a metre.
 //
 // The camera is fixed: an oblique, orthographic view from the south, no
 // perspective, no rotation (the user, 2026-11-07). On screen:
@@ -22,7 +29,6 @@ import type { Floorplan, Pt } from "../dungeon/floorplan";
 
 export const WALK_ACROSS = 15; // cells across the screen (the user's pick, 2026-11-06): T is the view's width ÷ this
 export const DEPTH = 1;        // D: a cell of floor is square on screen (§4.6: ¾ is for phase 3 to decide)
-export const HEIGHT = 1;       // H: a unit of height shows as tall as a unit across
 export const FEET_U = 0.25;    // units: where a standing thing's feet are drawn, down from its cell's middle
 
 // The sizes written before units (FOE_PX, each prop's `size`…) were in pixels

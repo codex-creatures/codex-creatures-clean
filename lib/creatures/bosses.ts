@@ -33,7 +33,7 @@ export const CYCLOPS_PARTS: Part[] = [
 // WEAK_SPOT damage from the style that beat its own in the old triangle
 // (magic beats melee, melee beats ranged, ranged beats magic); nothing is
 // resisted (the user, 2026-10-30). 🧪 Claude's numbers, set against the
-// Warden's pack they replaced (scripts/sim-hydra.ts). The order matches its
+// Warden's pack they replaced. The order matches its
 // art (the user, 2026-11-04): the Spitter on the left, the Hex in the middle,
 // the Fang on the right.
 export const HYDRA_PARTS: Part[] = [

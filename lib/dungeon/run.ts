@@ -188,7 +188,7 @@ export const FIRST_ROOM_DENS = 0.9;
 export const FIRST_ROOM_LEVELS: [number, number][] = [[1, 60], [2, 25], [3, 15]];
 export const minibossAllowed = (dungeon: DungeonId, depth: number) => dungeon > 1 || depth >= MINIBOSS_FROM;
 
-// The Encampment (dungeon 0; the user, 2026-10-27). Sims: scripts/sim-encampment.ts.
+// The Encampment (dungeon 0; the user, 2026-10-27).
 // - Its first rooms ease you in like the Labyrinth's (FIRST_ROOMS, FIRST_ROOM_LEVELS, LIGHT_GEAR).
 // - Rooms 1–6 are creature dens (1–2 creatures however deep: EASY_SIZE_EARLY), or a stash
 //   CAMP_STASH of the time, never two stashes in a row.
@@ -1144,7 +1144,10 @@ export function foeCodexes(enemies: Enemy[], dungeon: DungeonId) {
     const own = weightedMove(can.filter(ownRace), rng);
     const off = rng() < rule.offRace ? weightedMove(can.filter((m) => !ownRace(m) && m !== own), rng) : undefined;
     const moves = [...e.moves];
-    if (own) moves.length >= MOVE_SLOTS ? (moves[MOVE_SLOTS - 1] = own.name) : moves.push(own.name);
+    if (own) {
+      if (moves.length >= MOVE_SLOTS) moves[MOVE_SLOTS - 1] = own.name;
+      else moves.push(own.name);
+    }
     if (off) {
       // In place of its first-strike move (never its light one: it must keep a move it can always afford).
       const quick = moves.findIndex((n) => MOVE_BY_NAME[n]?.effect?.kind === "quick");

@@ -4,7 +4,7 @@
 // trips that isn't a creature or a material: codexes, potions, weapons and
 // armour. Keep a thing (it goes into your Inventory) or sell it for gold. It
 // holds chestSize (lib/klutz.ts): full, he won't set off (a trip can overfill it).
-// Shown in Klutz's Den (app/klutz, its Crate tab) and on its own (app/crate).
+// Shown in Klutz's Den (app/klutz, its Crate tab).
 
 import { Coin } from "@/components/GoldCount";
 import { useState } from "react";

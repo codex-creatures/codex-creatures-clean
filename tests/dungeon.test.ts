@@ -677,7 +677,7 @@ describe("a deck of cards (the user, 2026-11-11: its glow on the table shows the
   });
 });
 
-import { GOLDEN_FROM, GOLDEN_CHEST_ROOM, goldenChestRoom } from "../lib/dungeon/run";
+import { GOLDEN_FROM, goldenChestRoom } from "../lib/dungeon/run";
 describe("golden chest rooms", () => {
   it("never before room 7 or in the Encampment; then 5% in the Cyclops, 10% the Hydra, 15% the Minotaur", () => {
     const share = (dungeon: DungeonId, depth: number) => {

@@ -60,7 +60,6 @@ export const CAMPFIRE_STASH = 0.5;                       // of campfires have a 
 export const LOCATES: Record<LocatorKey, PersonKind> = { merchant_map: "merchant", crystal_ball: "witch", librarian_locator: "librarian" };
 
 const between = (rng: Rng, [lo, hi]: [number, number]) => lo + rng() * (hi - lo);
-const inRect = (r: { x: number; y: number; w: number; h: number }, p: Pt) => p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
 
 // A room with creatures in it still to beat (its second den's too): people keep out.
 // A cart with its locator put in before its materials (the first thing a full cart loses).
@@ -197,9 +196,6 @@ export function locate(kind: LocatorKey, people: Person[], you: Pt, layout: Layo
   if (open.length === 0) return null;
   return open.reduce((a, b) => (Math.hypot(b.at.x - you.x, b.at.y - you.y) < Math.hypot(a.at.x - you.x, a.at.y - you.y) ? b : a));
 }
-
-// Is this tile in this room's floor? (For tests: someone standing in a room.)
-export const inRoomFloor = (plan: Floorplan, id: string, q: Pt) => plan.rooms[id].some((r) => inRect(r, q));
 
 // Where nobody wanders (the scroll-map dungeons, and a walkable run made before world version 9),
 // a locator reveals the room they keep instead (the user, 2026-11-11): the closest to where you

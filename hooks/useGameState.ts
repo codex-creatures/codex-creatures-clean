@@ -8,7 +8,7 @@ import { computeSellGold } from "@/lib/items/economy/sell";
 import { ownedSpecies, ownedCreatureSpecies, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
-import { findCreatureTemplate, isRetiredMove, KLUTZ, CREATURE_TEMPLATES, renamedMove, replaceRetired, REUSED_NAMES, type CreatureProficiency } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, isRetiredMove, KLUTZ, renamedMove, replaceRetired, REUSED_NAMES, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { findPrice, isSellableConsumable } from "@/lib/scanReveal";
 import { clearDungeon, loadDungeon, saveDungeon, altarMended, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, POTIONS, type Ware } from "@/lib/dungeon/run";

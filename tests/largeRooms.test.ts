@@ -53,7 +53,7 @@ describe("large rooms", () => {
   });
 
   it("libraries: codexes to find, or a librarian with 5 books", () => {
-    let found = 0, librarians = 0;
+    let librarians = 0;
     for (let i = 0; i < 400; i++) {
       const r = makeRoom("library");
       if (r.librarian) {
@@ -62,7 +62,6 @@ describe("large rooms", () => {
         expect(new Set(r.offers).size).toBe(LIBRARY_BOOKS);
         for (const m of r.offers!) expect(codexPrice(m)).toBeGreaterThan(0);
       } else {
-        found++;
         expect(r.sack!.length).toBeGreaterThanOrEqual(1);
         expect(r.sack!.length).toBeLessThanOrEqual(3);
       }
