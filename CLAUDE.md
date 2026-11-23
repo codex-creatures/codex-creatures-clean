@@ -29,7 +29,8 @@ own: everything else runs in the browser.
 
 1. **Plays offline; online features are extra.** (Going online was decided 2026-10-31.) The rest of
    the game must still work in offline mode: offline scans wait as sealed caches, and trading and
-   PvP are off. `npm run dev`, `npm test`, `npm run build` and `npm run build:offline` must keep
+   PvP are off. Scans only ever open from the global registry: a copy with no online settings keeps
+   every new scan sealed (the user, 2026-11-24: "everything is online until we make an app"). `npm run dev`, `npm test`, `npm run build` and `npm run build:offline` must keep
    working with no internet, so keep all Supabase calls behind one module that tests can do
    without. No CDN scripts, no `next/font/google` (fonts are local in `app/fonts/`) and no remote
    images. Art lives in `public/sprites/`. Ask the user before adding any online service beyond the

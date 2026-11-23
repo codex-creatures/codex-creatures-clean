@@ -6,7 +6,6 @@ import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } 
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { ownedSpecies, ownedCreatureSpecies, getStatCapForDrop } from "@/lib/items/gameHelpers";
-import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, isRetiredMove, KLUTZ, renamedMove, replaceRetired, REUSED_NAMES, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
@@ -1326,19 +1325,12 @@ export function useGameState(initialTab: TabKey = "all") {
     setSelectedForSale(new Set());
   }
 
-  // "Global reset": every barcode rolls fresh again, and previously scanned
-  // barcodes count as new. Players keep what they already own.
-  function globalReset() {
-    clearRegistry();
-    setScanCounts({});
-  }
-
   // A brand-new game, as if you'd never played: your progress, the
-  // Labyrinth, Klutz, the quest, your battle history, and the barcode
-  // registry (so every barcode rolls fresh on its next scan).
+  // Labyrinth, Klutz, the quest, your battle history, and the barcodes
+  // you've scanned (so each is new to you again).
   function startNew() {
     resetAll();
-    globalReset();
+    setScanCounts({});
     clearBattles();
   }
 
@@ -1355,6 +1347,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, upgradeBookcase, storage, wantedPlans, cage, cageSize: cageSize(cage),
     toggleFavorite, equipItem, setMoves, learnCodex, summon, ascendCreature, ascendAway, ascendBusy, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, pickKlutzTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, repairKlutzShack, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, healKlutz, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, pickKlutzTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, repairKlutzShack, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, healKlutz, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

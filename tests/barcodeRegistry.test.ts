@@ -1,85 +1,39 @@
 // tests/barcodeRegistry.test.ts
-// The local barcode registry must behave like the planned global database:
-// the barcode number has no influence, the first scan decides the outcome,
-// and a global reset lets barcodes roll again.
+// The barcode registry's rules (lib/barcodeRegistry.ts): the barcode number has no influence, the
+// first scan decides the outcome (the global registry rolls it on the server from REGISTRY_RULES),
+// a soul stone is only the first finder's, and someone else's find too rare for you waits sealed.
 
-import { describe, it, expect, beforeEach } from "vitest";
-import { lookupLocal, tooRare, rollBarcodeOutcome, clearRegistry, claimedOutcome, CHEST_ODDS, REGISTRY_KEY } from "../lib/barcodeRegistry";
-
-// A scan in the local registry, as the game makes one (hooks/useDropGeneration.ts, lib/scanning.ts).
-const resolve = (code: string) => lookupLocal(code).entry;
-const scan = (code: string, level: number) => { const found = lookupLocal(code); return { ...found, sealed: tooRare(found, level) }; };
+import { describe, it, expect } from "vitest";
+import { tooRare, rollBarcodeOutcome, claimedOutcome, CHEST_ODDS, type BarcodeEntry } from "../lib/barcodeRegistry";
 import { SCAN_UNLOCK } from "../lib/creatures/levels";
 import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { ITEM_KEYS } from "../lib/items/ceilings";
 import { ARMOR_KEYS } from "../lib/items/armor";
 
-// Minimal in-memory stand-in for the browser's localStorage.
-const store: Record<string, string> = {};
-(globalThis as unknown as { window: unknown }).window = {
-  localStorage: {
-    getItem: (k: string) => store[k] ?? null,
-    setItem: (k: string, v: string) => { store[k] = v; },
-    removeItem: (k: string) => { delete store[k]; },
-  },
-};
-
-beforeEach(() => clearRegistry());
-
-describe("registry behaviour", () => {
-  it("a registered barcode returns the same outcome on every later scan", () => {
-    const first = resolve("5000112637922");
-    for (let i = 0; i < 20; i++) expect(resolve("5000112637922")).toEqual(first);
-  });
-
-  it("global reset lets barcodes roll a new outcome", () => {
-    let changed = 0;
-    for (let i = 0; i < 50; i++) {
-      const code = `50001126${String(i).padStart(5, "0")}`;
-      const before = JSON.stringify(resolve(code));
-      clearRegistry();
-      if (JSON.stringify(resolve(code)) !== before) changed++;
-      clearRegistry();
-    }
-    expect(changed).toBeGreaterThan(40); // occasional identical re-rolls are fine
-  });
-});
-
 describe("your explorer level and barcodes", () => {
-  // A barcode registered as a legendary creature (as if someone else found it).
-  const registerLegendary = (code: string) =>
-    store[REGISTRY_KEY] = JSON.stringify({ [code]: { outcome: "creature", rarity: "legendary", creatureId: "storm_phoenix", registeredAt: "" } });
+  const legendary: BarcodeEntry = { outcome: "creature", rarity: "legendary", creatureId: "storm_phoenix", registeredAt: "" };
 
   it("the first ever to scan a barcode gets whatever it rolls, at any level", () => {
-    let legendary = 0;
+    let found = 0;
     for (let i = 0; i < 3000; i++) {
-      clearRegistry(); // (keeps the registry small, so this stays quick)
-      const { entry, sealed } = scan(`9${String(i).padStart(12, "0")}`, 1);
-      expect(sealed).toBe(false);
-      if (entry.outcome === "creature" && entry.rarity === "legendary") legendary++;
+      const entry = { ...rollBarcodeOutcome(), registeredAt: "" };
+      expect(tooRare({ entry, first: true }, 1)).toBe(false);
+      if (entry.outcome === "creature" && entry.rarity === "legendary") found++;
     }
-    expect(legendary).toBeGreaterThan(0); // ~12 expected (40% × 1%)
-  });
-
-  it("says whether you were the first ever to scan a barcode", () => {
-    expect(scan("5000112637922", 1).first).toBe(true);
-    expect(scan("5000112637922", 1).first).toBe(false);
+    expect(found).toBeGreaterThan(0); // ~12 expected (40% × 1%)
   });
 
   it("a soul stone is only for the first to scan it: anyone after gets gold", () => {
-    store[REGISTRY_KEY] = JSON.stringify({ "5000112637922": { outcome: "soul_stone", stone: "toxic_skin", registeredAt: "" } });
-    expect(resolve("5000112637922")).toMatchObject({ outcome: "soul_stone", stone: "toxic_skin" });
-    const later = claimedOutcome(resolve("5000112637922"));
-    expect(later.outcome).toBe("gold");
+    const stone = { outcome: "soul_stone", stone: "toxic_skin" } as const;
+    expect(claimedOutcome(stone).outcome).toBe("gold");
     // Anything else is the same for everyone.
     const other = { outcome: "creature", rarity: "common", creatureId: "bellow_toad" } as const;
     expect(claimedOutcome(other)).toBe(other);
   });
 
   it("someone else's find too rare for you is sealed until your level can find it", () => {
-    registerLegendary("5000112637922");
-    expect(scan("5000112637922", 1).sealed).toBe(true);
-    expect(scan("5000112637922", SCAN_UNLOCK.legendary).sealed).toBe(false);
+    expect(tooRare({ entry: legendary, first: false }, 1)).toBe(true);
+    expect(tooRare({ entry: legendary, first: false }, SCAN_UNLOCK.legendary)).toBe(false);
   });
 });
 

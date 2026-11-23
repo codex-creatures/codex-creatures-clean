@@ -43,10 +43,12 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   barcode already read while calibrating is free and gives nothing. Saved as `firstScans`
   (`{ used, codes }`); missing (saves from before this): none. "Start new" and "Reset player" give
   a new set.
-- ✅ Online builds use the **global registry** (§12): everyone shares one. A copy without online
-  (the offline Windows build, tests, a dev build with no Supabase keys) keeps a **local** one
-  (`codex_creatures_registry_v3`): "Reset player" keeps it, to simulate a friend; "Global reset"
-  (shown only there) clears it.
+- ✅ Every scan uses the **global registry** (§12): everyone shares one. Out of its reach (offline,
+  signed out, or a copy with no online settings: the offline Windows build or a dev build without
+  Supabase keys) a new barcode waits as a sealed Code Cache until it can be asked (the user,
+  2026-11-24: "everything is online until we make an app"). The local registry a copy without online
+  kept (`codex_creatures_registry_v3`) and its "Global reset" went then; the key stays a part of a
+  save file, so old saves and files load as before.
 - 🧪 Outcome odds (`SCAN_ODDS`, 2026-10-20, for playtesting): 40% creature, 13% weapon, 26% armour,
   7% consumable, 6% material, 7% gold, 1% soul stone (2026-10-25, first scanner only). Aim: about 1 legendary creature or card per 250 scans (from
   explorer level 12); a real creature every 12–13 scans. Players will also hunt legendaries with good

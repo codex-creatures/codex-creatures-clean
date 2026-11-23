@@ -1,6 +1,6 @@
 // hooks/useDropGeneration.ts
 import type { Drop } from "@/lib/types";
-import { lookupLocal, rollBarcodeOutcome, type Lookup } from "@/lib/barcodeRegistry";
+import { rollBarcodeOutcome, type Lookup } from "@/lib/barcodeRegistry";
 import { calibrationDrop } from "@/lib/firstScans";
 import { goldDrop } from "@/lib/drops";
 import { openBarcode, scanDrop, scanKeys, type Opened } from "@/lib/scanning";
@@ -13,13 +13,12 @@ import type { Rarity } from "@/lib/types";
 // "random": dev testing — every scan rolls a fresh outcome, nothing registered.
 type RollMode = "random" | "deterministic";
 
-// Ask the registry about a barcode: the global one in an online build, this
-// browser's own in a copy without online. null: the global registry can't
-// be reached (offline, or not signed in), so the scan waits sealed.
+// Ask the global registry about a barcode. null: it can't be reached (offline, not signed in,
+// or a copy with no online settings), so the scan waits sealed.
 export async function lookUpBarcode(code: string): Promise<Lookup[] | null> {
   const keys = scanKeys(code);
   const client = onlineClient();
-  if (!client) return keys.map(lookupLocal);
+  if (!client) return null;
   if (typeof navigator !== "undefined" && navigator.onLine === false) return null;
   const found: Lookup[] = [];
   for (const key of keys) {

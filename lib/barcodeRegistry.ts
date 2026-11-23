@@ -6,13 +6,12 @@
 // later scan (by anyone) gets that registered outcome. Item STATS are not
 // stored — each player rolls their own when they receive the item.
 //
-// Two registries, one set of rules (REGISTRY_RULES):
-// - Online builds use the GLOBAL registry (docs/design.md §12): the roll is
-//   made on the server, by the database function in supabase/migrations,
-//   from a copy of REGISTRY_RULES (lib/online/registry.ts asks it).
-// - A copy without online (the offline Windows build, tests) keeps a LOCAL
-//   one in this browser (REGISTRY_KEY). "Reset player" keeps it, to simulate
-//   a friend; clearRegistry() is the "Global Reset".
+// One registry, the GLOBAL one (docs/design.md §12): the roll is made on the server, by the
+// database function in supabase/migrations, from a copy of REGISTRY_RULES (lib/online/registry.ts
+// asks it). Out of its reach (offline, signed out, or a copy with no online settings) a new barcode
+// waits as a sealed Code Cache until it can be asked. (A copy without online kept a LOCAL registry
+// in the browser, REGISTRY_KEY, till 2026-11-24; the user: "everything is online until we make an
+// app". The key stays a part of a save file, so old saves and files still load.)
 
 import type { Rarity, ItemCategory } from "./types";
 import type { ItemKey } from "./items/ceilings";
@@ -22,7 +21,6 @@ import { ARMOR_KEYS, ARMOR_SLOTS, type ArmorKey, type ArmorSlot } from "./items/
 import { CREATURES_BY_RARITY } from "./creatures/creatureData";
 import { canFind } from "./creatures/levels";
 import { SOUL_STONE_KEYS, type SoulStoneKey } from "./creatures/soulStones";
-import { savesLocked } from "./save";
 import { SCAN_ENCHANT } from "./items/enchantments";
 
 export type BarcodeOutcome =
@@ -45,7 +43,7 @@ export type BarcodeEntry = BarcodeOutcome & { registeredAt: string };
 // only; 1 for the first).
 export type Lookup = { entry: BarcodeEntry; first: boolean; place?: number };
 
-export const REGISTRY_KEY = "codex_creatures_registry_v3"; // v3: started again for Combat V2 (v2: creatures stored by id)
+export const REGISTRY_KEY = "codex_creatures_registry_v3"; // (the old local registry: a save file's part, read and written by lib/saveFile.ts only)
 
 // What a fresh barcode gives, out of 100. Weapons and armour share 40, armour
 // twice as often (it comes in three pieces, so you need more of it).
@@ -137,42 +135,3 @@ export const claimedOutcome = (entry: BarcodeOutcome): BarcodeOutcome => (entry.
 // nobody had scanned is yours whatever it is.
 export const tooRare = ({ entry, first }: Lookup, playerLevel: number) =>
   !first && entry.outcome === "creature" && !canFind(playerLevel, entry.rarity);
-
-// ── The local registry ──────────────────────────────────────────────
-
-function loadRegistry(): Record<string, BarcodeEntry> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(REGISTRY_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveRegistry(registry: Record<string, BarcodeEntry>) {
-  if (savesLocked()) return;
-  try {
-    window.localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry));
-  } catch {}
-}
-
-// Look the barcode up; if nobody has scanned it yet, roll and register it.
-export function lookupLocal(code: string): Lookup {
-  const registry = loadRegistry();
-  const existing = registry[code];
-  if (existing) return { entry: existing, first: false };
-
-  const entry: BarcodeEntry = { ...rollBarcodeOutcome(), registeredAt: new Date().toISOString() };
-  registry[code] = entry;
-  saveRegistry(registry);
-  return { entry, first: true };
-}
-
-// "Global Reset" — every barcode will roll fresh on its next scan.
-export function clearRegistry() {
-  try {
-    window.localStorage.removeItem(REGISTRY_KEY);
-  } catch {}
-}

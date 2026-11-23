@@ -342,12 +342,7 @@ export default function ScanPage() {
         <button onClick={() => armedReset("player", game.resetAll)} title="Wipe your progress (inventory, gold, labyrinth) but keep registered barcodes — test as a new player" style={dangerBtn}>
           {resetArmed === "player" ? "Tap again to reset" : "Reset Player"}
         </button>
-        {/* (Online, the registry is everyone's: it can't be reset from here.) */}
-        {!onlineConfig.ok && (
-          <button onClick={() => armedReset("global", game.globalReset)} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={dangerBtn}>
-            {resetArmed === "global" ? "Tap again to reset" : "Global Reset"}
-          </button>
-        )}
+        {/* (The registry is everyone's: it can't be reset from here.) */}
       </div>}
 
       {tools && <>

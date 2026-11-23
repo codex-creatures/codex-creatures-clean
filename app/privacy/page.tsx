@@ -7,7 +7,7 @@
 import Link from "next/link";
 
 const CONTACT_EMAIL = "adamjbell95@gmail.com";
-const UPDATED = "1 November 2026";
+const UPDATED = "24 November 2026";
 
 const h = { fontSize: 16, color: "#f1d9a0", margin: "14px 0 4px" } as const;
 const p = { fontSize: 14, lineHeight: 1.45, margin: "0 0 8px", color: "#d8d4c8" } as const;
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
           <p style={p}>Codex Creatures is a free hobby game, made by one person and played with friends. This page says what it keeps about you.</p>
 
           <h2 className="pixel-font" style={h}>Without signing in</h2>
-          <p style={p}>Your game is saved only in your own browser, on your device. Nothing about it is sent anywhere. Barcodes you scan stay on your device too.</p>
+          <p style={p}>Your game is saved only in your own browser, on your device. Nothing about it is sent anywhere. A barcode you scan waits on your device, sealed, until you sign in; then it&apos;s looked up as below.</p>
 
           <h2 className="pixel-font" style={h}>When you sign in with Google</h2>
           <p style={p}>Google tells the game your email address, your Google account name and profile picture, and an ID for your account. The game also keeps the player name you pick. Sign-in is handled by Supabase, the service that stores this.</p>
