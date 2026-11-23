@@ -53,8 +53,9 @@ const ART_SIZES: Record<string, [number, number]> = {
   swamp_witch: [86, 89],
   sylvaran: [71, 94],
 };
-// Those drawn facing right (the rest face left).
-const FACING_RIGHT = new Set(["leafblade_scout", "mr_shadows"]);
+// Those drawn facing right (the rest face left). (The Leafblade Scout was listed
+// here by mistake: it runs leftwards, so it turned its back on its foe: the user, 2026-11-24.)
+const FACING_RIGHT = new Set(["mr_shadows"]);
 // Those that float rather than stand: drawn hanging in the air, bobbing.
 const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "amber_wasp", "storm_phoenix", "gleamling", "rotgut_fly"]);
 
