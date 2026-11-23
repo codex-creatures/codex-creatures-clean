@@ -126,10 +126,10 @@ interesting situations, real decisions, progression and surprises, not feel they
   - ✅ **Klutz's Den** (built 2026-11-20; its broken look a sample to approve) starts as a broken-down shack, his crate 10; repaired for 20 planks and 10 nails, it's
     today's cabin with a crate of 30, then the gold upgrades (+10 each, to 80) as now. Saves with the cabin keep it.
 
-- 🧪 **The new Den** (decision 50, the user, 2026-11-18): built behind Settings → New Den, off by default,
-  to play-test; its art (Den walls, the shack, the storehouse, the tavern, the altar, the pits, the board,
-  the portal) is stand-ins or samples till approved. Then it replaces the old Den.
-  [design/den.md](design/den.md#the-new-den-behind-a-setting)
+- 🧪 **The new Den** (decision 50, the user, 2026-11-18): the only Den since 2026-11-24 (the old one
+  removed); its art (Den walls, the shack, the storehouse, the tavern, the altar, the pits, the board,
+  the portal) is stand-ins or samples till approved, and the Cyclops Head isn't drawn in it yet.
+  [design/den.md](design/den.md#the-den-the-new-den-the-only-one-since-2026-11-24)
 - 🧪 **Props from recipes** (the user, 2026-11-19): `/lab/propbuilder` is built, to build the Den's and the
   dungeon's 3D props from PixelLab drawings as small JSON recipes; the altar's is the first. Next: the user builds
   and approves props in it; then each goes into the game in place of its hand-coded drawing, one at a time.

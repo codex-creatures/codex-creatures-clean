@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Stick } from "@/components/WalkView";
-import { VISITOR_SPEED } from "@/lib/den/scene";
+const VISITOR_SPEED = 0.45; // (a tavern visitor's strolling speed in the old Den: blocks a second)
 import { CHEST_W } from "@/lib/render3d/chest3d";
 import type { ChestView, Thing3D } from "../chest/ChestScene";
 

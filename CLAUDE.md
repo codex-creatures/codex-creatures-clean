@@ -47,7 +47,7 @@ own: everything else runs in the browser.
      user chose a fresh start for Combat V2: saves from before it are left in the browser, unread,
      and pre-V2 save files are refused. That was the user's call; don't do it again unasked.)
      Per device, not in saves: `codex_creatures_ui_scale_v1` (lib/uiScale.ts),
-     `codex_creatures_haptics_v1` (lib/haptics.ts), `codex_creatures_hand_v1` (lib/handedness.ts), `codex_creatures_den3d_v2` (v1 left unread: on for everyone, 2026-11-20) and `codex_creatures_den3d_opts_v1` (lib/den3d/setting.ts), `codex_creatures_camera_v1` (lib/scanner.ts), `codex_creatures_propbuilder_draft_v1` (the prop builder lab's unsaved drafts),
+     `codex_creatures_haptics_v1` (lib/haptics.ts), `codex_creatures_hand_v1` (lib/handedness.ts), `codex_creatures_den3d_opts_v1` (lib/den3d/setting.ts; the old Den's switch, `codex_creatures_den3d_v2` and v1, is left unread since the old Den went, 2026-11-24), `codex_creatures_camera_v1` (lib/scanner.ts), `codex_creatures_propbuilder_draft_v1` (the prop builder lab's unsaved drafts),
      `codex_creatures_auth_v1` (lib/online/client.ts), `codex_creatures_cloud_v1` and
      `codex_creatures_cloud_last_v1` (lib/online/cloudSave.ts).
    - New save fields must be optional, with a default for old saves (e.g. `storage`; a creature or
@@ -164,7 +164,7 @@ kill theirs.
     `render3d/`: the 3D prototype's geometry and its Stone mode's texture and light rules (components/WalkView3D.tsx; world/rendering.md §4.8).
   - `barcodeRegistry.ts`, `scanning.ts`, `drops.ts`, `pvp/`, `online/` (the one Supabase module
     family: client, registry, cloud saves, friends, duel channel), `klutz.ts`, `quest.ts`,
-    `tavern.ts`, `save.ts`, `saveFile.ts`, `den/scene.ts`, `sprites/` (art registry).
+    `tavern.ts`, `save.ts`, `saveFile.ts`, `den3d/` (the Den: its layout, art, bag rule and place ids), `sprites/` (art registry).
 - `components/`: `GameScreen.tsx` (the fixed phone screen), `DenFrame`, `BattleScreen`,
   `BossStage`, `WalkView3D` (the walkable dungeons' renderer, 3D; its play logic in `hooks/useWalkPlay.ts`), `WalkView` (the 2D one, kept until the 3D one has been played; its stick, campfire window and scroll are shared), `CardGallery` (`CardFace`, the card standard),
   `LootWindow`, `Help.tsx` (the "?" panels), and others.

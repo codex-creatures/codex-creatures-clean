@@ -18,7 +18,7 @@
 // label in the Den, lit up by the Den itself); none, and Klutz just talks.
 // show: a picture in his bubble (TourOverlay draws it).
 
-import { OBJ, type ObjId } from "./den/scene";
+import { OBJ, type ObjId } from "./den3d/objects";
 import { readSave, writeSaveField } from "./save";
 import { MATCH_BONUS, RACE_EFFECT } from "./combat/raceChart";
 import { ENERGY_REGEN, MAX_ENERGY } from "./combat/engine";

@@ -25,7 +25,7 @@ const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
 const GREEN = "#5ee08a";
 const RED = "#ff8a80";
-// The pits' pictures (the same art as in the tavern's room, components/TavernRoom.tsx).
+// The pits' pictures (the old Den's tavern room drew them too).
 const PIT_ART = { sparring: "/sprites/den/sparring-pit-3.png", training: "/sprites/den/training-pit.png" };
 const pixelated = { display: "block", width: "100%", height: "auto", imageRendering: "pixelated" } as const;
 

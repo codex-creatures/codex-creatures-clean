@@ -28,15 +28,16 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ Sell prices **stay as they are** (the user, 2026-10-20), even though they (epic ~800,
   legendary ~2,700) dwarf Labyrinth gold (~18 a room) and re-scan gold has no cap.
 
-### The new Den (on for everyone; the old one behind a setting)
+### The Den (the new Den; the only one since 2026-11-24)
 
-✅ **On for everyone since 2026-11-20** (the user: "flip the Den to the new view for everyone, leave the old in a
-toggle + view degrees"; built 2026-11-18, off by default till then; decision 50): Settings → **New Den** turns it off
-for the old Den, per device (`codex_creatures_den3d_v2`: what anyone set before, in v1, is left unread, so everyone
-starts on it once; lib/den3d/setting.ts; not in the save). Its View angle and Names stay in Settings under it. With
-it on, the bag empties into storage after a run (lib/den3d/bag.ts), now everyone's default too. The user's design, 2026-11-18:
+✅ **The only Den since 2026-11-24** (the user: "we can delete the old Den, it's all been replaced now"; built
+2026-11-18, on for everyone since 2026-11-20; decision 50). The old pixel-art Den (components/DenRoom.tsx,
+TavernRoom.tsx, lib/den/scene.ts) and its switch in Settings went then; the switch's key
+(`codex_creatures_den3d_v2`) is left unread. Its View angle and Names are in Settings → **The Den**. The bag
+empties into storage after a run (lib/den3d/bag.ts). The user's design, 2026-11-18:
 the Den as a room like the Labyrinth's, warmer walls for contrast, built up over time; no free
-placement (players could block themselves in). With it off, the old Den, as it was.
+placement (players could block themselves in). (Not drawn in it yet: the Cyclops Head over the tavern, which
+the old Den hung once `headUp`, lib/tavern.ts, says so.)
 
 - **The look:** the Labyrinth's 3D renderer as is (components/Den3D.tsx reuses WalkView3D's Stone
   shader, the carved rock, the camera at 60°, the lean, 48 art pixels a unit at 15 units across), with
@@ -124,7 +125,7 @@ placement (players could block themselves in). With it off, the old Den, as it w
   iron spikes once it's the Training Pit), their parts cut from the approved pictures (scripts/den-parts.mjs).
 - **Looking round:** drag past the walls into the dark (`LOOK_PAST` 4 u every way); pinch or scroll to zoom
   (`ZOOM`: 8 to 24 units across, 15 to start).
-- **Options** (Settings, under New Den, per device: `codex_creatures_den3d_opts_v1`, the user, 2026-11-19):
+- **Options** (Settings → The Den, per device: `codex_creatures_den3d_opts_v1`, the user, 2026-11-19):
   **Names** on or off (off, only a name with a ❗ or the one Klutz's tour is showing stays); **View**: the camera's angle, 45° to 75° in 5° steps
   (60°, the Labyrinth's, by default). The art is drawn for 60°: other angles re-lay the walls' and floor's
   textures square on screen for that angle, and the rest keeps its 60° sizes, so they're to try.
@@ -137,7 +138,7 @@ placement (players could block themselves in). With it off, the old Den, as it w
   tour glides it only when he shows somewhere new.
 - **No walking:** drag to look round (the view stays on what's open, and a little past it), tap a place to go in. Every place
   has its name over it (names that would overlap move apart), with a ❗ where something's waiting; Klutz's
-  tour lights a place's name and glides the view to it (the same `den-<id>` marks as the old Den).
+  tour lights a place's name and glides the view to it (`den-<id>` marks, the old Den's ids: lib/den3d/objects.ts).
 - **Who's about:** Klutz strolls round room 1 when he's home, rests in the pool while he heals, and is gone
   while he's out (his shack's name gets his ❗ then). Visitors stroll round the whole Den once it's open
   (`VISITOR_LOOP`); tap one for their wares.
@@ -174,7 +175,7 @@ fields optional with defaults.
    ✅ **The Labyrinth Stone** (the user, 2026-11-19): what Klutz wants is the Labyrinth Stone, old magic that
    makes the Labyrinth's walls move, where it was dynamite (the same find, in the same place; the save keeps
    the name `dynamite`, so whoever had the dynamite has the stone). In the new Den he sets it in the old wall's
-   socket and the whole wall moves away; in the old Den he uses it on the rubbled doorway.
+   socket and the whole wall moves away. (In the old Den, removed 2026-11-24, he used it on a rubbled doorway.)
 2. ✅ **Storehouse.** Once the quest is accepted and until you have the stone, a Labyrinth's
    Large Room is always a Storehouse, always marked on the scroll from the start (no extra room).
    In the Deep (2 large rooms) only one is. The first-quest run has no large room. The stone
@@ -187,16 +188,11 @@ fields optional with defaults.
    Using the stone on it (once) opens it (a flash and a shake) into a passage to a second
    room. **Until then you can't see or pan over the second room at all.** It isn't a general
    destructible-walls system.
-   ✅ **The room strip:** the Den and the tavern's room sit side by side in one view you drag across
-   (`DenRoom`'s `annex`); the tavern's room lies straight behind the Den's right wall, through a
-   see-through doorway and a wall one floor unit thick (`PASS`, lib/den/scene.ts). Each room is its
-   own picture, built only once open, so later rooms don't slow the others (watch phone
-   performance). The tavern's room is the Den's cave with nothing in it (`createDen({ bare })`), with
-   the tavern, head and visitor standing in it (`components/TavernRoom.tsx`). Tapping the tavern opens
-   `/tavern` (the repair, sending for a visitor); tapping the visitor opens their wares (`/visitor`,
-   the user, 2026-11-06); the pit and the portal open their own windows; the bare floor does nothing.
-   The view is remembered for the visit (the user, 2026-11-06): coming back from any place opens it
-   where you left it, in either room. Meant to grow into more rooms.
+   ✅ **The tavern's room** is the Den's second room, behind the wall (the new Den, above: how it's
+   drawn). Tapping the tavern opens `/tavern` (the repair, sending for a visitor); tapping the
+   visitor opens their wares (`/visitor`, the user, 2026-11-06); the pit and the portal open their
+   own windows. (The old Den, removed 2026-11-24, drew it as a second picture beside the Den's,
+   through a see-through doorway.)
    📌 Still to come: mounted head art, and the tavern's interior (needs design). The user's
    [ideas/future-dungeon-direction.png](../ideas/future-dungeon-direction.png) is the likely long-term
    look for the base.

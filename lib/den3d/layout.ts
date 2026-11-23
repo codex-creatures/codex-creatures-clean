@@ -1,5 +1,5 @@
 // lib/den3d/layout.ts
-// 🧪 The new Den (the user, 2026-11-18; Settings → New Den, lib/den3d/setting.ts): the Den built as
+// 🧪 The Den (the user, 2026-11-18; the only one since 2026-11-24): the Den built as
 // the Labyrinth is, a room of floor tiles carved out of rock, drawn by the same 3D renderer under the
 // same camera (components/Den3D.tsx; world/rendering.md §4.8), with warmer light. Pure: the plan, where
 // everything stands (and where it may be moved to), its lights, who strolls where, how far the camera
@@ -15,7 +15,7 @@
 // against a wall are on north walls, the only ones whose faces show (rendering.md §4.8).
 
 import { FLOOR, ROCK, type Floorplan, type Pt, type Rect } from "../dungeon/floorplan";
-import { OBJ, type ObjId } from "../den/scene";
+import { OBJ, type ObjId } from "./objects";
 
 export const HALL_W = 12;        // floor tiles across each room's half of the hall
 export const HALL_D = 15;        // …and down it (the user, 2026-11-19: 4 more rows south, for the bigger pool and pits)

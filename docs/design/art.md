@@ -68,13 +68,12 @@ and status icons; NPCs on the collector; dungeon props with the dungeon palette 
 | Klutz's Pack Upgrade | the backpack icon | `TOOL_SPRITES.klutz_pack` | 64px icon |
 | Dynamite | Klutz's crate picture | `DYNAMITE_ART` (lib/world/objects.ts) | 64px prop |
 | Campaign crates (4) | none (contents shown loose) | lib/campaign.ts | 64px icon each |
-| Cyclops Head | the Cyclops sprite on a CSS plaque | components/TavernRoom.tsx | 64px trophy |
+| Cyclops Head | not drawn (the old Den hung the Cyclops sprite on a CSS plaque; `headUp`, lib/tavern.ts) | the Den | 64px trophy |
 | Golden chest | the treasure chest, tinted gold | components/Props3D.tsx `golden` | 64px chest, closed |
 | Standing torch | the floor candle | `standing-torch` (objects.ts) | dungeon prop |
 | Race icons (2) | 🪨 Underkin, 🦠 Toxic | `RACE_INFO` | 32px glyph each |
 | Status marks (12) | emoji: haste, mirage, corpse, seal, soak, brace, boost, bleed, weaken, ward, flame, charged | `FighterLabel` (BattleScreen.tsx) | 32px glyph each |
 | UI glyphs (6) | emoji: ⚙️ 🐾 ⚔️ 📖 📜 🏆 | the Den's top bar, the quest board's tabs | 32px glyph each |
-| The Enchantress | the collector, tinted violet | `VISITOR_TINT` (TavernRoom.tsx) | NPC still |
 | Den fireplace (📌, not built) | none | roadmap | Den prop |
 
 Not drafted (each needs the user first):

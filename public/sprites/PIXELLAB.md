@@ -58,12 +58,12 @@ the PNG here.
 | creatures/hydra/hydra-*.png | The Hydra (2026-11-04), built in code from: the body, pixen job 546b0c16-c71b-40ec-8ce1-810dc4762dde (gallery asset 01366ab9-3c22-541d-9b91-0678a4f57b3a), its middle head's drip repainted purple (inpaint job de4abff7-2386-4758-a03a-f141d3e22382, then 7 green pixels recoloured); each head cut to a stump by inpaint: Spitter dbb84d68-3e02-446f-bfb1-84110cca63b2 (area x4 y16 48×68), Hex fabffde1-c573-4707-a1d9-568499c9d0db (x52 y4 40×58), Fang 986b7ede-f98d-4a96-ad4e-cfd7968e4f71 (x96 y18 48×50, stray teeth at x118–136 y66–74 erased). Each file pastes the cut areas named 1 onto the body. |
 | den/altar.png | gallery:a0615cd8-f9cb-4d00-88dc-d9607567863a |
 | den/altar-anim.png | gallery:cac5c3e3-2e2e-4a17-8555-620a4ddaadf9 |
-| den/chest.png | gallery:6af3a023-a3e5-4062-8e27-dd1643038f7d |
+| den/chest.png (removed 2026-11-24 with the old Den) | gallery:6af3a023-a3e5-4062-8e27-dd1643038f7d |
 | den/crate.png | gallery:1a7655fe-70cc-4ae0-9da0-1bfa9d08d2b8 |
-| den/crates.png | gallery:4ce15207-fe28-41a1-9e6d-38c857add95b |
+| den/crates.png (removed 2026-11-24 with the old Den) | gallery:4ce15207-fe28-41a1-9e6d-38c857add95b |
 | den/lectern.png | gallery:c6707841-7037-4c8b-a5ba-4c819cbf8f83 |
 | den/merchant.png | gallery:0f753be3-f60e-472c-b679-31b8ed31c859 |
-| den/shelves.png | gallery:83baaff4-1eef-4329-bf8f-2d0b62081222 |
+| den/shelves.png (removed 2026-11-24 with the old Den) | gallery:83baaff4-1eef-4329-bf8f-2d0b62081222 |
 | props/treasure_chest_open.png | gallery:89cd6782-5a1e-4b57-8267-9888fae07572 |
 | props/treasure_chest.png | gallery:2df0068e-66c1-4280-939c-886481ebfc23 |
 | props/chest3d/front.png | pro job 03cbe4bb-df94-4871-b722-a0a5a057eff3, asset 664e3b36-974d-5d56-9ebd-f5d6d1edbba6: candidate 7 of 16 (the 3D chest draft's front face; 2 pale columns cropped off each side, widened back to 60) |
@@ -89,7 +89,7 @@ the PNG here.
 | walk/samples/3d/lectern/post.png | pro job 4f6158dc-8899-4b9d-a046-e140eb9df3ab, asset 65d1c860-1589-5e17-900d-7adb585c1352: candidate 2 of 64 (the lectern's carved post; den/lectern.png as the style image). Lab draft |
 | walk/samples/3d/lectern/top.png | pro job 3b30787b-e3c5-4437-b9e6-02c7698eba11, asset af1a21de-d100-5b4c-bf76-0a160717482c: candidate 6 of 64 (its desk, the open book, from above; chest3d/top.png as the style image). Lab draft |
 | props/klutz_box.png | gallery:2b204dad-def9-42f7-9e8b-6c13e649ad52 |
-| den/pit.png | gallery:327af24a-1fd8-4dcc-b3dc-8c0aa111d955 |
+| den/pit.png (removed 2026-11-24 with the old Den) | gallery:327af24a-1fd8-4dcc-b3dc-8c0aa111d955 |
 | den/bookcase-2.png | gallery:7c56b09e-b67f-46ae-abe7-e2ab98275292 |
 | items/aether_shield.png | gallery:49708af5-5ae3-4cf7-8118-68c3fae8151f |
 | items/basalt_bulwark.png | gallery:f869f819-ff25-4614-99ef-5d9e06e4736e |
@@ -151,8 +151,8 @@ the PNG here.
 | items/armor/legs_polished_chainbolster.png | gallery:bf2659e1-5f8f-41e0-8e01-0d32cccd761f |
 | den/training-pit.png | map-object:ea26cf7d-8b3d-45e5-b795-3b0d0e1183fb (the pit), with the dummy cut from image:f23beab8-35f4-4abe-ad45-ee1d00d6d669 (an img2img pass over a code block-out on the room grid) and set in the back corner by hand |
 | den/sparring-pit-3.png | image:abee38b2-54c4-554a-bccb-b56750325141 (edit_image_pro_flash, two passes over the first Sparring Pit, which was den/training-pit.png with the rim and spears taken out: golden sand in a ring of grey stones, the same dummy), with its orange sand recoloured to tan here by script (the stones and dummy untouched). The number in the name changes with each new version so phones fetch it fresh |
-| den/pvp-portal-4.png | image:177c5e5b-8cbe-5a03-8ddf-19b7a053e92c (edit_image_pro_flash over map-object:02800b31-d374-4103-b75c-20af31a2d807, a flat front-on arch, relit so its light comes from the portal: inner edges lit, outer rim dark), slanted here onto the back-left wall by script (each column up ½px per px across) to 96×176, then recoloured here by script to the cave's colours (the stones the walls' blue-grey, the flame a muted moss-green). The number in the name changes with each new version so phones fetch it fresh |
-| den/tavern.png | gallery:9d6fa7cb-85e7-5c36-9aff-b09642a17d19 (raw 512px edit of a code block-out, seed 11; colours warmed + trimmed here) |
+| den/pvp-portal-4.png (removed 2026-11-24 with the old Den) | image:177c5e5b-8cbe-5a03-8ddf-19b7a053e92c (edit_image_pro_flash over map-object:02800b31-d374-4103-b75c-20af31a2d807, a flat front-on arch, relit so its light comes from the portal: inner edges lit, outer rim dark), slanted here onto the back-left wall by script (each column up ½px per px across) to 96×176, then recoloured here by script to the cave's colours (the stones the walls' blue-grey, the flame a muted moss-green). The number in the name changes with each new version so phones fetch it fresh |
+| den/tavern.png (removed 2026-11-24 with the old Den) | gallery:9d6fa7cb-85e7-5c36-9aff-b09642a17d19 (raw 512px edit of a code block-out, seed 11; colours warmed + trimmed here) |
 | npcs/merchant-walk.png | job 1eeed771-59ac-433f-9244-67ec3f5c3882 (animate_image_pixminimax, 8 frames on a 96×96 canvas from npcs/merchant.png; the still sits at 9, 3 in each frame) |
 | npcs/collector.png | image:e31cefc4-f858-5180-bf74-39d4b7e0d05a (create_image_pro_flash 96×96, seed 37, the merchant as style image; trimmed here to 76×92 from 7, 2) |
 | npcs/collector-walk.png | job a0336eb3-ce1b-4d18-9457-a799cdff9638 (animate_image_pixminimax, 8 frames on a 96×96 canvas from the untrimmed still; the still sits at 7, 2) |

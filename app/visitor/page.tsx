@@ -2,7 +2,7 @@
 // app/visitor/page.tsx
 // Whoever's visiting the tavern (lib/tavern.ts: a merchant, a librarian, the
 // creature collector or the Enchantress), opened by tapping them as they stroll round its room
-// (components/TavernRoom.tsx). The merchant and librarian sell what they would
+// (components/Den3D.tsx). The merchant and librarian sell what they would
 // in the Labyrinth, and the merchant buys from your Inventory too. The
 // collector buys creatures and trades 3 of a rarity for a card one up
 // (lib/collector.ts). Sending for one is at the tavern (app/tavern).

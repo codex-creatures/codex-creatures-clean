@@ -6,7 +6,6 @@ import { hasBookPlans, tavernQuestDue, wantsStorehouse, canBlast, blast, forceOp
 import { SCHEMATICS, BOOKCASE_CROOKED_COST, shelfFromOld, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
-import { createDen, mergeRects, strollAt, OBJ, W, H, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "../lib/den/scene";
 import { visitorNews } from "../lib/tavern";
 import { codexPrice, CODEX_PRICES, codexSellPrice } from "../lib/dungeon/run";
 import { codexRarityOf } from "../lib/drops";
@@ -362,48 +361,6 @@ describe("testing: opening the rubble", () => {
   });
 });
 
-describe("the tavern's room (the Den's cave, bare)", () => {
-  // Node has no ImageData; the scene only needs its pixels.
-  (globalThis as { ImageData?: unknown }).ImageData ??= class { data: Uint8ClampedArray; constructor(public width: number, public height: number) { this.data = new Uint8ClampedArray(width * height * 4); } };
-  const ids = (bare: boolean) => {
-    const den = createDen({ bare });
-    den.render(0, OBJ.none);
-    const seen = new Set<number>();
-    for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) seen.add(den.idAt(x, y));
-    return seen;
-  };
-  it("has nothing in it to tap: no furniture, pit, pool, archway, cage or rubble", () => {
-    expect([...ids(true)]).toEqual([OBJ.none]);
-  });
-  slowIt("while the Den keeps all of them", () => {
-    const den = ids(false);
-    for (const id of [OBJ.arch, OBJ.altar, OBJ.pit, OBJ.pool, OBJ.cage, OBJ.tavern, OBJ.chest]) expect(den.has(id)).toBe(true);
-  });
-});
-
-describe("drawing the Den: changed patches go to the screen in a few copies", () => {
-  (globalThis as { ImageData?: unknown }).ImageData ??= class { data: Uint8ClampedArray; constructor(public width: number, public height: number) { this.data = new Uint8ClampedArray(width * height * 4); } };
-  type Rect = [number, number, number, number];
-  const covers = (big: Rect[], r: Rect) => big.some((b) => b[0] <= r[0] && b[1] <= r[1] && b[2] >= r[2] && b[3] >= r[3]);
-  it("joins patches that are close, keeps far ones apart, and loses none", () => {
-    const rects: Rect[] = [[0, 0, 2, 2], [3, 1, 5, 3], [1, 4, 3, 6], [900, 900, 902, 902], [904, 899, 906, 901]];
-    const m = mergeRects(rects);
-    expect(m.length).toBe(2);
-    expect(rects.every((r) => covers(m, r))).toBe(true);
-  });
-  it("leaves a big patch alone rather than join it across the room", () => {
-    expect(mergeRects([[0, 0, 300, 300], [1000, 1000, 1300, 1300]]).length).toBe(2);
-  });
-  it("a frame of the Den (embers and all) is a handful of copies, not one per ember", () => {
-    const den = createDen({});
-    den.render(0, OBJ.none);
-    let most = 0;
-    for (let f = 1; f <= 36; f++) { den.render(f / 12, OBJ.none); most = Math.max(most, den.dirty()?.length ?? 0); }
-    expect(most).toBeLessThanOrEqual(20);
-  });
-});
-
-
 describe("sending for a visitor at the tavern (the user, 2026-11-03)", () => {
   const at = 2_000 * VISITOR_WINDOW;
   it("500 gold; only once it's repaired; half an hour; a new one replaces one of the same kind, the others stay", () => {
@@ -426,26 +383,6 @@ describe("sending for a visitor at the tavern (the user, 2026-11-03)", () => {
       if (g && g.until === at + 2 * VISITOR_WINDOW) return;
     }
     throw new Error("never extended");
-  });
-});
-
-describe("the tavern's visitor strolling round its room", () => {
-  it("starts by the door, keeps clear of the tavern and the pit, and stays where it can be seen", () => {
-    expect(strollAt(0, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE)).toMatchObject({ u: 12.4, v: 6.2, walking: false });
-    const bad: string[] = [];
-    let walked = false;
-    const turned = new Set<boolean>();
-    for (let t = 0; t < 600; t += 0.5) {
-      const at = strollAt(t, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE);
-      walked ||= at.walking;
-      turned.add(at.left);
-      const inTavern = at.u > 10 && at.u < 21 && at.v < 5.6;
-      const inPit = at.u < 6.7 && at.v < 6.1;
-      if (inTavern || inPit || at.v > 11.5 || at.u < 1 || at.u > 21) bad.push(`${t}s: ${at.u.toFixed(1)}, ${at.v.toFixed(1)}`);
-    }
-    expect(bad).toEqual([]);
-    expect(walked).toBe(true);
-    expect(turned.size).toBe(2); // they face both ways
   });
 });
 

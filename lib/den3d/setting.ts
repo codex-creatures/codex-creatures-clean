@@ -1,29 +1,12 @@
 // lib/den3d/setting.ts
-// The new Den (Settings → "New Den"): on for everyone since 2026-11-20 (the user: "flip the Den to the new view for
-// everyone, leave the old in a toggle"); it was off till you turned it on (2026-11-18, to test it live). Kept per device like Screen size and Vibration
-// (lib/uiScale.ts, lib/haptics.ts): not in the save, so it isn't carried in an exported file.
-// It switches the Den's picture (components/Den3D.tsx) and the battle bag's going home with it
-// (lib/den3d/bag.ts: the bag empties into storage after a run).
-
-// (v2 since 2026-11-20, when it came on for everyone: what anyone had set in v1 is left unread, so everyone starts on
-// it once. Missing: on; "0": you turned it off, the old Den.)
-export const NEW_DEN_KEY = "codex_creatures_den3d_v2";
+// The Den's options, kept per device like Screen size and Vibration (lib/uiScale.ts, lib/haptics.ts): not in
+// the save, so they aren't carried in an exported file.
+// (The switch between this Den and the old one, codex_creatures_den3d_v2 and v1 before it, went with the old
+// Den on 2026-11-24: both keys are left unread in the browser, and everyone has this Den.)
 
 type Store = Pick<Storage, "getItem" | "setItem">;
 
-export function readNewDen(store: Store): boolean {
-  try { return store.getItem(NEW_DEN_KEY) !== "0"; } catch { return true; }
-}
-
-export function writeNewDen(store: Store, on: boolean): boolean {
-  try { store.setItem(NEW_DEN_KEY, on ? "1" : "0"); } catch { /* storage full or blocked */ }
-  return on;
-}
-
-// In the browser (false on the server; on wherever storage is blocked).
-export const newDenOn = () => typeof window !== "undefined" && readNewDen(window.localStorage);
-
-// 🧪 The new Den's options (Settings, under New Den; the user, 2026-11-19), per device as the switch is:
+// 🧪 The Den's options (Settings → The Den; the user, 2026-11-19), per device:
 // the places' names shown or not (a name with a ❗ on it, or the one Klutz's tour is showing, still shows),
 // and the camera's angle down from the horizon
 // (the Labyrinth's is 60°; the art is drawn for 60°, so other angles are to try).

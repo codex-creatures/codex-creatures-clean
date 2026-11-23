@@ -21,7 +21,6 @@ import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, MONEY_SACK_OPEN, TREASURE_CHEST_O
 import LootGrid, { stackCards } from "@/components/LootGrid";
 import { useGameState, SLOT_FIELD } from "@/hooks/useGameState";
 import { bagHome } from "@/lib/den3d/bag";
-import { newDenOn } from "@/lib/den3d/setting";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CREATURE_BY_ID } from "@/lib/creatures/creatureData";
@@ -385,9 +384,9 @@ export default function DungeonPage() {
   function goHome() {
     sweepFree();
     const cur = loadDungeon();
-    // What you found goes into storage; with the new Den on, the whole bag empties (lib/den3d/bag.ts).
+    // What you found goes into storage, and the whole bag empties (lib/den3d/bag.ts).
     const shelf = game.bookcaseSize - game.inventory.filter((x) => x.dropType === "item" && x.codexMove).length;
-    const { home, potions, bag, loot } = bagHome(cur.meta.bag ?? [], cur.meta.loot ?? {}, shelf, newDenOn());
+    const { home, potions, bag, loot } = bagHome(cur.meta.bag ?? [], cur.meta.loot ?? {}, shelf);
     for (const x of home) game.addDrop(x);
     for (const p of potions) game.addDrop(potionDrop("", p));
     // The daily quests (lib/daily.ts): rooms finished this run, and a win.

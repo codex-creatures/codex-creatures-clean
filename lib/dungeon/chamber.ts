@@ -1,6 +1,6 @@
 // lib/dungeon/chamber.ts
-// A dungeon room, drawn as pixel art in code (like the Den in
-// lib/den/scene.ts): you stand at the front of a damp stone chamber looking
+// A dungeon room, drawn as pixel art in code (as the old Den was, in
+// lib/den/scene.ts, removed 2026-11-24): you stand at the front of a damp stone chamber looking
 // in. The back wall has one tunnel for every way on — the left-most tunnel
 // heads furthest west — and tapping a tunnel walks you down it.
 //
@@ -15,7 +15,20 @@
 //   rendered at RES× that, each fine pixel sampling its own spot — smoother
 //   edges, thinner mortar, finer grain.
 
-import { hash, vnoise } from "../den/scene";
+// Value noise: a steady pseudo-random number for each whole spot, and smooth between them.
+function hash(a: number, b: number): number {
+  let h = Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function vnoise(x: number, y: number): number {
+  const xi = Math.floor(x), yi = Math.floor(y);
+  const xf = x - xi, yf = y - yi;
+  const s = (t: number) => t * t * (3 - 2 * t);
+  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+  return a + (b - a) * s(xf) + (c - a) * s(yf) + (a - b - c + d) * s(xf) * s(yf);
+}
 
 const LW = 256, LH = 176;   // layout units
 const RES = 2;              // fine pixels per unit

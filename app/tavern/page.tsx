@@ -10,7 +10,7 @@
 // you send for one here; the upgrades here make each more likely. They stroll
 // round the room and trade in their own window, tapped there (app/visitor).
 // The pit has its own window too (app/training).
-// The room itself is in the Den, through its doorway (components/TavernRoom.tsx);
+// The room itself is in the Den, through its doorway (components/Den3D.tsx);
 // this is the tavern's window, opened by tapping it there.
 
 import Link from "next/link";

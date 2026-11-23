@@ -7,8 +7,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import type { TavernQuest } from "@/lib/tavern";
-import type { KlutzMode } from "@/lib/den/scene";
-import type { Rubble } from "@/components/DenRoom";
+import type { KlutzMode, Rubble } from "@/lib/den3d/objects";
 import { DEN_ANGLES, DEN_DEFAULTS, type DenOptions } from "@/lib/den3d/setting";
 
 const Den3D = dynamic(() => import("@/components/Den3D"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });

@@ -231,6 +231,13 @@ touched none of it.
   the game calls), `backupSave` (a new game is backed up by `startNewGame`, already tested),
   `hoursToLevel`, and `entranceSpot` (a walk starts at `roomCentre`; the walking tests keep it as
   their own helper). The tests that only checked them went with them.
-- **Still open:** B, D, E1–E3, E5.
+- **B1, the old Den** (the user, 2026-11-24: "it's all been replaced now"): components/DenRoom.tsx and
+  TavernRoom.tsx, lib/den/scene.ts (its place ids moved to lib/den3d/objects.ts, its noise into
+  chamber.ts), the Settings switch (its key left unread), the bag rule's old branch (the bag always
+  empties after a run, as it already did for everyone), the Den page's old-Den state, six classes
+  in the stylesheet, `loadArt` and the pixel loaders only it used, three of its tests, and 8 of
+  its pictures in public/sprites/den/ (about 90 KB; the ones other screens use stay). Found on the
+  way: the new Den doesn't draw the Cyclops Head (`headUp` is kept for when it does).
+- **Still open:** B2–B5, D, E1–E3, E5.
   README.md's opening still says the game has no server or accounts (untrue since the Supabase
   work): a line to fix with E5.

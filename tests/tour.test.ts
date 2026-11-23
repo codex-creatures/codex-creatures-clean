@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { TOURS, TOUR_CHOICES, TOUR_FIELD, tourAt, startTour, nextTourStep, endTour, tourDenTarget, type TourId } from "../lib/tour";
-import { OBJ } from "../lib/den/scene";
+import { OBJ } from "../lib/den3d/objects";
 import { OWN_FIELDS, writeMainSave, readSave } from "../lib/save";
 
 // Minimal in-memory stand-in for the browser's localStorage.

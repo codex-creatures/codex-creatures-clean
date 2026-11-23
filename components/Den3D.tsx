@@ -1,6 +1,6 @@
 "use client";
 // components/Den3D.tsx
-// 🧪 The new Den (Settings → New Den: lib/den3d/setting.ts; the user, 2026-11-18): the Den as a room of
+// 🧪 The Den (the user, 2026-11-18; the only one since 2026-11-24): the Den as a room of
 // the Labyrinth, drawn as the Labyrinth is (components/WalkView3D.tsx's Stone: the carved rock and its
 // shader, the camera, the lean, art pixels at 48 a unit), lit warmer. Where everything stands, its lights
 // and who strolls where are lib/den3d/layout.ts's; how each place is drawn, components/Den3DPlaces.tsx.
@@ -43,9 +43,8 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { COLLECTOR, ENCHANTRESS, LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import type { Sprite } from "@/lib/sprites/pixels";
-import { OBJ, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { tavernVisitors, visitorNews, type TavernQuest, type Visitor } from "@/lib/tavern";
-import { VISITOR_HREF, type Rubble } from "@/components/DenRoom";
+import { OBJ, VISITOR_HREF, type KlutzMode, type ObjId, type Rubble } from "@/lib/den3d/objects";
 import { useDenOptions } from "@/hooks/useNewDen";
 import { useOthersOnline } from "@/hooks/useOthersOnline";
 import { DEN_DEFAULTS, type DenOptions } from "@/lib/den3d/setting";

@@ -7,18 +7,15 @@
 import Link from "next/link";
 import { useGameState, KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { TOTAL_CREATURES, TOTAL_ITEMS } from "@/lib/items/gameHelpers";
-import DenRoom from "@/components/DenRoom";
 import dynamic from "next/dynamic";
-import { useNewDen } from "@/hooks/useNewDen";
-import TavernRoom from "@/components/TavernRoom";
 import { Coin } from "@/components/GoldCount";
 import DailyPopup from "@/components/DailyPopup";
 import { useEffect, useState } from "react";
 import { klutzStatus, pointsFree } from "@/lib/klutz";
 import { klutzFirstStep, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
-import { loadDungeon, bagSize, BINDLE, altarMended } from "@/lib/dungeon/run";
-import { OBJ } from "@/lib/den/scene";
-import { canBlast, headUp, tavernVisitors, visitorNews } from "@/lib/tavern";
+import { loadDungeon, altarMended } from "@/lib/dungeon/run";
+import { OBJ } from "@/lib/den3d/objects";
+import { canBlast, tavernVisitors, visitorNews } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
 import { campaignUnseen, canClaimNext, loadCampaign, readCampaignCtx } from "@/lib/campaign";
 import { DAILY_ONLINE, dailyNews, todayDaily } from "@/lib/daily";
@@ -30,23 +27,19 @@ import { PLAYER_MAX_LEVEL, playerXpToNext } from "@/lib/creatures/levels";
 import { MaterialIcon } from "@/components/PixelSprite";
 import { MATERIALS, MATERIAL_KEYS } from "@/lib/items/materials";
 
-// 🧪 The new Den (Settings → New Den: lib/den3d/setting.ts), its Three.js loaded only when it's on.
+// The Den, in 3D (its Three.js loaded with it, in the browser only).
 const Den3D = dynamic(() => import("@/components/Den3D"), { ssr: false, loading: () => <div style={{ position: "absolute", inset: 0, background: "#000" }} /> });
 
 export default function Home() {
   const game = useGameState();
-  const newDen = useNewDen(); // (null till the page is in the browser: it's per device)
   // Klutz comes and goes with the clock.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 5000); return () => window.clearInterval(t); }, []);
   const k = klutzStatus(game.klutz, game.klutzFighter.maxHp, now).kind;
-  // The bag by the archway: a bindle until you find the rugged backpack.
-  // (And the Cyclops: how often you've beaten it, for the board's bounty, and the run you first did, for the tavern.)
-  const [backpack, setBackpack] = useState(false);
-  const [firstClearRun, setFirstClearRun] = useState<number | undefined>();
+  // How often you've beaten the Cyclops and the Hydra: for the board's Hydra quest.
   const [clears, setClears] = useState(0);
-  const [deepClears, setDeepClears] = useState(0); // (the Hydra: the board's Hydra quest)
-  useEffect(() => { const meta = loadDungeon().meta; setBackpack(bagSize(meta) > BINDLE); setFirstClearRun(meta.firstClearRun); setClears(meta.clears); setDeepClears(meta.deepClears ?? 0); }, []);
+  const [deepClears, setDeepClears] = useState(0);
+  useEffect(() => { const meta = loadDungeon().meta; setClears(meta.clears); setDeepClears(meta.deepClears ?? 0); }, []);
   // Where Klutz has sent you: the cage for your first creature, then the Pit to
   // kit it out; later, with his dynamite, the rubble (lib/tavern.ts).
   const mine = game.inventory.filter((d) => d.dropType === "creature");
@@ -58,7 +51,7 @@ export default function Home() {
     : needsGearUp(game.quest, mine.map((c) => game.equipment[c.id])) ? OBJ.pit
     : canBlast(game.tavern) ? OBJ.tavern : undefined;
 
-  // What the Den shows (either Den): where Klutz is, the rubble, the tavern's pit, and what's waiting where.
+  // What the Den shows: where Klutz is, the rubble, the tavern's pit, and what's waiting where.
   const caged = (game.caged[0] as { creatureId?: string } | undefined)?.creatureId;
   const klutzAt = !game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home";
   const klutzNews = game.hydrated && (klutzHasNews(game.quest) || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0)
@@ -96,16 +89,11 @@ export default function Home() {
 
       <div className="screen-fill" style={{ position: "relative" }}>
         {/* (Klutz isn't in the room while he's out hunting: you can see that. His den, behind his crate, is the way to him then.) */}
-        {/* (The new Den waits for the save: drawn before it, it saw the old wall still standing, then watched it
+        {/* (The Den waits for the save: drawn before it, it saw the old wall still standing, then watched it
             sink as the save came in, every time you came home.) */}
-        {newDen ? game.hydrated && (
+        {game.hydrated && (
           <Den3D caged={caged} klutz={klutzAt} klutzNews={klutzNews} highlight={highlight} rubble={rubble} onBlast={game.blastRubble}
-            tavern={game.tavern} pit={pit} tavernNews={tavernNews} boardNews={boardNews} crateNews={crateNews} cageNews={cageNews} shack={!!game.klutz.shack} altarBroken={game.hydrated && !altarMended(loadDungeon().meta)} />
-        ) : newDen === false && (
-          <DenRoom caged={caged} klutz={klutzAt} klutzNews={klutzNews} backpack={backpack} highlight={highlight}
-            rubble={rubble} onBlast={game.blastRubble} tavernNews={tavernNews} boardNews={boardNews} upgraded={game.bookcase >= 2}
-            crateNews={crateNews} cageNews={cageNews}
-            annex={<TavernRoom tavern={game.tavern} head={headUp(game.tavern, clears)} firstClearRun={firstClearRun} pit={pit} />} />
+            tavern={game.tavern} pit={pit} tavernNews={tavernNews} boardNews={boardNews} crateNews={crateNews} cageNews={cageNews} shack={!!game.klutz.shack} altarBroken={!altarMended(loadDungeon().meta)} />
         )}
       </div>
 

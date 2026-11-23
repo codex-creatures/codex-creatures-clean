@@ -815,30 +815,16 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 .battle-stage-room { justify-content: flex-start; isolation: isolate; }
 .battle-room { position: absolute; inset: 0; overflow: hidden; z-index: -1; background: #07080b; }
 
-/* The Den as a map (components/DenRoom.tsx): fills its space; pinch / wheel
-   to zoom, drag to look around (the page does not scroll or zoom under it). */
 /* The whole game (the user, 2026-11-19: "never a blue highlight, even when battling or exploring"): a long press never
    selects text or opens the press-and-hold menu (it picks things up, holds a stick, aims a move). Text boxes still do. */
 .game-screen, .game-screen * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .game-screen :is(input, textarea, select, [contenteditable]) { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
-.den-viewport { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
-.den-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
 
-/* Torch flicker over the Den: soft glows (GPU-cheap) instead of relighting every pixel.
-   (Plain see-through, not mix-blend-mode: blending made Safari redo every glow
-   against the canvas each time it changed: a lot of the Den's lag on iPhones.) */
-.den-glow { position: absolute; transform: translate(-50%, -50%); pointer-events: none; animation: den-flicker 2.1s steps(7) infinite; }
-.den-glow-pulse { animation: den-pulse 2.9s ease-in-out infinite; }
-@keyframes den-flicker { 0%, 100% { opacity: 0.75; } 15% { opacity: 1; } 30% { opacity: 0.6; } 50% { opacity: 0.95; } 65% { opacity: 0.7; } 80% { opacity: 1; } }
-@keyframes den-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
-/* The PvP portal's swirl (components/TavernRoom.tsx): its light swells and fades. */
-.portal-glow { position: absolute; transform: translate(-50%, -50%); pointer-events: none; animation: portal-pulse 2.4s ease-in-out infinite; }
-@keyframes portal-pulse { 0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.92); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); } }
-/* Over its name: how many other players are on now, glowing green while there's anyone to challenge. */
+/* Over the PvP portal's name (components/Den3D.tsx): how many other players are on now, glowing green while there's anyone to challenge. */
 .portal-online { position: absolute; left: 50%; bottom: 100%; translate: -50% 0; margin-bottom: 2px; font-size: 1.5em; line-height: 1; color: rgba(241, 217, 160, 0.45); }
 .portal-online-on { color: #c8f5a8; text-shadow: 0 0 4px #7fd65a, 0 0 10px rgba(110, 200, 80, 0.8); animation: portal-online-pulse 2.4s ease-in-out infinite; }
 @keyframes portal-online-pulse { 0%, 100% { text-shadow: 0 0 3px #7fd65a, 0 0 6px rgba(110, 200, 80, 0.5); } 50% { text-shadow: 0 0 5px #9ff07a, 0 0 14px rgba(110, 200, 80, 0.95); } }
-@media (prefers-reduced-motion: reduce) { .den-glow, .den-glow-pulse, .portal-glow, .portal-online-on { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .portal-online-on { animation: none; } }
 
 /* Level-up show (components/LevelUpShow.tsx). */
 .levelup-pop { animation: levelup-pop 0.45s cubic-bezier(.2,1.4,.4,1) both; }
