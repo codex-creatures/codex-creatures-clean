@@ -15,6 +15,13 @@
 //
 // The address says which duel: ?m=<match>&f=<format>&vs=<their name>, plus
 // &to=<their account> for the one who invited (the host).
+//
+// A ranked match (the portal's Ranked tab; docs/design/online.md §12) is the
+// same screen with &rival=<id>: the other player is one of the simulated
+// rivals (lib/pvp/rivals.ts), answering the host's machine right here with
+// the hard AI (lib/pvp/rivalGuest.ts): no connection. Its result goes to the
+// ladder (lib/online/ranked.ts), and your rating's move is shown at the end.
+// Leaving loses, as in any duel.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { countDaily } from "@/lib/daily";
@@ -31,6 +38,9 @@ import { readAccount } from "@/lib/online/account";
 import { cancelInvite, openDuelChannel, sendInvite, type DuelLink } from "@/lib/online/duelChannel";
 import { Duel, firstPicks, type DuelMember, type DuelTeam, type DuelView } from "@/lib/pvp/duel";
 import { bringMax, ineligibleReason, parseFormat, TURN_SECONDS, type PvpFormat } from "@/lib/pvp/formats";
+import { RivalGuest } from "@/lib/pvp/rivalGuest";
+import { rivalById, rivalName, rivalTeam, type Rival } from "@/lib/pvp/rivals";
+import { reportRanked, type RatingMove } from "@/lib/online/ranked";
 import { PVP_TEAM_SLOTS, readPvpTeams, teamPicks } from "@/lib/pvp/teams";
 import { loadSave } from "@/hooks/useGameState";
 import { loadTavern } from "@/lib/tavern";
@@ -48,13 +58,15 @@ const SEEN_KEY = "codex_creatures_duel_seen";
 // The duel joined since this page loaded (React may run the joining twice in development: that's not a reload).
 let joinedHere: string | null = null;
 
-type Params = { matchId: string; format: PvpFormat; vs: string; to: string | null };
+type Params = { matchId: string; format: PvpFormat; vs: string; to: string | null; rival: Rival | null };
 
 function readParams(): Params | null {
   const p = new URLSearchParams(window.location.search);
   const m = p.get("m"), format = parseFormat(p.get("f"));
   if (!m || !format) return null;
-  return { matchId: m, format, vs: (p.get("vs") ?? "").slice(0, 16) || "your friend", to: p.get("to") };
+  const rival = p.get("rival") ? rivalById(p.get("rival")!) ?? null : null;
+  if (p.get("rival") && !rival) return null;
+  return { matchId: m, format, vs: rival ? rivalName(rival) : (p.get("vs") ?? "").slice(0, 16) || "your friend", to: rival ? null : p.get("to"), rival };
 }
 
 const memberOf = (c: OwnedCreature): DuelMember => ({
@@ -79,6 +91,10 @@ export default function DuelPage() {
   useEffect(() => { pickedRef.current = picked; }, [picked]);
   const battle = usePlayableBattle();
   const shown = useRef<unknown>(null); // the last battle state handed to the screen
+  // A ranked match: the rival answering here, and how your rating moved once it's over (undefined: not yet; null: couldn't be saved).
+  const rival = useRef<RivalGuest | null>(null);
+  const reported = useRef(false);
+  const [rating, setRating] = useState<RatingMove | null | undefined>(undefined);
 
   // Who's fit to fight in this format (in the order they're listed).
   const fit = useMemo(() => params ? owned.filter((c) => !whyNot(c, params.format)) : [], [owned, params]);
@@ -99,6 +115,51 @@ export default function DuelPage() {
     setParams(p);
     const client = onlineClient();
     if (!p || !client) { setProblem(!client ? "Duels are part of the online game." : "This duel's link is broken."); return; }
+    // ── A ranked match against a rival: the duel machine as host, the rival as its guest, in this browser ──
+    if (p.rival) {
+      const r = p.rival;
+      setHome("/pvp");
+      const list = loadOwnedCreatures(p.format.level, p.format.scaleUp, true);
+      setOwned(list);
+      const fitNow = list.filter((c) => !whyNot(c, p.format));
+      let live = true;
+      (async () => {
+        const acc = await readAccount(client);
+        if (!live) return;
+        if (acc.status !== "in" || !acc.name) { setProblem("Sign in on the title screen to play ranked."); return; }
+        if (fitNow.length < p.format.size) { setProblem(`You need ${p.format.size} creatures that fit ${p.format.name} (you have ${fitNow.length}).`); return; }
+        const d = new Duel({
+          role: "host", format: p.format,
+          send: (m) => rival.current?.receive(m),
+          autoTeam: () => {
+            const chosen = pickedRef.current.map((id) => fitNow.find((c) => c.id === id)).filter((c): c is OwnedCreature => !!c);
+            const rest = fitNow.filter((c) => !chosen.includes(c));
+            return teamOf([...chosen, ...rest].slice(0, Math.max(chosen.length, Math.min(bringMax(p.format), fitNow.length))));
+          },
+          onChange: (v) => { if (live) setView(v); },
+        });
+        duel.current = d;
+        setView(d.view);
+        rival.current = new RivalGuest({ format: p.format, team: rivalTeam(r, p.format), send: (m) => d.receive(m) });
+        d.peer(true);
+        rival.current.start();
+      })();
+      const clock = window.setInterval(() => { duel.current?.tick(); setNow(Date.now()); }, 250);
+      return () => {
+        live = false;
+        window.clearInterval(clock);
+        const d = duel.current;
+        rival.current?.stop();
+        // Leaving a match under way loses it, on the ladder too.
+        if (d && (d.view.phase === "pick" || d.view.phase === "lead" || d.view.phase === "battle") && !reported.current) {
+          reported.current = true;
+          d.forfeit();
+          void reportRanked(client, { rival: r.id, format: p.format.id, result: "loss", reason: "forfeit", log: d.myBattle()?.log ?? [] });
+        }
+        duel.current = null;
+        rival.current = null;
+      };
+    }
     // A duel lives only in the page: coming back to one (a reload) can't pick it
     // up again, so it counts as having left (the other player wins once you've gone).
     let seen = false;
@@ -170,16 +231,26 @@ export default function DuelPage() {
     const info = view.phase === "battle" || view.phase === "over" ? view.info : undefined;
     if (!state || !info || shown.current === state) return;
     shown.current = state;
+    const kind = params.rival ? "Ranked" : "Duel";
     if (!battle.match) {
-      const m: Match = { state, info, teams: { A: state.sides.A.team, B: state.sides.B.team }, level: "normal", opponent: params.vs, title: `Duel vs ${params.vs}` };
+      const m: Match = { state, info, teams: { A: state.sides.A.team, B: state.sides.B.team }, level: "normal", opponent: params.vs, title: `${kind} vs ${params.vs}` };
       battle.resume(m);
     } else battle.show(state);
-    if (view.phase === "over" && view.reason === "battle" && view.result === "win") countDaily("duel"); // (the daily quests: lib/daily.ts)
+    if (view.phase === "over" && view.reason === "battle" && view.result === "win" && !params.rival) countDaily("duel"); // (the daily quests: lib/daily.ts; a friend, not a rival)
     if (view.phase === "over" && view.reason === "battle" && state.winner) {
       const m: Match = { state, info, teams: { A: state.sides.A.team, B: state.sides.B.team }, level: "normal", opponent: params.vs };
-      saveBattle({ id: crypto.randomUUID(), date: new Date().toISOString(), winner: state.winner, rounds: state.round, title: `Duel vs ${params.vs}`,
+      saveBattle({ id: crypto.randomUUID(), date: new Date().toISOString(), winner: state.winner, rounds: state.round, title: `${kind} vs ${params.vs}`,
         teams: { A: historyMembers(m, "A"), B: historyMembers(m, "B") }, log: state.log });
     }
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A ranked match over: its result goes to the ladder once, and the rating's move comes back.
+  useEffect(() => {
+    if (!view || !params?.rival || view.phase !== "over" || reported.current) return;
+    reported.current = true;
+    const client = onlineClient();
+    const r = params.rival;
+    Promise.resolve(client ? reportRanked(client, { rival: r.id, format: params.format.id, result: view.result, reason: view.reason, log: view.state?.log ?? [] }) : null).then(setRating);
   }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const left = (deadline: number) => (deadline - now) / 1000;
@@ -191,8 +262,14 @@ export default function DuelPage() {
     router.push(home);
   };
   const frame = (children: React.ReactNode, dock?: React.ReactNode, fill = true) => (
-    <DenFrame title={params ? `Duel · ${params.format.name}` : "Duel"} icon="⚔️" onBack={leave} backLabel={inDuel ? "Leave" : home === "/pvp" ? "Portal" : "Board"} fill={fill} dock={dock}>{children}</DenFrame>
+    <DenFrame title={params ? `${params.rival ? "Ranked" : "Duel"} · ${params.format.name}` : "Duel"} icon={params?.rival ? "🏆" : "⚔️"} onBack={leave} backLabel={inDuel ? "Leave" : home === "/pvp" ? "Portal" : "Board"} fill={fill} dock={dock}>{children}</DenFrame>
   );
+  // A ranked match's end: how your rating moved (a fixed line, so nothing jumps while it's fetched).
+  const ratingLine = params?.rival ? (
+    <span className="pixel-font" style={{ fontSize: 14, color: rating === null ? "#ff8a80" : GOLD, minHeight: 20, display: "block", textAlign: "center" }}>
+      {rating === undefined ? "Saving your rating…" : rating === null ? "Your rating couldn't be saved." : `Rating ${rating.before} → ${rating.after} (${rating.after >= rating.before ? "+" : ""}${rating.after - rating.before})`}
+    </span>
+  ) : null;
 
   if (problem || params === null) return frame(<Note text={problem ?? "This duel's link is broken."} />, <BackDock onClick={() => router.push(home)} />);
   if (!view || !params) return frame(<Note text="Joining…" />);
@@ -294,7 +371,7 @@ export default function DuelPage() {
   // Won or lost by someone leaving: said in words (there's no battle result to show).
   if (view.phase === "over" && view.reason !== "battle") {
     const text = view.result !== "win" ? (view.reason === "gone" ? "You were away too long. You lose the duel." : "You left the duel.") : view.reason === "forfeit" ? `${vs} left the duel. You win!` : `${vs} is gone. You win!`;
-    return frame(<Note text={text} />, <BackDock onClick={() => router.push(home)} />);
+    return frame(<Note text={text} sub={ratingLine} />, <BackDock onClick={() => router.push(home)} />);
   }
   if (!battle.match) return frame(<Note text="The battle is starting…" />);
   return frame(
@@ -302,7 +379,7 @@ export default function DuelPage() {
         battle={{ ...battle, act: async (a) => d?.act(a), replace: (i) => d?.replace(i) }}
         waiting={view.phase === "battle" && view.sent}
         clock={view.phase === "battle" && !view.sent ? left(view.deadline) : undefined}
-        finishedActions={<button className="pixel-btn" onClick={() => router.push(home)}>{home === "/pvp" ? "Back to the portal" : "Back to the board"}</button>}
+        finishedActions={<div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>{ratingLine}<button className="pixel-btn" onClick={() => router.push(home)}>{home === "/pvp" ? "Back to the portal" : "Back to the board"}</button></div>}
     />,
   );
 }

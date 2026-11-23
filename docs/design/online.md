@@ -176,12 +176,43 @@ account, kept entirely apart from Vouchee.
     2 more), in order. Each shows its **rarest** creature or gear. When picking your team in a
     duel, tapping a team brings its members that fit the format, in order, up to what you may
     bring. The collector won't buy a creature in a PvP team either.
-  - 📌 **Ranked, against simulated players first** (the user, 2026-11-24; shelved 2026-11-04 till then): five
-    fake players, each played through the game to the late game by the hard AI so it has its own creatures,
-    move sets and soul stones; you queue at the portal and are matched with one, with a rating (Elo) kept
-    behind it; rewards to follow. It replaces the Pit's "VS AI". Not designed yet (what you queue for,
-    matchmaking, K-factor, where the rating lives, seasons, rewards): [roadmap.md](../roadmap.md). The tab
-    still shows "Coming soon".
+  - ✅ **Ranked, against simulated rivals first** (the user, 2026-11-24, decision 58; built 2026-11-24; shelved
+    2026-11-04 till then). The portal's Ranked tab has **two queues**, both scaled so every creature fights at exactly
+    the level: **3v3, Rare the rarest creature or gear, Lv 15** and **5v5, up to Legendary, Lv 25** (`RANKED_FORMATS`,
+    lib/pvp/ranked.ts). Queue and you're matched with one of **seven rivals**, named like "Blaze - AI" (`AI_SUFFIX`):
+    the game's own players, each made by playing the game's real rules from the start with the AI
+    (lib/pvp/rivalSim.ts, `npm run pvp:rivals`): the ten calibration scans and more as it goes, the Encampment, the
+    Cyclops and the Hydra on the scroll map with the Normal AI, loot carried home in its bag, gear and codexes that
+    fit each creature (melee attackers melee weapons and moves; hybrids may mix; each rival's taste for utility
+    moves is its own), cards summoned, junk sold. Each stops about where the user's test account was on 2026-11-24
+    (`TARGET`: one Hydra clear, about 34 runs, 36 to 50 scans; main team Lv 15 to 24). Their rosters are fixed in
+    the repo (lib/pvp/rivals.json: creatures, worn gear and some Rare spares for the 3v3 queue, move slots, a
+    player's numbers), so everyone meets the same rivals and the fight itself needs no connection: the rival is
+    the duel machine's guest in your own browser, answering with the **hard AI** after a short pause
+    (lib/pvp/rivalGuest.ts), on the duel screen unchanged (bring the size and 2 more, the lead room, the battle).
+    The sim leaves out Klutz, the campaign's rewards, the Den's building and the witch; its gold is left out of
+    what's shown.
+    - **The rating** (lib/pvp/elo.ts): Elo, everyone from 1000, K 32, players and rivals on **one ladder on
+      Supabase** (`pvp_ratings`; supabase/migrations/…_ranked.sql): the server works each match's Elo out itself
+      from the result (`ranked_result`), so a copy can't invent a rating (it can still invent a result: not hardened,
+      like the rest of PvP). **Every match is kept with its log** (`pvp_matches`, the last 2,000) for building a
+      better AI later (the user). The Ranked tab shows your rating, the top 50 (rivals marked), and each rival's games.
+    - **Matchmaking:** one of the two rivals nearest your rating, at random, never the one you fought last
+      (`pickRival`); a 2 s "Searching…" beat (`QUEUE_SECONDS`). The rivals' ratings move too, so a rival that keeps
+      beating players climbs away from them.
+    - **The rivals' daily round** (the user: "each AI battles each other once every day"): each rival fights two
+      others (`dailyPairs`: a ring shuffled by the day, the queues by turns). The game has no server, so the first
+      signed-in player to open the portal each day plays the day's battles in a Web Worker (lib/pvp/roundWorker.ts,
+      lib/pvp/dailyRound.ts; they carry on wherever that player goes in the game) and posts them; the server takes
+      one round a day (`rival_round`, `pvp_rounds`). Before anyone met them, the rivals played ten warm-up battles
+      among themselves (`WARMUP_BATTLES`, in the sim), which set their first ratings (the migration's seeds).
+    - **Ranked needs sign-in** (the ladder's online); the rest of the game plays offline as before. A ranked match
+      changes nothing in your save: no XP, gold or injuries; it goes in your battle history as "Ranked vs …".
+      Leaving loses, on the ladder too. **No rewards yet** (the user: skip for now). Rivals never appear on the
+      other leaderboards.
+    - It replaces the Pit's "VS AI" testing battle: that chip is gone and app/battle is dev-only (`page.dev.tsx`).
+    - Later: more rivals, some scaled up for the Legendary queue (the user), seasons, rewards, real players in the
+      queue.
   - Later: challenging players who aren't friends.
   - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
 - 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the

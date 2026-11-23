@@ -136,6 +136,7 @@ https://github.com/codex-creatures/codex-creatures-clean) as the copy that Verce
 | `npm run lint` | ESLint |
 | `npm run registry:rules` | after changing scan odds, rarity weights, species, weapon/armour kinds or soul stones: writes a migration with the global registry's new rules (then apply it to Supabase). A test fails until it's done |
 | `npm run props:sprites` | after adding art: refreshes the prop builder's list of pictures (lib/props/sprites.json) |
+| `npm run pvp:rivals` | plays the ranked ladder's seven simulated rivals through the game again (lib/pvp/rivalSim.ts, about 4 min) and writes lib/pvp/rivals.json; only when the user asks (every player meets these rosters) |
 | `npm run setup:google` | one-off: sets up Google sign-in (the user runs it in their own terminal: it asks for secrets) |
 | `npm run build:offline` | static export into `codex-offline/` with `Play (Windows).bat` (PowerShell server on :8123) |
 | `Start Game.bat` / `Update.bat` | the user's double-click launchers (`scripts/game-status.mjs`, `open-when-ready.mjs`, `update.mjs`) |
@@ -145,9 +146,10 @@ kill theirs.
 
 ## Code map
 
-- `app/<screen>/page.tsx`: screens. `/` is the Den (home); `dungeon` (the Labyrinth), `battle`,
-  `scan` (scanning), `altar` (the Soul Altar: summoning and ascension), `chest` (the Storehouse), `bag`, `bookcase`, `cage`, `pool`, `pit`, `training`,
-  `klutz`, `guide`, `board` (quests, leaderboards, friends), `duel`, `pvp`, `settings`,
+- `app/<screen>/page.tsx`: screens. `/` is the Den (home); `dungeon` (the Labyrinth), `battle` (dev-only since
+  2026-11-24, `page.dev.tsx`: the old "VS AI" test bench), `scan` (scanning), `altar` (the Soul Altar: summoning and ascension), `chest` (the Storehouse), `bag`, `bookcase`, `cage`, `pool`, `pit`, `training`,
+  `klutz`, `guide`, `board` (quests, leaderboards, friends), `duel` (a friend's duel, or a ranked match with `?rival=`),
+  `pvp` (the portal: friends, teams, Ranked), `settings`,
   `start` (title screen: components/OnlineStart.tsx online, components/LocalStart.tsx without),
   `privacy` (update it whenever online features change what's stored). `lab/*` are dev tools
   outside the phone frame. Only two are on the live site (`page.tsx`): `/lab/models` and
@@ -163,8 +165,9 @@ kill theirs.
   - `world/`: the walkable world (grid, objects, occupancy, policy, place, placements,
     migrate, version, walkWorld, walkSim, compat). `render/`: the projection.
     `render3d/`: the 3D prototype's geometry and its Stone mode's texture and light rules (components/WalkView3D.tsx; world/rendering.md §4.8).
-  - `barcodeRegistry.ts`, `scanning.ts`, `drops.ts`, `pvp/`, `online/` (the one Supabase module
-    family: client, registry, cloud saves, friends, duel channel), `klutz.ts`, `quest.ts`,
+  - `barcodeRegistry.ts`, `scanning.ts`, `drops.ts`, `pvp/` (duels, formats, teams; ranked: `elo`, `ranked`,
+    `rivals` + `rivals.json`, `rivalSim`, `rivalGuest`, `rivalMatch`, `dailyRound`, `roundWorker`), `online/` (the one Supabase module
+    family: client, registry, cloud saves, friends, duel channel, ranked), `klutz.ts`, `quest.ts`,
     `tavern.ts`, `save.ts`, `saveFile.ts`, `den3d/` (the Den: its layout, art, bag rule and place ids), `sprites/` (art registry).
 - `components/`: `GameScreen.tsx` (the fixed phone screen), `DenFrame`, `BattleScreen`,
   `BossStage`, `WalkView3D` (the walkable dungeons' renderer, 3D; its play logic in `hooks/useWalkPlay.ts`), `WalkParts` (the stick, the campfire window, the scroll and the maps round it; the 2D view that was here as `WalkView` went on 2026-11-24), `CardGallery` (`CardFace`, the card standard),

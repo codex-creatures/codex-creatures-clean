@@ -1,8 +1,8 @@
 "use client";
 // app/pit/page.tsx — the Pit: your creatures, their gear and moves. The
 // buttons at the top flip to your items (as in the Inventory: sell one from
-// its window; sell mode stays at the chest). (VS AI is a testing battle
-// against the computer, not a game feature.)
+// its window; sell mode stays at the chest). (The old "VS AI" testing battle
+// went on 2026-11-24: ranked matches against the AI are at the PvP portal.)
 
 import { useState } from "react";
 import Link from "next/link";
@@ -83,7 +83,6 @@ export default function PitPage() {
         onOpenSellConfirm={() => {}}
         onToggleSellMode={() => {}}
         onSellOne={game.sellOne}
-        headerExtra={<Link href="/battle" className="chip" title="Testing: a battle against an AI team">VS AI</Link>}
         unavailableItems={game.klutzAwayItems}
         bigBoxes={game.storage}
         guideGearUp={gearUp && part === "creatures"}

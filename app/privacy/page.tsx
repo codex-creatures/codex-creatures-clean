@@ -36,6 +36,7 @@ export default function PrivacyPage() {
           <p style={p}>Friends: you can add players from the leaderboards to your friend list (kept with Supabase; only you see it). To make that work, the leaderboards also carry each player&apos;s account ID, a random code that says nothing about you.</p>
           <p style={p}>While you&apos;re playing signed in, other signed-in players can see that you&apos;re on (a green dot on their friend list).</p>
           <p style={p}>Duels: a friend can invite you to a live battle. During one, the other player sees your player name and the team you fight with (its creatures, gear and moves). The battle goes in each player&apos;s own battle history; nothing else about it is kept online.</p>
+          <p style={p}>Ranked: when you play a ranked match (against one of the game&apos;s own computer-played rivals), your rating, how many matches you&apos;ve played, and each match&apos;s result and its moves are kept with Supabase, to run the ladder and to teach the game&apos;s computer players later. The ladder shows your player name and rating to other signed-in players.</p>
 
           <h2 className="pixel-font" style={h}>What it doesn&apos;t do</h2>
           <p style={p}>No ads, no tracking or analytics, and nothing is sold or shared with anyone else. The game only asks Google for your basic profile and email: it can&apos;t see your Gmail, contacts or anything else.</p>

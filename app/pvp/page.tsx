@@ -5,10 +5,14 @@
 // - Friends: challenge a friend who's on to a duel (components/FriendList.tsx, app/duel).
 // - Teams: build and save PvP line-ups (lib/pvp/teams.ts), loaded when you pick
 //   your team in a duel. A creature training in the pit is greyed out.
-// - Ranked: the ladder with Elo ratings, still to come.
+// - Ranked (the user, 2026-11-24): two queues (3v3 Rare at Lv 15, 5v5 Legendary at Lv 25; lib/pvp/ranked.ts)
+//   against the simulated rivals (lib/pvp/rivals.ts), matched by rating (lib/pvp/elo.ts), with the ladder
+//   of players and rivals (lib/online/ranked.ts). Opening the portal signed in also starts the rivals'
+//   daily round if nobody has run today's (lib/pvp/dailyRound.ts; it carries on in the background).
 // Fixed frame: the panel's header and footer keep their place, the list scrolls inside.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
 import CreaturePortrait from "@/components/CreaturePortrait";
@@ -17,9 +21,34 @@ import FriendList, { useFriends } from "@/components/FriendList";
 import { loadOwnedCreatures, rarityColor, type OwnedCreature } from "@/components/BattleScreen";
 import { gearMarks } from "@/components/CreatureMarks";
 import { useGameState } from "@/hooks/useGameState";
-import { onlineConfig } from "@/lib/online/client";
+import { onlineClient, onlineConfig } from "@/lib/online/client";
+import { readAccount } from "@/lib/online/account";
+import { fetchLadder, type Ladder } from "@/lib/online/ranked";
 import { PVP_TEAM_MAX, PVP_TEAM_SLOTS, teamRarity } from "@/lib/pvp/teams";
-import { BRING_EXTRA } from "@/lib/pvp/formats";
+import { BRING_EXTRA, eligibleCount, type PvpFormat } from "@/lib/pvp/formats";
+import { QUEUE_SECONDS, RANKED_FORMATS, RANKED_QUEUES, type RankedQueue } from "@/lib/pvp/ranked";
+import { ELO_START, pickRival, ratingChange } from "@/lib/pvp/elo";
+import { AI_SUFFIX, RIVALS, rivalById, rivalName } from "@/lib/pvp/rivals";
+import { startDailyRound, watchRound, type RoundPlayer, type RoundState } from "@/lib/pvp/dailyRound";
+import type { RoundOut } from "@/lib/pvp/roundWorker";
+
+// sessionStorage (per tab, never in saves): the rival you fought last, so the next match is someone else.
+const LAST_RIVAL_KEY = "codex_creatures_ranked_last";
+
+// The rivals' daily round, played in a worker so the game doesn't stall (lib/pvp/roundWorker.ts).
+const playInWorker: RoundPlayer = (day, ids, onBattle) => new Promise((resolve, reject) => {
+  try {
+    const w = new Worker(new URL("../../lib/pvp/roundWorker.ts", import.meta.url));
+    w.onmessage = (e: MessageEvent<RoundOut>) => {
+      if ("done" in e.data) onBattle(e.data.done);
+      else { resolve(e.data.results); w.terminate(); }
+    };
+    w.onerror = (e) => { reject(e); w.terminate(); };
+    w.postMessage({ day, ids });
+  } catch (e) { reject(e); }
+});
+// (Without workers, the battles play here, one a breath.)
+const roundPlayer: RoundPlayer | undefined = typeof Worker === "undefined" ? undefined : playInWorker;
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
@@ -33,6 +62,14 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 
 export default function PvpPortalPage() {
   const [tab, setTab] = useState<Tab>("friends");
+  // Opening the portal signed in starts the rivals' daily round if today's hasn't been run (it goes on in the background).
+  useEffect(() => {
+    const client = onlineClient();
+    if (!client) return;
+    let live = true;
+    readAccount(client).then((acc) => { if (live && acc.status === "in") void startDailyRound(client, new Date(), roundPlayer); });
+    return () => { live = false; };
+  }, []);
   const dock = (
     <div className="dock-tabs">
       {TABS.map((t) => (
@@ -165,19 +202,110 @@ function Teams() {
   );
 }
 
-// The ranked ladder: planned (docs/design.md §12), not built yet.
+// The ranked ladder (docs/design/online.md §12): your rating, the two queues, and the ladder of players and
+// rivals. Queue: a rival near your rating is chosen (pickRival), a short "searching" beat, then the duel
+// screen with the rival as the other player (app/duel?rival=…).
+type RankedView = { status: "loading" } | { status: "off" } | { status: "out" } | { status: "down" } | { status: "ok"; ladder: Ladder };
 function Ranked() {
+  const router = useRouter();
+  const game = useGameState();
+  const [view, setView] = useState<RankedView>({ status: onlineConfig.ok ? "loading" : "off" });
+  const [queued, setQueued] = useState<RankedQueue | null>(null);
+  const [round, setRound] = useState<RoundState | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+  // Who you could bring to each queue (creatures and gear within its rarity).
+  const [fit, setFit] = useState<Record<RankedQueue, number>>({ "3v3": 0, "5v5": 0 });
+  useEffect(() => {
+    if (!game.hydrated) return;
+    const owned = loadOwnedCreatures(undefined, true, false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read from the save once it's loaded
+    setFit(Object.fromEntries(RANKED_QUEUES.map((q) => [q, eligibleCount(owned, RANKED_FORMATS[q])])) as Record<RankedQueue, number>);
+  }, [game.hydrated, game.inventory, game.equipment, game.tavern]);
+  useEffect(() => {
+    const client = onlineClient();
+    if (!client) return;
+    let live = true;
+    (async () => {
+      const acc = await readAccount(client);
+      if (!live) return;
+      if (acc.status !== "in") { setView({ status: "out" }); return; }
+      const ladder = await fetchLadder(client);
+      if (live) setView(ladder ? { status: "ok", ladder } : { status: "down" });
+    })();
+    const stop = watchRound((s) => { if (live) setRound(s); });
+    return () => { live = false; stop(); window.clearTimeout(timer.current); };
+  }, []);
+
+  const ladder = view.status === "ok" ? view.ladder : null;
+  const myRating = ladder?.me?.rating ?? ELO_START;
+  // The rivals as the ladder has them (a rival the ladder doesn't know yet starts at ELO_START).
+  const rivals = RIVALS.map((r) => ({ id: r.id, rating: ladder?.rivals.find((x) => x.id === r.id)?.rating ?? ELO_START }));
+  const queue = (q: RankedQueue) => {
+    if (queued || !ladder) return;
+    let last: string | undefined;
+    try { last = window.sessionStorage.getItem(LAST_RIVAL_KEY) ?? undefined; } catch {}
+    const rival = pickRival(rivals, myRating, last);
+    if (!rival) return;
+    try { window.sessionStorage.setItem(LAST_RIVAL_KEY, rival.id); } catch {}
+    setQueued(q);
+    timer.current = window.setTimeout(() => router.push(`/duel?m=ranked-${crypto.randomUUID()}&f=${RANKED_FORMATS[q].id}&rival=${rival.id}`), QUEUE_SECONDS * 1000);
+  };
+  const roundLine = !round ? "" : round.status === "playing" ? `Today's rival round: battle ${round.played} of ${round.of}…`
+    : round.status === "posted" ? "Today's rival round: played here and posted." : round.status === "taken" ? "Today's rival round: already played." : "Today's rival round couldn't be posted.";
+
   return (
     <>
-      <Head title="🏆 Ranked ladder">
+      <Head title={`🏆 Ranked · ${ladder ? myRating : "-"}`}>
         <Help title="Ranked">
           <ul>
-            <li>Coming soon: duel players near your rating and climb the ladder. Win to gain rating (Elo), lose to drop.</li>
+            <li>Queue for a match and you&apos;re paired with a player near your <b>rating</b>. Win and it rises; lose and it drops (Elo: everyone starts at {ELO_START}).</li>
+            <li>For now the other players are the game&apos;s own: seven <b>rivals</b> marked <b>{AI_SUFFIX.trim()}</b>, each played through the game by the computer, with creatures, gear and moves of their own. They fight with the hard AI.</li>
+            <li><b>3v3:</b> Rare the rarest creature or gear, everyone at Lv 15. <b>5v5:</b> up to Legendary, everyone at Lv 25. Bring the size and {BRING_EXTRA} more, then pick who fights.</li>
+            <li>A ranked match changes nothing in your game but your rating: no XP, gold or injuries. Leaving loses.</li>
+            <li>The rivals fight each other once a day too, so their ratings move. Whoever opens the portal first runs those battles in the background.</li>
+            <li>Each match is kept, with its moves, to teach a better AI later.</li>
           </ul>
         </Help>
       </Head>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${RANKED_QUEUES.length}, 1fr)`, gap: 6 }}>
+        {RANKED_QUEUES.map((q) => {
+          const f: PvpFormat = RANKED_FORMATS[q];
+          const can = !!ladder && fit[q] >= f.size && !queued;
+          return (
+            <button key={q} className="pixel-btn" disabled={!can} onClick={() => queue(q)}
+              title={fit[q] < f.size ? `You need ${f.size} creatures that fit ${f.name} (you have ${fit[q]})` : `Queue for ${f.name}`}
+              style={{ minHeight: 56, padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, fontSize: 15, lineHeight: 1.2, opacity: can || queued === q ? 1 : 0.5 }}>
+              <span>{queued === q ? "Searching…" : `⚔️ Queue ${q}`}</span>
+              <span className="pixel-font" style={{ fontSize: 11, color: MUTED, textTransform: "none" }}>{f.name.replace(`${q} · `, "")} · {fit[q]} fit</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="pixel-font" style={{ fontSize: 12, color: MUTED, minHeight: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{roundLine}</div>
       <div style={SCROLL}>
-        <p style={NOTE}>🔒 Coming soon.</p>
+        {view.status === "off" ? <p style={NOTE}>Ranked is part of the online game.</p>
+          : view.status === "loading" ? <p style={NOTE}>Loading…</p>
+          : view.status === "out" ? <p style={NOTE}>Sign in on the title screen to play ranked.</p>
+          : view.status === "down" ? <p style={NOTE}>The ladder couldn&apos;t be reached.</p>
+          : view.ladder.top.length === 0 ? <p style={NOTE}>Nobody on the ladder yet.</p>
+          : (
+            <ol style={{ listStyle: "none", margin: 0, padding: "4px 0", display: "grid", gap: 2 }}>
+              {view.ladder.top.map((row) => {
+                const r = row.ai ? rivalById(row.id.replace(/^rival:/, "")) : undefined;
+                const worth = row.ai ? ratingChange(myRating, row.rating, "win") : null;
+                return (
+                  <li key={row.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 36, padding: "2px 6px", borderRadius: 6, background: row.me ? "rgba(241,217,160,0.12)" : "transparent" }}>
+                    <span className="pixel-font" style={{ width: 28, textAlign: "right", color: GOLD, fontSize: 13 }}>{row.rank}</span>
+                    <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: row.me ? GOLD : row.ai ? "#9cc8ff" : "white", fontSize: 14 }}>
+                      {r ? rivalName(r) : row.name}{row.me ? " (you)" : ""}
+                    </span>
+                    <span className="pixel-font" style={{ fontSize: 12, color: MUTED, minWidth: 40, textAlign: "right" }} title={worth !== null ? `A win over them is worth ${worth}` : undefined}>{row.games} 🗡️</span>
+                    <span className="pixel-font" style={{ fontSize: 14, color: GOLD, minWidth: 44, textAlign: "right" }}>{row.rating}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
       </div>
     </>
   );
