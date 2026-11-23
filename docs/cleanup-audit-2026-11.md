@@ -243,6 +243,19 @@ touched none of it.
   armour, consumables, and the box schematics), so every link that opened the old screen opens it.
   Its Creatures part is the Pit's, its Klutz button his own page's. Klutz's tour and his crate's
   link say Storehouse. **B4, `/bag`, stays** (the user: intended).
-- **Still open:** B2, B5, D, E1–E3, E5.
+- **B2 and E3, the 2D walk view** (the user, 2026-11-24: "3D is in, it's now the actual game"):
+  WalkView.tsx's 2D view (the file is components/WalkParts.tsx now, with the stick, campfire
+  window, scroll and maps the 3D view uses), lib/render/scene.ts and paint.ts (the three tunnel
+  timings moved to lib/dungeon/torch.ts), /lab/baseline, /lab/newrun and /lab/walk, /lab/three's 2D
+  option, tests/scene.test.ts and sceneBefore.ts, tests/visual-baseline (3.5 MB) and
+  scripts/shot-diff.mjs. Left for a pass of its own: the 2D drawing helpers now only their tests
+  call (lib/dungeon/tileArt.ts `cellArt`, `FACE_TILE`, `TOP_TILE` and the tile-sheet code under
+  them; torch.ts `sconceGlow`; projection.ts `artPxAcross` / `artPxDown`; foes.ts `visionCone`;
+  walkRooms.ts `fightSack` / `chestSack`). What the world goldens read (`depthEdges`,
+  `placeLabDecor`) stays with them.
+- **B5, the local barcode roll:** not dead. A copy with no online settings (the tests, an offline
+  build without .env.local, the no-account title screen) still rolls scans locally; the user's
+  "local barcodes are no more" holds wherever the game is online-capable. Asked.
+- **Still open:** B5, D, E1, E2, E5, and the 2D helpers above.
   README.md's opening still says the game has no server or accounts (untrue since the Supabase
   work): a line to fix with E5.

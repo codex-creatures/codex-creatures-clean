@@ -4,6 +4,10 @@ Authoritative for walking, the scroll, foes and fights, loot, cages, campfires, 
 
 Moved here word for word from design.md on 2026-11-09 (the original is in [archive/2026-11-09](../archive/2026-11-09/design.md)); section numbers are kept, so references like "design.md §N" still find their place.
 
+> **Drawn in 3D only since 2026-11-24** (components/WalkView3D.tsx; the 2D view, components/WalkView.tsx,
+> was removed: [world/rendering.md](../world/rendering.md)). Where this file names WalkView or /lab/walk,
+> it's where a rule was first built; the rules themselves are unchanged.
+
 ## Overview
 
 - ✅ **An explorable Labyrinth** (picked up 2026-11-05; live, still growing), walked round in 2D top-down

@@ -5,7 +5,7 @@
 // Three.js is loaded on this page only.
 
 import { useState } from "react";
-import { Stick } from "@/components/WalkView";
+import { Stick } from "@/components/WalkParts";
 import dynamic from "next/dynamic";
 import { PROPS, WALK_INPUT } from "./props";
 

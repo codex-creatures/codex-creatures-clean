@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Stick } from "@/components/WalkView";
+import { Stick } from "@/components/WalkParts";
 import { readRecipe, type Recipe } from "@/lib/props/recipe";
 import { RECIPE_FILES } from "@/lib/props/recipes";
 import { DRAFT_KEY } from "@/app/lab/propbuilder/drafts";

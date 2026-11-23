@@ -5,7 +5,7 @@
 import { nextRooms, fightingTeam, type DungeonRun } from "@/lib/dungeon/run";
 import { type OwnedCreature } from "@/components/BattleScreen";
 import DungeonMapView from "@/components/DungeonMapView";
-import { WalkFirstMap } from "@/components/WalkView";
+import { WalkFirstMap } from "@/components/WalkParts";
 import Help from "@/components/Help";
 import Party from "./Party";
 

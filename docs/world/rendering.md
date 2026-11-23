@@ -4,6 +4,12 @@ Authoritative for the camera, the projection, anchors and drawing order, and (§
 
 Moved here word for word from world-spec.md on 2026-11-09 (the original is in [archive/2026-11-09](../archive/2026-11-09/world-spec.md)); section numbers are kept, so references like "world-spec.md §5.4" still find their place.
 
+> **The 2D view is gone (2026-11-24; the user: "3D is in, it's now the actual game").** The game draws
+> walked runs with components/WalkView3D.tsx only (§4.8). components/WalkView.tsx's 2D view,
+> lib/render/scene.ts and paint.ts, /lab/baseline, /lab/newrun, /lab/walk and tests/visual-baseline were
+> removed; the stick, campfire window, scroll and maps are components/WalkParts.tsx. Where §4.1–4.7
+> name them, they describe the 2D drawing as it was; the projection (lib/render/projection.ts) stays.
+
 ## 4. Projection and drawing
 
 ### 4.1 The camera (✅ decided: fixed three-quarter, from the south, no rotation)

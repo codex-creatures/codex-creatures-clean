@@ -19,7 +19,7 @@ sprites) is wired to the real run as WalkView is: fights and the boss, loot sack
 campfires, the scroll and torch, rubble, alarms, saving mid-run. The game rules and saves are
 unchanged (the sim, layouts, placements and world versions are shared). The classic scroll-map
 dungeons are untouched. Then the user play-tests on their phone (Vercel), and the gameplay work
-starts. Kept until the 3D view has been played: components/WalkView.tsx (the 2D view) and the labs.
+starts. ✅ Played: the 2D view (components/WalkView.tsx), its scene builder and painter, its labs and screenshot baselines were removed on 2026-11-24 (the user: "3D is in, it's now the actual game").
 Since 2026-11-11 the treasure chest, stashes, loot sacks and bookcases are drawn in 3D (the lab's
 drafts; world/rendering.md §4.8 "In the game"), the first things in the dungeon that aren't flat.
 

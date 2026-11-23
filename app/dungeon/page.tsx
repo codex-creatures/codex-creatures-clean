@@ -60,7 +60,7 @@ import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
 import DungeonMapView from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import dynamic from "next/dynamic";
-import { WalkMap, type WalkState } from "@/components/WalkView";
+import { WalkMap, type WalkState } from "@/components/WalkParts";
 import { startWalkRun, walkInto, walkKeep, walkRoom, headHome } from "@/lib/dungeon/walkRun";
 import { shelfHasCodex, dynamiteOnFloor } from "@/lib/world/walkWorld";
 import { openWalkSave, recoverWalkSave, canRecover, newWalkRun } from "@/lib/world/migrate";

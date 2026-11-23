@@ -23,7 +23,6 @@
 import { ROCK, TUNNEL, type Floorplan } from "./floorplan";
 
 export const LOWER = 0, UPPER = 1, CLIFF = 2;
-export const SHEET_TILE = 16; // px
 
 // The 25 tiles of a PixelLab wall tileset (all our samples share this
 // layout): where each is on the sheet (in tiles), and its 4×4 pattern of

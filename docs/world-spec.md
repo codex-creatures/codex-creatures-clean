@@ -20,7 +20,7 @@ wants foundations that take hundreds of assets, creatures and settings without r
 
 - **Gameplay lives in world space; the renderer only reads it.** Four layers: world data
   (`lib/world/`), simulation rules (`lib/world/`, `lib/dungeon/`), a pure scene builder and the one
-  shared projection (`lib/render/`), and the renderer (`components/WalkView.tsx`: frame loop, taps,
+  shared projection (`lib/render/`), and the renderer (`components/WalkView.tsx` then, the 2D view, removed 2026-11-24 for the 3D one, components/WalkView3D.tsx: frame loop, taps,
   canvas, no game rules). ✅ Built in phase 1.
 - **The camera** is fixed three-quarter from the south, with no rotation, but gameplay never
   depends on it. ✅

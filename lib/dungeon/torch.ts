@@ -121,6 +121,8 @@ export const showsRubble = (r: Rubble) => r.wall === "top" || r.wall === "bottom
 // go back down.
 export const fallenIn = (fp: Floorplan, layout: Layout, p: Progress, known: ArrayLike<number>): Rubble[] =>
   rubbleOf(fp, layout, p).filter((r) => r.tiles.some((q) => known[q.y * fp.w + q.x]));
+// A tunnel falling in, on screen (seconds): its rocks drop, its dust settles, the view shakes.
+export const FALL_TIME = 0.6, DUST_TIME = 1.2, SHAKE_TIME = 0.4;
 // Every tunnel that's fallen in behind you this run, at each cut-off you've
 // crossed (cuts: cutOffY's, tiles down) and now. The scroll crosses each out,
 // and keeps them (the user, 2026-11-07: only these, not every closed tunnel

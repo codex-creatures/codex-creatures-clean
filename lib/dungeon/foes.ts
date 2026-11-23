@@ -33,7 +33,6 @@
 
 import { ROCK, type Floorplan, type Pt, type Rect } from "./floorplan";
 import { findPath, type CanStep } from "./walk";
-import type { RoomKind } from "./run";
 
 type Rng = () => number;
 
@@ -46,7 +45,6 @@ export const FOE_SPEED = 1.5;        // tiles a second
 export const PAUSE_TIME: [number, number] = [1, 3]; // seconds a walker stops at each spot
 export const FOE_GAP = 3;            // tiles apart, at least, where they start
 export const DOOR_CLEAR = 4;         // tiles from any of the room's doors, where they start
-export const ALERT_KINDS: RoomKind[] = ["encampment"]; // /lab/walk only (its own copy): the chief's fight starts as you step in
 export const WAIT_REACH = 3.5;       // tiles: walk this close to a waiting boss (in sight of it) and it fights you 🧪
 export const WAIT_FROM_TOP = 4;      // tiles below its room's top wall a waiting boss stands
 export const GUARD_REACH = 2;        // tiles: a chest's guards patrol this close round it (the user, 2026-11-09) 🧪
