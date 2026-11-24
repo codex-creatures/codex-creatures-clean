@@ -9,6 +9,7 @@ import { KLUTZ_DROP_ID, type useGameState } from "@/hooks/useGameState";
 import { combatSummary } from "@/lib/combat/loadout";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { SOUL_STONES } from "@/lib/creatures/soulStones";
+import { StoneIcon } from "@/components/PixelSprite";
 import { klutzStatus, pointsFree } from "@/lib/klutz";
 import { STATS } from "@/components/CreatureDetailModal";
 import Glyph from "@/components/Glyph";
@@ -55,7 +56,7 @@ export default function KlutzKit({ game, onEquip, nudge }: { game: ReturnType<ty
         })}
         <div style={row} title={stone ? `${stone.name}: ${stone.text}` : undefined}>
           <span style={{ width: 58, flexShrink: 0, color: MUTED }}>Stone</span>
-          {stone ? <span style={{ color: "#b9e6ff", overflow: "hidden", textOverflow: "ellipsis" }}>{stone.icon} {stone.name} <span style={{ color: MUTED }}>· {stone.text}</span></span> : <span style={{ color: MUTED }}>none</span>}
+          {stone ? <span style={{ color: "#b9e6ff", overflow: "hidden", textOverflow: "ellipsis" }}><StoneIcon k={game.klutz.soulStone!} /> {stone.name} <span style={{ color: MUTED }}>· {stone.text}</span></span> : <span style={{ color: MUTED }}>none</span>}
         </div>
         <div style={row} title={f.skills.map((m) => m.name).join(", ")}>
           <span style={{ width: 58, flexShrink: 0, color: MUTED }}>Moves</span>

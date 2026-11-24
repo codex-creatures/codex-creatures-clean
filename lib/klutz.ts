@@ -39,20 +39,21 @@
 import { createBattle, resolveRound, sendInReplacement } from "./combat/battle";
 import { chooseAiAction, chooseAiReplacement } from "./combat/thinkingAi";
 import type { Fighter } from "./combat/engine";
-import { makeEnemy, enemyFighter, droppedPieceStats, ENTRY_FEES, type DungeonId, type Enemy } from "./dungeon/run";
+import { makeEnemy, enemyFighter, droppedPieceStats, ENTRY_FEES, POTIONS, type DungeonId, type Enemy, type PotionKey } from "./dungeon/run";
 import { RARITY_WEIGHTS, type Rarity } from "./items/budgets";
 import { CREATURE_BY_ID } from "./creatures/creatureData";
 import { coreMove } from "./creatures/raceKitsV2";
 import { makeCreatureDrop } from "./creatures/summon";
 import { weaponDrop, armorDrop, randomArmorSlot, codexDrop, randomCodexOfRarity, potionDrop } from "./drops";
-import { ARMOR_KEYS, ARMOR_SLOTS, type ArmorKey, type ArmorSlot } from "./items/armor";
+import { ARMOR_KEYS, ARMOR_SLOTS, pieceName, type ArmorKey, type ArmorSlot } from "./items/armor";
+import { ITEM_META } from "./items/metadata";
 import { ITEM_KEYS, type ItemKey } from "./items/ceilings";
 import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
-import { materialBundle } from "./items/materials";
+import { materialBundle, MATERIALS, TOOLS, SCHEMATICS, type MaterialKey, type ToolKey, type SchematicKey } from "./items/materials";
 import { isCreatureDrop, type CreatureOrItemDrop, type Drop } from "./types";
 import type { CreatureProficiency } from "./creatures/creatureData";
-import { setStoneCost, type SoulStoneKey } from "./creatures/soulStones";
+import { setStoneCost, SOUL_STONES, type SoulStoneKey } from "./creatures/soulStones";
 import { addXp, canFind, clampLevel, xpForEnemy } from "./creatures/levels";
 
 // ── v2 trips ──
@@ -201,7 +202,7 @@ export type KlutzState = {
 export const TRIP_LOG = 20;
 export type TripKit = { level: number; maxHp: number; proficiency: CreatureProficiency; moves: string[]; soulStone?: SoulStoneKey; gear: { name: string; rarity: Rarity }[] };
 // A find's look: just enough of the drop for its picture (components/PixelSprite.tsx itemSprite), from 2026-11-24
-// (the user: the trips log shows finds as small icons, as his pack does). Older trips have none: their names show.
+// (the user: the trips log shows finds as small icons, as his pack does). Older trips have none: lookByName finds theirs.
 export type TripLook = Pick<CreatureOrItemDrop, "potion" | "tool" | "material" | "stone" | "codexMove" | "scroll" | "schematic" | "itemKey" | "armorKey" | "armorSlot" | "enchant">;
 export type KlutzTrip = {
   startedAt: number; endsAt: number; dest?: KlutzDest;
@@ -234,6 +235,25 @@ export function tripLog(k: KlutzState): KlutzTrip[] {
   if (k.trips) return k.trips;
   const ex = k.expedition;
   return ex?.collected ? [tripOf(ex, tripXp(ex), lootOf(ex))] : [];
+}
+// A find's look from its name alone, for trips logged before looks were kept (the user, 2026-11-24:
+// those showed their names in boxes). Undefined for a name it can't place.
+let lookNames: Map<string, TripLook> | undefined;
+export function lookByName(name: string): TripLook | undefined {
+  if (name.startsWith("Codex: ")) return { codexMove: name.slice(7) };
+  if (!lookNames) {
+    const m = new Map<string, TripLook>();
+    for (const k of Object.keys(ITEM_META) as ItemKey[]) m.set(ITEM_META[k].name, { itemKey: k });
+    for (const k of ARMOR_KEYS) for (const slot of ARMOR_SLOTS) m.set(pieceName(k, slot), { armorKey: k, armorSlot: slot });
+    for (const [k, v] of Object.entries(MATERIALS)) m.set(v.name, { material: k as MaterialKey });
+    for (const [k, v] of Object.entries(TOOLS)) m.set(v.name, { tool: k as ToolKey });
+    for (const [k, v] of Object.entries(SCHEMATICS)) m.set(v.name, { schematic: k as SchematicKey });
+    for (const [k, v] of Object.entries(POTIONS)) m.set(v.name, { potion: k as PotionKey });
+    for (const [k, v] of Object.entries(SOUL_STONES)) m.set(`Soul Stone: ${v.name}`, { stone: k as SoulStoneKey });
+    m.set("Tattered XP Scroll", { scroll: "xp" });
+    lookNames = m;
+  }
+  return lookNames.get(name);
 }
 const addTrip = (k: KlutzState, t: KlutzTrip): KlutzTrip[] => [t, ...tripLog(k)].slice(0, TRIP_LOG);
 

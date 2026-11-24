@@ -10,7 +10,7 @@
 // - If every multiplier is within BALANCED_SHARE of the highest, the creature
 //   is "Balanced".
 
-import type { CreatureProficiency } from "./creatureData";
+import type { CombatClass, CreatureProficiency } from "./creatureData";
 
 export const SECONDARY_SHARE = 0.65;
 export const BALANCED_SHARE = 0.6;
@@ -67,4 +67,15 @@ export function creatureRoles(p: CreatureProficiency): string[] {
 
 export function creatureTypeLabel(p: CreatureProficiency): string {
   return creatureRoles(p).join(" · ");
+}
+
+// The attack styles it's built for, from its multipliers (rolls included): its best attack's, and a
+// second whose multiplier is within SECONDARY_SHARE of it. Shown in its window as "Melee - Magic"
+// (the user, 2026-11-24). None when it has no attack multiplier at all.
+const STYLE_OF: Record<"atk" | "rng" | "mag", CombatClass> = { atk: "melee", rng: "ranged", mag: "magic" };
+export function preferredStyles(p: CreatureProficiency): CombatClass[] {
+  const attacks = (["atk", "rng", "mag"] as const).map((k) => [k, p[k] ?? 0] as const).sort((a, b) => b[1] - a[1]);
+  const top = attacks[0][1];
+  if (top <= 0) return [];
+  return attacks.filter(([, v], i) => i < 2 && v >= top * SECONDARY_SHARE).map(([k]) => STYLE_OF[k]);
 }

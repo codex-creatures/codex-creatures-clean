@@ -11,7 +11,7 @@ import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
 import CreaturePortrait from "@/components/CreaturePortrait";
 import { LevelBar } from "@/components/CreatureDetailModal";
-import { MaterialIcon } from "@/components/PixelSprite";
+import { MaterialIcon, SchematicIcon } from "@/components/PixelSprite";
 import { gearMarks } from "@/components/CreatureMarks";
 import { useGameState } from "@/hooks/useGameState";
 import { MAX_LEVEL } from "@/lib/creatures/levels";
@@ -145,7 +145,7 @@ export default function TrainingPage() {
       {/* With the Hydra quest's plans: build the Training Pit over it. */}
       {t.plans && !t.pit && (
         <div className="stone-panel" style={{ marginTop: 10 }}>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD }}>📐 Training Pit Schematic</div>
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD }}><SchematicIcon /> Training Pit Schematic</div>
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
             <div style={{ flex: "1 1 55%", minWidth: 0 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}

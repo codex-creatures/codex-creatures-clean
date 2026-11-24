@@ -24,6 +24,7 @@ import { giveProblem, keepProblem, lossesOf, othersNeeded, ritualProblem, rarity
 import { rarityAfter } from "@/lib/creatures/ascendStats";
 import { codexRarityOf } from "@/lib/drops";
 import { SOUL_STONES, type SoulStoneKey } from "@/lib/creatures/soulStones";
+import { StoneIcon } from "./PixelSprite";
 import { CreatureArt } from "./CreaturePortrait";
 import { STATS } from "./CreatureDetailModal";
 import SummonShow from "./SummonShow";
@@ -210,7 +211,7 @@ export default function AscendRitual({ game, top }: { game: Game; top?: React.Re
               {losses.map((l) => (
                 <div key={l.id} style={{ fontSize: 14, background: "#12131a", padding: "6px 8px" }}>
                   <b>{l.name}</b>{" "}
-                  {l.soulStone && <span style={{ color: "#b9e6ff" }}>{SOUL_STONES[l.soulStone as SoulStoneKey]?.icon} {SOUL_STONES[l.soulStone as SoulStoneKey]?.name ?? l.soulStone} </span>}
+                  {l.soulStone && <span style={{ color: "#b9e6ff" }}>{SOUL_STONES[l.soulStone as SoulStoneKey] && <StoneIcon k={l.soulStone as SoulStoneKey} />} {SOUL_STONES[l.soulStone as SoulStoneKey]?.name ?? l.soulStone} </span>}
                   {l.codexes.length > 0 && <span style={{ color: "#ffd66e" }}>📜 {l.codexes.join(", ")}</span>}
                 </div>
               ))}
@@ -338,7 +339,7 @@ function Inspect({ c, kept, items, loadout, role, reason, onRaise, onOffer, onTa
       </div>
       <div style={row} title={stone ? `${stone.name}: ${stone.text}` : undefined}>
         <span style={{ color: MUTED }}>Soul stone </span>
-        {stone ? <span style={{ color: "#b9e6ff" }}>{stone.icon} {stone.name} <span style={{ color: MUTED }}>· {stone.text}</span></span> : <span style={{ color: MUTED }}>none</span>}
+        {stone ? <span style={{ color: "#b9e6ff" }}><StoneIcon k={c.soulStone!} /> {stone.name} <span style={{ color: MUTED }}>· {stone.text}</span></span> : <span style={{ color: MUTED }}>none</span>}
       </div>
       <div style={row}>
         <span style={{ color: MUTED }}>Birth rolls </span>
@@ -376,7 +377,7 @@ function TrayCard({ c, placed, why, focused, onTap, handlers }: {
         userSelect: "none", WebkitUserSelect: "none", touchAction: "pan-x" }}>
       <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "1" }}>
         <CreatureArt creatureId={c.creatureId} title={c.name} />
-        {stone && <span title={stone.name} style={{ position: "absolute", left: 0, top: 0, fontSize: 12 }}>{stone.icon}</span>}
+        {stone && <span title={stone.name} style={{ position: "absolute", left: 0, top: 0, fontSize: 12 }}><StoneIcon k={c.soulStone!} scale={0.6} /></span>}
         {(c.learned?.length ?? 0) > 0 && <span title={`${c.learned!.length} codex move(s)`} style={{ position: "absolute", right: 0, top: 0, fontSize: 11 }}>📜{c.learned!.length}</span>}
         <span style={{ position: "absolute", right: 0, bottom: 0, fontSize: 10, color: "#ffd66e", textShadow: "0 0 2px #000" }}>{stars(c)}</span>
       </span>

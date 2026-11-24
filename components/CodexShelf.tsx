@@ -2,17 +2,18 @@
 // components/CodexShelf.tsx
 // Your codexes, on the bookcase's shelves (size: how many it holds). Shown in
 // the Bookcase. Each is a book on the shelf;
-// tap one to see it in the box on top: its title (and race, for a race
-// codex), then the move it teaches (CodexMove). Teach shows your creatures,
+// tap one to see it in a box on top: its title (and race, for a race
+// codex), then the move it teaches (CodexMove). Nothing tapped, no box (the user, 2026-11-24). Teach shows your creatures,
 // with their levels, greyed out where one can't learn it; tap one to teach it (if its move
 // slots are full, you pick a move for it to forget). The codex is used up.
 // Sell gets rid of one you don't want (after a Yes), for what a merchant pays, to free the shelf.
-// The box on top keeps its size whatever's picked, so nothing moves.
+// The box keeps its size whichever codex is picked, so flicking between them moves nothing.
 
 import { useState } from "react";
 import CodexMove from "./CodexMove";
 import { MoveTile } from "./MoveTile";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
+import { CODEX_SPRITE } from "@/lib/sprites/items";
 import { MOVE_BY_NAME, MOVE_SLOTS, moveOf, canLearnFromCodex, findCreatureTemplate, isSpecialMove, hasSteadyMove, learnRacesOf, resolveMoves, STEADY_MAX_ENERGY } from "@/lib/creatures/creatureData";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { sortByRarity } from "./TileGrid";
@@ -108,8 +109,8 @@ export default function CodexShelf({ inventory, size, teach, onSell }: { invento
         <p style={{ fontSize: 13, color: MUTED }}>Nothing yet. Codexes come from scanning and Labyrinth chests; wandering librarians sell race codexes.</p>
       ) : (
         <>
-          {/* The picked codex: its title, its move, and Teach. */}
-          <div className="stone-panel" style={{ padding: 10, marginBottom: 10, height: 176, boxSizing: "border-box", display: "grid", gridTemplateRows: "auto 1fr auto", gap: 8 }}>
+          {/* The picked codex: its title, its move, and Teach (or what just happened). */}
+          {(picked || taught) && <div className="stone-panel" style={{ padding: 10, marginBottom: 10, height: 176, boxSizing: "border-box", display: "grid", gridTemplateRows: "auto 1fr auto", gap: 8 }}>
             {picked ? (
               <>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -136,9 +137,9 @@ export default function CodexShelf({ inventory, size, teach, onSell }: { invento
                 </div>
               </>
             ) : (
-              <div style={{ gridRow: "1 / -1", fontSize: 13, color: taught ? "#7CFC9A" : MUTED, alignSelf: "center", textAlign: "center" }}>{taught ?? "Tap a codex to see its move."}</div>
+              <div style={{ gridRow: "1 / -1", fontSize: 13, color: "#7CFC9A", alignSelf: "center", textAlign: "center" }}>{taught}</div>
             )}
-          </div>
+          </div>}
 
           {picked && teaching ? (
             forgetter ? (
@@ -176,7 +177,7 @@ export default function CodexShelf({ inventory, size, teach, onSell }: { invento
                     style={{ minHeight: 72, padding: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer",
                       background: `radial-gradient(circle, ${rarityGlow(c.rarity)}, #101117 75%)`, border: `2px solid ${on ? "#ffd66e" : rc.border}`,
                       boxShadow: on ? "0 0 10px rgba(255,214,110,0.55)" : "0 2px 0 rgba(0,0,0,0.5)", color: "white" }}>
-                    <span style={{ fontSize: 26, lineHeight: 1 }}>📖</span>
+                    <PixelSprite sprite={CODEX_SPRITE} scale={1.25} />
                     <span style={{ ...NAME, color: rc.text }}>{c.name.replace(/^Codex: /, "")}</span>
                   </button>
                 );

@@ -21,6 +21,7 @@ import { DUNGEON_ORDER, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
 import { hasBookPlans } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
+import { SchematicIcon } from "@/components/PixelSprite";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CHAPTERS, CRATE_NAMES, PLANS_TAKEN_GOLD, rewardBlocked, type CampaignReward, claimNext, claimedCount, currentChapter, loadCampaign, lookedAtCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
 import { klutzHelping } from "@/lib/quest";
@@ -289,7 +290,7 @@ function QuestList() {
             <div className="pixel-font" style={{ fontSize: 18, fontWeight: 700 }}>Slay the Hydra</div>
             <div title={hydraSay} style={CLAMP2}>{hydraSay}</div>
             <div style={{ minHeight: 44, display: "flex", alignItems: "center" }}>
-              {hydra === "claim" ? <button className="pixel-btn" onClick={game.claimHydraPlans}>📐 Claim the schematic</button>
+              {hydra === "claim" ? <button className="pixel-btn" onClick={game.claimHydraPlans}><SchematicIcon /> Claim the schematic</button>
                 : <span style={{ fontSize: 13, fontWeight: 600, color: hydra === "paid" ? "#2f7a3a" : "#7a5a30" }}>{hydra === "paid" ? "Done" : "Not beaten yet"}</span>}
             </div>
           </div>

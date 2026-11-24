@@ -14,11 +14,11 @@ import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { damageTypesOn } from "@/lib/combat/engine";
-import { canLearnFromCodex, DAMAGE_TYPE_INFO, defaultMoveNames, findCreatureTemplate, MOVE_BY_NAME, MOVE_SLOTS, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
+import { canLearnFromCodex, CLASS_INFO, DAMAGE_TYPE_INFO, defaultMoveNames, findCreatureTemplate, MOVE_BY_NAME, MOVE_SLOTS, resolveMoves, type CombatClass, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { combatSummary } from "@/lib/combat/loadout";
 import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
 import { clampLevel, hpAt, proficiencyAt, xpToNext, MAX_LEVEL, SCROLL_XP } from "@/lib/creatures/levels";
-import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
+import { preferredStyles, ROLE_HINT } from "@/lib/creatures/creatureType";
 import { armorPieces, type EquipSlot, type Loadout } from "@/hooks/useGameState";
 import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, SET_BONUS, wornArmor, type ArmorKey } from "@/lib/items/armor";
 import { hasTeams, teamFull, teamsWith, type Teams } from "@/lib/teams";
@@ -32,6 +32,7 @@ import { SOUL_STONES, SOUL_STONE_KEYS, setStoneCost, type SoulStoneKey } from "@
 import { SOUL_COLOR } from "./SoulStoneTag";
 import { NICK_MAX } from "@/lib/creatures/nickname";
 import PixelSprite, { creatureSprite, itemSprite, StoneIcon } from "./PixelSprite";
+import { STONE_SPRITES } from "@/lib/sprites/items";
 import { useDragDrop } from "@/hooks/useDragDrop";
 import { doubleTapper } from "@/lib/doubleTap";
 import { Coin } from "./GoldCount";
@@ -140,7 +141,9 @@ export default function CreatureDetailModal({
   // Naming it: tap the name and it's a text box (NICK_MAX letters); Enter or tapping away keeps what's typed, Esc drops it.
   const [naming, setNaming] = useState<string | null>(null);
   const nameBox = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (naming !== null) nameBox.current?.select(); }, [naming]);
+  // Selected once as the box opens (not on every letter, or each one typed over the last).
+  const isNaming = naming !== null;
+  useEffect(() => { if (isNaming) nameBox.current?.select(); }, [isNaming]);
   const keepName = () => { if (naming !== null) { if (naming.trim() !== creature.name) onRename?.(naming); setNaming(null); } };
   const pickerRef = useRef<HTMLDivElement>(null); // tapping anywhere else in the window closes the picker
   // Gear dragged from the picker onto its slot goes straight on (a tap only previews it).
@@ -255,7 +258,8 @@ export default function CreatureDetailModal({
             <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: c.text, border: `2px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
             <RaceTag race={template?.race} races={template?.races} />
             {template?.neutral && <ClassBadge neutral />}
-            {template && prof && !(template.neutral && creatureRoles(prof)[0] === "Balanced") && <TypeTags roles={creatureRoles(prof)} />}
+            {/* The style(s) it's built for, "Melee - Magic" (the user, 2026-11-24: in place of its type words). */}
+            {prof && preferredStyles(prof).length > 0 && <StyleTag styles={preferredStyles(prof)} />}
           </div>
           {/* One line (a long name ends in "…"), so flicking between creatures never moves anything below it.
               Your own creatures: tap the name to give it one of your own (it becomes a text box in the same place). */}
@@ -604,7 +608,8 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
 }
 
 // The creature's soul stone, under its weapon: always there (empty for none),
-// so nothing moves flicking between creatures. Tapping it says what it does
+// so nothing moves flicking between creatures, drawn with the stone's own art (not its old emoji).
+// Tapping it says what it does
 // (or opens the picker, when it can be changed). The name gets two lines.
 function SoulSlot({ stone, onClick, active, changeable }: { stone?: SoulStoneKey | null; onClick?: () => void; active?: boolean; changeable?: boolean }) {
   const s = stone ? SOUL_STONES[stone] : undefined;
@@ -617,7 +622,7 @@ function SoulSlot({ stone, onClick, active, changeable }: { stone?: SoulStoneKey
         width: 60, height: 60, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26,
         background: s ? "radial-gradient(circle, rgba(185,230,255,0.25), #101117 75%)" : "#101117",
         border: `3px solid ${s ? "rgba(185,230,255,0.6)" : "#2f3340"}`, boxShadow: "inset 2px 2px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(0,0,0,0.5)",
-      }}>{s ? s.icon : <span style={{ fontSize: 18, color: changeable ? MUTED : "#3a3e4b" }}>{changeable ? "+" : "—"}</span>}</Box>
+      }}>{stone && s ? <PixelSprite sprite={STONE_SPRITES[stone]} scale={1.6} /> : <span style={{ fontSize: 18, color: changeable ? MUTED : "#3a3e4b" }}>{changeable ? "+" : "—"}</span>}</Box>
       <span title={s?.name} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 11, lineHeight: 1.2, height: "2.4em", maxWidth: 110, textAlign: "center", color: s ? SOUL_COLOR : MUTED }}>
         {s ? s.name : "None"}
       </span>
@@ -824,6 +829,15 @@ function ItemStats({ item, worn, keys }: { item: CreatureOrItemDrop; worn?: Crea
   );
 }
 
+// Its preferred attack style(s), as one tag: "Melee", or "Melee - Magic".
+function StyleTag({ styles }: { styles: CombatClass[] }) {
+  return (
+    <span title="The attack style its multipliers favour" style={{ fontSize: 11, padding: "1px 7px", border: "2px solid #2f3340", background: "#1b1d25", color: "rgba(255,255,255,0.75)" }}>
+      {styles.map((c) => CLASS_INFO[c].name).join(" - ")}
+    </span>
+  );
+}
+
 export function TypeTags({ roles }: { roles: string[] }) {
   return (
     <>
@@ -861,21 +875,15 @@ function CodexShelf({ template, known, codexes, onLearn }: {
         </div>
       ) : (
         <>
-          {/* A fixed panel (same height picked or not), so the tablets below never move. */}
-          <div className="stone-panel" style={{ padding: 10, marginBottom: 10, height: 176, boxSizing: "border-box", display: "grid", gridTemplateRows: "auto 1fr auto", gap: 8 }}>
-            {picked ? (
-              <>
-                <span className="pixel-font" title={picked.name} style={{ fontSize: 16, color: RARITY_COLORS[picked.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{picked.name}</span>
-                <CodexMove move={picked.codexMove!} />
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button className="pixel-btn" style={btn} disabled={!onLearn} onClick={() => { setPickedId(null); onLearn?.(picked.id); }}>📖 Read</button>
-                  <button className="pixel-btn" style={btn} onClick={() => setPickedId(null)}>Back</button>
-                </div>
-              </>
-            ) : (
-              <div style={{ gridRow: "1 / -1", alignSelf: "center", textAlign: "center", fontSize: 13, color: MUTED }}>Tap a codex to see its move. Reading one crumbles it to dust.</div>
-            )}
-          </div>
+          {/* The picked codex (a fixed height whichever it is); nothing picked, no panel (the user, 2026-11-24). */}
+          {picked && <div className="stone-panel" style={{ padding: 10, marginBottom: 10, height: 176, boxSizing: "border-box", display: "grid", gridTemplateRows: "auto 1fr auto", gap: 8 }}>
+            <span className="pixel-font" title={picked.name} style={{ fontSize: 16, color: RARITY_COLORS[picked.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{picked.name}</span>
+            <CodexMove move={picked.codexMove!} />
+            <div style={{ display: "flex", gap: 6 }}>
+              <button className="pixel-btn" style={btn} disabled={!onLearn} onClick={() => { setPickedId(null); onLearn?.(picked.id); }}>📖 Read</button>
+              <button className="pixel-btn" style={btn} onClick={() => setPickedId(null)}>Back</button>
+            </div>
+          </div>}
           <div className="move-grid">
             {readable.map((c) => {
               const mv = MOVE_BY_NAME[c.codexMove!];

@@ -110,6 +110,11 @@ export function StoneIcon({ k, scale = 1.25 }: { k: SoulStoneKey; scale?: number
   return <PixelSprite sprite={STONE_SPRITES[k]} scale={scale} style={{ verticalAlign: "middle", marginRight: 2, display: "inline-block" }} />;
 }
 
+// A schematic's picture (the rolled blueprint), for a line of text.
+export function SchematicIcon({ scale = 1.25 }: { scale?: number }) {
+  return <PixelSprite sprite={SCHEMATIC_SPRITE} scale={scale} style={{ verticalAlign: "middle", marginRight: 2, display: "inline-block" }} />;
+}
+
 // A material's picture for a line of text (its emoji if it has no art).
 export function MaterialIcon({ k }: { k: MaterialKey }) {
   const sp = MATERIAL_SPRITES[k];

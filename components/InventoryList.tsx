@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import type { Drop } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
-import type { Teams } from "@/lib/teams";
+import { teamsWith, type Teams } from "@/lib/teams";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { findCreatureTemplate, KLUTZ } from "@/lib/creatures/creatureData";
@@ -268,6 +268,7 @@ export default function InventoryList({
           items={shown as CreatureOrItemDrop[]}
           favoriteIds={favoriteIds}
           gear={(d) => (isCreatureDrop(d) ? gearMarks(equipment[d.id]) || undefined : undefined)}
+          teams={teams ? (d) => teamsWith(teams, d.id) : undefined}
           badge={(d) => {
             const owner = isCreatureDrop(d) ? undefined : equippedOn.get(d.id);
             return owner ? `on ${creatureNameById.get(owner) ?? "creature"}` : undefined;

@@ -6,7 +6,9 @@ import { fighterFor, pruneMoves } from "../lib/creatures/instance";
 import { CREATURE_BY_ID, defaultMoveNames, MOVE_SLOTS } from "../lib/creatures/creatureData";
 import { canSellWorn, WORN_SELL_MAX } from "../lib/items/economy/sell";
 import { SCHEMATICS } from "../lib/items/materials";
-import { tripOf, type Expedition } from "../lib/klutz";
+import { lookByName, tripOf, type Expedition } from "../lib/klutz";
+import { pieceName } from "../lib/items/armor";
+import { ITEM_META } from "../lib/items/metadata";
 import { makeCreatureDrop } from "../lib/creatures/summon";
 import type { CreatureOrItemDrop } from "../lib/types";
 
@@ -88,5 +90,13 @@ describe("Klutz's trip record", () => {
     const t = tripOf(ex, 12, [potion]);
     expect(t.fights.map((f) => f.hpLost)).toEqual([20, 60]);
     expect(t.finds).toEqual([{ name: "Lesser Potion", rarity: "common", potion: "lesser" }]);
+  });
+  it("a trip logged before looks were kept finds each find's look from its name (so the log shows its picture)", () => {
+    expect(lookByName("Codex: Slash")).toEqual({ codexMove: "Slash" });
+    expect(lookByName(ITEM_META.void_scythe.name)).toEqual({ itemKey: "void_scythe" });
+    expect(lookByName(pieceName("dragonscale_tunic", "helmet"))).toEqual({ armorKey: "dragonscale_tunic", armorSlot: "helmet" });
+    expect(lookByName(SCHEMATICS.iron_cage.name)).toEqual({ schematic: "iron_cage" });
+    expect(lookByName("Tattered XP Scroll")).toEqual({ scroll: "xp" });
+    expect(lookByName("Something nobody makes")).toBeUndefined();
   });
 });

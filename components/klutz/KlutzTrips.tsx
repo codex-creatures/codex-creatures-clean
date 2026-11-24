@@ -8,9 +8,9 @@
 // on the trip (kit), just not shown.
 
 import { useState } from "react";
-import { KLUTZ_DESTS, tripLog, TRIP_LOG, type KlutzDest, type KlutzTrip } from "@/lib/klutz";
+import { KLUTZ_DESTS, lookByName, tripLog, TRIP_LOG, type KlutzDest, type KlutzTrip } from "@/lib/klutz";
 import { CREATURE_BY_ID } from "@/lib/creatures/creatureData";
-import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import PixelSprite, { itemSprite } from "@/components/PixelSprite";
 import { GOLD_SPRITE } from "@/lib/sprites/items";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -95,13 +95,16 @@ function TripDetail({ t }: { t: KlutzTrip }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: 5 }}>
           {[...finds].map(([name, { find: f, n }]) => {
             const gold = name === "gold";
-            const sprite = gold ? GOLD_SPRITE : itemSprite(f as unknown as CreatureOrItemDrop);
+            // (A trip from before looks were kept: its look from its name.)
+            const look = f.itemKey || f.armorKey || f.material || f.tool || f.potion || f.stone || f.codexMove || f.scroll || f.schematic ? f : { ...f, ...lookByName(name) };
+            const sprite = gold ? GOLD_SPRITE : itemSprite(look as unknown as CreatureOrItemDrop);
             const col = gold ? "#f5c542" : RARITY_COLORS[f.rarity]?.border ?? "#3a3e4b";
+            const glow = gold ? "rgba(245,197,66,0.35)" : rarityGlow(f.rarity);
             return (
               <div key={name} title={gold ? `${n} gold` : `${name}${n > 1 ? ` ×${n}` : ""}`}
-                style={{ position: "relative", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", background: "#12131a", border: `2px solid ${col}` }}>
-                {sprite ? <PixelSprite sprite={sprite} scale={1.4} />
-                  : <span style={{ fontSize: 9, color: RARITY_COLORS[f.rarity]?.text ?? "white", textAlign: "center", lineHeight: 1.1, padding: 2, overflow: "hidden" }}>{name}</span>}
+                style={{ position: "relative", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle, ${glow}, #101117 75%)`, border: `2px solid ${col}` }}>
+                {/* Just its picture, lit in its rarity (the name's on hover); 🎁 for one with no art, as in his pack. */}
+                {sprite ? <PixelSprite sprite={sprite} scale={1.4} /> : <span style={{ fontSize: 16 }}>🎁</span>}
                 {n > 1 && <span className="pixel-font" style={{ position: "absolute", right: 2, bottom: 0, fontSize: 11, color: "#f1d9a0", textShadow: "1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000" }}>×{n}</span>}
               </div>
             );

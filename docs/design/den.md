@@ -297,7 +297,7 @@ fields optional with defaults.
 On the quest board's Daily Quests tab, above the Hydra quest. **Two a day, a primary and a
 secondary, the same for everyone** (picked from the date), new at **local midnight**. Only what you
 do that day counts; finish one, then claim its reward once. A ❗ on the board in the Den while one's
-ready to claim; tapping the board then opens on today's quests, unless the campaign has a reward you can take this moment (the user, 2026-11-21; 2026-11-24: a campaign reward held back, a codex crate with no room on the bookcase, no longer sends you there: lib/campaign.ts `claimReady`; the campaign's own first-look ❗ comes after both). Plays offline. ✅ (the user, 2026-11-06) Coming into the Den, a small popup lists
+ready to claim; tapping the board then opens on today's quests, unless the campaign has a reward you can take this moment (the user, 2026-11-21; 2026-11-24: a campaign reward held back, a codex crate with no room on the bookcase, no longer sends you there: lib/campaign.ts `claimReady`; the Hydra quest's schematic to claim counts as today's quests, since its note is on that tab; the campaign's own first-look ❗ comes after both). Plays offline. ✅ (the user, 2026-11-06) Coming into the Den, a small popup lists
 today's quests not yet claimed, with their rewards and progress (`openQuests`,
 components/DailyPopup.tsx): once a day per visit to the site, so again at midnight's new quests;
 not during Klutz's tour or before your first creature. A tap anywhere closes it.

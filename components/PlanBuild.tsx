@@ -4,7 +4,7 @@
 // Training Pit): what it does, each material it takes (have/need, green once you've enough), any gold, and Build.
 // The Den's ladders of plans: lib/items/plans.ts.
 
-import { MaterialIcon } from "@/components/PixelSprite";
+import { MaterialIcon, SchematicIcon } from "@/components/PixelSprite";
 import type { Drop } from "@/lib/types";
 import { MATERIALS, SCHEMATICS, canAfford, countMaterial, type MaterialKey, type SchematicKey } from "@/lib/items/materials";
 
@@ -18,7 +18,7 @@ export default function PlanBuild({ plan, materials, gold, onBuild, note }: {
   const ok = canAfford(materials, cost) && gold >= price && !note;
   return (
     <div style={{ marginTop: 10 }}>
-      <div style={{ fontSize: 13, color: "#d8d4c8" }}>📐 <b>{name}</b>: {desc}</div>
+      <div style={{ fontSize: 13, color: "#d8d4c8" }}><SchematicIcon /> <b>{name}</b>: {desc}</div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", margin: "6px 0 8px" }}>
         {(Object.entries(cost) as [MaterialKey, number][]).map(([k, n]) => {
           const have = countMaterial(materials, k);

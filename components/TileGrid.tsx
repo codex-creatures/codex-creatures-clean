@@ -20,7 +20,6 @@ import { CLASS_INFO, COMBAT_CLASSES, RACES, RACE_INFO, findCreatureTemplate } fr
 import { CreatureMarks, type GroupBy } from "./CreatureMarks";
 import { ICON, NAME } from "./ContainerLoot";
 import { RaceIcon } from "./Glyph";
-import { RaceNames } from "./RaceTag";
 
 export const RARITY_ORDER: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
 const MUTED = "rgba(255,255,255,0.45)";
@@ -50,6 +49,7 @@ type Props = {
   favoriteIds: Set<string>;
   badge?: (d: CreatureOrItemDrop) => string | undefined; // e.g. "on Klutz", or a price
   gear?: (d: CreatureOrItemDrop) => string | undefined;  // a creature's worn gear (gearMarks)
+  teams?: (d: CreatureOrItemDrop) => number[];           // the teams a creature's in (its card shows T1…)
   sellMode?: boolean;
   sellable?: (d: CreatureOrItemDrop) => boolean;
   selected?: Set<string>;
@@ -63,14 +63,14 @@ type Props = {
   grab?: (d: CreatureOrItemDrop) => React.HTMLAttributes<HTMLElement>; // drag it (hooks/useDragDrop)
 };
 
-export default function TileGrid({ items, favoriteIds, badge, gear, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked, pulse, cols, perRow, grab }: Props) {
+export default function TileGrid({ items, favoriteIds, badge, gear, teams, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked, pulse, cols, perRow, grab }: Props) {
   const columns = cols ? `repeat(${cols}, minmax(0, ${SLOT}px))` : perRow ? `repeat(${perRow}, minmax(0, 1fr))` : `repeat(auto-fill, minmax(${large ? 96 : 84}px, 1fr))`; // (creature cards: three a row on a phone)
   return (
     <div>
       {groupBy === "none" && (
         <div className={large ? undefined : "inv-panel"} style={{ display: "grid", gridTemplateColumns: columns, justifyContent: "center", gap: large ? "14px 6px" : cols ? 8 : 10, marginTop: 14 }}>{/* (creature cards: no panel round them, the user, 2026-11-17: the rows need the width) */}
           {items.map((d) => large && d.dropType !== "item" ? (
-            <CreatureCard key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} gear={gear?.(d)} onClick={() => onOpen(d)} glow={pulse === d.id} />
+            <CreatureCard key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} gear={gear?.(d)} onClick={() => onOpen(d)} glow={pulse === d.id} inTeams={teams?.(d)} />
           ) : (
             <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} gear={gear?.(d)} onClick={() => onOpen(d)} picked={picked === d.id} compact={!!cols} grab={grab?.(d)}
               sell={sellMode ? { can: sellable?.(d) ?? false, on: selected?.has(d.id) ?? false } : undefined} />
@@ -139,30 +139,28 @@ function Tile({ d, fav, badge, gear, sell, picked, onClick, compact, grab }: {
   );
 }
 
-// A creature in your collection (the user, 2026-11-17: no boxes, so the words have room): its level
-// top left, the creature on a glow of its rarity, then its name in the rarity's colour (always two
-// lines tall, so every card is the same size) and its attack style and its race(s), each race's
-// name in the race's colour (two lines at most, never cut off mid-word on a phone).
-function CreatureCard({ d, fav, badge, gear, onClick, glow }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; gear?: string; onClick: () => void; glow?: boolean }) {
+// A creature in your collection (the user, 2026-11-24: fewer words): the teams it's in top left
+// (T1…), what it wears top right (⚔️ 🛡️), the creature on a glow of its rarity, then its level,
+// then its name in the rarity's colour (two lines, so every card is the same size). No race or
+// type: those are in its window.
+function CreatureCard({ d, fav, badge, gear, onClick, glow, inTeams }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; gear?: string; onClick: () => void; glow?: boolean; inTeams?: number[] }) {
   const col = RARITY_COLORS[d.rarity];
-  const tpl = templateOf(d);
   const SHADOW = "0 2px 0 #000, 0 0 3px #000";
   return (
     <button onClick={onClick} title={d.name} className={glow ? "tutorial-pulse" : undefined}
       style={{ position: "relative", background: "none", border: "none", borderRadius: 8, padding: "2px 0", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-      <span className="pixel-font" style={{ position: "absolute", top: 2, left: 2, zIndex: 1, fontSize: 12, lineHeight: 1, color: "#f1d9a0", textShadow: SHADOW }}>Lv {d.level ?? 1}{d.ascended ? <span style={{ color: "#ffd66e" }}> {"★".repeat(d.ascended)}</span> : null}</span>
-      <CreaturePortrait creatureId={d.creatureId} title={d.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }}
-        frame={{ marginTop: 12, background: `radial-gradient(ellipse at 50% 80%, ${col.text}55, transparent 62%)` }} />
-      <span className="pixel-font" style={{ width: "100%", height: "2.3em", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, lineHeight: 1.15, textAlign: "center", color: col.text, textShadow: "0 2px 0 #000" }}>
-        <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{d.name}</span>
-      </span>
-      {tpl && (
-        <span className="pixel-font" style={{ width: "100%", height: "2.3em", fontSize: 11, lineHeight: 1.15, textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-          <span style={{ color: CLASS_INFO[tpl.cls].color }}>{CLASS_INFO[tpl.cls].name}</span>
-          {tpl.race && <> · <RaceNames races={tpl.races?.length ? tpl.races : [tpl.race]} /></>}
+      {inTeams && inTeams.length > 0 && (
+        <span className="pixel-font" title={inTeams.map((i) => `Team ${i + 1}`).join(", ")} style={{ position: "absolute", top: 2, left: 2, zIndex: 1, fontSize: 11, lineHeight: 1, color: "#8fd0ff", textShadow: SHADOW }}>
+          {inTeams.map((i) => `T${i + 1}`).join(" ")}
         </span>
       )}
-      {fav && <span style={{ position: "absolute", top: 18, left: 2, fontSize: 14, color: "#f5c542", textShadow: SHADOW }}>★</span>}
+      <CreaturePortrait creatureId={d.creatureId} title={d.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }}
+        frame={{ marginTop: 12, background: `radial-gradient(ellipse at 50% 80%, ${col.text}55, transparent 62%)` }} />
+      <span className="pixel-font" style={{ fontSize: 12, lineHeight: 1, color: "#f1d9a0", textShadow: SHADOW }}>Lv {d.level ?? 1}{d.ascended ? <span style={{ color: "#ffd66e" }}> {"★".repeat(d.ascended)}</span> : null}</span>
+      <span className="pixel-font" style={{ width: "100%", height: "2.3em", display: "flex", alignItems: "flex-start", justifyContent: "center", fontSize: 13, lineHeight: 1.15, textAlign: "center", color: col.text, textShadow: "0 2px 0 #000" }}>
+        <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{d.name}</span>
+      </span>
+      {fav && <span style={{ position: "absolute", top: 16, left: 2, fontSize: 14, color: "#f5c542", textShadow: SHADOW }}>★</span>}
       {(gear || badge) && <span style={{ position: "absolute", top: 0, right: 0, fontSize: 12 }}>{gear}{badge}</span>}
     </button>
   );
