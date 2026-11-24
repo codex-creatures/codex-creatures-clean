@@ -27,7 +27,9 @@ describe("the third codex batch: who and what", () => {
     expect(canLearnFromCodex(CREATURE_BY_ID.dreadpox, "Curse")).toBe(true);
     expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Curse")).toBe(false);
     expect([MOVE_BY_NAME.Bounce.energyCost, MOVE_BY_NAME.Bounce.damage, MOVE_BY_NAME.Bounce.cooldown]).toEqual([40, 5, 3]);
-    expect([MOVE_BY_NAME.Stalactite.energyCost, MOVE_BY_NAME.Stalactite.mult, MOVE_BY_NAME.Stalactite.cooldown]).toEqual([65, 1.5, undefined]);
+    expect([MOVE_BY_NAME.Stalactite.energyCost, MOVE_BY_NAME.Stalactite.mult, MOVE_BY_NAME.Stalactite.cooldown]).toEqual([50, 2, undefined]); // (50 energy and 2× since 2026-11-25; 65 and 1.5× priced it out of use)
+    expect(MOVE_BY_NAME.Curse.effect).toMatchObject({ kind: "curse", power: 6 }); // (10 until 2026-11-25: it won 93% of mirror fights)
+    expect(MOVE_BY_NAME.Curse.cooldown).toBe(3); // (none until 2026-11-25: the tick is mostly the caster's attack, so power alone couldn't tame it)
     expect(abilityOf(MOVE_BY_NAME.Stalactite)).toBe("Big hit");
     expect(abilityOf(MOVE_BY_NAME.Claw)).toBe("Plain hit");
   });

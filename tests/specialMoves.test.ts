@@ -44,7 +44,7 @@ describe("special moves: who can learn them", () => {
   });
   it("the old melee Impale is retired: Impale is now the ranged move (Geo since the v2 review; it was Underkin)", () => {
     expect(ALL_SKILLS.some((m) => m.name === "Impale")).toBe(false);
-    expect(MOVE_BY_NAME.Impale).toMatchObject({ type: "ranged", race: "geo", damage: 25, energyCost: 80 });
+    expect(MOVE_BY_NAME.Impale).toMatchObject({ type: "ranged", race: "geo", damage: 25, energyCost: 60 }); // (80 until 2026-11-25: used once a fight)
     expect(canLearnFromCodex(CREATURE_BY_ID.dire_wolf, "Impale")).toBe(false);
   });
 });
@@ -134,7 +134,7 @@ describe("Meditate and Healing Blessing", () => {
     const hit = events.findIndex((e) => e.type === "attack");
     expect(hit).toBeGreaterThan(-1);
     expect(heal).toBeGreaterThan(hit);
-    expect(events[heal]).toMatchObject({ damage: Math.round(999 * 0.6), index: 1 });
+    expect(events[heal]).toMatchObject({ damage: Math.round(999 * 0.3), index: 1 }); // (30% since 2026-11-25; it was 60%)
     // One round only.
     const hp = s.sides.A.team[1].hp;
     resolveRound(s, { A: attack("Strike"), B: attack("Strike") });

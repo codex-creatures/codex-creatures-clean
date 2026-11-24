@@ -54,8 +54,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   - Corpsify (Undead; also Hollow Matriarch, Plague Rat; Dreadpox is already Undead).
   - Barrage (Humanoid, hits every enemy; also Rotgut Fly, The Watcher, Thunderhead, Skull Raven,
     Hollow Matriarch; Leafblade Scout, Aurelius and Sylvaran are already Humanoid).
-  - Erupt (Geo; also Swamp Witch, Mr. Shadows, Ironhide): magic, 25 damage, 70 energy, a 25%
-    chance to cripple for 3–5 rounds.
+  - Erupt (Geo; also Swamp Witch, Mr. Shadows, Ironhide): magic, 25 damage, 60 energy (70 until the
+    2026-11-25 retune), a 25% chance to cripple for 3–5 rounds.
 - ✅ **Special moves** (the user's, 2026-10-27; `SPECIAL_MOVES` in creatureData.ts). Since 2026-11-13 each
   lands as its own race (`raceOfMove` reads `race`; before, they landed neutral). Each has its
   own codex rarity and a list of the species that can learn it (`learners`; not race-locked:
@@ -67,15 +67,16 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     Dustwraith, Thunderhead.
   - **Meditate** (Neutral, utility, Common): 0 energy, 3-round cooldown, +30 energy on top of the
     usual 30. Anyone, Klutz too.
-  - **Healing Blessing** (Divine, utility, Uncommon): 40 energy, 3-round cooldown. Next round,
+  - **Healing Blessing** (Divine, utility, Uncommon): 50 energy, 5-round cooldown. Next round,
     after both sides have attacked (the user, 2026-11-01: it mends the hit just taken), whoever is
-    on your side of the field heals 60% of its max HP, if it's still standing.
+    on your side of the field heals 30% of its max HP, if it's still standing. (60% every 3 rounds
+    for 40 energy until the 2026-11-25 retune: it won 88% of mirror fights as an Uncommon.)
     Thunderhead, Crystal Golem, Veilstalker, Flicker Wisp, Sylvaran.
   - **Corrosive Soak** (Toxic, utility, Rare): 40 energy, no damage. The target's three defences
     drop by 30% of their full value until it leaves the field; no stacking (the user's pick of
     energy, duration and stacking). Bellow Toad, Rotgut Fly, Plague Rat, Glob, Deep Angler,
     Dreadpox, Void Serpent, Hollow Matriarch.
-  - **Impale** (Underkin, ranged, Epic): 25 damage, 80 energy; 60% chance the target can't swap
+  - **Impale** (Underkin, ranged, Epic): 25 damage, 60 energy (80 until 2026-11-25); 60% chance the target can't swap
     out for 2 rounds. Deep Angler, Aurelius, Crystal Golem, Skull Raven, Sylvaran, The Pale Rider.
     The old melee Impale (a Rare scan codex) is retired: an old codex of it is now this one, and a
     creature that learned it keeps it only if it's on this list.
@@ -85,7 +86,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   - A sealed creature still gets replaced when it's knocked out: a seal only stops swaps.
     The AI knows a sealed creature can't swap out (until 2026-11-12 the simple AI, and the
     thinking AI's look-ahead, could try to, which crashed the fight).
-  - **Brace** (Neutral, utility, Rare; the user, 2026-11-03): 50 energy, always goes first; the next
+  - **Brace** (Neutral, utility, Rare; the user, 2026-11-03): 40 energy (50 until 2026-11-25), always goes first; the next
     attack that lands on it this round does 90% less (at least 1). Anyone, Klutz too. 🧪 Claude's
     reading: it lasts that round only, and covers one hit (a barrage's second target isn't it).
   - **Divine Strength / Arcane Channel / Sureshot Blessing** (Divine, utility, Epic; the user,
@@ -267,7 +268,7 @@ power counts for less as attack grows.
   Underkin), Caltrops Humanoid (was neutral), Hobble Hex neutral (was Toxic). Mirage lasts 5 rounds
   (was 3). A creature that loses a codex move it had learned can no longer use it.
 - **Rarity:** Common: Whiplash, Nibble, Crystal Armour, Poison Dart, Headbutt, Slap, Cleansing
-  Water, Rock Toss (the user, 2026-11-20: Underkin's basic hit, ranged, 8 power, 20 energy, no effect; learned by
+  Water, Rock Toss (the user, 2026-11-20: Underkin's basic hit, ranged, 10 power (8 until 2026-11-25), 20 energy, no effect; learned by
   the Underkin creatures; the name is Claude's). Uncommon too: Blessed Bolt (the user, 2026-11-20: Divine's basic hit, ranged, 30 energy; 15
   power 🧪; learned by the Divine creatures). Nibble: +10% each time in a row, up to 10 times (+100%; the
   user, 2026-11-20; it was 5, +50%). A move with no damage (Caltrops, Crystal Armour…) shows as Utility
@@ -288,8 +289,8 @@ power counts for less as attack grows.
   blood goes and the cloud is 50% stronger. Cleansing Water washes the cloud under your team away,
   Flame Body burns only your own team's, Emulate burns the one under the target: it hits double, and the cloud goes up in flames for one more tick of it, as fire (so Toxic creatures take it too; the user, 2026-11-13).
 - ✅ **Caltrops and Force Push** (the user, 2026-11-24): caltrops lie under the foes for the rest of the fight (10% of max
-  HP from each creature that comes in), and nothing but Force Push moves them: a Rare Geo codex (magic, 5 power, 60
-  energy; learned by the Geo and the magic-looking creatures) that hits, shoves the caltrops and any cloud off your
+  HP from each creature that comes in), and nothing but Force Push moves them: a Rare Geo codex (magic, 5 power, 40
+  energy since 2026-11-25, 60 before; learned by the Geo and the magic-looking creatures) that hits, shoves the caltrops and any cloud off your
   side (blood and gore stay), and hurls the caltrops at the target for 10% of its max HP, past armour. Without
   caltrops under you it's just the small hit. ✅ (the user, 2026-11-24) Caltrops hurt the Cyclops's hands as they
   tear free (each steps in for 10%), but never its Eye, which floats (`bossOnFoot`, bossAi.ts); the Hydra's heads and
@@ -301,11 +302,13 @@ power counts for less as attack grows.
   beside its chosen slots: on load those are cut to the slots (`pruneMoves`, lib/creatures/instance.ts; `learned`
   becomes the slot moves that came from codexes). Klutz the same. Ascension carries the codex moves still in its slots.
 - **Poison** keeps whichever has the most left (dose × rounds); a new one never shortens it.
-- **Bleed** (Obsidian, Razor Arrows): until it leaves the field; Undead don't bleed. **Weaken**
+- **Bleed** (Obsidian, Razor Arrows): until it leaves the field; Undead don't bleed. Since the
+  2026-11-25 retune Obsidian Arrows is the sure slow bleed (always, 6% a round; was 10%) and Razor
+  Arrows the gamble (25%, 10% a round; was 50%). **Weaken**
   (Nullifying Voice, Haunting Scream's fallback): an attack style, or all, down. **Ward** (Crystal
   Armour): clears its statuses, then none stick (cripple, poison, venom, bleed, seal, weaken, soak,
   fear) for 3 rounds. **Haunting Scream:** 70% the target flees for a random teammate, who doesn't
-  act that round. **Smoke Bomb:** after its hit it swaps to its best matchup (in the game the player
+  act that round; otherwise its attacks are halved for 5 rounds (3 until 2026-11-25). **Smoke Bomb:** after its hit it swaps to its best matchup (in the game the player
   will pick: 🧪 for now it's chosen for you). **Mega Smash** winds up (paying 50), then can only
   strike or swap; the strike is free and still regains 30. **Fissure** hits every foe on the field
   (like Barrage). **Implode** goes last; if it acts, the user falls.
@@ -315,14 +318,14 @@ power counts for less as attack grows.
   is struck with Haunting Presence's fear and loses its attack). Rare: Bounce (melee, Beast; Smoke
   Bomb's 5 power, 40 energy, 3-round cooldown, but not first, and the player picks who comes in:
   `swapTo` on the attack, a "Bounce to…" panel on the battle screen; the AI gets the best matchup).
-  Epic: Stalactite (ranged, Underkin, 65 energy, 1.5× a heavy hit, no cooldown). Legendary: Curse
-  (magic, Undead, 60 energy, no hit). "Usual damage" is the core moves' half a power per energy.
+  Epic: Stalactite (ranged, Underkin, 50 energy and 2× a heavy hit since 2026-11-25 (65 and 1.5× before: it went unused), no cooldown). Legendary: Curse
+  (magic, Undead, 60 energy, no hit, 3-round cooldown since 2026-11-25). "Usual damage" is the core moves' half a power per energy.
   🧪 Not simmed yet.
 - **Burn** (Flame Spit): like poison, 5% max HP a round for 3–5 rounds, on the bench too, and the
   one with more left stays. Geo are immune. It can sit alongside poison, but not bleed: a burn puts
   out a bleed, and a new bleed puts out a burn (Claude's default for that way round; the user asked
   for burn over bleed). Cleansing Water washes burns off too (Claude's call).
-- **Curse:** the target takes a power-10 magic hit each round for 2–3 rounds (worked out when cast:
+- **Curse:** the target takes a power-6 magic hit (power 10 until 2026-11-25: it won 93% of mirror fights) each round for 2–3 rounds (worked out when cast:
   the caster's attack against its defences, races counted; on the bench too). Each time a cursed
   creature swaps out (any swap: a choice, Smoke Bomb, Bounce, Haunting Scream), 60% it passes the
   curse to a random benched teammate, not the one coming in, which takes it fresh; it keeps its own.
@@ -332,6 +335,17 @@ power counts for less as attack grows.
 - 🧪 Round 2 (core moves neutral): Healing Blessing +21, Rabid Bite +13 at 50 energy (+8 at 70),
   Obsidian Arrows +10, Implode +7; Choking Smog as first drafted +35 (the user's foe-only version is
   built, not yet simmed). Cripple was weak (Cripple 0, Bolas +3, Enfeeble −2); at a 50% stumble +2 to +4 over 3 rounds, so the user made it 3–5 rounds at 50% (Enfeeble kept to 3, Erupt's chance kept at 25%).
+
+- ✅ **The 2026-11-25 retune** (the user, from the codex move audit in docs/two-styles-sim-2026-11.md: every
+  learnable move's facts and a 40-fight mirror sim; a rarity is a band of overall strength, so an Epic should
+  beat a Rare, and nothing moves up a rarity: weaken in place, and bloat Rare rather than Epic). Weakened:
+  Curse's tick power 10 → 6 and a 3-round cooldown (power alone did little: the tick is mostly the caster's attack);
+  Healing Blessing heals 30% every 5 rounds for 50 energy (was 60% every 3 for 40); Obsidian Arrows bleeds
+  6% a round (was 10%; still sure); Razor Arrows' bleed chance 50% → 25%; Headbutt's recoil 20% → 35%. Cheaper:
+  Stalactite 65 → 50 energy and 1.5× → 2× a heavy hit, Impale 80 → 60, Erupt 70 → 60, Force Push 60 → 40,
+  Brace 50 → 40, Cleansing Water 60 → 40, Whiplash 50 → 40, Choking Smog 90 → 75. Up: Rock Toss 8 → 10 power
+  (Claw's), Haunting Scream's fallback weaken 3 → 5 rounds. The three cripples stay three separate Uncommon codexes at the same power (the
+  user: a core, early mechanic). No codex changed rarity, so the registry's rules stand.
 
 ### Planned
 

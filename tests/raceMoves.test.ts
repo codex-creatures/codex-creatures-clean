@@ -58,8 +58,8 @@ describe("what a creature can use and learn", () => {
     for (const [id, m] of [["amber_wasp", "Pounce"], ["storm_phoenix", "Pounce"], ["void_serpent", "Mirage"], ["hollow_matriarch", "Corpsify"]]) expect(canLearnFromCodex(CREATURE_BY_ID[id], m), `${m} ${id}`).toBe(false);
   });
 
-  it("Erupt: 25 magic damage, 70 energy, a 25% chance to cripple for 3-5 rounds", () => {
-    expect(MOVE_BY_NAME.Erupt).toMatchObject({ damage: 25, energyCost: 70, type: "magic", race: "geo", effect: { kind: "cripple", chance: 0.25, minRounds: 3, maxRounds: 5 } });
+  it("Erupt: 25 magic damage, 60 energy (70 until 2026-11-25), a 25% chance to cripple for 3-5 rounds", () => {
+    expect(MOVE_BY_NAME.Erupt).toMatchObject({ damage: 25, energyCost: 60, type: "magic", race: "geo", effect: { kind: "cripple", chance: 0.25, minRounds: 3, maxRounds: 5 } });
     // Its cripple lasts 3 to 5 rounds after this one (+1: it ticks at the end of this round).
     const lengths = new Set<number>();
     for (let i = 0; i < 300; i++) {

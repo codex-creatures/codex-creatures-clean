@@ -171,7 +171,9 @@ describe("the 2026-11 codex moves in a fight", () => {
     expect(has(golem, "bleed") || has(golem, "cripple")).toBe(false);
   });
 
-  it("Obsidian Arrows: the target bleeds 10% a round until it leaves the field; Undead don't bleed", () => {
+  it("Obsidian Arrows: the target bleeds (6% a round since 2026-11-25) until it leaves the field; Undead don't bleed", () => {
+    expect(MOVE_BY_NAME["Obsidian Arrows"].effect).toMatchObject({ kind: "bleed", chance: 1, tick: 0.06 });
+    expect(MOVE_BY_NAME["Razor Arrows"].effect).toMatchObject({ kind: "bleed", chance: 0.25, tick: 0.1 });
     const s = createBattle([big(fighter("thicket_archer", ["Shot", "Obsidian Arrows"]))], [big(fighter("moss_wolf", ["Strike"])), big(fighter("rattlebones", ["Strike"]))]);
     resolveRound(s, { A: attack("Obsidian Arrows"), B: attack("Strike") });
     expect(has(s.sides.B.team[0], "bleed")).toBe(true);
@@ -191,7 +193,7 @@ describe("the 2026-11 codex moves in a fight", () => {
   it("Caltrops is an Epic codex now (the user, 2026-11-24: they last the whole fight); Force Push, its answer, is Rare", () => {
     expect(codexRarityOf("Caltrops")).toBe("epic");
     expect(codexRarityOf("Force Push")).toBe("rare");
-    expect(MOVE_BY_NAME["Force Push"]).toMatchObject({ type: "magic", damage: 5, energyCost: 60, race: "geo" });
+    expect(MOVE_BY_NAME["Force Push"]).toMatchObject({ type: "magic", damage: 5, energyCost: 40, race: "geo" }); // (40 energy since 2026-11-25: it was 60, and went unused)
   });
 
   it("Force Push: a small hit; the caltrops under your team are hurled at the target for 10% of its max HP and go; the cloud goes; blood stays", () => {
@@ -237,7 +239,8 @@ describe("the 2026-11 codex moves in a fight", () => {
     expect(s.sides.A.team[1].hp).toBe(999);
   });
 
-  it("Vampiric Bite heals 30% of its damage; Headbutt costs the user 20% of it", () => {
+  it("Vampiric Bite heals 30% of its damage; Headbutt costs the user 35% of it (20% until 2026-11-25)", () => {
+    expect(MOVE_BY_NAME.Headbutt.effect).toMatchObject({ kind: "recoil", share: 0.35 });
     const s = createBattle([big(fighter("deep_angler", ["Strike", "Vampiric Bite"]))], [big(fighter("moss_wolf", ["Strike"]))]);
     activeOf(s.sides.A).hp = 400; // (hurt, with room to heal)
     resolveRound(s, { A: attack("Vampiric Bite"), B: attack("Strike") });

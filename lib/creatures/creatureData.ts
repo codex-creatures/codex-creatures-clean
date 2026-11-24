@@ -227,7 +227,7 @@ export const RACE_MOVES: Skill[] = [
     learners: ["hollow_matriarch", "storm_phoenix", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran", "rotgut_fly", "pale_rider"],
     desc: "A volley that hits every enemy on the field." },
   // Geo's race move (the user, 2026-10-31).
-  { name: "Erupt",      damage: 25, energyCost: 70, type: "magic",  dmgType: "force",  race: "geo", effect: { kind: "cripple", chance: 0.25, minRounds: 3, maxRounds: 5 },
+  { name: "Erupt",      damage: 25, energyCost: 60, type: "magic",  dmgType: "force",  race: "geo", effect: { kind: "cripple", chance: 0.25, minRounds: 3, maxRounds: 5 },
     learners: ["ironhide", "rust_beetle", "crystalback", "crystal_golem", "dust_sprite", "dustwraith", "mr_shadows", "swamp_witch", "gleamling", "flame_imp", "thunderhead", "tunnel_wyrm", "dreadpox"],
     desc: "25% chance to cripple for 3–5 rounds: the target loses 50% agility and has a 50% chance to stumble and lose each attack." },
 ];
@@ -252,15 +252,16 @@ export const SPECIAL_MOVES: Skill[] = [
   { name: "Meditate", damage: 0, energyCost: 0, type: "magic", dmgType: "force", codexRarity: "common", cooldown: 3, self: true,
     effect: { kind: "meditate", energy: 30 },
     desc: "Restores 30 extra energy. 3-round cooldown." },
-  { name: "Healing Blessing", damage: 0, energyCost: 40, type: "magic", dmgType: "force", race: "divine", codexRarity: "uncommon", cooldown: 3, self: true,
-    effect: { kind: "blessing", heal: 0.6 },
+  // (Heals 30% every 5 rounds for 50 energy since 2026-11-25; it was 60% every 3 for 40, and won 88% of mirror fights as an Uncommon.)
+  { name: "Healing Blessing", damage: 0, energyCost: 50, type: "magic", dmgType: "force", race: "divine", codexRarity: "uncommon", cooldown: 5, self: true,
+    effect: { kind: "blessing", heal: 0.3 },
     learners: ["ironhide", "crystalback", "crystal_golem", "flicker_wisp", "the_watcher", "aurelius", "sylvaran", "gleamling", "flame_imp", "thunderhead", "dreadpox", "pale_rider"],
-    desc: "Next round, once everyone has attacked, whoever you have on the field heals 60% of its max HP (stay, or swap in someone hurt). 3-round cooldown." },
+    desc: "Next round, once everyone has attacked, whoever you have on the field heals 30% of its max HP (stay, or swap in someone hurt). 5-round cooldown." },
   { name: "Corrosive Soak", damage: 0, energyCost: 40, type: "magic", dmgType: "force", race: "toxic", codexRarity: "rare",
     effect: { kind: "soak", cut: 0.3 },
     learners: ["bellow_toad", "crystalback", "hollow_matriarch", "the_watcher", "void_serpent", "swamp_witch", "gleamling", "flame_imp", "thunderhead", "plague_rat", "rotgut_fly", "glob", "dreadpox"],
     desc: "The target's melee, ranged and magic defences drop by 30% until it leaves the field. Doesn't stack." },
-  { name: "Impale", damage: 25, energyCost: 80, type: "ranged", dmgType: "force", race: "geo", codexRarity: "epic",
+  { name: "Impale", damage: 25, energyCost: 60, type: "ranged", dmgType: "force", race: "geo", codexRarity: "epic",
     effect: { kind: "seal", rounds: 2, chance: 0.6 },
     learners: ["ironhide", "crystalback", "crystal_golem", "hollow_matriarch", "veilstalker", "rattlebones", "storm_phoenix", "thicket_archer", "aurelius", "sylvaran", "deep_angler", "tunnel_wyrm", "pale_rider"],
     desc: "60% chance the target can't swap out for 2 rounds." },
@@ -269,7 +270,7 @@ export const SPECIAL_MOVES: Skill[] = [
     learners: ["hollow_matriarch", "storm_phoenix", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran"],
     desc: "The target can't swap out for 2 rounds (30% chance of a third). 5-round cooldown." },
   // The user, 2026-11-03.
-  { name: "Brace", damage: 0, energyCost: 50, type: "magic", dmgType: "force", codexRarity: "rare", self: true,
+  { name: "Brace", damage: 0, energyCost: 40, type: "magic", dmgType: "force", codexRarity: "rare", self: true,
     effect: { kind: "brace", cut: 0.9 },
     desc: "Always goes first. The next attack on it this round does 90% less damage." },
   empower("Divine Strength", "melee"),
