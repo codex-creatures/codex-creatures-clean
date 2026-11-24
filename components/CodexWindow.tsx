@@ -8,6 +8,7 @@
 import { useEffect, useRef } from "react";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import SideArrow from "./SideArrow";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const SWIPE_PX = 40;
@@ -34,8 +35,8 @@ export default function CodexWindow({ index, count, onPrev, onNext, onClose, rar
     <div onClick={(e) => { e.stopPropagation(); onClose(); }}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 220, padding: 16 }}>
       {count > 1 && (["prev", "next"] as const).map((d) => (
-        <button key={d} className={`side-arrow ${d}`} aria-label={d === "prev" ? "Previous codex" : "Next codex"}
-          onClick={(e) => { e.stopPropagation(); (d === "prev" ? onPrev : onNext)(); }}>{d === "prev" ? "‹" : "›"}</button>
+        <SideArrow key={d} dir={d} label={d === "prev" ? "Previous codex" : "Next codex"}
+          onClick={(e) => { e.stopPropagation(); (d === "prev" ? onPrev : onNext)(); }} />
       ))}
       <div className="modal-panel stone-panel" onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}

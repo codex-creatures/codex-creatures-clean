@@ -27,6 +27,7 @@ import MoveSlots from "./MoveSlots";
 import { MoveTile } from "./MoveTile";
 import CodexMove from "./CodexMove";
 import CodexWindow from "./CodexWindow";
+import SideArrow from "./SideArrow";
 import RaceTag from "./RaceTag";
 import ClassBadge from "./ClassBadge";
 import { SOUL_STONES, SOUL_STONE_KEYS, setStoneCost, type SoulStoneKey } from "@/lib/creatures/soulStones";
@@ -230,12 +231,10 @@ export default function CreatureDetailModal({
 
   return (
     <div ref={dragBox} onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}>
-      {/* Previous / next creature, on the sides of the screen (← → keys too) */}
+      {/* Previous / next creature, low on the sides of the screen (← → keys too); the window's foot leaves them room. */}
       {position && position.count > 1 && (["prev", "next"] as const).map((d) => (
-        <button key={d} className={`side-arrow ${d}`} aria-label={d === "prev" ? "Previous creature" : "Next creature"}
-          onClick={(e) => { e.stopPropagation(); (d === "prev" ? onPrev : onNext)?.(); }}>
-          {d === "prev" ? "‹" : "›"}
-        </button>
+        <SideArrow key={d} dir={d} label={d === "prev" ? "Previous creature" : "Next creature"}
+          onClick={(e) => { e.stopPropagation(); (d === "prev" ? onPrev : onNext)?.(); }} />
       ))}
       <div onClick={(e) => {
         e.stopPropagation();
@@ -244,7 +243,7 @@ export default function CreatureDetailModal({
         if (picking && !pickerRef.current?.contains(t) && !t.closest("[data-drop^='slot:']")) closePicker();
       }} className="modal-panel stone-panel" ref={panelRef}
         onScroll={scrollMemo ? (e) => { scrollMemo.current = e.currentTarget.scrollTop; } : undefined}
-        style={{ borderColor: "#12131a", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${c.border}, 0 0 40px ${c.glow}`, padding: 18, width: "100%", maxWidth: 520, height: "92cqh", overflowY: "auto", position: "relative" }}>
+        style={{ borderColor: "#12131a", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${c.border}, 0 0 40px ${c.glow}`, padding: 18, paddingBottom: position && position.count > 1 ? 76 : 18, width: "100%", maxWidth: 520, height: "92cqh", overflowY: "auto", position: "relative" }}>
 
         <button onClick={onClose} aria-label="Close" style={{ position: "absolute", top: 10, right: 12, background: "transparent", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
 

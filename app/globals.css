@@ -386,18 +386,19 @@ body {
 .move-live:hover { filter: brightness(1.12); }
 .move-live:active { transform: translateY(1px); }
 
-/* Big arrows on the screen's sides, to flick between creatures. */
+/* Arrows on the screen's sides, to flick between creatures or codexes (components/SideArrow.tsx):
+   brass buttons low down, so they don't sit over the middle of the window (the user, 2026-11-24). */
 .side-arrow {
-  position: fixed; top: 50%; transform: translateY(-50%); z-index: 210;
-  width: 44px; height: 72px; display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-pixel), monospace; font-size: 40px; line-height: 1; color: #f1d9a0;
-  background: linear-gradient(180deg, rgba(58, 47, 28, 0.92), rgba(28, 23, 14, 0.92)); border: 2px solid #8a6a3a; cursor: pointer;
-  box-shadow: inset 0 2px 0 rgba(195, 154, 85, 0.6), 0 3px 0 rgba(0, 0, 0, 0.6);
+  position: fixed; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 230;
+  width: 52px; height: 52px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  border-radius: 12px; border: 2px solid #1c140b;
+  background: radial-gradient(circle at 50% 35%, #6b5330, #3a2a18 70%);
+  box-shadow: inset 0 0 0 2px #b08a4a, inset 0 3px 0 2px rgba(255, 226, 160, 0.35), inset 0 -3px 0 2px rgba(0, 0, 0, 0.35), 0 4px 0 rgba(0, 0, 0, 0.6), 0 0 14px rgba(0, 0, 0, 0.5);
 }
-.side-arrow.prev { left: max(6px, env(safe-area-inset-left)); }
-.side-arrow.next { right: max(6px, env(safe-area-inset-right)); }
-.side-arrow:hover { background: #3a2a18; color: #ffe9b0; }
-.side-arrow:active { transform: translateY(calc(-50% + 1px)); }
+.side-arrow.prev { left: max(8px, env(safe-area-inset-left)); }
+.side-arrow.next { right: max(8px, env(safe-area-inset-right)); }
+.side-arrow:hover { filter: brightness(1.15); }
+.side-arrow:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px #b08a4a, inset 0 3px 0 2px rgba(0, 0, 0, 0.3), 0 2px 0 rgba(0, 0, 0, 0.6); }
 
 /* The big Fight! button, bottom centre of the room. */
 .fight-btn {
