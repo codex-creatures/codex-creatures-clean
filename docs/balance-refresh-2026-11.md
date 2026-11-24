@@ -72,10 +72,10 @@ legendary attackers have Epic-tank totals, as legendaries do, and now a weakness
 | Rust Beetle | 24/12/18 | 20/28/6 | a shell that sheds arrows; rust fails against magic |
 | Crystalback | 30/24/30 | 12/30/42 | crystal takes magic; big hits shatter it |
 | Crystal Golem | 32/20/26 | 12/27/39 | the user's split: magic, then arrows, shattered by big hits |
-| Hollow Matriarch | 24/22/23 | 30/26/13 | chitin; fire burns webs |
+| Hollow Matriarch | 24/22/23 | 24/9/28 | the user: strong against magic, weaker to melee, arrows are its weakness |
 | Dust Sprite | 2/4/6 | 1/5/6 | a swat disperses it |
 | Flicker Wisp | 4/6/8 | 2/7/9 | the same |
-| Veilstalker | 6/6/8 | 8/8/4 | half out of phase; magic finds it |
+| Veilstalker | 6/6/8 | 10/8/2 | half out of phase; magic finds it (the user's numbers) |
 | The Watcher | 10/16/20 | 16/8/22 | an eye: an arrow in it |
 | Void Serpent | 20/20/24 | 26/26/12 | scales shed blades and bolts; magic doesn't care |
 | Rattlebones | 8/4/6 | 3/9/6 | arrows pass between the bones; a club breaks them |
@@ -90,19 +90,85 @@ legendary attackers have Epic-tank totals, as legendaries do, and now a weakness
 | Sylvaran | 16/24/20 | 10/28/22 | an archer caught in melee |
 | Gleamling | 2/4/6 | 1/5/6 | a mote; swatted |
 | Flame Imp | 4/6/8 | 5/3/10 | a small flame; a thrown stone puts it out |
-| Thunderhead | 16/22/24 | 24/26/12 | blades and arrows pass through a storm; magic grounds it |
-| Deep Angler | 8/10/10 | 5/11/12 | a soft fish; clubbed |
+| Thunderhead | 16/22/24 | 20/22/10 | the user: the same lean, less defence and more HP (HP % 25 → 40): a storm is bulk, not armour |
+| Deep Angler | 8/10/10 | 12/11/5 | the user: melee and magic swapped; a fish that bites, undone by magic |
 | Tunnel Wyrm | 34/24/24 | 50/24/8 | stone plates; soft to magic |
 | Plague Rat | 4/4/4 | 2/5/5 | stomped |
 | Rotgut Fly | 4/6/6 | 6/3/7 | bloated; a bolt pops it |
 | Glob | 26/20/22 | 32/26/10 | the user's read: blows and bolts sink in, magic ignores the goo |
 | Dreadpox | 22/20/28 | 10/22/38 | the dreamcatcher catches curses; bones break |
-| The Pale Rider | 22/20/24 | 28/26/12 | armoured rider; holy fire burns the undead |
+| The Pale Rider | 22/20/24 | 22/20/8 | the user: below Thunderhead, as the harder hitter; holy fire burns the undead |
 
-The eight tanks' rows were simmed (round 5 of the study); the other 27 are drafted on the same rule and not
-yet simmed. The sim to run before building: the round-5 rows plus mirror fights of attacker against attacker
-of the same rarity, to see that no creature's new weakness makes it fall to its counter faster than the user
-wants (a sniper's weak side is already weak).
+**On the rarity gap** (the user asked whether a Rare's 20–30 total against a Legendary's 60–111 is too wide):
+the %s multiply armour rather than being the defence, so a 60% and a 10% are ×1.6 and ×1.1 on the same plate, a
+half again, not six times; they scale with level (nothing at Lv 1, as listed at Lv 15, double at Lv 29); and
+ascension adds each rarity's gap along the creature's own shape, so a climbed Common lands near a natural
+Legendary's totals and keeps its role. The gap is the rarity design, and it closes as the game means it to.
+
+### The package simmed on all 35 (2026-11-25)
+
+The whole package at once: the table above, the HP %s, armour counting in full, every move's hidden power ×4,
+HP as today. Every creature one on one at Lv 16 in Rare gear fitted to its role, against a melee, a ranged and a
+magic attacker of its own rarity in Juggernaut with their style's best weapon (20 fights each, ±11; no Epic
+ranged attacker exists, so Aurelius stands in). Its wins:
+
+| Creature | def | HP % | v melee | v ranged | v magic | Reads |
+|---|---|---|---|---|---|---|
+| Moss Wolf (C) | 5/1/3 | 20 | 65% | 80% | 80% | the strongest Common |
+| Cave Goblin (C) | 2/6/4 | 15 | 55% | 60% | 45% | even |
+| Dust Sprite (C) | 1/5/6 | 0 | 15% | 60% | 45% | a mote: swatted, as drawn |
+| Rattlebones (C) | 3/9/6 | 20 | 50% | 85% | 90% | arrows pass between the bones |
+| Thicket Archer (C) | 1/5/3 | 5 | 45% | 55% | 70% | |
+| Gleamling (C) | 1/5/6 | 0 | 20% | 25% | 60% | frail |
+| Plague Rat (C) | 2/5/5 | 15 | 50% | 55% | 75% | |
+| Amber Wasp (U) | 4/1/4 | 10 | 70% | 50% | 60% | its arrow weakness shows as the lowest |
+| Rust Beetle (U) | 20/28/6 | 60 | 65% | 100% | 70% | a wall; its magic weakness barely shows (the Uncommon caster is a 20) |
+| Flicker Wisp (U) | 2/7/9 | 5 | 15% | 50% | 55% | swatted |
+| Shambler (U) | 22/12/5 | 50 | 100% | 80% | 80% | a wall over its rarity's attackers |
+| Leafblade Scout (U) | 5/5/2 | 15 | 60% | 45% | 40% | its magic weakness shows |
+| Flame Imp (U) | 5/3/10 | 5 | 35% | 65% | 50% | |
+| Rotgut Fly (U) | 6/3/7 | 5 | 45% | 70% | 60% | |
+| Bellow Toad (R) | 11/2/18 | 30 | 55% | 40% | 95% | arrows are its weakness, magic bounces off |
+| Crystalback (R) | 12/30/42 | 70 | 70% | 65% | 100% | |
+| Veilstalker (R) | 10/8/2 | 10 | 20% | 20% | 55% | **weak overall at Rare** |
+| Dustwraith (R) | 6/9/3 | 0 | 20% | 10% | 35% | **weak overall**: a 14-magic caster with no HP |
+| Aurelius (R) | 16/6/11 | 25 | 55% | 35% | 80% | arrows are its weakness |
+| Deep Angler (R) | 12/11/5 | 30 | 45% | 40% | 90% | |
+| Glob (R) | 32/26/10 | 70 | 95% | 50% | 95% | the Rare caster can't punish its magic weakness |
+| Dire Wolf (E) | 14/5/11 | 25 | 65% | 70% | 60% | strong |
+| Crystal Golem (E) | 12/27/39 | 60 | 20% | 60% | 95% | **the user's spec exactly**: shatters to melee, holds magic |
+| The Watcher (E) | 16/8/22 | 15 | 45% | 40% | 55% | |
+| Mr. Shadows (E) | 24/16/8 | 20 | 50% | 25% | 10% | **weak overall for an Epic**: 14/0/24 attack is low; its magic weakness bites hard |
+| Swamp Witch (E) | 4/16/13 | 10 | 30% | 45% | 55% | frail caster, as drawn |
+| Tunnel Wyrm (E) | 50/24/8 | 80 | 90% | 70% | 75% | its magic weakness doesn't show: 80% HP carries it past the Witch |
+| Dreadpox (E) | 10/22/38 | 60 | 50% | 75% | 100% | |
+| Ironhide (L) | 60/33/18 | 50 | 100% | 55% | 20% | holds melee, falls to Thunderhead |
+| Hollow Matriarch (L) | 24/9/28 | 25 | 45% | 60% | 45% | its arrow weakness doesn't show: it kills Sylvaran first |
+| Void Serpent (L) | 26/26/12 | 20 | 30% | 55% | 50% | |
+| Skull Raven (L) | 20/11/26 | 5 | 35% | 45% | 40% | a glass cannon among Legendaries |
+| Sylvaran (L) | 10/28/22 | 10 | 30% | 55% | 20% | melee weakness shows; Thunderhead beats it |
+| Thunderhead (L) | 20/22/10 | 40 | 65% | 70% | 60% | **the strongest Legendary**: 44 magic and 40% HP |
+| The Pale Rider (L) | 22/20/8 | 30 | 50% | 80% | 50% | |
+
+What it says, and what Claude would adjust (the user's call):
+
+- **Weaknesses bite where the counter can also take a hit.** The Golem (20% to melee), Ironhide (20% to magic),
+  Mr. Shadows (10% to magic), Sylvaran (30% to melee), Leafblade (40% to magic), Bellow Toad and Aurelius (40%
+  and 35% to arrows) all show theirs. Where a weakness doesn't show it's because the creature kills the counter
+  first (the Matriarch's 40 melee against Sylvaran) or outlasts it on HP (the Wyrm's 80% against the Witch), or
+  the rarity's attacker in that style is frail (every Common and Uncommon caster).
+- **Four creatures read weak for their rarity:** Veilstalker and Dustwraith at Rare, Mr. Shadows at Epic,
+  Skull Raven at Legendary. The first three were never built as attackers (Dustwraith is an agility creature with
+  14 magic; Mr. Shadows has 38 total attack where other Epics have 46–52). Suggested: HP % Veilstalker 10 → 25,
+  Dustwraith 0 → 15, Mr. Shadows 20 → 35, Skull Raven 5 → 20; and Mr. Shadows' attack is worth a look in its
+  own right.
+- **Tanks at low rarity dominate their rarity** (Shambler 100/80/80, Rust Beetle 65/100/70) because Uncommon
+  attackers hit for little. That's rarity doing its job, but if it feels like too much, Shambler's HP % 50 → 40
+  and Rust Beetle's 60 → 50 would trim it.
+- **Thunderhead** at 65/70/60 against the other Legendaries is the roster's strongest; its 40% HP (the user's
+  call: bulk over armour) with 44 magic does it. If that's too much, 40 → 30.
+- **The Wyrm's magic weakness** only shows as 75% because of its 80% HP. If the user wants its weakness to bite,
+  80 → 65.
 
 **The three sided plates** keep their side and lose the other two to 15 at Rare (scaled by rarity): Colossal
 Shellarmor (melee), Arrowward Mantle (ranged), Arcane Nullifier (magic). Frontier's Mail, Dragonscale,
@@ -131,12 +197,15 @@ which is the point: a Bulwark is a tank's weapon.
 |---|---|---|
 | Walls | 50–80 | Tunnel Wyrm 80, Glob 70, Crystalback 70, Crystal Golem 60, Rust Beetle 60, Dreadpox 60, Shambler 50, Ironhide 50 |
 | Bruisers | 10–30 | Deep Angler 30, Pale Rider 30, Dire Wolf 25, Moss Wolf 20, Rattlebones 20, Cave Goblin 15, Plague Rat 15, Amber Wasp 10 |
-| Hybrids | 10–30 | Bellow Toad 30, Hollow Matriarch 25, Thunderhead 25, Void Serpent 20, Mr. Shadows 20, Leafblade Scout 15, Veilstalker 10 |
+| Hybrids | 10–40 | Thunderhead 40 (the user: bulk over armour), Bellow Toad 30, Hollow Matriarch 25, Void Serpent 20, Mr. Shadows 20, Leafblade Scout 15, Veilstalker 10 |
 | Snipers, casters, assassins | 0–25 | Aurelius 25, The Watcher 15, Sylvaran 10, Swamp Witch 10, Flicker Wisp 5, Flame Imp 5, Thicket Archer 5, Rotgut Fly 5, Skull Raven 5, Dust Sprite 0, Gleamling 0, Dustwraith 0 |
 
 **Rules around it:**
-- It rolls like the other %s (a creature's zero-sum ± rolls can land on HP), it levels like them (0 at Lv 1,
-  full at Lv 15), and ascension adds to it like the rest. Claude's recommendation; the user may prefer it fixed.
+- **It does not level or ascend like the other %s.** Those are 0 at Lv 1, as listed at Lv 15 and double at Lv 29
+  (`levelFactor`), and ascension spreads a budget along the species' shape; an HP % treated the same would be
+  nothing at Lv 1 and 160% on a Lv 29 wall, on top of HP that already grows with level. So: a fixed species
+  value, a creature's birth roll may move it a few points like any stat, and ascension adds a flat +5 a step.
+  (Revised 2026-11-25 from the first draft, which had it levelling.)
 - It shows in the creature's window with the other %s, and the Pit's stat sliders if the Bestiary gets them.
 - Saves: the field is optional; a creature without one takes its species' value (so old saves gain it on load,
   with no roll).
@@ -146,6 +215,48 @@ which is the point: a Bulwark is a tank's weapon.
   blood and clouds are already shares of max HP, so they scale with it.
 - Klutz: his points are spent by the player; HP % joins the stats his points can buy (the user to confirm).
 - The registry's rules carry species %s, so the migration above covers this too.
+
+### The package's team rows (2026-11-25): ×4 on an additive formula flattens who hits hard
+
+The round-5 rows under the whole package (every creature's defences, the HP %s, armour in full, every move's
+hidden power ×4, HP as today; 40 fights, ±8):
+
+| Row | Today | T2 (round 5) | The package |
+|---|---|---|---|
+| Melee walls v melee attackers | 30% | 83% | **100%** |
+| Melee walls v ranged attackers | 5% | 13% | **35%** |
+| Melee walls v magic attackers (their weakness) | 10% | 28% | **85%** |
+| Magic walls v magic attackers | 18% | 90% | 100% |
+| Magic walls v melee attackers (their weakness) | 15% | 18% | 45% |
+| Melee walls, sided plate v mixed / all-round plate v mixed | 8 / 3 | 33 / 33 | **70 / 53** |
+| A tank in a team v a third attacker | 48% | 65% | **88%** |
+| 1v1 Tunnel Wyrm v Dire Wolf / v Sylvaran / v Swamp Witch | 30 / 10 / 25 | 70 / 25 / 40 | 98 / 58 / 75 |
+| 1v1 Crystal Golem v Swamp Witch / v Dire Wolf | 25 / 18 | 55 / 10 | 100 / 45 |
+| Casual random gear v fitted | 15% | 8% | 18% |
+| Race edge | 70% | 68% | 83% |
+| Cyclops / Hydra / Minotaur, un-retuned | 90 / 45 / 95 | 85 / 85 / 100 | 100 / 90 / 100 |
+| Hits to knock out, mixed-team row | 7.2 | 7.8 | 7.1 |
+
+(HP ÷ 1.2 as well: the same shape, fights a tenth shorter, the magic walls' weakness a little sharper at 60%.)
+
+The hold is total and the sided plate beats the all-rounder at last, but **the crumble is gone**: melee walls
+beat the magic attackers they're weak to 85% of the time, a tank is worth far more than a slot (88%), the Golem
+no longer shatters (45%). The cause is the ×4 itself. Damage adds the move's power to the creature's weapon × %,
+and today the creature's part is most of the hit, so a Tunnel Wyrm's Smash (56) is 1.5× below a Dire Wolf's
+(83). With powers ×4 the move is most of the hit, 131 against 158, a 1.2× gap: walls hit nearly as hard as
+attackers, frail casters die to a wall's heavy before their magic breaks through, and the weakness never bites.
+The same flattening is what lifts the casual row and lets the sided plate win, so it isn't all loss, but "a tank
+does little damage" is.
+
+**What follows:** the tier words need the move to be the bigger part of a hit, and "tanks hit softly" needs the
+creature to be the bigger part. Adding can't give both. Multiplying can: if the move's number multiplies the
+creature's swing (weapon × %) instead of adding to it, the Wyrm-to-wolf gap is the swing gap, 31 against 58
+(1.85×, sharper than today), while a 15 is exactly one and a half times a 10 everywhere. So question B becomes
+"multiply", not "×4": the move table re-drafted in swing units (Strike 10, Smash 15, Rush 12, Bone Javelin 20,
+Stalactite 23, Mega Smash 38; bosses likewise), carried behind a flag in `lib/combat/engine.ts` like the triangle
+switch the sims use, off by default, and simmed on these rows before anything is built. If the user would rather
+not change the formula at all, the fallback is T1 as it stood (no ×4): the hold at 80%, the crumble kept, the
+tier words only approximately true.
 
 ## Open: the two questions that gate the rest
 
