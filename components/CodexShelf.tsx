@@ -2,17 +2,17 @@
 // components/CodexShelf.tsx
 // Your codexes, on the bookcase's shelves (size: how many it holds). Shown in
 // the Bookcase. Each is a book on the shelf;
-// tap one to see it in a box on top: its title (and race, for a race
-// codex), then the move it teaches (CodexMove). Nothing tapped, no box (the user, 2026-11-24). Teach shows your creatures,
+// tap one to see it in a window floating over the shelf (CodexWindow: ‹ › or a swipe for the next):
+// its title, then the move it teaches (CodexMove). Teach (in the window) shows your creatures,
 // with their levels, greyed out where one can't learn it; tap one to teach it (if its move
 // slots are full, you pick a move for it to forget). The codex is used up.
 // Sell gets rid of one you don't want (after a Yes), for what a merchant pays, to free the shelf.
-// The box keeps its size whichever codex is picked, so flicking between them moves nothing.
 
 import { useState } from "react";
 import CodexMove from "./CodexMove";
 import { MoveTile } from "./MoveTile";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
+import CodexWindow from "./CodexWindow";
 import { CODEX_SPRITE } from "@/lib/sprites/items";
 import { MOVE_BY_NAME, MOVE_SLOTS, moveOf, canLearnFromCodex, findCreatureTemplate, isSpecialMove, hasSteadyMove, learnRacesOf, resolveMoves, STEADY_MAX_ENERGY } from "@/lib/creatures/creatureData";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
@@ -102,89 +102,87 @@ export default function CodexShelf({ inventory, size, teach, onSell }: { invento
   };
   const forgetter = creatures.find((x) => x.id === forgetting);
 
+  const at = codexes.findIndex((c) => c.id === pickedId);
+  const step = (by: number) => pick(codexes[(at + by + codexes.length) % codexes.length].id);
+  const btn: React.CSSProperties = { fontSize: 14, padding: "6px 14px", minHeight: 44 };
+
   return (
     <>
       <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "4px 0 8px" }}>On the shelf ({codexes.length}/{size})</div>
-      {codexes.length === 0 && !taught ? (
+      {/* What just happened ("X learned Y!", "Sold…"): one line, kept so the shelf never moves. */}
+      <div style={{ fontSize: 13, color: "#7CFC9A", height: 18, lineHeight: "18px", marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{taught ?? ""}</div>
+      {codexes.length === 0 ? (
         <p style={{ fontSize: 13, color: MUTED }}>Nothing yet. Codexes come from scanning and Labyrinth chests; wandering librarians sell race codexes.</p>
       ) : (
-        <>
-          {/* The picked codex: its title, its move, and Teach (or what just happened). */}
-          {(picked || taught) && <div className="stone-panel" style={{ padding: 10, marginBottom: 10, height: 176, boxSizing: "border-box", display: "grid", gridTemplateRows: "auto 1fr auto", gap: 8 }}>
-            {picked ? (
-              <>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                  <span className="pixel-font" title={picked.name} style={{ fontSize: 16, color: RARITY_COLORS[picked.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                    textDecoration: "underline", textUnderlineOffset: 4, textDecorationThickness: 1 }}>{picked.name}</span>
-                </div>
-                <CodexMove move={move!} />
-                <div style={{ display: "flex", alignItems: "center", gap: 6, visibility: teach || onSell ? "visible" : "hidden" }}>
-                  {discarding ? (
-                    <>
-                      <span className="pixel-font" style={{ fontSize: 14, color: GOLD }}>Sell it for {codexSellPrice(move!)} gold?</span>
-                      <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
-                        onClick={() => { const name = picked.name, price = codexSellPrice(move!); onSell!(picked.id); pick(null); setTaught(`Sold ${name} for ${price} gold.`); }}>Yes</button>
-                      <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }} onClick={() => setDiscarding(false)}>No</button>
-                    </>
-                  ) : (
-                    <>
-                      {teach && <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
-                        onClick={() => { setTeaching((v) => !v); setForgetting(null); }}>{teaching ? "Cancel" : "📖 Teach"}</button>}
-                      {onSell && <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
-                        onClick={() => { setDiscarding(true); setTeaching(false); setForgetting(null); }}>🪙 Sell · {codexSellPrice(move!)}</button>}
-                    </>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div style={{ gridRow: "1 / -1", fontSize: 13, color: "#7CFC9A", alignSelf: "center", textAlign: "center" }}>{taught}</div>
-            )}
-          </div>}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: 6 }}>
+          {codexes.map((c) => {
+            const rc = RARITY_COLORS[c.rarity];
+            return (
+              <button key={c.id} onClick={() => pick(c.id)} title={c.name}
+                style={{ minHeight: 72, padding: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                  background: `radial-gradient(circle, ${rarityGlow(c.rarity)}, #101117 75%)`, border: `2px solid ${rc.border}`,
+                  boxShadow: "0 2px 0 rgba(0,0,0,0.5)", color: "white" }}>
+                <PixelSprite sprite={CODEX_SPRITE} scale={1.25} />
+                <span style={{ ...NAME, color: rc.text }}>{c.name.replace(/^Codex: /, "")}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-          {picked && teaching ? (
-            forgetter ? (
-              <ForgetMove key={forgetter.id} creature={forgetter} move={move!} slots={slotsOf(forgetter)} onLearn={(next) => learn(forgetter, next)} onBack={() => setForgetting(null)} />
+      {/* The tapped codex, in a window over the shelf: ‹ › or a swipe for the next one. Teaching happens in it too. */}
+      {picked && (
+        <CodexWindow index={at} count={codexes.length} onPrev={() => step(-1)} onNext={() => step(1)} onClose={() => pick(null)} rarity={picked.rarity}>
+          <span className="pixel-font" title={picked.name} style={{ display: "block", fontSize: 17, color: RARITY_COLORS[picked.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 10 }}>{picked.name}</span>
+          <CodexMove move={move!} />
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, minHeight: 44, visibility: teach || onSell ? "visible" : "hidden" }}>
+            {discarding ? (
+              <>
+                <span className="pixel-font" style={{ fontSize: 14, color: GOLD }}>Sell it for {codexSellPrice(move!)} gold?</span>
+                <button className="pixel-btn" style={btn}
+                  onClick={() => { const name = picked.name, price = codexSellPrice(move!); onSell!(picked.id); pick(null); setTaught(`Sold ${name} for ${price} gold.`); }}>Yes</button>
+                <button className="pixel-btn" style={btn} onClick={() => setDiscarding(false)}>No</button>
+              </>
             ) : (
               <>
-                <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>Teach it to:</div>
-                {creatures.length === 0 && <p style={{ fontSize: 13, color: MUTED }}>You haven&apos;t got any creatures yet.</p>}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(76px, 1fr))", gap: 6 }}>
-                  {creatures.map((x) => {
-                    const no = why(x);
-                    const rc = RARITY_COLORS[x.rarity];
-                    return (
-                      <button key={x.id} disabled={!!no} onClick={() => choose(x)} title={no ? `${x.name}: ${no}` : `Teach ${x.name}`}
-                        style={{ minHeight: 92, padding: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", cursor: no ? "default" : "pointer",
-                          background: `radial-gradient(circle, ${rarityGlow(x.rarity)}, #101117 75%)`, border: `2px solid ${rc.border}`, color: "white",
-                          opacity: no ? 0.4 : 1, filter: no ? "grayscale(1)" : undefined }}>
-                        <PixelSprite sprite={creatureSprite(x.creatureId)} scale={1.5} style={{ maxWidth: "100%", maxHeight: 48, width: "auto", height: "auto" }} />
-                        <span style={{ ...NAME, color: rc.text }}>{x.name}</span>
-                        {/* Its level (the user, 2026-11-21), or why it can't learn it. */}
-                        <span style={{ fontSize: 10, color: no ? MUTED : GOLD }}>{no ?? `Lv ${clampLevel(x.level)}`}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                {teach && <button className="pixel-btn" style={btn}
+                  onClick={() => { setTeaching((v) => !v); setForgetting(null); }}>{teaching ? "Cancel" : "📖 Teach"}</button>}
+                {onSell && <button className="pixel-btn" style={btn}
+                  onClick={() => { setDiscarding(true); setTeaching(false); setForgetting(null); }}>🪙 Sell · {codexSellPrice(move!)}</button>}
               </>
-            )
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: 6 }}>
-              {codexes.map((c) => {
-                const rc = RARITY_COLORS[c.rarity];
-                const on = c.id === pickedId;
-                return (
-                  <button key={c.id} onClick={() => pick(on ? null : c.id)} aria-pressed={on} title={c.name}
-                    style={{ minHeight: 72, padding: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer",
-                      background: `radial-gradient(circle, ${rarityGlow(c.rarity)}, #101117 75%)`, border: `2px solid ${on ? "#ffd66e" : rc.border}`,
-                      boxShadow: on ? "0 0 10px rgba(255,214,110,0.55)" : "0 2px 0 rgba(0,0,0,0.5)", color: "white" }}>
-                    <PixelSprite sprite={CODEX_SPRITE} scale={1.25} />
-                    <span style={{ ...NAME, color: rc.text }}>{c.name.replace(/^Codex: /, "")}</span>
-                  </button>
-                );
-              })}
+            )}
+          </div>
+
+          {teaching && (
+            <div style={{ marginTop: 12 }}>
+              {forgetter ? (
+                <ForgetMove key={forgetter.id} creature={forgetter} move={move!} slots={slotsOf(forgetter)} onLearn={(next) => learn(forgetter, next)} onBack={() => setForgetting(null)} />
+              ) : (
+                <>
+                  <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>Teach it to:</div>
+                  {creatures.length === 0 && <p style={{ fontSize: 13, color: MUTED }}>You haven&apos;t got any creatures yet.</p>}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(76px, 1fr))", gap: 6 }}>
+                    {creatures.map((x) => {
+                      const no = why(x);
+                      const rc = RARITY_COLORS[x.rarity];
+                      return (
+                        <button key={x.id} disabled={!!no} onClick={() => choose(x)} title={no ? `${x.name}: ${no}` : `Teach ${x.name}`}
+                          style={{ minHeight: 92, padding: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", cursor: no ? "default" : "pointer",
+                            background: `radial-gradient(circle, ${rarityGlow(x.rarity)}, #101117 75%)`, border: `2px solid ${rc.border}`, color: "white",
+                            opacity: no ? 0.4 : 1, filter: no ? "grayscale(1)" : undefined }}>
+                          <PixelSprite sprite={creatureSprite(x.creatureId)} scale={1.5} style={{ maxWidth: "100%", maxHeight: 48, width: "auto", height: "auto" }} />
+                          <span style={{ ...NAME, color: rc.text }}>{x.name}</span>
+                          {/* Its level (the user, 2026-11-21), or why it can't learn it. */}
+                          <span style={{ fontSize: 10, color: no ? MUTED : GOLD }}>{no ?? `Lv ${clampLevel(x.level)}`}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
-        </>
+        </CodexWindow>
       )}
     </>
   );
