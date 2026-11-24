@@ -153,7 +153,7 @@ kill theirs.
   `start` (title screen: components/OnlineStart.tsx online, components/LocalStart.tsx without),
   `privacy` (update it whenever online features change what's stored). `lab/*` are dev tools
   outside the phone frame. Only two are on the live site (`page.tsx`): `/lab/models` and
-  `/lab/propreview`; the rest are `page.dev.tsx`, seen by `npm run dev` only (the user, 2026-11-24) (`/lab/placement`, `/lab/three` the 3D walk view's modes, `/lab/chest` the 3D chest draft, `/lab/hero` the 3D hero draft, `/lab/art` the placeholder art drafts, `/lab/props` every 3D thing in the Labyrinth, `/lab/den` the new Den, `/lab/models` its 3D things one at a time, turned freely, `/lab/propbuilder` props built from recipes, lib/props, `/lab/propreview` them lit to walk round…).
+  `/lab/propreview`; the rest are `page.dev.tsx`, seen by `npm run dev` only (the user, 2026-11-24) (`/lab/placement`, `/lab/three` the 3D walk view's modes, `/lab/chest` the 3D chest draft, `/lab/hero` the 3D hero draft, `/lab/art` the placeholder art drafts, `/lab/props` every 3D thing in the Labyrinth, `/lab/den` the new Den, `/lab/models` its 3D things one at a time, turned freely, `/lab/propbuilder` props built from recipes, lib/props, `/lab/propreview` them lit to walk round, `/lab/pvp` the PvP balance lab: two hand-built teams fought by hand, both sides yours, under today's rules or a two-style package from docs/two-styles-sim-2026-11.md…).
 - `hooks/useGameState.ts`: the game state, plus load/save. `hooks/useDropGeneration.ts`: scan drops.
 - `lib/`: the rules, kept pure where possible and tested.
   - `combat/` (engine, battle, teamBattle, AIs, loadout); `creatures/` (species and moves, levels,
