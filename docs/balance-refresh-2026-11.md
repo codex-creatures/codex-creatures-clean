@@ -131,6 +131,45 @@ Legendary at par or a little above, and a climbed Common edges one (65%) because
 attacking shape. Walls today can't win up a rarity (Glob 13%, Crystalback 0%, climbed 33% / 3%); under the package
 they can (38%, 30%; climbed 68%, 60%).
 
+**The last check (the user, 2026-11-25): aggressive creatures less tanky, even spreads lower.** The tanks were
+drawn by hand but the attackers had kept today's totals, so the Void Serpent (72 attack) sat at 64 defence spread
+26/26/12, nearly a wall. Lowered to the rule, totals no longer kept for these twelve:
+
+| Creature | Attack total | Was | Now | Why |
+|---|---|---|---|---|
+| Void Serpent (L) | 72 | 26/26/12 (64) | 15/15/8 (38) | aggressive and even: the lowest Legendary defence |
+| Thunderhead (L) | 82 | 20/22/10 (52) | 16/18/8 (42) | the hardest hitter; its bulk is the 40% HP |
+| Skull Raven (L) | 68 | 20/11/26 (57) | 14/8/20 (42) | an assassin |
+| Sylvaran (L) | 66 | 10/28/22 (60) | 8/22/16 (46) | a glass cannon |
+| Hollow Matriarch (L) | 64 | 24/9/28 (61) | 18/7/22 (47) | aggressive hybrid |
+| The Pale Rider (L) | 76 | 22/20/8 (50) | 18/16/6 (40) | the hard hitter, still below Thunderhead |
+| The Watcher (E) | 52 | 16/8/22 (46) | 12/6/18 (36) | aggressive caster |
+| Aurelius (R) | 34 | 16/6/11 (33) | 12/5/9 (26) | an attacker at near-tank totals |
+| Bellow Toad (R) | 26 | 11/2/18 (31) | 8/2/14 (24) | even-spread hybrid |
+| Deep Angler (R) | 38 | 12/11/5 (28) | 10/10/5 (25) | aggressive |
+| Rattlebones (C) | 20 | 3/9/6 (18) | 2/7/5 (14) | a Common attacker at a tank's share |
+| Plague Rat (C) | 14 | 2/5/5 (12) | 2/5/3 (10) | even |
+
+Ironhide stays the Legendary wall at 111; Mr. Shadows (38 attack, 48 defence) is left as the Epic that isn't
+aggressive, its attack flagged for a look. The ascension budgets (the gaps between rarity averages, set
+2026-11-18) drift a little with these and are re-derived at build time.
+
+Checked (1v1, Lv 16, Rare gear fitted to role, 20 fights each ±11; the package **without ×4**: defences, HP %,
+armour in full). The Legendaries spread out and the Serpent is a hitter, not a wall: Thunderhead 60 / 70 / 50
+against melee / ranged / magic attackers of its rarity (and 93% against Ironhide, 55% against the Serpent), Pale
+Rider 40 / 55 / 45, Matriarch 50 / 50 / 50, Sylvaran 40 / 40 / 40, Void Serpent 25 / 50 / 50 (70% against Ironhide,
+45% against Thunderhead), Skull Raven 35 / 30 / 60, Ironhide 90 / 20 / 15. Lower down: Aurelius 50 / 60 / 80, Deep
+Angler 45 / 40 / 60, Bellow Toad 50 / 45 / 70, Rattlebones 75 / 55 / 80. The rarity rows hold at about 70/30 a step
+(Deep Angler v Dire Wolf 25%, Glob v Pale Rider 45%, Moss Wolf v Pale Rider 18%; climbed, 63–75%). The walls on
+their sided plates hold one style and lose two, the three-style form of "pick a side": Glob 75 / 30 / 50, Shambler
+75 / 30 / 40, Rust Beetle 10 / 75 / 20, Crystalback 15 / 20 / 80, Dreadpox 20 / 15 / 75, Tunnel Wyrm 50 / 20 / 30,
+Crystal Golem 0 / 15 / 40. Two are soft on their own side without ×4 (the Golem holds the Witch 40% where it held
+95% with ×4; the Wyrm holds the Dire Wolf 50% against 98%): a wall with a shield does so little damage that a frail
+attacker outlasts it. That is question B in one line: how much a wall's own hits count decides whether it holds
+its side at 40% or 95%, and the multiply model is the version that gives the hold without flattening attackers.
+(Mr. Shadows' 5 / 5 / 0 is the check's gear rule putting it in a shield and anti-magic plate because its defences
+outweigh its attack; a player would give it a staff.)
+
 ### The package simmed on all 35 (2026-11-25)
 
 The whole package at once: the table above, the HP %s, armour counting in full, every move's hidden power ×4,
