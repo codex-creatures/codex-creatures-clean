@@ -105,6 +105,32 @@ half again, not six times; they scale with level (nothing at Lv 1, as listed at 
 ascension adds each rarity's gap along the creature's own shape, so a climbed Common lands near a natural
 Legendary's totals and keeps its role. The gap is the rarity design, and it closes as the game means it to.
 
+Measured (1v1, Lv 16, Rare gear fitted to role, 40 fights, ±8; "A" is the lower rarity; the stats are what each has in
+the fight: HP, best attack, average defence):
+
+| Matchup | Today | Package (no ×4) | Today's in-fight numbers, A v B |
+|---|---|---|---|
+| Rare attacker v Epic attacker (Deep Angler v Dire Wolf) | 28% | 40% | HP 206 v 238 · atk 67 v 78 · def 69 v 69 |
+| Rare attacker v Legendary attacker (Deep Angler v Pale Rider) | 33% | 30% | HP 193 v 282 · atk 67 v 77 · def 69 v 77 |
+| Rare archer v Legendary archer (Aurelius v Sylvaran) | 20% | 25% | HP 210 v 278 · atk 99 v 125 · def 70 v 75 |
+| Rare wall v Epic attacker (Glob v Dire Wolf) | 18% | 50% | HP 257 v 238 · atk 25 v 78 · def 81 v 69 |
+| Rare wall v Legendary attacker (Glob v Pale Rider) | 13% | 38% | |
+| Rare magic wall v Legendary caster (Crystalback v Thunderhead) | 0% | 30% | |
+| Common v Legendary (Moss Wolf v Pale Rider) | 8% | 8% | HP 164 v 281 · atk 63 v 77 · def 64 v 77 |
+| Climbed to Legendary: Deep Angler +2 v Pale Rider | 63% | 68% | HP 264 v 282 · atk 80 v 77 · def 75 v 77 |
+| Aurelius +2 v Sylvaran | 55% | 55% | HP 281 v 278 · atk 118 v 125 |
+| Glob +2 v Pale Rider | 33% | 68% | |
+| Crystalback +2 v Thunderhead | 3% | 60% | |
+| Moss Wolf +4 v Pale Rider | 65% | 75% | HP 288 v 281 · atk 93 v 77 |
+| Pale Rider v Pale Rider (yardstick) | 40% | 43% | |
+
+One rarity step is about 70/30, two about 75/25, Common to Legendary 92/8. The %s exaggerate it: Rare to
+Legendary reads 38 against 76 attack % and is 67 against 77 in the fight (+15%), defence +12%; **the real gap is
+HP, 193 against 282**, from base HP 88 against 140. Ascension closes it completely: a climbed Rare meets a natural
+Legendary at par or a little above, and a climbed Common edges one (65%) because its budget lands along its own
+attacking shape. Walls today can't win up a rarity (Glob 13%, Crystalback 0%, climbed 33% / 3%); under the package
+they can (38%, 30%; climbed 68%, 60%).
+
 ### The package simmed on all 35 (2026-11-25)
 
 The whole package at once: the table above, the HP %s, armour counting in full, every move's hidden power ×4,
