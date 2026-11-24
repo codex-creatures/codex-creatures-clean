@@ -55,20 +55,54 @@ docs/two-styles-sim-2026-11.md.)
 
 ## 2. How the defensive stats are reshuffled
 
-**Only the eight tanks change.** Their three defences (melee / ranged / magic def) keep today's total and lean
-to what the creature is made of, with one clear weakness (the user's rule, with the Crystal Golem and Glob as
-his examples). Everything else about every creature, and every attacker's %s, stays.
+**Every creature's three defences** (melee / ranged / magic def) keep today's total and lean to what the creature
+is made of, with one clear weakness (the user, 2026-11-25: not just the tanks; the Amber Wasp is weak to
+ranged, say). Attack %s and agility are untouched. A tank still out-defends an attacker of its rarity on the
+totals (Glob 68 against the Rares' 18–33; Crystal Golem 78 and Dreadpox 70 against the Epics' 30–48); the
+legendary attackers have Epic-tank totals, as legendaries do, and now a weakness each.
 
-| Tank | Today | Draft | Why |
+| Creature | Today | Draft | Read |
 |---|---|---|---|
-| Crystal Golem | 32/20/26 | 12/27/39 | crystal takes magic, rock takes arrows, big hits shatter it (the user's split) |
-| Glob | 26/20/22 | 32/26/10 | blows sink in, bolts stick, magic ignores the goo (the user) |
-| Tunnel Wyrm | 34/24/24 | 50/24/8 | plates of stone against teeth and arrows; soft to magic |
-| Rust Beetle | 24/12/18 | 20/28/6 | a shell that sheds arrows; rust fails against magic |
-| Shambler | 16/10/13 | 22/12/5 | blows sink into rot; holy and magic burn it |
-| Crystalback | 30/24/30 | 12/30/42 | the Golem's pattern, crystal first |
-| Dreadpox | 22/20/28 | 10/22/38 | the dreamcatcher catches curses; bones break |
+| Moss Wolf | 4/2/3 | 5/1/3 | a running wolf; arrows find it |
+| Amber Wasp | 3/3/3 | 4/1/4 | swatted from range (the user's example) |
+| Bellow Toad | 10/3/18 | 11/2/18 | slimy hide and poison glands; a soft target for arrows |
+| Dire Wolf | 12/8/10 | 14/5/11 | fur against teeth; shot down |
 | Ironhide | 44/30/37 | 60/33/18 | hide against teeth, then arrows; magic goes through |
+| Cave Goblin | 2/6/4 | 2/6/4 | already weak to melee: small, crushed |
+| Rust Beetle | 24/12/18 | 20/28/6 | a shell that sheds arrows; rust fails against magic |
+| Crystalback | 30/24/30 | 12/30/42 | crystal takes magic; big hits shatter it |
+| Crystal Golem | 32/20/26 | 12/27/39 | the user's split: magic, then arrows, shattered by big hits |
+| Hollow Matriarch | 24/22/23 | 30/26/13 | chitin; fire burns webs |
+| Dust Sprite | 2/4/6 | 1/5/6 | a swat disperses it |
+| Flicker Wisp | 4/6/8 | 2/7/9 | the same |
+| Veilstalker | 6/6/8 | 8/8/4 | half out of phase; magic finds it |
+| The Watcher | 10/16/20 | 16/8/22 | an eye: an arrow in it |
+| Void Serpent | 20/20/24 | 26/26/12 | scales shed blades and bolts; magic doesn't care |
+| Rattlebones | 8/4/6 | 3/9/6 | arrows pass between the bones; a club breaks them |
+| Shambler | 16/10/13 | 22/12/5 | blows sink into rot; magic burns it |
+| Dustwraith | 4/8/6 | 6/9/3 | a whirlwind: arrows blown aside, magic unmakes it |
+| Mr. Shadows | 18/14/16 | 24/16/8 | blades pass through a shade; light burns it |
+| Skull Raven | 14/24/19 | 20/11/26 | a bird: shot down |
+| Thicket Archer | 2/4/3 | 1/5/3 | in cover from arrows; caught in melee |
+| Leafblade Scout | 4/4/4 | 5/5/2 | nimble; no answer to magic |
+| Aurelius | 16/6/11 | 16/6/11 | already weak to ranged: a big target |
+| Swamp Witch | 8/14/11 | 4/16/13 | frail; keeps arrows and spells off |
+| Sylvaran | 16/24/20 | 10/28/22 | an archer caught in melee |
+| Gleamling | 2/4/6 | 1/5/6 | a mote; swatted |
+| Flame Imp | 4/6/8 | 5/3/10 | a small flame; a thrown stone puts it out |
+| Thunderhead | 16/22/24 | 24/26/12 | blades and arrows pass through a storm; magic grounds it |
+| Deep Angler | 8/10/10 | 5/11/12 | a soft fish; clubbed |
+| Tunnel Wyrm | 34/24/24 | 50/24/8 | stone plates; soft to magic |
+| Plague Rat | 4/4/4 | 2/5/5 | stomped |
+| Rotgut Fly | 4/6/6 | 6/3/7 | bloated; a bolt pops it |
+| Glob | 26/20/22 | 32/26/10 | the user's read: blows and bolts sink in, magic ignores the goo |
+| Dreadpox | 22/20/28 | 10/22/38 | the dreamcatcher catches curses; bones break |
+| The Pale Rider | 22/20/24 | 28/26/12 | armoured rider; holy fire burns the undead |
+
+The eight tanks' rows were simmed (round 5 of the study); the other 27 are drafted on the same rule and not
+yet simmed. The sim to run before building: the round-5 rows plus mirror fights of attacker against attacker
+of the same rarity, to see that no creature's new weakness makes it fall to its counter faster than the user
+wants (a sniper's weak side is already weak).
 
 **The three sided plates** keep their side and lose the other two to 15 at Rare (scaled by rarity): Colossal
 Shellarmor (melee), Arrowward Mantle (ranged), Arcane Nullifier (magic). Frontier's Mail, Dragonscale,
