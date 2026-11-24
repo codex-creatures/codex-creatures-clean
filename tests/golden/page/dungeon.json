@@ -14,7 +14,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "eeb6532fd2db4eff095ca5e9920b7c0724b2be70"
+    "hash": "963791ebd49e27c616439583baac0b7f5cd0af58"
    }
   },
   {
@@ -31,7 +31,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "eeb6532fd2db4eff095ca5e9920b7c0724b2be70"
+    "hash": "963791ebd49e27c616439583baac0b7f5cd0af58"
    }
   },
   {
@@ -61,7 +61,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "87a84bb2f3d65f5c32558192448a8b0442748374"
+    "hash": "11cd8d612f301ae9dd6340eaf54b28091d5869a0"
    }
   },
   {
@@ -91,7 +91,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "cfce9a9157d11ce5731b17b0db602df992fc226f"
+    "hash": "caa15cca9af305d9307481cc7a0f1a719b2a3995"
    }
   },
   {
@@ -121,7 +121,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "852d5f1c2389bc033381abbfe5171e948bf399c9"
+    "hash": "ff0dd93f5c7ce7a1c70db623ae91bf01493a7b48"
    }
   },
   {
@@ -151,7 +151,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "e09bca3216a6a78d932d06adf93a93d630f87471"
+    "hash": "fdd3414f88d20c3b60dfdf535348228c7b74653a"
    }
   },
   {
@@ -189,7 +189,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "f022df574774bc7080d636f616b91ae4d66182e1"
+    "hash": "9e5a7faede9195f5da63c9e54003df9ff94c382d"
    }
   },
   {
@@ -230,7 +230,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "9aa0f345733b74cadf5cc264c77624e8eb4150b3"
+    "hash": "241d9cddcf908a7febdfc1059751b8f17c75402b"
    }
   },
   {
@@ -271,7 +271,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "71b346ab06904a290f7fff48bc049fab3ddd9095"
+    "hash": "6b4279307a8d916e2d351bfff34589b5faa949a5"
    }
   },
   {
@@ -312,7 +312,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "4984f0d54a32d54b2369ce494f075865299a3406"
+    "hash": "6c5d1feb751cb99f70e8c383897d7d438c790dc0"
    }
   },
   {
@@ -353,7 +353,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "fdcc1f91eb60df809f71133ef22fe6e3a8e8b384"
+    "hash": "bcfed965ba5e1e6bfc22e0dfedcc9222ba533403"
    }
   },
   {
@@ -394,7 +394,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "cd15b24311ee0c1f190bb9bc31d35a48b5f80f4a"
+    "hash": "f7d317c9d4bc167d72a3fd6bce770e51cb611691"
    }
   },
   {
@@ -436,7 +436,7 @@
       "18 gold"
      ]
     },
-    "hash": "ece2dbc68b6d9b12e97e6fcfb14001ce9bfdd85b"
+    "hash": "2bc9d4cd3b6b2a1ee054f935746e59a8f4e0a77c"
    }
   },
   {
@@ -478,7 +478,7 @@
       "18 gold"
      ]
     },
-    "hash": "ece2dbc68b6d9b12e97e6fcfb14001ce9bfdd85b"
+    "hash": "2bc9d4cd3b6b2a1ee054f935746e59a8f4e0a77c"
    }
   },
   {
@@ -520,7 +520,7 @@
       "18 gold"
      ]
     },
-    "hash": "694bb1c5b7075811eab1140f037fca422cda4ce5"
+    "hash": "db8d6086196136f1f3b4b85ad127c827a94fb7ce"
    }
   },
   {
@@ -562,7 +562,7 @@
       "18 gold"
      ]
     },
-    "hash": "eadd9e658427aac5582874cd1cb73ce9c5c6cf61"
+    "hash": "7fe178be179c58da3dda7949f3b539b15f3cecac"
    }
   },
   {
@@ -604,7 +604,7 @@
       "18 gold"
      ]
     },
-    "hash": "99d67992b7f147a509458d29cf73e34093540272"
+    "hash": "e50d4af34e878d6fba621d7243bb20e1ab83a41e"
    }
   },
   {
@@ -646,7 +646,7 @@
       "18 gold"
      ]
     },
-    "hash": "79a3c21bd36c31d3575edce76e8a41c946c5635e"
+    "hash": "79a710d921443bfa94140cc067862a3d3fa243c3"
    }
   },
   {
@@ -689,7 +689,7 @@
       "11 gold"
      ]
     },
-    "hash": "0113f53632b45609308400e06775a835e7026f3b"
+    "hash": "fdf5e5bbaed3819431ec9aa4e37ca6a989921cea"
    }
   },
   {
@@ -732,7 +732,7 @@
       "11 gold"
      ]
     },
-    "hash": "802685cf62a8aa9b0425436f0891c0a91a349d7f"
+    "hash": "e48b7452111ca63da0588b49a4f24a92a184f583"
    }
   },
   {
@@ -775,7 +775,7 @@
       "11 gold"
      ]
     },
-    "hash": "b51c3fb97488a8945fc38006984d754e404571a4"
+    "hash": "dd2fe18d9422d815e7b073441682e05c0f0916c7"
    }
   },
   {
@@ -818,7 +818,7 @@
       "11 gold"
      ]
     },
-    "hash": "6be8779d9985a0015cf32aeed6bb9919ed544b4f"
+    "hash": "582ca1f9bdff6d883ce3948df2370eabbb9a46eb"
    }
   },
   {
@@ -861,7 +861,7 @@
       "11 gold"
      ]
     },
-    "hash": "ee9eceabc6a6aafa5c89f371df9bf9ed34e511a8"
+    "hash": "8ffbce536cd2cdb00872c0e7a8766cf632129b20"
    }
   },
   {
@@ -905,7 +905,7 @@
       "12 gold"
      ]
     },
-    "hash": "bf3c8489bb1959ab732549fdca2313d44a484a39"
+    "hash": "5071110f39fbf2523ed600255db17876e48bcb35"
    }
   },
   {
@@ -949,7 +949,7 @@
       "12 gold"
      ]
     },
-    "hash": "a9999b3f4ea1763cc35773e2a8ad1ca9d98453b6"
+    "hash": "cc2e3c789b86bd6b73bae753866315d4d0378fd2"
    }
   },
   {
@@ -993,7 +993,7 @@
       "12 gold"
      ]
     },
-    "hash": "53e4130728a5d870e6485e270d3b54bc27f223ca"
+    "hash": "f27c677550c4fc9d6e950f1159212cc8ecc1d6fe"
    }
   },
   {
@@ -1037,7 +1037,7 @@
       "12 gold"
      ]
     },
-    "hash": "555c519ffb5e00bc8d3a0409e868690a854b6581"
+    "hash": "16813ca51e1e7db63499a52db858ef2615349d23"
    }
   },
   {
@@ -1081,7 +1081,7 @@
       "12 gold"
      ]
     },
-    "hash": "bc16eb65b65abe474fe694e1b004c7582a3e3d9b"
+    "hash": "5a79479b5dc048bdab022fd2ab455159c72d913d"
    }
   },
   {
@@ -1126,7 +1126,7 @@
       "14 gold"
      ]
     },
-    "hash": "eccc110b805c9c2f563db6a6477f42207952e547"
+    "hash": "5e7fca35381d086a8fb5e47b3e8fdc8c8e86866c"
    }
   },
   {
@@ -1171,7 +1171,7 @@
       "14 gold"
      ]
     },
-    "hash": "c156762c4f3ac5d0caf875854835a020729f7b5b"
+    "hash": "83048acab1979759c3454ff356a73cb9a03e6edc"
    }
   },
   {
@@ -1216,7 +1216,7 @@
       "14 gold"
      ]
     },
-    "hash": "f01e725a5a41f47f75941b973e0ca1ad120f03e5"
+    "hash": "0e903112a978f9bbd33dad7beb2f331d744a8073"
    }
   },
   {
@@ -1261,7 +1261,7 @@
       "14 gold"
      ]
     },
-    "hash": "72418f475431a98f397a77fbfae5911cde69e7e3"
+    "hash": "c572f29d5d1acae0a450a5224604590b86fb91fe"
    }
   },
   {
@@ -1306,7 +1306,7 @@
       "14 gold"
      ]
     },
-    "hash": "97cbd91b37aee49b1e6dc6be95922132da27dc14"
+    "hash": "1807728c9ecdafca5aa2d6aeaf4dc8a521011154"
    }
   },
   {
@@ -1352,7 +1352,7 @@
       "19 gold"
      ]
     },
-    "hash": "4ba71cd2c15fee6f80ad12c176d80dcf397d772f"
+    "hash": "3c4fa204f17da86fe2d4d561eef88ef343c0011b"
    }
   },
   {
@@ -1398,7 +1398,7 @@
       "19 gold"
      ]
     },
-    "hash": "a43d2a2629dc0891b587be0e987e42a2c86b355f"
+    "hash": "8ce9f637f45ce6bd2d524393a8757a4e6c3b4301"
    }
   },
   {
@@ -1444,7 +1444,7 @@
       "19 gold"
      ]
     },
-    "hash": "1ba41f42f8a641aa00ea9a94fe3a7137c4aee07d"
+    "hash": "50cab7007d956d7bbfec374eb58a11d6836f728f"
    }
   },
   {
@@ -1490,7 +1490,7 @@
       "19 gold"
      ]
     },
-    "hash": "d108a5497e91cf397742d9c5b1c763a9b4c8fe9c"
+    "hash": "9eb8bba6757e08f3f90f8ee31ad84be81affa3d4"
    }
   },
   {
@@ -1536,7 +1536,7 @@
       "19 gold"
      ]
     },
-    "hash": "d108a5497e91cf397742d9c5b1c763a9b4c8fe9c"
+    "hash": "9eb8bba6757e08f3f90f8ee31ad84be81affa3d4"
    }
   },
   {
@@ -1582,7 +1582,7 @@
       "19 gold"
      ]
     },
-    "hash": "d108a5497e91cf397742d9c5b1c763a9b4c8fe9c"
+    "hash": "9eb8bba6757e08f3f90f8ee31ad84be81affa3d4"
    }
   },
   {
@@ -1631,7 +1631,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "0cf58522d99a9ed8a92f8ba2fcf43c8c170a13cb"
+    "hash": "41210029823fb291a5c5f5f858128b8e627ee2d8"
    }
   },
   {
@@ -1652,7 +1652,7 @@
     },
     "bag": [],
     "run": null,
-    "hash": "dc6c77ce70322b50443aaebc3e744d5e25179515"
+    "hash": "11d3eef0997f0fbef412855ecb7295a35d9c8eee"
    }
   }
  ],
@@ -1684,7 +1684,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "34070812a7f6af98feac3e77b7354d91ac07a5f4"
+    "hash": "e38f706417d7c8a113ce7fd8d73254b05012e67a"
    }
   },
   {
@@ -1714,7 +1714,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "bf5f3575170dadf0c3ff8be3b0880c9caafc639f"
+    "hash": "404241f3530e91615b5c46123d87105e83126e1d"
    }
   },
   {
@@ -1744,7 +1744,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "e68d2ce308f9fb70ff08523139d58a6ff775ca22"
+    "hash": "8d1a3e04096c0a67316b1b00d3ed32ee3744e3b1"
    }
   },
   {
@@ -1761,7 +1761,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "7282b0a0cca605325f8fb88ca9ac754f513308a0"
+    "hash": "b965806f8c8b7639123008606922b3c92a19d99e"
    }
   }
  ],
@@ -1793,7 +1793,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "b3b5d30e939a077d7cbd41a84ca16cdda1446285"
+    "hash": "f08906271822750585f4f2ae27bf32904770f7cf"
    }
   },
   {
@@ -1823,7 +1823,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "a7bf9b77e57002e5c1688182dc3ea9bcbaa4649e"
+    "hash": "5a1aa8fa29918c737b40a752923382c8314c25db"
    }
   },
   {
@@ -1853,7 +1853,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "a7bf9b77e57002e5c1688182dc3ea9bcbaa4649e"
+    "hash": "5a1aa8fa29918c737b40a752923382c8314c25db"
    }
   },
   {
@@ -1883,7 +1883,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "dff324e432fe86b385386799c5531459f08e1147"
+    "hash": "9d80eb0340a607b7dd2abaeb55da77ec92102fdc"
    }
   },
   {
@@ -1900,7 +1900,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "c324de939382add2d709c048653580492a393401"
+    "hash": "26bef84207badee6b4a07d8b5f3a3045991c933b"
    }
   }
  ]
