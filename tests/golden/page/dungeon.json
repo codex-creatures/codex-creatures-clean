@@ -186,7 +186,7 @@
   },
   {
    "step": "room 1: loot open",
-   "screen": "← Den🌀 The Encampment500way r0floor objectThe sack✕---15 goldArrowward Mantle HelmTap to look · double-tap or drag to takeTake all🎒 Bindle 0/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (2)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment500way r0floor objectThe sack✕---15 goldArrowward Mantle HelmTap to look · double-tap or drag to takeTake all--🎒 Bindle 0/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (2)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 500,
     "creatures": [
@@ -216,7 +216,7 @@
   },
   {
    "step": "room 1: took all",
-   "screen": "← Den🌀 The Encampment515way r0The sack✕Empty-----Tap to look · double-tap or drag to takeTake all🎒 Bindle 1/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 1/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment515way r0The sack✕Empty-----Tap to look · double-tap or drag to takeTake all--🎒 Bindle 1/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 1/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 515,
     "creatures": [
@@ -325,7 +325,7 @@
   },
   {
    "step": "room 2: opened what's here",
-   "screen": "← Den🌀 The Encampment515way r5floor objectThe stash✕--Lesser PotionLesser PotionThunderhead CrossbowTap to look · double-tap or drag to takeTake all🎒 Bindle 0/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Stash🔍 Look inside (3)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment515way r5floor objectThe stash✕--Lesser PotionLesser PotionThunderhead CrossbowTap to look · double-tap or drag to takeTake all--🎒 Bindle 0/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Stash🔍 Look inside (3)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 515,
     "creatures": [
@@ -362,7 +362,7 @@
   },
   {
    "step": "room 2: took all",
-   "screen": "← Den🌀 The Encampment515way r5The stash✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done StashEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment515way r5The stash✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all--🎒 Bindle 3/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done StashEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 515,
     "creatures": [
@@ -626,7 +626,7 @@
   },
   {
    "step": "room 3: loot open",
-   "screen": "← Den🌀 The Encampment515way r6way r8floor objectThe sack✕----18 goldTap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment515way r6way r8floor objectThe sack✕----18 goldTap to look · double-tap or drag to takeTake all--🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 515,
     "creatures": [
@@ -670,7 +670,7 @@
   },
   {
    "step": "room 3: took all",
-   "screen": "← Den🌀 The Encampment533way r6way r8The sack✕Empty-----Tap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment533way r6way r8The sack✕Empty-----Tap to look · double-tap or drag to takeTake all--🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 533,
     "creatures": [
@@ -760,7 +760,7 @@
   },
   {
    "step": "room 4: opened what's here",
-   "screen": "← Den🌀 The Encampment533way r4way r11floor objectThe chest✕-Metal bars ×2140 gold123 goldTorchTap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Chest🔍 Look inside (4)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment533way r4way r11floor objectThe chest✕-Metal bars ×2140 gold123 goldTorchTap to look · double-tap or drag to takeTake all--🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Chest🔍 Look inside (4)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 533,
     "creatures": [
@@ -805,7 +805,7 @@
   },
   {
    "step": "room 4: took all",
-   "screen": "← Den🌀 The Encampment796way r4way r11floor objectThe chest✕----TorchYour bindle is fullTake all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Chest🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment796way r4way r11floor objectThe chest✕----TorchYour bindle is fullTake all--🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Chest🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 796,
     "creatures": [
@@ -1001,7 +1001,7 @@
   },
   {
    "step": "room 5: loot open",
-   "screen": "← Den🌀 The Encampment796way r9way r11floor objectThe sack✕----13 goldTap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment796way r9way r11floor objectThe sack✕----13 goldTap to look · double-tap or drag to take (your bag is full)Take all--🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 796,
     "creatures": [
@@ -1050,7 +1050,7 @@
   },
   {
    "step": "room 5: took all",
-   "screen": "← Den🌀 The Encampment809way r9way r11The sack✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment809way r9way r11The sack✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all--🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 809,
     "creatures": [
@@ -1250,7 +1250,7 @@
   },
   {
    "step": "room 6: loot open",
-   "screen": "← Den🌀 The Encampment809way r3way r12floor objectThe sack✕----13 goldTap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment809way r3way r12floor objectThe sack✕----13 goldTap to look · double-tap or drag to take (your bag is full)Take all--🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 809,
     "creatures": [
@@ -1300,7 +1300,7 @@
   },
   {
    "step": "room 6: took all",
-   "screen": "← Den🌀 The Encampment822way r3way r12The sack✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment822way r3way r12The sack✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all--🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 822,
     "creatures": [
@@ -1402,7 +1402,7 @@
   },
   {
    "step": "room 7: opened what's here",
-   "screen": "← Den🌀 The Encampment822way bossfloor objectThe stash✕--Healing PotionLesser PotionLesser PotionTap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Stash🔍 Look inside (3)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment822way bossfloor objectThe stash✕--Healing PotionLesser PotionLesser PotionTap to look · double-tap or drag to take (your bag is full)Take all--🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Stash🔍 Look inside (3)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 822,
     "creatures": [
@@ -1453,7 +1453,7 @@
   },
   {
    "step": "room 7: took all",
-   "screen": "← Den🌀 The Encampment822way bossfloor objectThe stash✕--Healing PotionLesser PotionLesser PotionYour bindle is fullTake all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Stash🔍 Look inside (3)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment822way bossfloor objectThe stash✕--Healing PotionLesser PotionLesser PotionYour bindle is fullTake all--🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Stash🔍 Look inside (3)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 822,
     "creatures": [
@@ -1759,7 +1759,7 @@
   },
   {
    "step": "haul: took all",
-   "screen": "← Den🌀 The Encampment875The Encampment is yours!✨ 42 XP — Cave Goblin +42🌟 You reached explorer level 2!🎒 Bindle · 0 free×2🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (1)ItemsLesser PotionCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (4)ItemsTorchHealing PotionLesser PotionLesser Potion🏠 Return to DenThe chief's chest✕----Lesser PotionYour bindle is fullTake all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Done",
+   "screen": "← Den🌀 The Encampment875The Encampment is yours!✨ 42 XP — Cave Goblin +42🌟 You reached explorer level 2!🎒 Bindle · 0 free×2🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (1)ItemsLesser PotionCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (4)ItemsTorchHealing PotionLesser PotionLesser Potion🏠 Return to DenThe chief's chest✕----Lesser PotionYour bindle is fullTake all--🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Done",
    "save": {
     "gold": 875,
     "creatures": [
