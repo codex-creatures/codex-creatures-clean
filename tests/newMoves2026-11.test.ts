@@ -28,7 +28,7 @@ describe("who can learn the new codexes", () => {
     }
   });
   it("Blood Sacrifice: its own list now (the v2 review: it was Dark Seal's); an Epic codex, 70 energy", () => {
-    expect(MOVE_BY_NAME["Blood Sacrifice"].learners).toEqual(["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "dreadpox", "pale_rider"]);
+    expect(MOVE_BY_NAME["Blood Sacrifice"].learners).toEqual(["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "dreadpox", "pale_rider", "hexed_puppet"]);
     for (const t of CREATURE_TEMPLATES) expect(canLearnFromCodex(t, "Blood Sacrifice"), t.id).toBe(MOVE_BY_NAME["Blood Sacrifice"].learners!.includes(t.id));
     expect((codexDrop("Blood Sacrifice") as CreatureOrItemDrop).rarity).toBe("epic");
     expect(MOVE_BY_NAME["Blood Sacrifice"]).toMatchObject({ energyCost: 70, damage: 0 });
