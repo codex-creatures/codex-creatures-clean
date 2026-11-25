@@ -1,0 +1,1043 @@
+[
+ {
+  "n": 1,
+  "id": "hollow_cherub",
+  "name": "Hollow Cherub",
+  "races": [
+   "Divine",
+   "Undead"
+  ],
+  "rarity": "common",
+  "style": "magic",
+  "arch": "Arcanist",
+  "def": "ranged",
+  "weak": "melee",
+  "why": "cracked porcelain: one blow shatters it",
+  "look": "a cracked porcelain cherub statue come to life, chubby baby angel with empty black eye sockets, chipped stubby moth-like wings, hairline cracks leaking faint light",
+  "file": "01_hollow_cherub.png",
+  "size": [
+   102,
+   111
+  ]
+ },
+ {
+  "n": 2,
+  "id": "censer_monk",
+  "name": "Censer Monk",
+  "races": [
+   "Divine",
+   "Humanoid"
+  ],
+  "rarity": "uncommon",
+  "style": "magic",
+  "arch": "Warden",
+  "def": "magic",
+  "weak": "ranged",
+  "why": "slow and robed: an easy shot",
+  "look": "a hunched hooded monk in a heavy grey-brown robe, face hidden in shadow, swinging a smoking brass censer on a long chain, incense smoke curling",
+  "file": "02_censer_monk.png",
+  "size": [
+   96,
+   114
+  ]
+ },
+ {
+  "n": 3,
+  "id": "weeping_saint",
+  "name": "Weeping Saint",
+  "races": [
+   "Divine",
+   "Geo"
+  ],
+  "rarity": "rare",
+  "style": "magic",
+  "arch": "Warden",
+  "def": "magic",
+  "weak": "melee",
+  "why": "old stone: big hits crack it",
+  "look": "a weathered stone statue of a veiled saint with hands clasped, black ichor tears running down its blank face, cracked and mossy marble, floating slightly above a broken plinth",
+  "file": "03_weeping_saint.png",
+  "size": [
+   96,
+   125
+  ]
+ },
+ {
+  "n": 4,
+  "id": "halo_moth",
+  "name": "Halo Moth",
+  "races": [
+   "Divine",
+   "Beast"
+  ],
+  "rarity": "common",
+  "style": "ranged",
+  "arch": "Spellbow",
+  "def": "magic",
+  "weak": "ranged",
+  "why": "papery wings: an arrow tears them",
+  "look": "a large pale ghostly moth with dusty white wings marked with staring eye patterns, a thin glowing golden ring halo floating above its furry head",
+  "file": "04_halo_moth.png",
+  "size": [
+   117,
+   78
+  ]
+ },
+ {
+  "n": 5,
+  "id": "penitent",
+  "name": "Penitent",
+  "races": [
+   "Divine",
+   "Humanoid"
+  ],
+  "rarity": "uncommon",
+  "style": "melee",
+  "arch": "Bruiser",
+  "def": "melee",
+  "weak": "magic",
+  "why": "faith of iron, mind of glass",
+  "look": "a gaunt barefoot flagellant in torn sackcloth, a spiked iron cage locked over his head, carrying a heavy chain flail, scarred bony body",
+  "file": "05_penitent.png",
+  "size": [
+   83,
+   122
+  ]
+ },
+ {
+  "n": 6,
+  "id": "seraph_husk",
+  "name": "Seraph Husk",
+  "races": [
+   "Divine",
+   "Undead"
+  ],
+  "rarity": "epic",
+  "style": "magic",
+  "arch": "Battlemage",
+  "def": "magic",
+  "weak": "ranged",
+  "why": "huge tattered wings: a target from afar",
+  "look": "an emaciated fallen angel with six tattered wings of bone and grey feathers, eyes opening all over the wings, holding a broken golden spear, dim cracked halo",
+  "file": "06_seraph_husk.png",
+  "size": [
+   123,
+   120
+  ]
+ },
+ {
+  "n": 7,
+  "id": "bell_wraith",
+  "name": "Bell Wraith",
+  "races": [
+   "Divine",
+   "Undead"
+  ],
+  "rarity": "rare",
+  "style": "magic",
+  "arch": "Arcanist",
+  "def": "ranged",
+  "weak": "melee",
+  "why": "strike the bell and it rings itself apart",
+  "look": "a floating cracked bronze church bell with a pale screaming ghost face inside it, a tattered grey shroud trailing beneath, rusted chain dangling from the top",
+  "file": "07_bell_wraith.png",
+  "size": [
+   70,
+   118
+  ]
+ },
+ {
+  "n": 8,
+  "id": "grave_crawler",
+  "name": "Grave Crawler",
+  "races": [
+   "Undead"
+  ],
+  "rarity": "common",
+  "style": "melee",
+  "arch": "Skirmisher",
+  "def": "ranged",
+  "weak": "magic",
+  "why": "low to the ground, but holy light burns",
+  "look": "a legless rotting zombie dragging itself along the ground with long bony arms and clawed fingers, torn grave clothes, spine showing, grey-green skin",
+  "file": "08_grave_crawler.png",
+  "size": [
+   105,
+   116
+  ]
+ },
+ {
+  "n": 9,
+  "id": "ribcage_spider",
+  "name": "Ribcage Spider",
+  "races": [
+   "Undead",
+   "Beast"
+  ],
+  "rarity": "uncommon",
+  "style": "melee",
+  "arch": "Skirmisher",
+  "def": "ranged",
+  "weak": "melee",
+  "why": "arrows pass through the ribs; a club snaps them",
+  "look": "a spider built from an old human ribcage, eight long legs of finger bones and joints, a cracked human skull as its head with glowing green eye sockets",
+  "file": "09_ribcage_spider.png",
+  "size": [
+   119,
+   115
+  ]
+ },
+ {
+  "n": 10,
+  "id": "lantern_ghoul",
+  "name": "Lantern Ghoul",
+  "races": [
+   "Undead",
+   "Humanoid"
+  ],
+  "rarity": "uncommon",
+  "style": "ranged",
+  "arch": "Sniper",
+  "def": "magic",
+  "weak": "melee",
+  "why": "a scrawny thing once you reach it",
+  "look": "a hunched grey ghoul with a long lolling tongue and sharp teeth, holding up an iron lantern with a trapped glowing blue soul inside, a satchel of bone shards to throw",
+  "file": "10_lantern_ghoul.png",
+  "size": [
+   112,
+   115
+  ]
+ },
+ {
+  "n": 11,
+  "id": "coffin_mimic",
+  "name": "Coffin Mimic",
+  "races": [
+   "Undead",
+   "Underkin"
+  ],
+  "rarity": "rare",
+  "style": "melee",
+  "arch": "Bulwark",
+  "def": "melee",
+  "weak": "magic",
+  "why": "rotten wood shrugs off blows but burns",
+  "look": "an upright rotting wooden coffin come alive, its lid split into a jagged mouth of teeth and a long tongue, grasping pale arms reaching out of its sides, iron nails and chains",
+  "file": "11_coffin_mimic.png",
+  "size": [
+   91,
+   116
+  ]
+ },
+ {
+  "n": 12,
+  "id": "drowned_bride",
+  "name": "Drowned Bride",
+  "races": [
+   "Undead"
+  ],
+  "rarity": "rare",
+  "style": "magic",
+  "arch": "Arcanist",
+  "def": "ranged",
+  "weak": "melee",
+  "why": "a ghost you can still grab",
+  "look": "a waterlogged ghost bride in a torn grey wedding dress and long veil, seaweed in her black hair, dripping water, hollow eyes, pale blue-green skin, floating",
+  "file": "12_drowned_bride.png",
+  "size": [
+   96,
+   124
+  ]
+ },
+ {
+  "n": 13,
+  "id": "gravewarden",
+  "name": "Gravewarden",
+  "races": [
+   "Undead",
+   "Humanoid"
+  ],
+  "rarity": "epic",
+  "style": "melee",
+  "arch": "Bulwark",
+  "def": "melee",
+  "weak": "magic",
+  "why": "plate and stone, but nothing inside to protect",
+  "look": "a huge armoured corpse knight in rusted plate armour, holding a cracked tombstone as a shield and a heavy rusted sword, glowing eyes in a dark helm, tattered cape",
+  "file": "13_gravewarden.png",
+  "size": [
+   115,
+   120
+  ]
+ },
+ {
+  "n": 14,
+  "id": "marrow_leech",
+  "name": "Marrow Leech",
+  "races": [
+   "Undead",
+   "Toxic"
+  ],
+  "rarity": "common",
+  "style": "melee",
+  "arch": "Skirmisher",
+  "def": "melee",
+  "weak": "ranged",
+  "why": "soft and slow: pinned by a shot",
+  "look": "a fat pale segmented leech rearing up, its round mouth a ring of tiny human teeth around a skull-like opening, glistening grey skin with dark veins",
+  "file": "14_marrow_leech.png",
+  "size": [
+   92,
+   115
+  ]
+ },
+ {
+  "n": 15,
+  "id": "carrion_stork",
+  "name": "Carrion Stork",
+  "races": [
+   "Beast",
+   "Undead"
+  ],
+  "rarity": "uncommon",
+  "style": "melee",
+  "arch": "Ranger",
+  "def": "melee",
+  "weak": "ranged",
+  "why": "a tall bird: shot down",
+  "look": "a gaunt featherless stork with patchy black feathers, ribs showing through grey skin, a long blood-stained beak, thin stilt legs, hunched vulture posture",
+  "file": "15_carrion_stork.png",
+  "size": [
+   118,
+   119
+  ]
+ },
+ {
+  "n": 16,
+  "id": "gutsnout",
+  "name": "Gutsnout",
+  "races": [
+   "Beast",
+   "Toxic"
+  ],
+  "rarity": "common",
+  "style": "melee",
+  "arch": "Bruiser",
+  "def": "melee",
+  "weak": "magic",
+  "why": "thick hide, dull mind",
+  "look": "a hairless wrinkled boar-like creature with a mole's snout, far too many crooked teeth, pustules and sores on its pink-grey skin, tiny eyes, stubby clawed legs",
+  "file": "16_gutsnout.png",
+  "size": [
+   117,
+   93
+  ]
+ },
+ {
+  "n": 17,
+  "id": "gulper",
+  "name": "Gulper",
+  "races": [
+   "Beast",
+   "Underkin"
+  ],
+  "rarity": "rare",
+  "style": "melee",
+  "arch": "Bruiser",
+  "def": "melee",
+  "weak": "magic",
+  "why": "all jaw, no mind",
+  "look": "a blind pale cave fish walking on four fleshy fin-legs, an enormous unhinged jaw full of needle teeth, translucent skin showing bones, no eyes",
+  "file": "17_gulper.png",
+  "size": [
+   128,
+   128
+  ]
+ },
+ {
+  "n": 18,
+  "id": "skinwing",
+  "name": "Skinwing",
+  "races": [
+   "Beast",
+   "Undead"
+  ],
+  "rarity": "common",
+  "style": "ranged",
+  "arch": "Skirmisher",
+  "def": "magic",
+  "weak": "ranged",
+  "why": "thin wings: an arrow brings it down",
+  "look": "a naked hairless bat with translucent veiny skin wings, huge ragged ears, a wrinkled face with needle teeth, mouth open shrieking",
+  "file": "18_skinwing.png",
+  "size": [
+   119,
+   123
+  ]
+ },
+ {
+  "n": 19,
+  "id": "mantis_widow",
+  "name": "Mantis Widow",
+  "races": [
+   "Beast",
+   "Toxic"
+  ],
+  "rarity": "epic",
+  "style": "melee",
+  "arch": "Skirmisher",
+  "def": "melee",
+  "weak": "ranged",
+  "why": "thin limbs: shot from range",
+  "look": "a gaunt pale praying mantis with a human-like skull face, long scythe forelimbs raised, bone-white chitin with dark veins, thin wings folded",
+  "file": "19_mantis_widow.png",
+  "size": [
+   120,
+   117
+  ]
+ },
+ {
+  "n": 20,
+  "id": "tick_hulk",
+  "name": "Tick Hulk",
+  "races": [
+   "Beast",
+   "Toxic"
+  ],
+  "rarity": "rare",
+  "style": "melee",
+  "arch": "Bulwark",
+  "def": "melee",
+  "weak": "ranged",
+  "why": "bloated: one arrow pops it",
+  "look": "a giant engorged tick, swollen dark purple blood-filled body with stretched shiny skin, a small armoured head with barbed mouthparts, eight short hairy legs",
+  "file": "20_tick_hulk.png",
+  "size": [
+   121,
+   96
+  ]
+ },
+ {
+  "n": 21,
+  "id": "rat_king",
+  "name": "Rat King",
+  "races": [
+   "Beast",
+   "Toxic"
+  ],
+  "rarity": "epic",
+  "style": "magic",
+  "arch": "Battlemage",
+  "def": "melee",
+  "weak": "magic",
+  "why": "a knot of minds, easily confused",
+  "look": "a knot of many diseased rats fused together, their tails tangled into one writhing mass, multiple snarling heads, a crude crown of bones on the largest rat, green sores",
+  "file": "21_rat_king.png",
+  "size": [
+   118,
+   112
+  ]
+ },
+ {
+  "n": 22,
+  "id": "goblin_slinger",
+  "name": "Goblin Slinger",
+  "races": [
+   "Underkin",
+   "Humanoid"
+  ],
+  "rarity": "common",
+  "style": "ranged",
+  "arch": "Sniper",
+  "def": "ranged",
+  "weak": "melee",
+  "why": "scrawny up close",
+  "look": "a scrawny grey cave goblin with big ears and yellow eyes, wearing brass goggles and a ragged loincloth, whirling a leather sling, pouch of stones on his belt",
+  "file": "22_goblin_slinger.png",
+  "size": [
+   121,
+   111
+  ]
+ },
+ {
+  "n": 23,
+  "id": "mole_hag",
+  "name": "Mole Hag",
+  "races": [
+   "Underkin"
+  ],
+  "rarity": "uncommon",
+  "style": "magic",
+  "arch": "Arcanist",
+  "def": "magic",
+  "weak": "melee",
+  "why": "frail and blind",
+  "look": "a blind wrinkled mole-woman crone hunched over, pink star-shaped nose, big digging claws, a dripping candle stuck on her head, leaning on a crooked root staff, ragged shawl",
+  "file": "23_mole_hag.png",
+  "size": [
+   110,
+   118
+  ]
+ },
+ {
+  "n": 24,
+  "id": "grub_keeper",
+  "name": "Grub Keeper",
+  "races": [
+   "Underkin",
+   "Toxic"
+  ],
+  "rarity": "uncommon",
+  "style": "melee",
+  "arch": "Bruiser",
+  "def": "melee",
+  "weak": "ranged",
+  "why": "fat and slow",
+  "look": "a fat pale bald goblin with a big belly, carrying a sack of squirming white grubs over his shoulder and a knotted club, grubs crawling on him, wicked grin",
+  "file": "24_grub_keeper.png",
+  "size": [
+   111,
+   104
+  ]
+ },
+ {
+  "n": 25,
+  "id": "deep_gnawer",
+  "name": "Deep Gnawer",
+  "races": [
+   "Underkin",
+   "Beast"
+  ],
+  "rarity": "rare",
+  "style": "melee",
+  "arch": "Bulwark",
+  "def": "melee",
+  "weak": "magic",
+  "why": "armoured but simple",
+  "look": "a blind armoured tunnel rodent with overlapping bony plates on its back, a shovel-shaped bony snout, huge yellow gnawing incisors, big digging claws",
+  "file": "25_deep_gnawer.png",
+  "size": [
+   119,
+   113
+  ]
+ },
+ {
+  "n": 26,
+  "id": "lamplurker",
+  "name": "Lamplurker",
+  "races": [
+   "Underkin"
+  ],
+  "rarity": "rare",
+  "style": "magic",
+  "arch": "Spellbow",
+  "def": "magic",
+  "weak": "melee",
+  "why": "spindly limbs snap",
+  "look": "a tall spindly grey cave creature with a long thin neck and huge white pupil-less eyes, holding up a glowing blue mushroom like a lantern, long fingers",
+  "file": "26_lamplurker.png",
+  "size": [
+   110,
+   122
+  ]
+ },
+ {
+  "n": 27,
+  "id": "trog_brute",
+  "name": "Troglodyte Brute",
+  "races": [
+   "Underkin",
+   "Humanoid"
+  ],
+  "rarity": "epic",
+  "style": "melee",
+  "arch": "Bruiser",
+  "def": "melee",
+  "weak": "magic",
+  "why": "strong body, dull mind",
+  "look": "a hulking eyeless grey troglodyte with stone growths on his shoulders, wielding a huge stalactite as a club, hunched with long arms, tattered hide loincloth",
+  "file": "27_trog_brute.png",
+  "size": [
+   119,
+   112
+  ]
+ },
+ {
+  "n": 28,
+  "id": "gloom_gnome",
+  "name": "Gloom Gnome",
+  "races": [
+   "Underkin"
+  ],
+  "rarity": "common",
+  "style": "magic",
+  "arch": "Arcanist",
+  "def": "magic",
+  "weak": "melee",
+  "why": "tiny: a swat flattens it",
+  "look": "a tiny wrinkled old gnome with a long grey beard, wearing a drooping dark mushroom cap as a hat, holding a staff topped with glowing fungus, sly sunken eyes",
+  "file": "28_gloom_gnome.png",
+  "size": [
+   95,
+   115
+  ]
+ },
+ {
+  "n": 29,
+  "id": "cinder_husk",
+  "name": "Cinder Husk",
+  "races": [
+   "Geo",
+   "Undead"
+  ],
+  "rarity": "uncommon",
+  "style": "magic",
+  "arch": "Arcanist",
+  "def": "magic",
+  "weak": "melee",
+  "why": "charred bones crumble",
+  "look": "a charred black skeleton with molten orange cracks glowing through its bones, smoking ember eyes, wisps of smoke rising, hunched posture",
+  "file": "29_cinder_husk.png",
+  "size": [
+   116,
+   120
+  ]
+ },
+ {
+  "n": 30,
+  "id": "slag_crab",
+  "name": "Slag Crab",
+  "races": [
+   "Geo",
+   "Beast"
+  ],
+  "rarity": "common",
+  "style": "melee",
+  "arch": "Bulwark",
+  "def": "melee",
+  "weak": "magic",
+  "why": "rock shell, nothing against a spell",
+  "look": "a crab whose shell is cooled black lava rock with glowing orange seams, one oversized jagged rock claw, smoke venting from its back",
+  "file": "30_slag_crab.png",
+  "size": [
+   117,
+   93
+  ]
+ },
+ {
+  "n": 31,
+  "id": "obsidian_stalker",
+  "name": "Obsidian Stalker",
+  "races": [
+   "Geo"
+  ],
+  "rarity": "rare",
+  "style": "melee",
+  "arch": "Skirmisher",
+  "def": "magic",
+  "weak": "melee",
+  "why": "glass: a heavy blow shatters it",
+  "look": "a lean four-legged predator made of jagged black volcanic glass shards, sharp angular body, glowing red crack for a mouth, hunting crouch",
+  "file": "31_obsidian_stalker.png",
+  "size": [
+   121,
+   74
+  ]
+ },
+ {
+  "n": 32,
+  "id": "rust_revenant",
+  "name": "Rust Revenant",
+  "races": [
+   "Geo",
+   "Undead"
+  ],
+  "rarity": "epic",
+  "style": "melee",
+  "arch": "Battlemage",
+  "def": "melee",
+  "weak": "magic",
+  "why": "empty armour held together by a spell",
+  "look": "a corroded suit of armour with nothing inside but swirling iron filings and a sickly green glow, flaking orange rust, holding a pitted rusted axe",
+  "file": "32_rust_revenant.png",
+  "size": [
+   70,
+   121
+  ]
+ },
+ {
+  "n": 33,
+  "id": "ash_crone",
+  "name": "Ash Crone",
+  "races": [
+   "Geo",
+   "Humanoid"
+  ],
+  "rarity": "rare",
+  "style": "magic",
+  "arch": "Arcanist",
+  "def": "magic",
+  "weak": "ranged",
+  "why": "flaking ash: an arrow scatters it",
+  "look": "a hunched old crone made of flaking grey ash, embers glowing in her eye sockets, holding a smouldering ember lantern, ash drifting off her ragged edges",
+  "file": "33_ash_crone.png",
+  "size": [
+   107,
+   112
+  ]
+ },
+ {
+  "n": 34,
+  "id": "magma_slug",
+  "name": "Magma Slug",
+  "races": [
+   "Geo",
+   "Toxic"
+  ],
+  "rarity": "common",
+  "style": "ranged",
+  "arch": "Sniper",
+  "def": "melee",
+  "weak": "magic",
+  "why": "a crusted hide, nothing against a spell",
+  "look": "a big slug with a cracked dark rock crust on its back and a glowing molten underside, eye stalks, dripping lava from its mouth",
+  "file": "34_magma_slug.png",
+  "size": [
+   106,
+   71
+  ]
+ },
+ {
+  "n": 35,
+  "id": "basalt_sentinel",
+  "name": "Basalt Sentinel",
+  "races": [
+   "Geo"
+  ],
+  "rarity": "epic",
+  "style": "magic",
+  "arch": "Warden",
+  "def": "magic",
+  "weak": "melee",
+  "why": "a big hit cracks the column",
+  "look": "a tall hexagonal basalt column with a carved stern face, two stone arms of stacked hexagonal rocks, glowing blue runes carved down its body",
+  "file": "35_basalt_sentinel.png",
+  "size": [
+   82,
+   119
+  ]
+ },
+ {
+  "n": 36,
+  "id": "plague_doctor",
+  "name": "Plague Doctor",
+  "races": [
+   "Humanoid",
+   "Toxic"
+  ],
+  "rarity": "uncommon",
+  "style": "ranged",
+  "arch": "Sniper",
+  "def": "magic",
+  "weak": "melee",
+  "why": "a doctor, not a fighter",
+  "look": "a tall plague doctor in a black leather beaked mask with round glass eyes, wide brimmed hat, long waxed coat, holding a glass vial of green liquid ready to throw",
+  "file": "36_plague_doctor.png",
+  "size": [
+   114,
+   121
+  ]
+ },
+ {
+  "n": 37,
+  "id": "grave_robber",
+  "name": "Grave Robber",
+  "races": [
+   "Humanoid",
+   "Undead"
+  ],
+  "rarity": "common",
+  "style": "melee",
+  "arch": "Skirmisher",
+  "def": "ranged",
+  "weak": "magic",
+  "why": "no protection against curses",
+  "look": "a hunched cloaked grave robber with a dirty shovel and a lumpy sack over his shoulder, a hooded face with a scarf, small lantern on his belt",
+  "file": "37_grave_robber.png",
+  "size": [
+   104,
+   118
+  ]
+ },
+ {
+  "n": 38,
+  "id": "butcher",
+  "name": "Butcher",
+  "races": [
+   "Humanoid"
+  ],
+  "rarity": "rare",
+  "style": "melee",
+  "arch": "Bruiser",
+  "def": "melee",
+  "weak": "ranged",
+  "why": "a big slow target",
+  "look": "a huge hooded executioner butcher with a black leather hood, bloodstained apron over a bare belly, holding a massive meat cleaver, hooks and chains on his belt",
+  "file": "38_butcher.png",
+  "size": [
+   114,
+   127
+  ]
+ },
+ {
+  "n": 39,
+  "id": "hexed_puppet",
+  "name": "Hexed Puppet",
+  "races": [
+   "Humanoid",
+   "Undead"
+  ],
+  "rarity": "uncommon",
+  "style": "magic",
+  "arch": "Arcanist",
+  "def": "ranged",
+  "weak": "melee",
+  "why": "wood and string: easily broken",
+  "look": "a cracked wooden marionette with a porcelain doll face and a painted grin, strings rising up into darkness, jointed limbs dangling, tattered jester clothes",
+  "file": "39_hexed_puppet.png",
+  "size": [
+   107,
+   124
+  ]
+ },
+ {
+  "n": 40,
+  "id": "ratcatcher",
+  "name": "Ratcatcher",
+  "races": [
+   "Humanoid",
+   "Beast"
+  ],
+  "rarity": "common",
+  "style": "ranged",
+  "arch": "Ranger",
+  "def": "ranged",
+  "weak": "melee",
+  "why": "keeps his distance for a reason",
+  "look": "a gaunt ratcatcher in a long patched coat and floppy hat, rats perched on his shoulders, a small hand crossbow, a cage of rats at his belt",
+  "file": "40_ratcatcher.png",
+  "size": [
+   105,
+   124
+  ]
+ },
+ {
+  "n": 41,
+  "id": "flesh_tailor",
+  "name": "Flesh Tailor",
+  "races": [
+   "Humanoid",
+   "Undead"
+  ],
+  "rarity": "epic",
+  "style": "melee",
+  "arch": "Battlemage",
+  "def": "melee",
+  "weak": "magic",
+  "why": "stitched flesh unravels under spells",
+  "look": "a tall stitched-together figure of mismatched grey skin, huge scissors for one hand and long needles for fingers on the other, thread hanging from its seams, sewn-shut mouth",
+  "file": "41_flesh_tailor.png",
+  "size": [
+   110,
+   124
+  ]
+ },
+ {
+  "n": 42,
+  "id": "goat_cultist",
+  "name": "Goat Cultist",
+  "races": [
+   "Humanoid",
+   "Undead"
+  ],
+  "rarity": "rare",
+  "style": "magic",
+  "arch": "Spellbow",
+  "def": "magic",
+  "weak": "melee",
+  "why": "a robe, not armour",
+  "look": "a robed cultist in a dark red hooded robe wearing a goat skull mask with curled horns, holding an open tome with a lit black candle on it, ritual daggers on belt",
+  "file": "42_goat_cultist.png",
+  "size": [
+   102,
+   126
+  ]
+ },
+ {
+  "n": 43,
+  "id": "bile_sack",
+  "name": "Bile Sack",
+  "races": [
+   "Toxic"
+  ],
+  "rarity": "common",
+  "style": "ranged",
+  "arch": "Sniper",
+  "def": "magic",
+  "weak": "ranged",
+  "why": "pop it from afar",
+  "look": "a floating bloated yellow-green bladder creature with tiny veiny wings, dangling fleshy tubes dripping bile, a small puckered mouth and beady eyes",
+  "file": "43_bile_sack.png",
+  "size": [
+   111,
+   108
+  ]
+ },
+ {
+  "n": 44,
+  "id": "fungal_thrall",
+  "name": "Fungal Thrall",
+  "races": [
+   "Toxic",
+   "Humanoid"
+  ],
+  "rarity": "uncommon",
+  "style": "melee",
+  "arch": "Bruiser",
+  "def": "melee",
+  "weak": "magic",
+  "why": "fungus burns",
+  "look": "a shambling corpse taken over by mushrooms, brown and red fungus caps sprouting from its back, head and shoulders, spores drifting, glowing fungal eyes, tattered clothes",
+  "file": "44_fungal_thrall.png",
+  "size": [
+   102,
+   127
+  ]
+ },
+ {
+  "n": 45,
+  "id": "gas_bloom",
+  "name": "Gas Bloom",
+  "races": [
+   "Toxic",
+   "Geo"
+  ],
+  "rarity": "common",
+  "style": "magic",
+  "arch": "Warden",
+  "def": "magic",
+  "weak": "melee",
+  "why": "a stem snaps",
+  "look": "a carnivorous bulb plant with a swollen purple pod head split open showing fangs, venting green poison spores, thick thorny roots like legs, sickly leaves",
+  "file": "45_gas_bloom.png",
+  "size": [
+   117,
+   100
+  ]
+ },
+ {
+  "n": 46,
+  "id": "pus_maggot",
+  "name": "Pus Maggot",
+  "races": [
+   "Toxic",
+   "Undead"
+  ],
+  "rarity": "common",
+  "style": "melee",
+  "arch": "Skirmisher",
+  "def": "melee",
+  "weak": "ranged",
+  "why": "soft body: pinned by a shot",
+  "look": "a fat pale yellowish maggot rearing up, an unsettling human-like mouth with teeth at its front, glistening segmented body oozing pus",
+  "file": "46_pus_maggot.png",
+  "size": [
+   105,
+   116
+  ]
+ },
+ {
+  "n": 47,
+  "id": "miasma_wraith",
+  "name": "Miasma Wraith",
+  "races": [
+   "Toxic",
+   "Undead"
+  ],
+  "rarity": "rare",
+  "style": "magic",
+  "arch": "Arcanist",
+  "def": "melee",
+  "weak": "magic",
+  "why": "a gas: blades pass through, spells disperse it",
+  "look": "a ghost formed of swirling green poison gas, a cracked gas-mask skull for a face with glowing lenses, long wispy clawed arms, trailing toxic smoke",
+  "file": "47_miasma_wraith.png",
+  "size": [
+   125,
+   126
+  ]
+ },
+ {
+  "n": 48,
+  "id": "leech_matron",
+  "name": "Leech Matron",
+  "races": [
+   "Toxic",
+   "Beast"
+  ],
+  "rarity": "epic",
+  "style": "magic",
+  "arch": "Battlemage",
+  "def": "melee",
+  "weak": "ranged",
+  "why": "swollen: a shot bursts her",
+  "look": "a huge swollen leech queen rearing up, smaller leeches hanging off her glistening dark body, a gaping lamprey mouth ring of teeth, bloated with blood",
+  "file": "48_leech_matron.png",
+  "size": [
+   112,
+   120
+  ]
+ },
+ {
+  "n": 49,
+  "id": "blister_beetle",
+  "name": "Blister Beetle",
+  "races": [
+   "Toxic",
+   "Beast"
+  ],
+  "rarity": "uncommon",
+  "style": "ranged",
+  "arch": "Sniper",
+  "def": "ranged",
+  "weak": "melee",
+  "why": "a stomp cracks it",
+  "look": "a dark iridescent beetle with glowing green pustule sacks swelling on its back ready to burst, dripping acid, long antennae",
+  "file": "49_blister_beetle.png",
+  "size": [
+   120,
+   96
+  ]
+ },
+ {
+  "n": 50,
+  "id": "rot_crow",
+  "name": "Rot Crow",
+  "races": [
+   "Toxic",
+   "Beast"
+  ],
+  "rarity": "common",
+  "style": "ranged",
+  "arch": "Skirmisher",
+  "def": "magic",
+  "weak": "ranged",
+  "why": "a bird: shot down",
+  "look": "a mangy diseased crow with patchy black feathers, exposed sores, a cracked dripping beak, one milky blind eye, hunched on bony feet",
+  "file": "50_rot_crow.png",
+  "size": [
+   107,
+   119
+  ]
+ }
+]
