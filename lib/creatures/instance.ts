@@ -80,11 +80,13 @@ export function upgradeStyle(c: CreatureOrItemDrop, t?: CreatureTemplate): boole
 }
 
 // The species' %s changed on 2026-11-25 (the user): no zeros (a 0 is 3 now)
-// and the Glob's goo (its defences down). A creature or card you already own
-// (no pctSet) moves over once on load: the change is added to its saved %s,
-// so its own roll stays as it was. (Its HP % needs nothing: a saved creature
-// without one takes its species'.)
-export const PCT_SET = 1;
+// and the Glob's goo (its defences down); and on 2026-11-26 every other
+// creature's defences took the balance refresh's lean (docs/balance-refresh-2026-11.md
+// §2: a weakness each, attackers less tanky). A creature or card you already
+// own moves over once on load (pctSet says how far it has): each change since
+// is added to its saved %s, so its own roll stays as it was. (Its HP % needs
+// nothing: a saved creature without one takes its species'.)
+export const PCT_SET = 2;
 export const PCT_SHIFT_2026_11_25: Record<string, Partial<CreatureProficiency>> = {
   moss_wolf: { mag: 3 }, amber_wasp: { rng: 3, mag: 3 }, bellow_toad: { mag: 3 }, dire_wolf: { mag: 3 }, ironhide: { mag: 3 },
   cave_bat: { rng: 3, mag: 3 }, rust_beetle: { mag: 3 }, crystalback: { rng: 3 }, crystal_golem: { rng: 3 }, hollow_matriarch: { mag: 3 },
@@ -94,13 +96,35 @@ export const PCT_SHIFT_2026_11_25: Record<string, Partial<CreatureProficiency>> 
   thunderhead: { rng: 3 }, deep_angler: { rng: 3 }, tunnel_wyrm: { rng: 3, mag: 3 }, plague_rat: { rng: 3, mag: 3 }, rotgut_fly: { mag: 3 },
   glob: { rng: 3, mag: 3, mdef: -6, rdef: -7, magdef: -18 }, dreadpox: { rng: 3 }, pale_rider: { rng: 3 },
 };
+export const PCT_SHIFT_2026_11_26: Record<string, Partial<CreatureProficiency>> = {
+  moss_wolf: { mdef: 1, rdef: -1 }, amber_wasp: { mdef: 1, rdef: -2, magdef: 1 },
+  bellow_toad: { mdef: -2, rdef: -1, magdef: -4 }, dire_wolf: { mdef: 2, rdef: -3, magdef: 1 },
+  ironhide: { mdef: 16, rdef: 3, magdef: -19 }, rust_beetle: { mdef: -4, rdef: 16, magdef: -12 },
+  crystalback: { mdef: -18, rdef: 6, magdef: 12 }, crystal_golem: { mdef: -20, rdef: 7, magdef: 13 },
+  hollow_matriarch: { mdef: -6, rdef: -15, magdef: -1 }, dust_sprite: { mdef: -1, rdef: 1 },
+  flicker_wisp: { mdef: -2, rdef: 1, magdef: 1 }, veilstalker: { mdef: 4, rdef: 2, magdef: -6 },
+  the_watcher: { mdef: 2, rdef: -10, magdef: -2 }, void_serpent: { mdef: -5, rdef: -5, magdef: -16 },
+  rattlebones: { mdef: -6, rdef: 3, magdef: -1 }, shambler: { mdef: 6, rdef: 2, magdef: -8 },
+  dustwraith: { mdef: 2, rdef: 1, magdef: -3 }, mr_shadows: { mdef: 6, rdef: 2, magdef: -8 },
+  storm_phoenix: { rdef: -16, magdef: 1 }, thicket_archer: { mdef: -1, rdef: 1 },
+  leafblade_scout: { mdef: 1, rdef: 1, magdef: -2 }, aurelius: { mdef: -4, rdef: -1, magdef: -2 },
+  swamp_witch: { mdef: -4, rdef: 2, magdef: 2 }, sylvaran: { mdef: -8, rdef: -2, magdef: -4 },
+  gleamling: { mdef: -1, rdef: 1 }, flame_imp: { mdef: 1, rdef: -3, magdef: 2 },
+  thunderhead: { rdef: -4, magdef: -16 }, deep_angler: { mdef: 2, magdef: -5 }, tunnel_wyrm: { mdef: 16, magdef: -16 },
+  plague_rat: { mdef: -2, rdef: 1, magdef: -1 }, rotgut_fly: { mdef: 2, rdef: -3, magdef: 1 },
+  dreadpox: { mdef: -12, rdef: 2, magdef: 10 }, pale_rider: { mdef: -4, rdef: -4, magdef: -18 },
+};
+// Each set's change, in order: one at set n takes the ones after it.
+const PCT_SHIFTS = [PCT_SHIFT_2026_11_25, PCT_SHIFT_2026_11_26];
 export function upgradePcts(c: CreatureOrItemDrop, t?: CreatureTemplate) {
-  if (c.pctSet === PCT_SET || !t) return;
+  const from = c.pctSet ?? 0;
+  if (from >= PCT_SET || !t) return;
   c.pctSet = PCT_SET;
-  const shift = PCT_SHIFT_2026_11_25[t.id];
-  if (!shift || !c.proficiency) return;
+  if (!c.proficiency) return;
   const p = { ...c.proficiency };
-  for (const [k, d] of Object.entries(shift) as [keyof CreatureProficiency, number][]) p[k] = Math.max(0, (p[k] ?? 0) + d);
+  for (const shift of PCT_SHIFTS.slice(from)) {
+    for (const [k, d] of Object.entries(shift[t.id] ?? {}) as [keyof CreatureProficiency, number][]) p[k] = Math.max(0, (p[k] ?? 0) + d);
+  }
   c.proficiency = p;
 }
 

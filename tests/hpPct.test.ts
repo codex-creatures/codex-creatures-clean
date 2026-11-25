@@ -6,7 +6,7 @@ import { hpAt, proficiencyAt, withHpPct, REF_LEVEL } from "../lib/creatures/leve
 import { rollProficiency } from "../lib/creatures/creatureRoll";
 import { ascendBonus } from "../lib/creatures/ascendStats";
 import { makeCreatureDrop } from "../lib/creatures/summon";
-import { fighterFor, upgradePcts, PCT_SET, PCT_SHIFT_2026_11_25 } from "../lib/creatures/instance";
+import { fighterFor, upgradePcts, PCT_SET, PCT_SHIFT_2026_11_25, PCT_SHIFT_2026_11_26 } from "../lib/creatures/instance";
 import type { CreatureOrItemDrop } from "../lib/types";
 
 const KEYS: (keyof CreatureProficiency)[] = ["atk", "rng", "mag", "agil", "mdef", "rdef", "magdef", "hp"];
@@ -71,6 +71,7 @@ describe("the species' %s (2026-11-25)", () => {
 
     // One saved before: its %s the old species' plus a roll of +2 melee def.
     const shift = PCT_SHIFT_2026_11_25.glob;
+    expect(PCT_SHIFT_2026_11_26.glob).toBeUndefined();
     const old = Object.fromEntries(KEYS.filter((k) => k !== "hp").map((k) => [k, t.proficiency[k] - (shift[k] ?? 0)])) as CreatureProficiency;
     old.mdef += 2;
     const saved: CreatureOrItemDrop = { ...now, proficiency: old, pctSet: undefined };
@@ -82,5 +83,33 @@ describe("the species' %s (2026-11-25)", () => {
     const once = { ...saved.proficiency! };
     upgradePcts(saved, t);
     expect(saved.proficiency).toEqual(once);
+  });
+
+  it("move an owned creature's defences to the 2026-11-26 lean, from either set before, keeping its roll", () => {
+    const t = CREATURE_BY_ID.ironhide;
+    const both = (k: keyof CreatureProficiency) => (PCT_SHIFT_2026_11_25.ironhide[k] ?? 0) + (PCT_SHIFT_2026_11_26.ironhide[k] ?? 0);
+    const fresh = makeCreatureDrop(t, "creature", "");
+    // Saved on set 1 (after the no-zeros move): only the defences move.
+    const set1 = Object.fromEntries(KEYS.filter((k) => k !== "hp").map((k) => [k, t.proficiency[k] - (PCT_SHIFT_2026_11_26.ironhide[k] ?? 0)])) as CreatureProficiency;
+    set1.magdef += 3;
+    const a: CreatureOrItemDrop = { ...fresh, proficiency: set1, pctSet: 1 };
+    upgradePcts(a, t);
+    expect(a.pctSet).toBe(PCT_SET);
+    expect([a.proficiency!.mdef, a.proficiency!.rdef, a.proficiency!.magdef]).toEqual([60, 33, 18 + 3]);
+    // Saved before either: both moves.
+    const set0 = Object.fromEntries(KEYS.filter((k) => k !== "hp").map((k) => [k, t.proficiency[k] - both(k)])) as CreatureProficiency;
+    const b: CreatureOrItemDrop = { ...fresh, proficiency: set0, pctSet: undefined };
+    upgradePcts(b, t);
+    expect(b.proficiency!.mag).toBe(t.proficiency.mag);
+    expect(b.proficiency!.magdef).toBe(18);
+  });
+
+  it("lean every creature's defences (a weakness each): the lowest is at most half the highest", () => {
+    const even = CREATURE_TEMPLATES.filter((t) => {
+      const d = [t.proficiency.mdef, t.proficiency.rdef, t.proficiency.magdef];
+      return Math.min(...d) * 2 > Math.max(...d);
+    }).map((t) => t.id);
+    // The even ones left on purpose: the Gloom Gnome (5/5/5) and the Void Serpent (15/15/8, aggressive and even).
+    expect(even).toEqual(["void_serpent", "gloom_gnome"]);
   });
 });

@@ -186,6 +186,14 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   cards, the Bestiary, the level-up and the Soul Altar.
 - ✅ **No zeros** (the user, 2026-11-25): every species % is at least 3; the zeros were filled without taking from other stats.
   Creatures already owned were moved over once on load (`upgradePcts`, `pctSet`), rivals' rosters too.
+- ✅ **Defences lean, with a weakness each** (the user, 2026-11-25, built 2026-11-26): a creature's three defences follow
+  what it's made of: one high, or one high and one middling with the third low, or all three middling-to-low for
+  an even spread; attackers carry less defence than walls. The values are the balance refresh's table
+  (docs/balance-refresh-2026-11.md §2, with its twelve lowered rows; the Glob keeps the user's 20/13/4, and the nine
+  new creatures came with theirs). Only the Void Serpent (15/15/8, aggressive and even) and the Gloom Gnome (5/5/5)
+  are left even. Creatures already owned move over once on load (`pctSet` 2, `PCT_SHIFT_2026_11_26`), keeping
+  their rolls. The ascension budgets (`ASCEND_STATS`) were not re-derived. The sided plates (step 2's other half) are
+  not built.
 - ✅ XP per KO depends on the enemy's level and rarity. A boss part gives 200. A fight's XP is
   shared by impact (damage dealt + half the damage taken, at least 10% each); a level-30 creature
   takes half its share and the rest goes to the others (`MAXED_SHARE`, the user, 2026-11-11). No XP for a lost

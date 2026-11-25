@@ -2,7 +2,8 @@
 
 What was decided across the two-style study, the tank rounds and the codex move audit
 (docs/two-styles-sim-2026-11.md), what is drafted and needs the user's yes, and what is still open. Nothing in
-this file is built yet except the codex move retune (pushed 2026-11-25). When the user signs it off, the decided
+this file is built yet except the codex move retune (pushed 2026-11-25), the HP % (2026-11-25) and the defence
+table in §2 (2026-11-26, with its twelve lowered rows; the Glob kept the user's 20/13/4). When the user signs it off, the decided
 parts move into docs/design/combat.md and docs/decisions.md and get built in the order at the end.
 
 ## Decided (the user, 2026-11-25)
