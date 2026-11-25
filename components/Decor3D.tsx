@@ -71,7 +71,10 @@ function CampCage({ stretch, colour, open }: { stretch: number; colour?: Tint; o
   const r = open ? openCage() : recipeOf("cage");
   if (!r) return <Cage colour={colour} open={open} />;
   const tint = typeof colour === "function" ? colour : colour ? () => colour : undefined;
-  return <group scale={CAMP_CAGE_SCALE}><PropRecipe3D recipe={r} pitch={Math.acos(Math.min(1, 1 / stretch))} stretch={stretch} tint={tint} lit /></group>;
+  // Tinted by the dungeon's light where it stands (the Stone view: no scene lights), it's flat like every other
+  // prop, its faces keeping their own shading; lit (Lambert) only where there are lights to take. (It was always
+  // lit, so in the game it stood dark whatever the torches did: the user, 2026-11-26.)
+  return <group scale={CAMP_CAGE_SCALE}><PropRecipe3D recipe={r} pitch={Math.acos(Math.min(1, 1 / stretch))} stretch={stretch} tint={tint} lit={!tint} /></group>;
 }
 
 // Pots: three turned clay pots, a big one and two small (scenery: nothing in them).
