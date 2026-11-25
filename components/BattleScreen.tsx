@@ -14,7 +14,7 @@ import { findCreatureTemplate, RACE_INFO, type CreatureTemplate, type Skill } fr
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { fighterFor } from "@/lib/creatures/instance";
 import { combatSummary } from "@/lib/combat/loadout";
-import { calcDamage, combatRules, type CombatItem, type Fighter } from "@/lib/combat/engine";
+import { calcDamage, combatRules, DAMAGE_VARIANCE, PRECISE_IGNORE, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { raceOfMove, raceVsAll } from "@/lib/combat/raceChart";
 import { CRIPPLE, revivable } from "@/lib/combat/battle";
 import { duelLevel } from "@/lib/pvp/formats";
@@ -723,8 +723,23 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   const note = cooling > 0 ? { text: `recharging: ${cooling} round${cooling === 1 ? "" : "s"}`, color: "#ff8a80" }
     : sk.energyCost > me.energy ? { text: "not enough energy", color: "#ff8a80" }
     : undefined;
-  const tile = <MoveTile m={sk} note={note} extra={tags} disabled={disabled} onClick={onClick} fill />;
+  const range = damageRange(sk, me, them);
+  const tile = <MoveTile m={sk} note={note} extra={tags} disabled={disabled} onClick={onClick} fill
+    tag={range ? { text: range, color: MOVE_NAME_COLOR } : undefined} />;
   return glow ? <div className="move-glow">{tile}</div> : tile;
+}
+
+// What a move would do to the foe it's aimed at: its hit at the lowest and highest roll (±DAMAGE_VARIANCE),
+// after their armour, the race chart and the rest (the user, 2026-11-26: shown on the move, in its name's colour).
+// Not counted: a precise hit, and what a move's own effect adds when it lands (ambush, execute…). None for a move that does no damage.
+const MOVE_NAME_COLOR = "#fbf1dc"; // (MoveTile's name)
+export function damageRange(sk: Skill, me: Combatant, them: Combatant): string | undefined {
+  if (sk.damage <= 0) return undefined;
+  const steady = { ...them, braceActive: false }; // (a brace's coin toss isn't the move's)
+  const lo = calcDamage(sk, me, steady, false, PRECISE_IGNORE, 1 - DAMAGE_VARIANCE).damage;
+  const hi = calcDamage(sk, me, steady, false, PRECISE_IGNORE, 1 + DAMAGE_VARIANCE).damage;
+  if (lo <= 0) return undefined;
+  return lo === hi ? `${lo} dmg` : `${lo}–${hi} dmg`;
 }
 
 // A fighter's level, before its name ("Lv 8"). (No level: a level-15 creature, as everything used to be.)

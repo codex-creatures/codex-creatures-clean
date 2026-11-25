@@ -54,7 +54,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     longest word fits, never below 10px (`NAME_MIN_PX`). Klutz's tour shows two tablets a row. The
     i opens one fixed details window over the screen (MoveTile's `MoveDetails`) instead of flipping
     the tablet; a description gets at most 7 lines of 38 letters there (`DESC_LINE`, `DESC_LINES`),
-    with 3 lines kept for a fight's effect lines. tests/uiText.test.ts checks every move at every
+    with 3 lines kept for a fight's effect lines. In a fight the line under the name shows the move's damage range against the foe it's aimed at
+    ("12–14 dmg": its hit at the lowest and highest ±5% roll, after their armour and the race chart; in the name's cream; the
+    user, 2026-11-26; `damageRange`, components/BattleScreen.tsx), unless a note (no energy, recharging) needs the line. tests/uiText.test.ts checks every move at every
     place in `TABLET_PLACES` (a 360 × 640 phone); `/lab/movetext` measures the same in a browser and
     the estimates against the real fonts (re-run it after changing the font or a tablet's layout).
   - Built this way (2026-10-26): cards (the name box is always two lines tall), move tablets (name
