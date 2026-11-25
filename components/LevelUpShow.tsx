@@ -13,7 +13,7 @@ import { useEscape } from "@/hooks/useEscape";
 import { buzz } from "@/lib/haptics";
 import { STATS } from "./CreatureDetailModal";
 import Glyph from "./Glyph";
-import { hpAt, proficiencyAt } from "@/lib/creatures/levels";
+import { hpAt, proficiencyAt, withHpPct } from "@/lib/creatures/levels";
 import type { CreatureProficiency, CreatureTemplate } from "@/lib/creatures/creatureData";
 
 export type LevelUpInfo = { id: string; name: string; creatureId?: string; template: CreatureTemplate; rolled?: CreatureProficiency; steps: number; from: number; to: number };
@@ -77,8 +77,9 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
   const showStats = t >= barEnd;
   const before = proficiencyAt(u.template, u.rolled, u.from, u.steps), after = proficiencyAt(u.template, u.rolled, u.to, u.steps);
   const rows = STATS.map((s) => {
-    const a = s.key === "hp" ? hpAt(u.template, u.from, u.steps) : before[s.key as keyof CreatureProficiency];
-    const b = s.key === "hp" ? hpAt(u.template, u.to, u.steps) : after[s.key as keyof CreatureProficiency];
+    // (Its health with its HP % at each level, before gear.)
+    const a = s.key === "hp" ? withHpPct(hpAt(u.template, u.from, u.steps), before.hp) : before[s.key as keyof CreatureProficiency];
+    const b = s.key === "hp" ? withHpPct(hpAt(u.template, u.to, u.steps), after.hp) : after[s.key as keyof CreatureProficiency];
     return { ...s, a, b, now: Math.round(a + (b - a) * k) };
   }).filter((r) => r.key === "hp" || r.a !== 0 || r.b !== 0);
 

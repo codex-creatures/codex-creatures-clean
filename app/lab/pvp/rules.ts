@@ -74,7 +74,8 @@ export const hpPctAt = (id: string, rules: RulesKey, level: number) => Math.roun
 
 // The species under the rules: today's template, the three-style one with its tank defences leaning, or the two-style one.
 export function templateUnder(id: string, rules: RulesKey): CreatureTemplate {
-  const t = CREATURE_BY_ID[id];
+  // (The game's own HP % is left out: the lab puts on its rule set's, hpPct above, so its rows stay comparable.)
+  const t0 = CREATURE_BY_ID[id], t = { ...t0, proficiency: { ...t0.proficiency, hp: 0 } };
   if (!RULES[rules].two) {
     if (!RULES[rules].sharp || !SHARP3[id]) return t;
     const [mdef, rdef, magdef] = SHARP3[id];
@@ -84,7 +85,7 @@ export function templateUnder(id: string, rules: RulesKey): CreatureTemplate {
   const d = DRAFT[id], p = t.proficiency;
   const cls: CombatClass = d.melee >= d.ranged ? "melee" : "ranged", second: CombatClass = cls === "melee" ? "ranged" : "melee";
   const [mdef, rdef] = SHARP_DEF[id] ?? [p.mdef + Math.ceil(p.magdef / 2), p.rdef + Math.floor(p.magdef / 2)];
-  return { ...t, cls, proficiency: { atk: d.melee, rng: d.ranged, mag: 0, agil: p.agil, mdef, rdef, magdef: 0 }, skills: [...coreFor(cls), ...coreFor(second)] };
+  return { ...t, cls, proficiency: { atk: d.melee, rng: d.ranged, mag: 0, agil: p.agil, mdef, rdef, magdef: 0, hp: 0 }, skills: [...coreFor(cls), ...coreFor(second)] };
 }
 
 // What a creature is, from its %s: a tank when its defences outweigh its attacks, leaning to the side that's half

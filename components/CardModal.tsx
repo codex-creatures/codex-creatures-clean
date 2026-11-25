@@ -16,7 +16,7 @@ import SoulStoneTag from "./SoulStoneTag";
 import RaceTag from "./RaceTag";
 
 const MUTED = "rgba(255,255,255,0.5)";
-const STATS: [keyof CreatureProficiency, string][] = [["atk", "Melee"], ["rng", "Ranged"], ["mag", "Magic"], ["agil", "Agility"], ["mdef", "Melee Def"], ["rdef", "Ranged Def"], ["magdef", "Magic Def"]];
+const STATS: [keyof CreatureProficiency, string][] = [["atk", "Melee"], ["rng", "Ranged"], ["mag", "Magic"], ["agil", "Agility"], ["mdef", "Melee Def"], ["rdef", "Ranged Def"], ["magdef", "Magic Def"], ["hp", "Health"]];
 
 // Where summoning a creature's cards happens: the altar, opened on them.
 export const summonHref = (creatureId: string) => `/altar?summon=${encodeURIComponent(creatureId)}`;
@@ -82,7 +82,7 @@ export function RollTable({ p, base }: { p: CreatureProficiency; base: CreatureP
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(72px, 1fr))", gap: 4, textAlign: "center" }}>
       {STATS.map(([k, label]) => {
-        const d = (p[k] ?? 0) - (base[k] ?? 0);
+        const d = (p[k] ?? base[k] ?? 0) - (base[k] ?? 0); // (a stat its card predates: its species')
         return (
           <div key={k} style={{ background: "#12131a", padding: "6px 2px" }}>
             <div style={{ fontSize: 11, color: MUTED }}>{label}</div>
@@ -96,8 +96,8 @@ export function RollTable({ p, base }: { p: CreatureProficiency; base: CreatureP
 }
 
 export function DiffLine({ p, base }: { p: CreatureProficiency; base: CreatureProficiency }) {
-  const parts = STATS.filter(([k]) => p[k] !== base[k]).map(([k, label]) => {
-    const d = p[k] - base[k];
+  const parts = STATS.filter(([k]) => (p[k] ?? base[k]) !== base[k]).map(([k, label]) => {
+    const d = (p[k] ?? base[k]) - base[k];
     return <span key={k} style={{ color: d > 0 ? "#7CFC9A" : "#ff8a80", marginRight: 6 }}>{label} {d > 0 ? `+${d}` : d}</span>;
   });
   return <span>{parts.length > 0 ? parts : <span style={{ color: MUTED }}>standard %s</span>}</span>;

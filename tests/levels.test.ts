@@ -21,11 +21,14 @@ describe("creature levels", () => {
     }
   });
 
-  it("two Legendaries of a species at level 1 in the same gear differ only by their rolls (same HP)", () => {
+  it("two Legendaries of a species at level 1 in the same gear differ only by their rolls (HP only by their HP % roll)", () => {
     const t = CREATURE_BY_ID.ironhide;
-    const a = buildFighter(t, { melee: 20 }, { mDef: 20 }, undefined, rollCreature(t).proficiency, undefined, undefined, 1);
-    const b = buildFighter(t, { melee: 20 }, { mDef: 20 }, undefined, rollCreature(t).proficiency, undefined, undefined, 1);
-    expect(a.maxHp).toBe(b.maxHp);
+    const ra = rollCreature(t).proficiency, rb = rollCreature(t).proficiency;
+    const a = buildFighter(t, { melee: 20 }, { mDef: 20 }, undefined, ra, undefined, undefined, 1);
+    const b = buildFighter(t, { melee: 20 }, { mDef: 20 }, undefined, rb, undefined, undefined, 1);
+    // At level 1 the species' HP % is none yet: what's left is each one's roll on it.
+    expect(a.proficiency.hp).toBe(ra.hp - t.proficiency.hp);
+    expect(Math.round(a.maxHp / (1 + a.proficiency.hp / 100))).toBeCloseTo(Math.round(b.maxHp / (1 + b.proficiency.hp / 100)), -1);
     for (const k of Object.keys(a.proficiency) as (keyof typeof a.proficiency)[]) expect(Math.abs(a.proficiency[k] - b.proficiency[k])).toBeLessThanOrEqual(20);
   });
 

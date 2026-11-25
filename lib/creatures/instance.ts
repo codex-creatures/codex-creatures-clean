@@ -13,7 +13,8 @@ import { defaultMoveNames, isRetiredMove, renamedMove, replaceRetired, resolveMo
 type Stats = Record<string, number> | undefined;
 
 export function proficiencyOf(drop: CreatureOrItemDrop, t: CreatureTemplate): CreatureProficiency {
-  return drop.proficiency ?? t.proficiency;
+  // (One saved before a stat existed, the HP %, takes its species' value for it.)
+  return drop.proficiency ? { ...t.proficiency, ...drop.proficiency } : t.proficiency;
 }
 
 // Combat V2's creatures start with 3 moves, and the rest of their kits need
@@ -76,6 +77,31 @@ export function upgradeStyle(c: CreatureOrItemDrop, t?: CreatureTemplate): boole
   }
   c.moves = defaultMoveNames(t);
   return true;
+}
+
+// The species' %s changed on 2026-11-25 (the user): no zeros (a 0 is 3 now)
+// and the Glob's goo (its defences down). A creature or card you already own
+// (no pctSet) moves over once on load: the change is added to its saved %s,
+// so its own roll stays as it was. (Its HP % needs nothing: a saved creature
+// without one takes its species'.)
+export const PCT_SET = 1;
+export const PCT_SHIFT_2026_11_25: Record<string, Partial<CreatureProficiency>> = {
+  moss_wolf: { mag: 3 }, amber_wasp: { rng: 3, mag: 3 }, bellow_toad: { mag: 3 }, dire_wolf: { mag: 3 }, ironhide: { mag: 3 },
+  cave_bat: { rng: 3, mag: 3 }, rust_beetle: { mag: 3 }, crystalback: { rng: 3 }, crystal_golem: { rng: 3 }, hollow_matriarch: { mag: 3 },
+  dust_sprite: { rng: 3 }, flicker_wisp: { rng: 3 }, veilstalker: { rng: 3 }, the_watcher: { rng: 3 }, void_serpent: { rng: 3 },
+  rattlebones: { mag: 3 }, shambler: { mag: 3 }, mr_shadows: { rng: 3 }, storm_phoenix: { mag: 3 }, thicket_archer: { mag: 3 },
+  leafblade_scout: { mag: 3 }, aurelius: { mag: 3 }, swamp_witch: { rng: 3 }, sylvaran: { mag: 3 }, flame_imp: { rng: 3 },
+  thunderhead: { rng: 3 }, deep_angler: { rng: 3 }, tunnel_wyrm: { rng: 3, mag: 3 }, plague_rat: { rng: 3, mag: 3 }, rotgut_fly: { mag: 3 },
+  glob: { rng: 3, mag: 3, mdef: -6, rdef: -7, magdef: -18 }, dreadpox: { rng: 3 }, pale_rider: { rng: 3 },
+};
+export function upgradePcts(c: CreatureOrItemDrop, t?: CreatureTemplate) {
+  if (c.pctSet === PCT_SET || !t) return;
+  c.pctSet = PCT_SET;
+  const shift = PCT_SHIFT_2026_11_25[t.id];
+  if (!shift || !c.proficiency) return;
+  const p = { ...c.proficiency };
+  for (const [k, d] of Object.entries(shift) as [keyof CreatureProficiency, number][]) p[k] = Math.max(0, (p[k] ?? 0) + d);
+  c.proficiency = p;
 }
 
 // A creature knows only the moves in its slots (the user, 2026-11-24: "moves a

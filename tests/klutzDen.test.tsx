@@ -16,7 +16,7 @@ let root: Root, host: HTMLDivElement;
 const t0 = Date.parse("2026-11-18T10:00:00Z");
 const trip: KlutzTrip = {
   startedAt: t0, endsAt: t0 + 40 * 60000, dest: 0, home: "pack", xp: 120, startHp: 90, hpEnd: 41, maxHp: 120,
-  kit: { level: 6, maxHp: 120, proficiency: { atk: 8, rng: 0, mag: 0, agil: 3, mdef: 0, rdef: 0, magdef: 0 }, moves: ["Strike", "Smash"], gear: [{ name: "Klutz's Club", rarity: "common" }] },
+  kit: { level: 6, maxHp: 120, proficiency: { atk: 8, rng: 0, mag: 0, agil: 3, mdef: 0, rdef: 0, magdef: 0, hp: 0 }, moves: ["Strike", "Smash"], gear: [{ name: "Klutz's Club", rarity: "common" }] },
   fights: [{ creatureId: "moss_wolf", rarity: "common", won: true, caught: true }, { creatureId: "cave_bat", rarity: "common", won: false }],
   finds: [{ name: "Iron Sword", rarity: "uncommon" }, { name: "Nails", rarity: "common", qty: 3 }],
   caged: 1,

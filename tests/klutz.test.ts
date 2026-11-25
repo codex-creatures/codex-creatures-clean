@@ -323,7 +323,7 @@ describe("Klutz is neutral (the old triangle rules)", () => {
 });
 
 describe("Klutz's trips, remembered (Klutz's Den, 2026-11-18)", () => {
-  const kit = { level: 4, maxHp: 120, proficiency: { atk: 6, rng: 0, mag: 0, agil: 2, mdef: 1, rdef: 0, magdef: 0 }, moves: ["Strike"], gear: [{ name: "Klutz's Club", rarity: "common" as Rarity }] };
+  const kit = { level: 4, maxHp: 120, proficiency: { atk: 6, rng: 0, mag: 0, agil: 2, mdef: 1, rdef: 0, magdef: 0, hp: 0 }, moves: ["Strike"], gear: [{ name: "Klutz's Club", rarity: "common" as Rarity }] };
 
   it("each trip, once home, is recorded with what he set off with, his fights, his finds and his XP", () => {
     const sent = sendKlutz({ level: 4 }, plain(), t0, seeded(3), 0, 30, kit);

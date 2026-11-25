@@ -50,29 +50,29 @@ export const SPECIES_ARCHETYPE: Record<string, Archetype> = {
 type NewSpecies = Omit<CreatureTemplate, "skills">;
 export const NEW_SPECIES_V2: NewSpecies[] = [
   // Divine
-  { id: "gleamling",       name: "Gleamling",       rarity: "common",    baseHp: 58,  cls: "magic",  proficiency: { atk: 2, rng: 6, mag: 12, agil: 12, mdef: 2, rdef: 4, magdef: 6 },
+  { id: "gleamling",       name: "Gleamling",       rarity: "common",    baseHp: 58,  cls: "magic",  proficiency: { atk: 2, rng: 6, mag: 12, agil: 12, mdef: 2, rdef: 4, magdef: 6, hp: 3 },
     flavour: "A mote of chapel light with moth wings. Small, bright, and much angrier than it looks." },
   // Geo
-  { id: "flame_imp",       name: "Flame Imp",       rarity: "uncommon",  baseHp: 72,  cls: "magic",  proficiency: { atk: 4, rng: 0, mag: 20, agil: 18, mdef: 4, rdef: 6, magdef: 8 },
+  { id: "flame_imp",       name: "Flame Imp",       rarity: "uncommon",  baseHp: 72,  cls: "magic",  proficiency: { atk: 4, rng: 3, mag: 20, agil: 18, mdef: 4, rdef: 6, magdef: 8, hp: 5 },
     flavour: "A little devil of red flame with something colder burning inside. Its trident wand spits blue fire." },
-  { id: "thunderhead",     name: "Thunderhead",     rarity: "legendary", baseHp: 138, cls: "magic",  proficiency: { atk: 38, rng: 0, mag: 44, agil: 26, mdef: 16, rdef: 22, magdef: 24 },
+  { id: "thunderhead",     name: "Thunderhead",     rarity: "legendary", baseHp: 138, cls: "magic",  proficiency: { atk: 38, rng: 3, mag: 44, agil: 26, mdef: 16, rdef: 22, magdef: 24, hp: 40 },
     flavour: "A storm that learned to walk. Hail falls from its shoulders, and lightning answers when it points." },
   // Underkin
-  { id: "deep_angler",     name: "Deep Angler",     rarity: "rare",      baseHp: 88,  cls: "melee",  proficiency: { atk: 22, rng: 0, mag: 16, agil: 14, mdef: 8, rdef: 10, magdef: 10 },
+  { id: "deep_angler",     name: "Deep Angler",     rarity: "rare",      baseHp: 88,  cls: "melee",  proficiency: { atk: 22, rng: 3, mag: 16, agil: 14, mdef: 8, rdef: 10, magdef: 10, hp: 30 },
     // (Melee, not ranged: nothing about it shoots. The user, 2026-10-26.)
     flavour: "A blind cave fish on crooked legs. Follow its glowing lure and you'll never find your way out." },
-  { id: "tunnel_wyrm",     name: "Tunnel Wyrm",     rarity: "epic",      baseHp: 130, cls: "melee",  proficiency: { atk: 26, rng: 0, mag: 0, agil: 6, mdef: 34, rdef: 24, magdef: 24 },
+  { id: "tunnel_wyrm",     name: "Tunnel Wyrm",     rarity: "epic",      baseHp: 130, cls: "melee",  proficiency: { atk: 26, rng: 3, mag: 3, agil: 6, mdef: 34, rdef: 24, magdef: 24, hp: 80 },
     flavour: "Eyeless and armoured in plates of stone. The tunnels it leaves behind are the Labyrinth's oldest." },
   // Toxic
-  { id: "plague_rat",      name: "Plague Rat",      rarity: "common",    baseHp: 60,  cls: "melee",  proficiency: { atk: 14, rng: 0, mag: 0, agil: 16, mdef: 4, rdef: 4, magdef: 4 },
+  { id: "plague_rat",      name: "Plague Rat",      rarity: "common",    baseHp: 60,  cls: "melee",  proficiency: { atk: 14, rng: 3, mag: 3, agil: 16, mdef: 4, rdef: 4, magdef: 4, hp: 15 },
     flavour: "Mangy, yellow-toothed and never alone for long." },
-  { id: "rotgut_fly",      name: "Rotgut Fly",      rarity: "uncommon",  baseHp: 72,  cls: "ranged", proficiency: { atk: 4, rng: 18, mag: 0, agil: 20, mdef: 4, rdef: 6, magdef: 6 },
+  { id: "rotgut_fly",      name: "Rotgut Fly",      rarity: "uncommon",  baseHp: 72,  cls: "ranged", proficiency: { atk: 4, rng: 18, mag: 3, agil: 20, mdef: 4, rdef: 6, magdef: 6, hp: 5 },
     flavour: "A bloated fly the size of a dog. It spits what it ate last, and it ate something awful." },
-  { id: "glob",            name: "Glob",            rarity: "rare",      baseHp: 102, cls: "melee",  proficiency: { atk: 14, rng: 0, mag: 0, agil: 4, mdef: 26, rdef: 20, magdef: 22 },
+  { id: "glob",            name: "Glob",            rarity: "rare",      baseHp: 118, cls: "melee",  proficiency: { atk: 14, rng: 3, mag: 3, agil: 4, mdef: 20, rdef: 13, magdef: 4, hp: 50 },
     flavour: "A slug of green slime with a mouth that never stops melting. What it swallows, it keeps." },
-  { id: "dreadpox",        name: "Dreadpox",        rarity: "epic",      baseHp: 125, cls: "magic",  proficiency: { atk: 6, rng: 0, mag: 30, agil: 10, mdef: 22, rdef: 20, magdef: 28 },
+  { id: "dreadpox",        name: "Dreadpox",        rarity: "epic",      baseHp: 125, cls: "magic",  proficiency: { atk: 6, rng: 3, mag: 30, agil: 10, mdef: 22, rdef: 20, magdef: 28, hp: 60 },
     flavour: "A skeleton in a plague mask, shaking a dreamcatcher hung with feathers. The sickness it catches, it sends back worse." },
-  { id: "pale_rider",      name: "The Pale Rider",  rarity: "legendary", baseHp: 140, cls: "melee",  proficiency: { atk: 40, rng: 0, mag: 36, agil: 24, mdef: 22, rdef: 20, magdef: 24 },
+  { id: "pale_rider",      name: "The Pale Rider",  rarity: "legendary", baseHp: 140, cls: "melee",  proficiency: { atk: 40, rng: 3, mag: 36, agil: 24, mdef: 22, rdef: 20, magdef: 24, hp: 30 },
     flavour: "A rider on a rotting horse, scythe in one hand and a plague in the other. Where it rides, nothing grows." },
 ];
 
@@ -99,17 +99,17 @@ export const RESTYLED_SPECIES = ["cave_bat", "amber_wasp", "dust_sprite", "cryst
 
 export const V2_RESTYLE: Record<string, Pick<CreatureTemplate, "cls" | "proficiency">> = {
   // A melee Ranger now: fangs first, webs second (was ranged).
-  hollow_matriarch: { cls: "melee", proficiency: { atk: 40, rng: 24, mag: 0, agil: 30, mdef: 24, rdef: 22, magdef: 23 } },
+  hollow_matriarch: { cls: "melee", proficiency: { atk: 40, rng: 24, mag: 3, agil: 30, mdef: 24, rdef: 22, magdef: 23, hp: 25 } },
   // Magic, not ranged (the user).
-  the_watcher:      { cls: "magic", proficiency: { atk: 10, rng: 0, mag: 42, agil: 12, mdef: 10, rdef: 16, magdef: 20 } },
+  the_watcher:      { cls: "magic", proficiency: { atk: 10, rng: 3, mag: 42, agil: 12, mdef: 10, rdef: 16, magdef: 20, hp: 15 } },
   // A Battlemage: fists first, crystal magic second (the user, 2026-10-27; was a magic Warden).
-  crystal_golem:    { cls: "melee", proficiency: { atk: 20, rng: 0, mag: 14, agil: 4, mdef: 32, rdef: 20, magdef: 26 } },
+  crystal_golem:    { cls: "melee", proficiency: { atk: 20, rng: 3, mag: 14, agil: 4, mdef: 32, rdef: 20, magdef: 26, hp: 60 } },
   // Melee, not ranged (the user, 2026-10-27).
-  cave_bat:         { cls: "melee", proficiency: { atk: 18, rng: 0, mag: 0, agil: 16, mdef: 2, rdef: 6, magdef: 4 } },
-  amber_wasp:       { cls: "melee", proficiency: { atk: 22, rng: 0, mag: 0, agil: 22, mdef: 3, rdef: 3, magdef: 3 } },
+  cave_bat:         { cls: "melee", proficiency: { atk: 18, rng: 3, mag: 3, agil: 16, mdef: 2, rdef: 6, magdef: 4, hp: 15 } },
+  amber_wasp:       { cls: "melee", proficiency: { atk: 22, rng: 3, mag: 3, agil: 22, mdef: 3, rdef: 3, magdef: 3, hp: 10 } },
   // Magic, not ranged (the user, 2026-10-27).
-  dust_sprite:      { cls: "magic", proficiency: { atk: 2, rng: 0, mag: 18, agil: 10, mdef: 2, rdef: 4, magdef: 6 } },
+  dust_sprite:      { cls: "magic", proficiency: { atk: 2, rng: 3, mag: 18, agil: 10, mdef: 2, rdef: 4, magdef: 6, hp: 3 } },
   // A Spellbow: it hurls the dust it's made of.
-  dustwraith:       { cls: "magic", proficiency: { atk: 6, rng: 6, mag: 14, agil: 32, mdef: 4, rdef: 8, magdef: 6 } },
+  dustwraith:       { cls: "magic", proficiency: { atk: 6, rng: 6, mag: 14, agil: 32, mdef: 4, rdef: 8, magdef: 6, hp: 3 } },
 };
 

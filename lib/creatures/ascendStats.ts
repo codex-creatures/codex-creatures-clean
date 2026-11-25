@@ -45,7 +45,7 @@ export const ascendHp = (t: CreatureTemplate, steps: number | undefined) => budg
 // Its extra level-15 %s: the budget along the species' shape, by largest
 // remainder so the parts add up to the budget exactly (ties: the stat listed first).
 export function ascendBonus(t: CreatureTemplate, steps: number | undefined): CreatureProficiency {
-  const out = Object.fromEntries(KEYS.map((k) => [k, 0])) as CreatureProficiency;
+  const out = { ...Object.fromEntries(KEYS.map((k) => [k, 0])), hp: 0 } as CreatureProficiency;
   const budget = budgets(t, steps).stats;
   const total = KEYS.reduce((s, k) => s + Math.max(0, t.proficiency[k] ?? 0), 0);
   if (budget <= 0 || total <= 0) return out;
@@ -56,5 +56,8 @@ export function ascendBonus(t: CreatureTemplate, steps: number | undefined): Cre
     .filter((x) => (t.proficiency[x.k] ?? 0) > 0)
     .sort((a, b) => b.r - a.r || a.i - b.i);
   for (const x of order) { if (left <= 0) break; out[x.k]++; left--; }
+  // Its HP % grows by the same share as the rest of its %s, outside the
+  // budget, so a wall's climb isn't spent on HP at its attack's expense.
+  if (t.proficiency.hp) out.hp = Math.round((t.proficiency.hp * budget) / total);
   return out;
 }

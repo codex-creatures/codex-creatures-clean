@@ -57,7 +57,7 @@ describe("creature type labels", () => {
   it("come from proficiency multipliers", () => {
     expect(creatureTypeLabel(CREATURE_BY_ID.dire_wolf.proficiency)).toBe("Bruiser");
     expect(creatureTypeLabel(CREATURE_BY_ID.crystalback.proficiency)).toBe("Tank");
-    expect(creatureTypeLabel({ atk: 6, rng: 6, mag: 0, agil: 6, mdef: 6, rdef: 8, magdef: 7 })).toBe("Balanced"); // (the old Forest Slime)
+    expect(creatureTypeLabel({ atk: 6, rng: 6, mag: 0, agil: 6, mdef: 6, rdef: 8, magdef: 7, hp: 0 })).toBe("Balanced"); // (the old Forest Slime)
     expect(creatureTypeLabel(CREATURE_BY_ID.void_serpent.proficiency)).toBe("Hybrid · Skirmisher");
   });
 });

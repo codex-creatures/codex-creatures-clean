@@ -164,6 +164,16 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   The species' listed %s are its level-15 values (`REF_LEVEL`). At
   Lv 1 a creature has only its roll, so two creatures of a rarity are close and the species shows
   as they level. HP is ×1.5 overall (`HP_SCALE`). (lib/creatures/levels.ts)
+- ✅ **HP %** (the user, 2026-11-25, decision 65): a % like the others (`hp` in the %s), levelling the same way, that multiplies a
+  creature's whole HP, gear included (`withHpPct` in buildFighter). The species' values are the balance refresh's draft
+  (walls 50–80, bruisers 15–30, casters and snipers 3–25; the Glob 50 with base HP 118, its defence being its goo). A
+  birth roll can move points onto or off it; ascension grows it by the same share as the other %s, outside the step's
+  budget. A creature saved before it takes its species' value. Bosses have their own (`BOSS_HP_PCT`, lib/creatures/creatureData.ts),
+  set by sim so their win rates hold (tests/bossSim.test.ts, run on request: the Cyclops 50, the Hydra 22; the Minotaur's 15 is an
+  estimate until its sim is run, ❓). Shown in the creature window (the Health row, and a Health box with the multipliers),
+  cards, the Bestiary, the level-up and the Soul Altar.
+- ✅ **No zeros** (the user, 2026-11-25): every species % is at least 3; the zeros were filled without taking from other stats.
+  Creatures already owned were moved over once on load (`upgradePcts`, `pctSet`), rivals' rosters too.
 - ✅ XP per KO depends on the enemy's level and rarity. A boss part gives 200. A fight's XP is
   shared by impact (damage dealt + half the damage taken, at least 10% each); a level-30 creature
   takes half its share and the rest goes to the others (`MAXED_SHARE`, the user, 2026-11-11). No XP for a lost

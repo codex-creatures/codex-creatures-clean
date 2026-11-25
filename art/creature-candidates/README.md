@@ -7,22 +7,39 @@
 - Rerolled once with sharper prompts (originals in raw/): 15, 16, 28, 39. The Grave Crawler reroll (raw/08b.png) came out worse, so the first is kept (it still has legs).
 - Taste it's aimed at (the user's favourites: Deep Angler, Dreadpox, Skull Raven, Veilstalker, Rotgut Fly, Plague Rat, Cave Goblin): gaunt, diseased, undead, grotesque. Avoided: ordinary animals and cute elementals (the least-liked: Moss Wolf, Flicker Wisp, Amber Wasp, Flame Imp, Bellow Toad, Dire Wolf).
 
-## The nine picked (the user, 2026-11-25), with Claude's draft %s
+## The nine picked (the user, 2026-11-25), with their %s
 
-Races and rarities are the user's. The Seraph Husk is scrapped (too many redraws). Next focus: Geo and Divine (none picked yet).
-The %s are Claude's draft for the user to adjust, set to their rarity's totals today and on the balance refresh's rules (a lean and a weakness each, attackers less tanky, an HP %).
+Races and rarities are the user's; the %s are Claude's draft with the user's edits of 2026-11-25 (given at level 25: no zeros anywhere, the Gnome's and Troglodyte's and Gravewarden's bulk moved from HP % to base HP, the Mole Hag a melee + magic hybrid, the Puppet 7 melee moved to ranged). Not in the game yet: the creatures themselves are the next step. The Seraph Husk is scrapped. Next focus: Geo and Divine (none picked yet).
 
-| Creature | Race | Rarity | Base HP | Style · archetype | Atk / Rng / Mag | Agil | Mdef / Rdef / Magdef | HP % |
+As the game stores them (level 15):
+
+| Creature | Race | Rarity | Style · archetype | Base HP | Atk / Rng / Mag | Agil | Mdef / Rdef / Magdef | HP % |
 |---|---|---|---|---|---|---|---|---|
-| Skinwing | Beast | Common | 58 | Melee · Bruiser | 14 / 0 / 0 | 22 | 5 / **1** / 4 | 5 |
-| Gutsnout | Beast | Common | 63 | Melee · Bruiser | 16 / 0 / 0 | 12 | 6 / 4 / **2** | 20 |
-| Grub Keeper | Underkin | Common | 64 | Melee · Bruiser | 16 / 2 / 0 | 6 | 8 / **2** / 5 | 25 |
-| Mole Hag | Underkin / Beast | Uncommon | 74 | Magic · Arcanist | 6 / 0 / 20 | 10 | **2** / 6 / 10 | 10 |
-| Gloom Gnome | Underkin | Uncommon | 80 | Magic · Arcanist | 2 / 0 / 20 | 8 | 5 / 5 / 5 | 50 |
-| Cinder Husk | Undead / Humanoid | Rare | 84 | Melee · Bruiser | 30 / 0 / 0 | 30 | **2** / 6 / 12 | 0 |
-| Troglodyte Brute | Underkin | Rare | 100 | Melee · Bruiser | 30 / 4 / 0 | 8 | 16 / 14 / **4** | 35 |
-| Gravewarden | Humanoid | Rare | 102 | Melee · Bulwark | 14 / 0 / 0 | 4 | 30 / 26 / **8** | 50 |
-| Hexed Puppet | Undead | Epic | 110 | Magic · Battlemage | 26 / 0 / 30 | 14 | 18 / 18 / **4** | 20 |
+| Skinwing | Beast | C | Melee · Bruiser | 58 | 14 / 4 / 3 | 22 | 5 / 1 / 4 | 5 |
+| Gutsnout | Beast | C | Melee · Bruiser | 63 | 16 / 3 / 3 | 12 | 6 / 4 / 2 | 20 |
+| Grub Keeper | Underkin | C | Melee · Bruiser | 57 | 12 / 6 / 4 | 6 | 11 / 4 / 7 | 13 |
+| Mole Hag | Underkin / Beast | U | Melee + Magic · Battlemage | 74 | 14 / 3 / 14 | 10 | 2 / 6 / 10 | 10 |
+| Gloom Gnome | Underkin | U | Magic · Arcanist | 92 | 3 / 3 / 20 | 8 | 5 / 5 / 5 | 25 |
+| Cinder Husk | Undead / Humanoid | R | Melee · Bruiser | 84 | 30 / 3 / 6 | 30 | 2 / 6 / 12 | 10 |
+| Troglodyte Brute | Underkin | R | Melee · Bruiser | 112 | 26 / 4 / 3 | 4 | 16 / 14 / 4 | 25 |
+| Gravewarden | Humanoid | R | Melee · Bulwark | 115 | 14 / 3 / 3 | 4 | 30 / 26 / 2 | 35 |
+| Hexed Puppet | Undead | E | Magic + Melee · Battlemage | 110 | 22 / 4 / 30 | 14 | 15 / 18 / 4 | 20 |
+| (Glob, changed) | Toxic | R | Melee · Bulwark | 118 | 14 / 3 / 3 | 4 | 20 / 13 / 4 | 50 |
+
+At level 25 (no gear, no roll; HP % on today's HP, which the balance refresh would halve for everyone):
+
+| Creature | HP before % | HP % | **HP** | Atk / Rng / Mag | Agil | Mdef / Rdef / Magdef |
+|---|---|---|---|---|---|---|
+| Skinwing | 112 | 9 | **122** | 24 / 7 / 5 | 38 | 9 / 2 / 7 |
+| Gutsnout | 121 | 34 | **162** | 27 / 5 / 5 | 21 | 10 / 7 / 3 |
+| Grub Keeper | 110 | 22 | **134** | 21 / 10 / 7 | 10 | 19 / 7 / 12 |
+| Mole Hag | 143 | 17 | **167** | 24 / 5 / 24 | 17 | 3 / 10 / 17 |
+| Gloom Gnome | 177 | 43 | **253** | 5 / 5 / 34 | 14 | 9 / 9 / 9 |
+| Cinder Husk | 162 | 17 | **190** | 51 / 5 / 10 | 51 | 3 / 10 / 21 |
+| Troglodyte Brute | 216 | 43 | **309** | 45 / 7 / 5 | 7 | 27 / 24 / 7 |
+| Gravewarden | 222 | 60 | **355** | 24 / 5 / 5 | 7 | 51 / 45 / 3 |
+| Hexed Puppet | 212 | 34 | **284** | 38 / 7 / 51 | 24 | 26 / 31 / 7 |
+| (Glob, changed) | 228 | 86 | **424** | 24 / 5 / 5 | 7 | 34 / 22 / 7 |
 
 ## Picks so far (the user, 2026-11-25)
 

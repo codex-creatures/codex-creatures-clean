@@ -30,6 +30,7 @@ export type CreatureOrItemDrop = {
   moveSet?: number;     // creatures/cards: MOVE_SET (lib/creatures/instance.ts) once on Combat V2's 3 starting moves; missing: reset on load
   codexSet?: number;   // creatures/cards: CODEX_SET (lib/creatures/instance.ts) once an old Smite or Ambush is wiped; missing: checked on load
   styleSet?: number;    // creatures/cards: STYLE_SET (lib/creatures/instance.ts) once moved over to its species' current style; missing: checked on load
+  pctSet?: number;      // creatures/cards: PCT_SET (lib/creatures/instance.ts) once moved over to the 2026-11-25 species %s; missing: shifted on load
   level?: number;       // creatures: level (lib/creatures/levels.ts); missing = 1
   xp?: number;          // …and XP towards the next one
   ascended?: number;    // creatures: rarities climbed at the Soul Altar (lib/creatures/ascend.ts); missing = 0. Its `rarity` is its species' plus these (fixed up on load)

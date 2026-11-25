@@ -27,7 +27,7 @@ export const REF_LEVEL = 15;      // the level a creature's species %s are "as l
 export const HP_SCALE = 1.5;      // HP is bigger in general
 export const HP_AT_LEVEL_1 = 0.6; // share of its level-15 HP a creature has at level 1
 
-const KEYS: (keyof CreatureProficiency)[] = ["atk", "rng", "mag", "agil", "mdef", "rdef", "magdef"];
+const KEYS: (keyof CreatureProficiency)[] = ["atk", "rng", "mag", "agil", "mdef", "rdef", "magdef", "hp"];
 
 export const clampLevel = (level: number | undefined) => Math.max(1, Math.min(MAX_LEVEL, Math.round(level ?? 1)));
 
@@ -55,7 +55,11 @@ export function proficiencyAt(t: CreatureTemplate, rolled: CreatureProficiency |
   return out;
 }
 
-// Its HP at a level (before gear). steps: as for proficiencyAt.
+// HP with an HP % on it (proficiencyAt's hp, at its level).
+export const withHpPct = (hp: number, pct: number | undefined) => Math.round(hp * (1 + Math.max(0, pct ?? 0) / 100));
+
+// Its HP at a level (before gear, and before its HP %: buildFighter puts that
+// on the whole, gear included). steps: as for proficiencyAt.
 export function hpAt(t: CreatureTemplate, level: number, steps: number): number {
   const f = levelFactor(level);
   return Math.round((t.baseHp + ascendHp(t, steps)) * HP_SCALE * (HP_AT_LEVEL_1 + (1 - HP_AT_LEVEL_1) * f));

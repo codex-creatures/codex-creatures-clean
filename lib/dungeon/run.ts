@@ -212,7 +212,7 @@ export const CAMP_CAGES = 2;
 // Rare starter, Klutz's club and Common armour, Normal AI, vs the chief's Hard): it wins 46% of the time
 // (194 HP) where the Uncommon chief before it lost 52% (123 HP).
 export const CAMP_CHIEF_HP = 2;
-export const CAMP_CHIEF_PROF: CreatureProficiency = { atk: 14, rng: 0, mag: 0, agil: 4, mdef: 12, rdef: 8, magdef: 8 };
+export const CAMP_CHIEF_PROF: CreatureProficiency = { atk: 14, rng: 0, mag: 0, agil: 4, mdef: 12, rdef: 8, magdef: 8, hp: 0 };
 export const CAMP_CHIEF_CLUB = { melee: 15, ranged: 11, magic: 5, agility: 12, hp: 17 };
 export function campChief(): Enemy {
   return {

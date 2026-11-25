@@ -36,7 +36,7 @@ const SOUL = "#9fe9d8";
 const SLOTS = ASCEND_FIRST - 1; // the most offerings (the first step's)
 // Where the offerings sit round the middle (degrees; 0 = right, 90 = down).
 const RING: Record<number, number[]> = { 4: [225, 315, 135, 45], 2: [180, 0] };
-const SHORT: Record<string, string> = { atk: "Mel", rng: "Rng", mag: "Mag", agil: "Agi", mdef: "MDef", rdef: "RDef", magdef: "MgDef" };
+const SHORT: Record<string, string> = { atk: "Mel", rng: "Rng", mag: "Mag", agil: "Agi", mdef: "MDef", rdef: "RDef", magdef: "MgDef", hp: "HP" };
 const RANK = ["common", "uncommon", "rare", "epic", "legendary"];
 
 // A creature's ascension mark: a star per rarity climbed.
@@ -280,7 +280,8 @@ function Becomes({ kept, from, to }: { kept?: CreatureOrItemDrop; from?: string;
     );
   }
   const s = stepsOfCreature(kept), lv = clampLevel(kept.level), up = to ? s + 1 : s;
-  const total = (L: number, k: number) => Object.values(proficiencyAt(t, kept.proficiency, L, k)).reduce((a, b) => a + b, 0);
+  // (Its %s' total, without its HP %: that grows outside the climb's budget.)
+  const total = (L: number, k: number) => Object.entries(proficiencyAt(t, kept.proficiency, L, k)).reduce((a, [key, v]) => a + (key === "hp" ? 0 : v), 0);
   const rc = (r: string) => RARITY_COLORS[r as keyof typeof RARITY_COLORS].text;
   return (
     <div style={{ padding: "4px 10px", margin: "0 8px", flexShrink: 0, position: "relative", zIndex: 1, background: "linear-gradient(to bottom, rgba(4,5,9,0.55), rgba(4,5,9,0.88))" }}>

@@ -13,9 +13,9 @@
 import type { CreatureOrItemDrop, Drop } from "../types";
 import { isCreatureDrop, isItemDrop } from "../types";
 import type { Progress } from "../creatures/levels";
-import { findCreatureTemplate } from "../creatures/creatureData";
+import { CREATURE_BY_ID, findCreatureTemplate } from "../creatures/creatureData";
 import { creatureTypeLabel } from "../creatures/creatureType";
-import { fighterFor } from "../creatures/instance";
+import { fighterFor, upgradePcts } from "../creatures/instance";
 import type { ItemKey } from "../items/ceilings";
 import { ARMOR_META, ARMOR_SLOTS, wornArmor, type ArmorSlot } from "../items/armor";
 import { RARITIES } from "../items/gear";
@@ -54,7 +54,16 @@ export type Rival = {
 export const AI_SUFFIX = " - AI";
 export const rivalName = (r: Pick<Rival, "name">) => `${r.name}${AI_SUFFIX}`;
 
-export const RIVALS: Rival[] = data as unknown as Rival[];
+// (Their creatures were rolled before the 2026-11-25 species %s: moved over as a save's are.)
+export const RIVALS: Rival[] = (data as unknown as Rival[]).map((r) => ({
+  ...r,
+  inventory: r.inventory.map((d) => {
+    if (!d.creatureId || (d.dropType !== "creature" && d.dropType !== "card")) return d;
+    const c = { ...d };
+    upgradePcts(c, CREATURE_BY_ID[d.creatureId]);
+    return c;
+  }),
+}));
 export const rivalById = (id: string) => RIVALS.find((r) => r.id === id);
 
 const SLOT_FIELD: Record<ArmorSlot, "helmetId" | "chestId" | "legsId"> = { helmet: "helmetId", chest: "chestId", legs: "legsId" };

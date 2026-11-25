@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { CREATURE_BY_ID, CREATURES_BY_RARITY, type CreatureProficiency } from "../lib/creatures/creatureData";
 import { rollCreature } from "../lib/creatures/creatureRoll";
 import { makeCreatureDrop } from "../lib/creatures/summon";
-import { hpAt, proficiencyAt, rollsOf, REF_LEVEL } from "../lib/creatures/levels";
+import { hpAt, proficiencyAt, rollsOf, withHpPct, REF_LEVEL } from "../lib/creatures/levels";
 import { ascendBonus, ascendHp, maxSteps, rarityAfter, stepsOf, ASCEND_STATS, RARITY_ORDER } from "../lib/creatures/ascendStats";
 import { ascend, giveProblem, keepProblem, lossesOf, othersNeeded, ritualProblem, ASCEND_MIN_LEVEL } from "../lib/creatures/ascend";
 import { fighterFor } from "../lib/creatures/instance";
@@ -12,7 +12,8 @@ import type { CreatureOrItemDrop } from "../lib/types";
 import { codexesOfRarity } from "../lib/drops";
 
 const ALL = Object.values(CREATURES_BY_RARITY).flat();
-const sum = (p: CreatureProficiency) => Object.values(p).reduce((a, b) => a + b, 0);
+// (The %s' total leaves out its HP %, which grows outside the budget.)
+const sum = (p: CreatureProficiency) => Object.entries(p).reduce((a, [k, v]) => a + (k === "hp" ? 0 : v), 0);
 const creature = (id: string, level = ASCEND_MIN_LEVEL, ascended?: number): CreatureOrItemDrop => {
   const t = CREATURE_BY_ID[id];
   return { ...makeCreatureDrop(t, "creature", "x"), level, ...(ascended ? { ascended, rarity: rarityAfter(t, ascended) } : {}) };
@@ -55,18 +56,18 @@ describe("ascension stats", () => {
     };
     expect(table("moss_wolf")).toMatchInlineSnapshot(`
       [
-        "70/12 84/25 98/39 111/53 125/66 139/80",
-        "86/16 103/36 120/55 137/74 154/94 171/113",
-        "106/22 127/51 149/79 170/107 191/136 212/163",
-        "131/28 157/67 183/104 209/141 235/180 261/215",
-        "155/46 186/104 218/163 249/222 280/280 311/339",
+        "70/13 84/27 98/42 111/57 125/71 139/86",
+        "86/16 103/38 120/58 137/78 154/100 171/119",
+        "106/24 127/54 149/82 170/110 191/140 212/169",
+        "131/30 157/67 183/107 209/147 235/184 261/222",
+        "155/46 186/107 218/166 249/226 280/286 311/345",
       ]
     `);
     expect(table("bellow_toad")).toMatchInlineSnapshot(`
       [
-        "109/23 131/52 153/81 175/110 197/139 219/168",
-        "134/31 161/68 188/106 214/144 241/181 268/219",
-        "159/48 190/107 222/165 254/224 285/282 317/342",
+        "109/24 131/54 153/84 175/114 197/144 219/174",
+        "134/32 161/71 188/109 214/147 241/186 268/225",
+        "159/49 190/108 222/168 254/228 285/287 317/347",
       ]
     `);
   });
@@ -97,7 +98,7 @@ describe("ascension stats", () => {
     const t = CREATURE_BY_ID.moss_wolf;
     expect(fighterFor(raisedThenLevelled, t)).toEqual(fighterFor(levelledThenRaised, t));
     const f = fighterFor(raisedThenLevelled, t), before = fighterFor({ ...a, level: 12 }, t);
-    expect(f.maxHp).toBe(hpAt(t, 12, 1));
+    expect(f.maxHp).toBe(withHpPct(hpAt(t, 12, 1), f.proficiency.hp));
     expect(f.maxHp).toBeGreaterThan(before.maxHp);
     expect(sum(f.proficiency)).toBeGreaterThan(sum(before.proficiency));
   });

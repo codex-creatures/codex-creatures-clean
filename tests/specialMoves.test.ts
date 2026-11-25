@@ -9,7 +9,7 @@ import {
 } from "../lib/creatures/creatureData";
 import { codexDrop, RACE_CODEX_MOVES } from "../lib/drops";
 import { RESTYLED_SPECIES, ARCHETYPE_INFO, SPECIES_ARCHETYPE } from "../lib/creatures/rosterV2";
-import { STYLE_SET, upgradeStyle } from "../lib/creatures/instance";
+import { STYLE_SET, upgradePcts, upgradeStyle } from "../lib/creatures/instance";
 import { makeCreatureDrop } from "../lib/creatures/summon";
 import type { CreatureOrItemDrop } from "../lib/types";
 
@@ -184,8 +184,9 @@ describe("restyled creatures (2026-10-27)", () => {
     // An old ranged roll: atk 3, rng 17 (old base 4 / 14: +2 on attack), agility +1.
     const old = { id: "x", dropType: "creature", creatureId: "cave_bat", moves: ["Shot", "Grit Sling", "Quickshot"],
       proficiency: { atk: 3, rng: 17, mag: 0, agil: 17, mdef: 2, rdef: 6, magdef: 4 } } as unknown as CreatureOrItemDrop;
+    upgradePcts(old, t); // (as a save loads: the 2026-11-25 %s first, its zeros filled, then the style move)
     expect(upgradeStyle(old, t)).toBe(true);
-    expect(old.proficiency).toEqual({ atk: 20, rng: 0, mag: 0, agil: 17, mdef: 2, rdef: 6, magdef: 4 });
+    expect(old.proficiency).toEqual({ atk: 20, rng: 3, mag: 3, agil: 17, mdef: 2, rdef: 6, magdef: 4 });
     expect(old.moves).toEqual(defaultMoveNames(t));
     expect(old.styleSet).toBe(STYLE_SET);
     expect(upgradeStyle(old, t)).toBe(false); // once

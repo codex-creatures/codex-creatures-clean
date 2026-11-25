@@ -39,14 +39,17 @@ export function rollProficiency(base: CreatureProficiency, rng: Rng = Math.rando
   const p = { ...base };
   const spread = rollSpread(base);
   const transfers = randInt(1, rollTransfers(base), rng);
+  // Its HP % can take part too (a species with one), though the spread
+  // stays sized by its other %s.
+  const keys: ProfKey[] = base.hp === undefined ? KEYS : [...KEYS, "hp"];
   for (let i = 0; i < transfers; i++) {
-    const from = KEYS.filter((k) => (p[k] ?? 0) > Math.max(0, (base[k] ?? 0) - spread));
+    const from = keys.filter((k) => (p[k] ?? 0) > Math.max(0, (base[k] ?? 0) - spread));
     const fromKey = pick(from, rng);
-    const to = KEYS.filter((k) => k !== fromKey && p[k] < base[k] + spread);
+    const to = keys.filter((k) => k !== fromKey && (p[k] ?? 0) < (base[k] ?? 0) + spread);
     if (!fromKey || to.length === 0) continue;
     const toKey = pick(to, rng);
-    p[fromKey]--;
-    p[toKey]++;
+    p[fromKey] = (p[fromKey] ?? 0) - 1;
+    p[toKey] = (p[toKey] ?? 0) + 1;
   }
   return p;
 }

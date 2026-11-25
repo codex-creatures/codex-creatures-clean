@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { BALANCED_MOVES, CORE_MOVES, CORE_NUMBERS, HEAVY_MOVES, NEUTRAL_QUICK_MOVES, RETIRED_KIT_MOVES, coreFor } from "../lib/creatures/raceKitsV2";
 import { rollMoves } from "../lib/creatures/creatureRoll";
 import { ARCHETYPE_INFO, NEW_SPECIES_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "../lib/creatures/rosterV2";
+import { PCT_SHIFT_2026_11_25 } from "../lib/creatures/instance";
 import { CREATURE_TEMPLATES as ROSTER_V2 } from "../lib/creatures/creatureData";
 import { RACES_V2, SPECIES_RACES } from "../lib/creatures/racesV2";
 import { ALL_SKILLS, LEARNABLE_MOVES, MOVE_BY_NAME, PRE_V2_SPECIES, STARTING_MOVES, defaultMoveNames, resolveMoves } from "../lib/creatures/creatureData";
@@ -92,9 +93,11 @@ describe("Combat V2 roster", () => {
   });
 
   it("a V2 restyle changes the style but keeps the % total", () => {
-    const sum = (p: Record<string, number>) => Object.values(p).reduce((a, b) => a + b, 0);
+    // (Leaving out the HP % and the 2026-11-25 zeros filled, which came later.)
+    const sum = (p: Record<string, number>) => Object.entries(p).reduce((a, [k, v]) => a + (k === "hp" ? 0 : v), 0);
     for (const [id, r] of Object.entries(V2_RESTYLE)) {
-      expect(sum(r.proficiency), id).toBe(sum(PRE_V2_SPECIES[id].proficiency));
+      const later = sum((PCT_SHIFT_2026_11_25[id] ?? {}) as Record<string, number>);
+      expect(sum(r.proficiency) - later, id).toBe(sum(PRE_V2_SPECIES[id].proficiency));
       expect(v2(id).cls).toBe(r.cls);
     }
     expect(PRE_V2_SPECIES.the_watcher.cls).toBe("ranged");
@@ -123,8 +126,9 @@ describe("Combat V2 roster", () => {
   });
 
   it("the new species' %s sit within today's range for their rarity", () => {
-    const sum = (p: Record<string, number>) => Object.values(p).reduce((a, b) => a + b, 0);
+    const sum = (p: Record<string, number>) => Object.entries(p).reduce((a, [k, v]) => a + (k === "hp" ? 0 : v), 0);
     for (const c of NEW_SPECIES_V2) {
+      if (c.id === "glob") continue; // (its defence is its HP %, not its %s: the user, 2026-11-25)
       const today = ROSTER_V2.filter((o) => o.rarity === c.rarity && !NEW_SPECIES_V2.some((n) => n.id === o.id));
       const sums = today.map((o) => sum(o.proficiency));
       expect(sum(c.proficiency), c.id).toBeGreaterThanOrEqual(Math.min(...sums) - 5);

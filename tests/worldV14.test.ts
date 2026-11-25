@@ -17,7 +17,7 @@ import { navBlocked } from "../lib/world/policy";
 import { RAT_CHANCE } from "../lib/dungeon/decor";
 import type { Instance } from "../lib/world/objects";
 
-const runs = Array.from({ length: 12 }, (_, i) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(i * 7919 + 5), 0, false, false));
+const runs = Array.from({ length: 20 }, (_, i) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(i * 7919 + 5), 0, false, false));
 const at = (run: DungeonRun, v: number) => {
   const walk = { ...run.walk!, v };
   return { walk, ...placeWalk(walk, run.map, dungeonOf(run), (k) => walkRoom(run, k)) };

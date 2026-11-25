@@ -21,7 +21,7 @@ import { VISITORS, tavernVisitors, guestOf, tavernNow, upgradeVisitor, blast, fo
 import { clearDaily, countDaily } from "@/lib/daily";
 import { clearChallenge } from "@/lib/challenge";
 import { clearCampaign, countCampaign, loadCampaign } from "@/lib/campaign";
-import { fighterFor, pruneMoves, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
+import { fighterFor, pruneMoves, retireLearned, retireMoves, upgradeMoveSet, upgradePcts, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
 import { cleanNick } from "@/lib/creatures/nickname";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { rarityAfter, stepsOf } from "@/lib/creatures/ascendStats";
@@ -155,6 +155,7 @@ export function loadSave(): SaveState | null {
     c.soulStone = soulStoneOf(c, t);
     delete c.ability;
     if (upgradeMoveSet(c, t) && equipment[c.id]?.moves) equipment[c.id] = { ...equipment[c.id], moves: undefined };
+    upgradePcts(c, t); // (before the style move, which sets a restyled one's attack %s outright)
     if (upgradeStyle(c, t) && equipment[c.id]?.moves) equipment[c.id] = { ...equipment[c.id], moves: undefined };
     if (c.learned) c.learned = retireLearned(c.learned);
     // The retired plain moves (2026-11-12): each one's closest core move.

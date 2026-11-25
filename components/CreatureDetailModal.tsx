@@ -454,9 +454,10 @@ export default function CreatureDetailModal({
               {STATS.map((st) => {
                 const total = Math.round(now.s[st.key]);
                 const after = next ? Math.round(next.s[st.key]) : total;
-                const p = st.key === "hp" ? null : now.f.proficiency[st.key];
+                const p = now.f.proficiency[st.key];
                 const diff = st.key === "hp" || !base || points ? 0 : prof![st.key] - base[st.key];
-                const gear = st.key === "hp" ? `${hpAt(template, level, creature.ascended ?? 0)} at Lv ${level} + ${now.f.weapon.hp + now.f.armor.hp} gear`
+                // (Its HP % is on the whole: level and gear together.)
+                const gear = st.key === "hp" ? `(${hpAt(template, level, creature.ascended ?? 0)} at Lv ${level} + ${now.f.weapon.hp + now.f.armor.hp} gear) × +${p}%`
                   : `${gearValue(now.f, st.key)} gear × +${p}%`;
                 return <StatRow key={st.key} icon={<Glyph icon={st.icon} art={st.art} />} label={st.label} color={st.color} max={st.max} total={total} after={after} detail={gear} diff={diff} />;
               })}
@@ -473,11 +474,13 @@ export default function CreatureDetailModal({
                 respec={points.respec} />
             ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(76px, 1fr))", gap: 5 }}>
-              {STATS.filter((st) => st.key !== "hp").map((st) => {
-                const k = st.key as Exclude<StatKey, "hp">;
+              {/* Health last: its HP % (the user, 2026-11-25), on its whole HP rather than on gear. */}
+              {[...STATS.filter((st) => st.key !== "hp"), ...STATS.filter((st) => st.key === "hp")].map((st) => {
+                const k = st.key;
                 const d = base ? (prof![k] ?? 0) - (base[k] ?? 0) : 0;
+                const what = k === "hp" ? "its whole health (level and gear)" : `gear ${st.label.toLowerCase()}`;
                 return (
-                  <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by ${now.f.proficiency[k]}% (at level ${MAX_LEVEL}: ${proficiencyAt(template, prof, MAX_LEVEL, creature.ascended ?? 0)[k]}%)`}
+                  <div key={k} title={`${st.label}: ${what} is boosted by ${now.f.proficiency[k]}% (at level ${MAX_LEVEL}: ${proficiencyAt(template, prof, MAX_LEVEL, creature.ascended ?? 0)[k]}%)`}
                     style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
                     <div style={{ fontSize: 13 }}><Glyph icon={st.icon} art={st.art} /></div>
                     <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>

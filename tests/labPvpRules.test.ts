@@ -2,6 +2,7 @@
 // left anywhere under a two-style package, both styles' core moves on every creature, gear rolled under the swapped
 // ceilings still spends its whole budget, and the game's own ceilings are put back after each roll.
 import { describe, expect, it } from "vitest";
+import { PCT_SHIFT_2026_11_25 } from "../lib/creatures/instance";
 import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { ITEM_CEILINGS, ITEM_KEYS } from "../lib/items/ceilings";
 import { ARMOR_KEYS } from "../lib/items/armor";
@@ -11,13 +12,15 @@ import { RULES, SHARP3, swingUnits, templateUnder, fighterUnder, rollWeaponUnder
 const TWO = (Object.keys(RULES) as RulesKey[]).filter((k) => RULES[k].two);
 
 describe("the PvP lab's rules", () => {
-  it("today's rules hand back the species untouched", () => {
-    for (const c of CREATURE_TEMPLATES) expect(templateUnder(c.id, "today")).toBe(c);
+  it("today's rules hand back the species untouched (bar the game's HP %, which the lab puts on itself)", () => {
+    for (const c of CREATURE_TEMPLATES) expect(templateUnder(c.id, "today")).toEqual({ ...c, proficiency: { ...c.proficiency, hp: 0 } });
   });
 
   it("a two-style package leaves no magic and gives every creature both styles' core moves", () => {
     for (const rules of TWO) for (const c of CREATURE_TEMPLATES) {
-      const t = templateUnder(c.id, rules), p = t.proficiency, q = c.proficiency;
+      // (The packages were drawn on the %s before 2026-11-25's: the zeros filled, the Glob's goo.)
+      const d = PCT_SHIFT_2026_11_25[c.id] ?? {};
+      const t = templateUnder(c.id, rules), p = t.proficiency, q = Object.fromEntries(Object.entries(c.proficiency).map(([k, v]) => [k, v - (d[k as keyof typeof d] ?? 0)])) as typeof c.proficiency;
       expect(p.mag).toBe(0);
       expect(p.magdef).toBe(0);
       expect(p.atk + p.rng, `${c.id} attack total`).toBe(q.atk + q.rng + q.mag);

@@ -35,7 +35,7 @@ import { CORE_MOVES } from "@/lib/creatures/raceKitsV2";
 import { PRIMARY_STATS_BY_ITEMKEY } from "@/lib/items/itemPrimaries";
 import { ARMOR_CEILINGS, ARMOR_KEYS, ARMOR_META, ARMOR_STAT_KEYS, SET_BONUS } from "@/lib/items/armor";
 import { RARITY_BUDGETS, type Rarity } from "@/lib/items/budgets";
-import { MAX_LEVEL, REF_LEVEL, hpAt, proficiencyAt } from "@/lib/creatures/levels";
+import { MAX_LEVEL, REF_LEVEL, hpAt, proficiencyAt, withHpPct } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { WEAPON_SPRITES, ARMOR_SPRITES } from "@/lib/sprites/items";
 
@@ -131,7 +131,7 @@ function Combat() {
 }
 
 const ZERO: CombatItem = { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0, hp: 0 };
-const NO_PROF: CreatureProficiency = { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0 };
+const NO_PROF: CreatureProficiency = { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0, hp: 0 };
 const dummy = (cls: CombatClass, maxHp: number, weapon: Partial<CombatItem>, armor: Partial<CombatItem>): Fighter => ({
   name: "x", hp: maxHp, maxHp, energy: 100, proficiency: NO_PROF, cls, skills: [],
   weapon: { ...ZERO, ...weapon }, armor: { ...ZERO, ...armor }, stance: "neutral", elemental: null,
@@ -180,7 +180,7 @@ function Calculator() {
 // ── Creatures ─────────────────────────────────────────────────────
 // A stat's label with its icon (art where it has some).
 const stat = (icon: string, text: string, art?: string) => <><Glyph icon={icon} art={art} /> {text}</>;
-const PROF_LABELS: [keyof CreatureProficiency, React.ReactNode][] = [["atk", stat("⚔️", "Melee", "stat_atk")], ["rng", stat("🏹", "Ranged")], ["mag", stat("🔮", "Magic", "stat_mag")], ["agil", stat("💨", "Agility", "stat_agil")], ["mdef", stat("🛡️", "M.Def")], ["rdef", stat("🔰", "R.Def")], ["magdef", stat("🧿", "Mg.Def")]];
+const PROF_LABELS: [keyof CreatureProficiency, React.ReactNode][] = [["atk", stat("⚔️", "Melee", "stat_atk")], ["rng", stat("🏹", "Ranged")], ["mag", stat("🔮", "Magic", "stat_mag")], ["agil", stat("💨", "Agility", "stat_agil")], ["mdef", stat("🛡️", "M.Def")], ["rdef", stat("🔰", "R.Def")], ["magdef", stat("🧿", "Mg.Def")], ["hp", stat("❤️", "HP", "stat_hp")]];
 const byRarity = (a: CreatureTemplate, b: CreatureTemplate) => RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity) || a.name.localeCompare(b.name);
 
 // The levels a creature's stats can be looked at (the user, 2026-11-23: Lv 50, the new top): its species'
@@ -262,7 +262,7 @@ function CreatureCard({ t, level }: { t: CreatureTemplate; level: number }) {
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
             <RaceTag race={t.race} races={t.races} /><ClassBadge cls={t.cls} />
           </div>
-          <div style={{ fontSize: 12, color: MUTED, marginTop: 3, textTransform: "capitalize" }}>{t.rarity} · {hpAt(t, level, 0)} HP at Lv {level}</div>
+          <div style={{ fontSize: 12, color: MUTED, marginTop: 3, textTransform: "capitalize" }}>{t.rarity} · {withHpPct(hpAt(t, level, 0), prof.hp)} HP at Lv {level}</div>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 3, marginTop: 8 }}>

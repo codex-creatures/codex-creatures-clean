@@ -17,7 +17,9 @@ export const BALANCED_SHARE = 0.6;
 
 type ProfKey = keyof CreatureProficiency;
 
-export const ROLE_BY_STAT: Record<ProfKey, string> = {
+// (Its HP % plays no part in its role: a creature is a tank by its defences.)
+type RoleKey = Exclude<ProfKey, "hp">;
+export const ROLE_BY_STAT: Record<RoleKey, string> = {
   atk:    "Bruiser",
   rng:    "Marksman",
   mag:    "Spellcaster",
@@ -26,8 +28,8 @@ export const ROLE_BY_STAT: Record<ProfKey, string> = {
   rdef:   "Ranged Tank",
   magdef: "Magic Tank",
 };
-const ATTACKS: ProfKey[] = ["atk", "rng", "mag"];
-const DEFENCES: ProfKey[] = ["mdef", "rdef", "magdef"];
+const ATTACKS: RoleKey[] = ["atk", "rng", "mag"];
+const DEFENCES: RoleKey[] = ["mdef", "rdef", "magdef"];
 
 export const ROLE_HINT: Record<string, string> = {
   Bruiser:       "best melee multiplier",
@@ -43,7 +45,7 @@ export const ROLE_HINT: Record<string, string> = {
 };
 
 export function creatureRoles(p: CreatureProficiency): string[] {
-  const entries = (Object.entries(p) as [ProfKey, number][]).sort((a, b) => b[1] - a[1]);
+  const entries = (Object.entries(p) as [RoleKey | "hp", number][]).filter((e): e is [RoleKey, number] => e[0] !== "hp").sort((a, b) => b[1] - a[1]);
   const top = entries[0][1];
   if (top <= 0) return ["Balanced"];
   const used = entries.filter(([, v]) => v > 0);
