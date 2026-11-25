@@ -195,9 +195,9 @@ so far, with an in-memory test team; nothing touches a save.)
   keeps its HP to the next fight. Lose: the run's over, back to the entrance on a fresh roll.
   **Anything you can loot opens when you tap it** (the user, 2026-11-06): chests, stashes
   and fight spoils. Tap one and you walk up beside it (chests are solid), then the game's
-  loot window opens (`LootWindow`, with a 6-slot test bag; gold and cards take no room). The window sits at the top
-  of the screen, not centred (the user, 2026-11-24: a closer look opening under the chest made it grow and slide up,
-  so a double-tap's second tap missed); double-tap a thing to take it, drag it onto a full bag slot to swap, and drag
+  loot window opens (`LootWindow`, with a 6-slot test bag; gold and cards take no room). The window opens centred
+  and the chest then stays put: a closer look grows it downwards, moving it up only as far as the screen needs (the
+  user, 2026-11-24: a double-tap's second tap missed when it slid; 2026-11-26: no empty space kept for the closer look); double-tap a thing to take it, drag it onto a full bag slot to swap, and drag
   one bag slot onto another to swap their places (`onMove`).
   A chest rolls the live chest roll (the Labyrinth screen's `openChest`), a stash its sack; what you leave stays
   in it. Later, with the art, the chest should fit the room.

@@ -26,7 +26,7 @@
 // Gold, the backpack and creature cards take no room. Whatever's left in the
 // chest stays on the floor when you move on.
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useEscape } from "@/hooks/useEscape";
 import { useDragDrop } from "@/hooks/useDragDrop";
 import { doubleTapper } from "@/lib/doubleTap";
@@ -131,6 +131,24 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
     },
   });
   const { over, press, handlers } = dnd;
+  // Centred as it opens, then the chest stays put: a closer look grows the
+  // window downwards (moving it up only as far as the screen needs), so the
+  // second tap of a double-tap lands where the first did. No space is kept for
+  // the closer look while nothing's tapped (the user, 2026-11-26: a big empty gap).
+  const card = useRef<HTMLDivElement>(null);
+  const restTop = useRef(6);
+  const [top, setTop] = useState(6);
+  const peeking = (seen !== null && !!items[seen]) || (picked !== null && !!bag[picked]);
+  // (Measures after every render, as the contents change; setTop only when it moves, so it settles.)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const el = card.current, room = el?.parentElement?.clientHeight;
+    if (!el || !room) return;
+    const h = el.offsetHeight;
+    if (!peeking) restTop.current = Math.max(6, (room - h) / 2);
+    const t = Math.max(6, Math.min(restTop.current, room - 6 - h));
+    if (Math.abs(t - top) > 0.5) setTop(t);
+  });
   const lifted = (kind: From["kind"], i: number) => dnd.lifted?.kind === kind && dnd.lifted.i === i;
   const thing = (d: From) => (d.kind === "loot" ? items[d.i] : bag[d.i]?.peek);
   // How to give it to a creature, from the chest or from your bag (none: it can't be).
@@ -160,11 +178,9 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   const glowBg = (glow?: string) => `radial-gradient(circle, ${glow ?? "rgba(255,255,255,0.05)"} 0%, transparent 62%)`;
 
   return (
-    // Centred, and always the same height: the closer look's place is kept when nothing's tapped, so opening one
-    // doesn't grow the window and slide it under your finger (the user, 2026-11-24: a double-tap's second tap missed;
-    // it was anchored to the top for that till 2026-11-26, when the user found it too high up).
-    <div ref={dragBox} onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 190, background: "rgba(4,5,9,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 6 }}>
-      <div role="dialog" aria-label={name} onClick={(e) => e.stopPropagation()} className="title-bar sheet-up"
+    // (Centred by `top` above: the user, 2026-11-24, a double-tap's second tap missed when it slid; 2026-11-26, too high up at the top.)
+    <div ref={dragBox} onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 190, background: "rgba(4,5,9,0.72)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 6, paddingTop: top }}>
+      <div ref={card} role="dialog" aria-label={name} onClick={(e) => e.stopPropagation()} className="title-bar sheet-up"
         style={{ width: "100%", maxHeight: "97cqh", overflowY: "auto", overflowX: "hidden", padding: 10, display: "grid", gap: 8, userSelect: "none", WebkitUserSelect: "none" }}>
         {/* The chest */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -214,7 +230,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           <button className="dock-tab" style={{ flex: "none", minHeight: 44, padding: "4px 12px" }} onClick={() => { onTakeAll(); setTriedAll(true); }} disabled={items.length === 0}>Take all</button>
         </div>
         {/* A closer look: one fixed box for whatever you tapped in the chest or
-            in your bag. Nothing tapped: its place kept, empty, so the window never changes height. */}
+            in your bag. Nothing tapped: nothing here. */}
         {seen !== null && items[seen] ? (
           <ItemPeek item={items[seen]} action={<>
             {actionChips("loot", seen)}
@@ -229,7 +245,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
               {!teaching && <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>{putLabel}</button>}
             </>} />
           );
-        })() : <div aria-hidden style={{ visibility: "hidden" }}><ItemPeek look={{ name: "-", color: MUTED }} /></div>}
+        })() : null}
 
         {/* Your bag */}
         <div className="pixel-font" style={{ fontSize: 17, color: full ? "#ff8a80" : "#c9b48a" }}>🎒 {bagName} {bag.length}/{slots}</div>

@@ -10,27 +10,28 @@ const fighter = (id: string, weapon: Record<string, number>, armor: Record<strin
   ({ ...buildFighter(CREATURE_BY_ID[id], weapon, armor, undefined, undefined, undefined, undefined, 20), statuses: [] }) as Combatant;
 
 describe("a move's damage range in a fight", () => {
-  it("is its hit at the lowest and highest roll, against the foe it's aimed at; every roll lands inside it", () => {
+  const span = (t: string) => t.replace(" dmg", "").split("–").map(Number);
+  it("is its hit at the lowest and highest roll before the foe's defences: every roll on a foe with none lands inside it, and on the real foe no higher", () => {
     const me = fighter("dire_wolf", { melee: 40, ranged: 10 }, { mDef: 20 });
     const them = fighter("glob", { melee: 10 }, { mDef: 40, rDef: 20, magDef: 10 });
+    const bare = { ...them, armor: { ...them.armor, mdef: 0, rdef: 0, magdef: 0 }, proficiency: { ...them.proficiency, mdef: 0, rdef: 0, magdef: 0 } };
     for (const sk of me.skills.filter((s) => s.damage > 0)) {
-      const text = damageRange(sk, me, them)!;
-      const [lo, hi] = text.replace(" dmg", "").split("–").map(Number);
+      const [lo, hi = lo] = span(damageRange(sk, me, them)!);
       for (let i = 0; i <= 20; i++) {
         const roll = 1 - DAMAGE_VARIANCE + (2 * DAMAGE_VARIANCE * i) / 20;
-        const d = calcDamage(sk, me, them, false, PRECISE_IGNORE, roll).damage;
+        const d = calcDamage(sk, me, bare, false, PRECISE_IGNORE, roll).damage;
         expect(d, sk.name).toBeGreaterThanOrEqual(lo);
-        expect(d, sk.name).toBeLessThanOrEqual(hi ?? lo);
+        expect(d, sk.name).toBeLessThanOrEqual(hi);
+        expect(calcDamage(sk, me, them, false, PRECISE_IGNORE, roll).damage, sk.name).toBeLessThan(d);
       }
     }
   });
 
-  it("counts the foe's armour: the same move shows less against a tougher one", () => {
+  it("leaves out the foe's armour and defence %s (the user, 2026-11-26: raw damage before the enemy's deduction)", () => {
     const me = fighter("dire_wolf", { melee: 40 }, {});
-    const soft = fighter("moss_wolf", {}, {}), hard = fighter("moss_wolf", {}, { mDef: 80 });
+    const soft = fighter("moss_wolf", {}, {}), hard = fighter("ironhide", {}, { mDef: 80 });
     const sk = me.skills.find((s) => s.damage > 0)!;
-    const top = (t: string) => Number(t.replace(" dmg", "").split("–").pop());
-    expect(top(damageRange(sk, me, hard)!)).toBeLessThan(top(damageRange(sk, me, soft)!));
+    expect(damageRange(sk, me, hard)).toBe(damageRange(sk, me, { ...soft, maxHp: hard.maxHp, hpMult: hard.hpMult, races: hard.races }));
   });
 
   it("is nothing for a move that does no damage", () => {

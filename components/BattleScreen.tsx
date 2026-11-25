@@ -729,13 +729,16 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   return glow ? <div className="move-glow">{tile}</div> : tile;
 }
 
-// What a move would do to the foe it's aimed at: its hit at the lowest and highest roll (±DAMAGE_VARIANCE),
-// after their armour, the race chart and the rest (the user, 2026-11-26: shown on the move, in its name's colour).
+// What a move would do to the foe it's aimed at before their defences: its hit at the lowest and highest roll
+// (±DAMAGE_VARIANCE), with the race chart and the rest, but none of their armour or defence %s (the user, 2026-11-26:
+// "raw damage before the enemy deduction", so a melee move reading 100 may land 50 on a melee wall while a ranged one
+// reading 80 lands 70; it was the landed hit at first). Shown on the move, in its name's colour.
 // Not counted: a precise hit, and what a move's own effect adds when it lands (ambush, execute…). None for a move that does no damage.
 const MOVE_NAME_COLOR = "#fbf1dc"; // (MoveTile's name)
 export function damageRange(sk: Skill, me: Combatant, them: Combatant): string | undefined {
   if (sk.damage <= 0) return undefined;
-  const steady = { ...them, braceActive: false }; // (a brace's coin toss isn't the move's)
+  // (A brace's coin toss isn't the move's; nor are their defences.)
+  const steady = { ...them, braceActive: false, armor: { ...them.armor, mdef: 0, rdef: 0, magdef: 0 }, proficiency: { ...them.proficiency, mdef: 0, rdef: 0, magdef: 0 } };
   const lo = calcDamage(sk, me, steady, false, PRECISE_IGNORE, 1 - DAMAGE_VARIANCE).damage;
   const hi = calcDamage(sk, me, steady, false, PRECISE_IGNORE, 1 + DAMAGE_VARIANCE).damage;
   if (lo <= 0) return undefined;

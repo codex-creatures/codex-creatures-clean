@@ -51,6 +51,10 @@ function Slab({ m }: { m: Skill }) {
 // readable (NAME_MIN_PX) wherever tablets are shown; /lab/movetext measures it.
 const nameFont = (name: string) => `min(1em, calc(100cqw / ${(Math.max(...name.split(" ").map((w) => w.length)) * NAME_EM).toFixed(2)}))`;
 
+// Letters cut into the stone: thickened a pixel in their own colour, edged in the stone's cut.
+const carved = (ink: string, cut: string) =>
+  `1px 0 0 ${ink}, 2px 0 0 ${cut}, -1px 0 0 ${cut}, 0 -1px 0 ${cut}, 1px -1px 0 ${cut}, 0 2px 0 ${cut}, 1px 2px 0 ${cut}, 0 3px 0 rgba(0,0,0,0.35)`;
+
 export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, fill, onClick }: {
   m: Skill;
   note?: { text: string; color: string };   // one short line (e.g. "not enough energy")
@@ -90,24 +94,33 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, fi
           in its middle), and under it one line for a tag or note, kept when
           empty. So no tablet's name moves whatever it says. On a narrow tablet
           (fill) the name box runs under the i's and the cost's corners.
-          (lib/uiText.ts NAME_INSET) */}
-      <div style={{ position: "absolute", inset: `0 ${inset.right}px 0 ${inset.left}px`, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+          (lib/uiText.ts NAME_INSET)
+          In a fight (fill) the name is a title at the top and its damage sits
+          right under it, in the same lettering, smaller (the user, 2026-11-26:
+          the damage line didn't fit under a centred name). */}
+      <div style={{ position: "absolute", inset: `${fill ? 6 : 0}px ${inset.right}px 0 ${inset.left}px`, display: "flex", alignItems: fill ? "flex-start" : "center", justifyContent: "center", textAlign: "center" }}>
         <div style={{ position: "relative", width: "100%" }}>
         <div className="pixel-font" title={m.name} style={{
           containerType: "inline-size",
-          fontSize: fill ? "clamp(12px, 4.2cqw, 19px)" : "clamp(16px, 5cqw, 22px)", lineHeight: 1.05, height: "2.1em", width: "100%",
+          fontSize: fill ? "clamp(12px, 4.2cqw, 19px)" : "clamp(16px, 5cqw, 22px)", lineHeight: 1.05, ...(fill ? { maxHeight: "2.1em" } : { height: "2.1em" }), width: "100%",
           display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
-          color: "#fbf1dc", letterSpacing: "0.03em",
-          textShadow: `1px 0 0 #fbf1dc, 2px 0 0 ${stone.cut}, -1px 0 0 ${stone.cut}, 0 -1px 0 ${stone.cut}, 1px -1px 0 ${stone.cut}, 0 2px 0 ${stone.cut}, 1px 2px 0 ${stone.cut}, 0 3px 0 rgba(0,0,0,0.35)`,
+          color: "#fbf1dc", letterSpacing: "0.03em", textShadow: carved("#fbf1dc", stone.cut),
         }}>
           <span style={{ fontSize: nameFont(m.name), display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{m.name}</span>
         </div>
         {/* The tag or note line: one line, under the name. */}
-        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, display: "flex", justifyContent: "center", marginTop: 2, visibility: note || tag ? "visible" : "hidden" }}>
+        <div style={{ ...(fill ? { marginTop: 3 } : { position: "absolute", top: "100%", left: 0, right: 0, marginTop: 2 }), display: "flex", justifyContent: "center", visibility: note || tag ? "visible" : "hidden" }}>
+          {fill ? (
+            <span className="pixel-font" style={{ maxWidth: "100%", fontSize: "clamp(10px, 3.4cqw, 14px)", lineHeight: 1.1, letterSpacing: "0.03em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              ...(note ? { color: "#ffe1d8", background: "rgba(0,0,0,0.45)", padding: "0 5px", textShadow: "0 1px 0 #000" } : { color: tag?.color, textShadow: carved(tag?.color ?? "#fbf1dc", stone.cut) }) }}>
+              {note?.text ?? tag?.text ?? "-"}
+            </span>
+          ) : (
           <span style={{ height: 15, maxWidth: "100%", fontSize: 11, lineHeight: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 1px 0 #000",
             ...(note ? { color: "#ffe1d8", background: "rgba(0,0,0,0.45)", padding: "0 5px" } : { color: tag?.color }) }}>
             {note?.text ?? tag?.text ?? "-"}
           </span>
+          )}
         </div>
         </div>
       </div>
