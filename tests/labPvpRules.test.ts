@@ -6,7 +6,7 @@ import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { ITEM_CEILINGS, ITEM_KEYS } from "../lib/items/ceilings";
 import { ARMOR_KEYS } from "../lib/items/armor";
 import { RARITY_BUDGETS } from "../lib/items/budgets";
-import { RULES, templateUnder, fighterUnder, rollWeaponUnder, rollPieceUnder, type RulesKey } from "../app/lab/pvp/rules";
+import { RULES, SHARP3, swingUnits, templateUnder, fighterUnder, rollWeaponUnder, rollPieceUnder, type RulesKey } from "../app/lab/pvp/rules";
 
 const TWO = (Object.keys(RULES) as RulesKey[]).filter((k) => RULES[k].two);
 
@@ -32,16 +32,21 @@ describe("the PvP lab's rules", () => {
     }
   });
 
-  it("a three-style package keeps every attack % and defence total, and leaves magic in", () => {
-    for (const rules of ["T1", "T2", "T3"] as RulesKey[]) for (const c of CREATURE_TEMPLATES) {
+  it("a three-style package keeps every attack % and agility, takes its defences from the user's table, and leaves magic in", () => {
+    for (const rules of ["M1", "T1", "T2", "T3"] as RulesKey[]) for (const c of CREATURE_TEMPLATES) {
       const t = templateUnder(c.id, rules), p = t.proficiency, q = c.proficiency;
       expect([p.atk, p.rng, p.mag, p.agil]).toEqual([q.atk, q.rng, q.mag, q.agil]);
-      expect(p.mdef + p.rdef + p.magdef, `${c.id} defence total`).toBe(q.mdef + q.rdef + q.magdef);
+      expect([p.mdef, p.rdef, p.magdef], `${c.id} defences`).toEqual(SHARP3[c.id]);
+      expect(Math.min(p.mdef, p.rdef, p.magdef), `${c.id} has a weak side`).toBeLessThan(Math.max(p.mdef, p.rdef, p.magdef));
       expect(t.skills).toBe(c.skills);
       const f = fighterUnder(c.id, rules, 16, { melee: 40, magic: 40 }, { mDef: 60, rDef: 60, magDef: 60, hp: 30 }, undefined);
       expect(f.armor.mdef).toBe(60 * 3 * RULES[rules].W);
       expect(f.armor.magdef).toBe(60 * 3 * RULES[rules].W);
+      // The refresh package: every move in swing units (a heavy is 15, a light 10).
+      if (RULES[rules].multiply) for (const s of f.skills) expect(s.damage, `${c.id} ${s.name}`).toBe(swingUnits(c.skills.find((m) => m.name === s.name)!.damage));
     }
+    expect(swingUnits(25)).toBe(15);
+    expect(swingUnits(62.5)).toBe(38);
   });
 
   it("gear rolled under a two-style package spends its budget with no magic, and the game's ceilings are restored", () => {

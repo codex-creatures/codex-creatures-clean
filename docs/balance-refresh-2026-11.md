@@ -5,6 +5,15 @@ What was decided across the two-style study, the tank rounds and the codex move 
 this file is built yet except the codex move retune (pushed 2026-11-25). When the user signs it off, the decided
 parts move into docs/design/combat.md and docs/decisions.md and get built in the order at the end.
 
+## Decided (the user, 2026-11-25)
+
+Three styles; every creature's defences from the table below (a weakness each, attackers less tanky); an HP % on
+every creature that levels like the other %s; **T2**: armour counts in full (`ARMOR_DEFENCE_WEIGHT` 1/3 → 1) and
+hits twice as big next to HP (`HP_SCALE` 1.5 → 0.75), the additive formula kept, so walls normally win their own
+matchup and still fall to their counter; codexes show a tier word alone and a damage range on a creature. The
+multiply model and ×4 powers were simmed and not picked (below). Being play-tested in /lab/pvp ("The refresh
+(T2)") before the game build.
+
 ## The short version
 
 1. **Three styles stay.** Two styles never did the balancing; the knobs did. Magic keeps the roster's room to grow.
@@ -266,11 +275,10 @@ which is the point: a Bulwark is a tank's weapon.
 | Snipers, casters, assassins | 0–25 | Aurelius 25, The Watcher 15, Sylvaran 10, Swamp Witch 10, Flicker Wisp 5, Flame Imp 5, Thicket Archer 5, Rotgut Fly 5, Skull Raven 5, Dust Sprite 0, Gleamling 0, Dustwraith 0 |
 
 **Rules around it:**
-- **It does not level or ascend like the other %s.** Those are 0 at Lv 1, as listed at Lv 15 and double at Lv 29
-  (`levelFactor`), and ascension spreads a budget along the species' shape; an HP % treated the same would be
-  nothing at Lv 1 and 160% on a Lv 29 wall, on top of HP that already grows with level. So: a fixed species
-  value, a creature's birth roll may move it a few points like any stat, and ascension adds a flat +5 a step.
-  (Revised 2026-11-25 from the first draft, which had it levelling.)
+- **It levels and ascends like every other %** (the user, 2026-11-25): none at Lv 1, as listed at Lv 15, about
+  double at Lv 29 (`levelFactor`), so a Tunnel Wyrm's 80% is about 160% late on; a creature's birth roll can land
+  on it; ascension spreads its budget along the species' shape, HP % included. (A fixed value was drafted for a
+  while and overruled.)
 - It shows in the creature's window with the other %s, and the Pit's stat sliders if the Bestiary gets them.
 - Saves: the field is optional; a creature without one takes its species' value (so old saves gain it on load,
   with no roll).
@@ -322,6 +330,45 @@ Stalactite 23, Mega Smash 38; bosses likewise), carried behind a flag in `lib/co
 switch the sims use, off by default, and simmed on these rows before anything is built. If the user would rather
 not change the formula at all, the fallback is T1 as it stood (no ×4): the hold at 80%, the crumble kept, the
 tier words only approximately true.
+
+### The multiply model, simmed (2026-11-25)
+
+Built behind a flag in lib/combat/engine.ts (`CombatRules.powerModel`, off by default; `SWING_UNIT` 10: a power-10
+move is one swing, the creature's attack as it stands; `BARE_SWING` 10 for an unarmed creature; tests/powerModel.test.ts)
+and run on the same rows with every move in swing units (10 light, 12 first-strike, 15 heavy, 20 Bone Javelin, 21
+Headbutt, 30 Stalactite, 38 Mega Smash / Implode). At today's HP it was far too slow (hits 3–7% of HP, fights 30–65
+rounds): multiplying reproduces today's raw hit sizes, and with armour in full those shrink to nothing. At T2's scale
+(HP ÷ 2, which in a build is `HP_SCALE` 1.5 → 0.75 or a swing unit of 5):
+
+| Row | T2: additive, armour full, HP ÷2 | Additive ×4 | Multiply, armour full, HP ÷2 |
+|---|---|---|---|
+| Melee walls v melee attackers (the hold) | 83% | 100% | **50%** |
+| Melee walls v ranged / v magic (the crumble) | 13 / 28 | 35 / 85 | **3 / 13** |
+| Magic walls v magic / v melee | 90 / 18 | 100 / 45 | 55 / 5 |
+| Sided plate v mixed / all-round plate v mixed | 33 / 33 | 70 / 53 | 0 / 5 |
+| A tank in a team v a third attacker | 65% | 88% | 50% |
+| 1v1 Tunnel Wyrm v Dire Wolf / Sylvaran / Witch | 70 / 25 / 40 | 98 / 58 / 75 | **33 / 18 / 18** |
+| 1v1 Crystal Golem v Witch / v Dire Wolf | 55 / 10 | 100 / 45 | 25 / 18 |
+| Casual random gear v fitted | 8% | 18% | 15% |
+| Race edge | 68% | 83% | 70% |
+| Cyclops / Hydra / Minotaur, un-retuned | 85 / 85 / 100 | 100 / 90 / 100 | 100 / 75 / 100 |
+| Hits to knock out: mixed team / wall v wall 1v1 | 7.8 / 22 | 7.1 / 15 | 8.0 / **33** |
+
+The 1v1 chart and the rarity rows under multiply match the no-×4 check within noise (the Legendaries spread 35–75%,
+Ironhide 65 / 15 / 15, a step about 70/30, ascension closing it), with every wall lower on its own side (Glob 55 /
+25 / 35, Crystalback 15 / 15 / 65, Dreadpox 20 / 10 / 55, Tunnel Wyrm 20 / 20 / 25).
+
+**What it means.** Under multiply the creature's swing is the whole of a hit, so a wall's hits sit the full gear gap
+below an attacker's (1.85×, against 1.5× today). It crumbles to its counters as sharply as anything simmed, and
+takes only 4% of its HP a hit from its own style, but it gives back less, survives 33 hits and loses: it can't finish.
+In a team a tank is worth exactly a slot. That is the user's "does little damage but takes a lot" taken literally.
+Under additive at the same scale (T2) a wall's hit is only 1.5× below an attacker's, so it wins its own matchup
+(70–83%) and still crumbles (13–25%), at the price of tier words that are only roughly true (a heavy 1.3× a light on
+the same creature). ×4 additive is out: it flattens attackers and the walls stop crumbling.
+
+**The decision left:** multiply (true tiers, soft-hitting walls that hold the line rather than win it; the lever for
+walls that finish a frail counter is the shields' attack ceilings, Basalt Bulwark's 35 melee at Rare) or additive T2
+(walls that win their matchup; tiers approximate). Claude's recommendation: multiply.
 
 ## Open: the two questions that gate the rest
 

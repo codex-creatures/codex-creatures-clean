@@ -11,8 +11,16 @@ import { raceMultiplier, type MoveRaceMode } from "./raceChart";
 // enough), so every move hits as PLAIN_DAMAGE. damageTypes: on unless false.
 // Only the sims and tests change this; TRIANGLE_RULES are the old rules, kept
 // for them.
-export type CombatRules = { triangle: boolean; races: MoveRaceMode | null; damageTypes?: boolean };
+// powerModel (the balance refresh study, docs/balance-refresh-2026-11.md, 2026-11-25): how a move's power meets
+// the creature's attack. "add" (today): power + weapon × %. "multiply": power × (weapon × %) / SWING_UNIT, so a
+// power-15 move is always one and a half times a power-10 one and the creature stays the bigger factor. Only the
+// sims and the PvP lab switch it on; missing means "add".
+export type CombatRules = { triangle: boolean; races: MoveRaceMode | null; damageTypes?: boolean; powerModel?: "add" | "multiply" };
 export const LIVE_RULES: CombatRules = { triangle: false, races: "drafted", damageTypes: false };
+// Under "multiply", power 10 is one swing: the creature's attack as it stands (so a 58-attack wolf's Strike is 58).
+export const SWING_UNIT = 10;
+// …and an unarmed creature still swings with this much, so a hit never falls to nothing.
+export const BARE_SWING = 10;
 export const TRIANGLE_RULES: CombatRules = { triangle: true, races: null };
 let rules: CombatRules = LIVE_RULES;
 export const combatRules = () => rules;
@@ -207,7 +215,7 @@ export function calcDamage(
   const atkKey = ATTACK_STAT[moveType], defKey = DEFENCE_STAT[moveType];
   const effectiveAtk = withProf(attacker.weapon[atkKey] ?? 0, attacker.proficiency[atkKey]) * (1 + (attacker.boost?.[moveType] ?? 0)) * (1 - weakenOf(attacker, moveType));
   const affinity     = typed && attacker.weapon.affinity && attacker.weapon.affinity === skill.dmgType ? 1 + AFFINITY_BONUS : 1;
-  const raw          = (skill.damage + effectiveAtk) * roll;
+  const raw          = (rules.powerModel === "multiply" ? (skill.damage * Math.max(BARE_SWING, effectiveAtk)) / SWING_UNIT : skill.damage + effectiveAtk) * roll;
 
   const atkStance    = stanceDamageDealt(attacker.stance, moveType);
   const defStance    = stanceDamageTaken(defender.stance, moveType);

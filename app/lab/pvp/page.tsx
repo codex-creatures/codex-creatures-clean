@@ -1,10 +1,11 @@
 "use client";
-// app/lab/pvp/page.dev.tsx — 🧪 the PvP balance lab (the user, 2026-11-24): pick creatures by their stats, roll a
+// app/lab/pvp/page.tsx — 🧪 the PvP balance lab (the user, 2026-11-24): pick creatures by their stats, roll a
 // pile of Rare-or-better gear, build two teams and fight them against each other by hand, both sides yours, under
 // today's rules or a two-style package from docs/two-styles-sim-2026-11.md (./rules.ts). Every hit is logged as
-// damage and a share of the target's HP. Dev only (page.dev.tsx): no build has it, and nothing is saved.
+// damage and a share of the target's HP. On the live site since 2026-11-25 so the user can play-test there (like /lab/models): it writes no saves, and it puts the game's combat rules back when you leave it.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { setCombatRules, LIVE_RULES } from "@/lib/combat/engine";
 import { CREATURE_BY_ID, CREATURE_TEMPLATES, CLASS_INFO, RACE_MOVES, SPECIAL_MOVES, LEARNABLE_MOVES, canLearnFromCodex, type Skill } from "@/lib/creatures/creatureData";
 import { hpAt } from "@/lib/creatures/levels";
 import { combatSummary } from "@/lib/combat/loadout";
@@ -17,7 +18,7 @@ import { ITEM_KEYS, type ItemKey } from "@/lib/items/ceilings";
 import { ITEM_META } from "@/lib/items/metadata";
 import { ARMOR_KEYS, ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, type ArmorKey, type ArmorSlot } from "@/lib/items/armor";
 import type { Rarity } from "@/lib/items/budgets";
-import { RULES, type RulesKey, templateUnder, hpPct, restyle, rollWeaponUnder, rollPieceUnder, fighterUnder, moveNameUnder, roleOf, fittedGear, weaponCeilings, armorCeilings } from "./rules";
+import { RULES, type RulesKey, templateUnder, hpPctAt, restyle, inSwings, rollWeaponUnder, rollPieceUnder, fighterUnder, moveNameUnder, roleOf, fittedGear, weaponCeilings, armorCeilings, engineRulesFor } from "./rules";
 
 const TEAM = 3;
 const PILE = 50;
@@ -44,7 +45,7 @@ const slotKey = (side: SideKey, i: number) => `${side}:${i}`;
 function movePool(id: string, rules: RulesKey): Skill[] {
   const t = templateUnder(id, rules);
   const codex = [...RACE_MOVES, ...SPECIAL_MOVES, ...LEARNABLE_MOVES].filter((m) => canLearnFromCodex(templateUnder(id, "today"), m.name));
-  const all = [...t.skills, ...codex].map((m) => (RULES[rules].two ? restyle(m) : m));
+  const all = [...t.skills, ...codex].map((m) => (RULES[rules].two ? restyle(m) : m)).map((m) => (RULES[rules].multiply ? inSwings(m) : m));
   return [...new Map(all.map((m) => [m.name, m])).values()];
 }
 
@@ -60,7 +61,7 @@ function buildTeam(side: SideKey, teams: Teams, loadouts: Loadouts, items: Item[
 }
 
 export default function PvpLab() {
-  const [rules, setRules] = useState<RulesKey>("K9");
+  const [rules, setRules] = useState<RulesKey>("T2");
   const [level, setLevel] = useState(16);
   const [teams, setTeams] = useState<Teams>({ A: [], B: [] });
   const [items, setItems] = useState<Item[]>([]);
@@ -70,6 +71,8 @@ export default function PvpLab() {
   const [shownFrom, setShownFrom] = useState(0); // the log line the last round started at
 
   const fighters = useMemo(() => ({ A: buildTeam("A", teams, loadouts, items, rules, level), B: buildTeam("B", teams, loadouts, items, rules, level) }), [teams, loadouts, items, rules, level]);
+  // The engine's power model follows the package while the lab is open; the game's own rules come back when it closes.
+  useEffect(() => { setCombatRules(engineRulesFor(rules)); return () => setCombatRules(LIVE_RULES); }, [rules]);
 
   function rollPile() {
     const out: Item[] = [];
@@ -231,7 +234,7 @@ function Creatures({ rules, level, teams, onAdd }: { rules: RulesKey; level: num
           <tbody>
             {CREATURE_TEMPLATES.map((c) => {
               const t = templateUnder(c.id, rules), p = t.proficiency;
-              const hpv = Math.round((hpAt(t, level, 0) * (1 + hpPct(c.id, rules) / 100)) / M);
+              const hpv = Math.round((hpAt(t, level, 0) * (1 + hpPctAt(c.id, rules, level) / 100)) / M);
               const inA = teams.A.includes(c.id), inB = teams.B.includes(c.id);
               return (
                 <tr key={c.id} style={{ borderTop: "1px solid #222" }}>
@@ -239,7 +242,7 @@ function Creatures({ rules, level, teams, onAdd }: { rules: RulesKey; level: num
                   <td style={{ ...td, color: "#aaa" }}>{roleOf(t)}</td>
                   <td style={td}>{CLASS_INFO[t.cls].name}</td>
                   <td style={td}>{p.atk}</td><td style={td}>{p.rng}</td>{!two && <td style={td}>{p.mag}</td>}<td style={td}>{p.agil}</td>
-                  <td style={td}>{p.mdef}</td><td style={td}>{p.rdef}</td>{!two && <td style={td}>{p.magdef}</td>}{hp && <td style={td}>{hpPct(c.id, rules)}</td>}<td style={td}>{hpv}</td>
+                  <td style={td}>{p.mdef}</td><td style={td}>{p.rdef}</td>{!two && <td style={td}>{p.magdef}</td>}{hp && <td style={td}>{hpPctAt(c.id, rules, level)}</td>}<td style={td}>{hpv}</td>
                   <td style={td}>
                     <button onClick={() => onAdd("A", c.id)} disabled={inA || teams.A.length >= TEAM} style={btn(inA)}>A</button>{" "}
                     <button onClick={() => onAdd("B", c.id)} disabled={inB || teams.B.length >= TEAM} style={btn(inB)}>B</button>
