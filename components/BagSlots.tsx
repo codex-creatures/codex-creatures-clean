@@ -33,17 +33,19 @@ export function slotLook(e: BagEntry, item?: CreatureOrItemDrop): SlotLook {
   return { name: count ? `${item.name} ×${count}` : item.name, sprite: itemSprite(item), icon: goodsIcon(item) ?? (item.codexMove ? "📖" : item.scroll ? "📜" : "📦"), color: rc.text, glow: rarityGlow(item.rarity), peek: { gear: item }, count };
 }
 
-export default function BagSlots({ slots, looks, selected, onSelect, pulse, size = 60, grab }: {
+export default function BagSlots({ slots, looks, selected, onSelect, pulse, size = 60, fill, mine, grab }: {
   slots: number;
   looks: (SlotLook | null)[];      // one per filled slot, in order
   selected: number | null;
   onSelect: (i: number | null) => void;
   pulse?: number;                  // a slot to draw attention to (tutorials)
   size?: number;
+  fill?: boolean;                  // slots stretch to the panel's width (beside a chest's grid: the same size as its things)
+  mine?: boolean;                  // your own bag: the gilded frame (.inv-mine), so it reads as yours beside a chest
   grab?: (i: number, look: SlotLook) => React.HTMLAttributes<HTMLElement>;
 }) {
   return (
-    <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${BAG_COLS}, minmax(0, ${size}px))`, gap: 8, padding: 10, justifyContent: "center" }}>
+    <div className={`inv-panel${mine ? " inv-mine" : ""}`} style={{ display: "grid", gridTemplateColumns: `repeat(${BAG_COLS}, minmax(0, ${fill ? "1fr" : `${size}px`}))`, gap: 8, padding: 10, justifyContent: "center" }}>
       {Array.from({ length: Math.max(slots, BAG_MAX) }, (_, i) => {
         if (i >= slots) return <LockedSlot key={i} style={{ width: "100%", aspectRatio: "1" }} />;
         const l = looks[i] ?? null;
@@ -58,7 +60,7 @@ export default function BagSlots({ slots, looks, selected, onSelect, pulse, size
               ...(l ? { background: `radial-gradient(circle, ${l.glow ?? "rgba(255,255,255,0.05)"} 0%, rgba(0,0,0,0.35) 65%)` } : {}),
               ...(active ? { borderColor: "#ffd66e", boxShadow: "inset 2px 2px 0 rgba(0,0,0,0.6), 0 0 12px rgba(255,214,110,0.5)" } : {}),
             }}>
-            {l && (l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: size * 0.42 }}>{l.icon}</span>)}
+            {l && (l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: fill ? 28 : size * 0.42 }}>{l.icon}</span>)}
             {l?.count && <StackCount n={l.count} />}
           </button>
         );

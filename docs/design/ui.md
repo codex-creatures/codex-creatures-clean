@@ -38,7 +38,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - **The stone card standard:**
   - #23262f stone with pixel bevels and a thin rarity-coloured trim;
   - the pixel font in yellow #f1d9a0, and sunken wells for text;
-  - `.inv-panel` for anything holding loot or creatures;
+  - `.inv-panel` for anything holding loot or creatures; your own bag beside a chest's gets a gilded frame (`.inv-mine`) and
+    slots as wide as the chest's things (the user, 2026-11-26: the haul's bag was smaller than everything round it);
   - Colour carries **race** (`RACE_INFO`: Beast green, Humanoid blue…; Neutral slate grey); the
     three styles share one neutral cream, so they don't clash.
 - **Fixed structure, text fits it** (the user, 2026-10-19: "the text around the box should move as

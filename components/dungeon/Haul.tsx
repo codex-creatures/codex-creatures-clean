@@ -47,7 +47,7 @@ export default function Haul({ run, lab, itemOf, notes, onOpen, onCage, onHome }
         <div className="pixel-font" style={{ fontSize: 15, color: bag.length >= slots ? "#ff8a80" : "#f1d9a0", marginBottom: 6 }}>
           🎒 {bagName(lab.meta)} · {slots - bag.length} free
         </div>
-        <BagSlots slots={slots} looks={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} selected={null}
+        <BagSlots fill mine slots={slots} looks={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} selected={null}
           onSelect={() => onOpen(sack.length > 0 || floor.length === 0 ? "boss" : "floor")} size={44} />
       </div>
 

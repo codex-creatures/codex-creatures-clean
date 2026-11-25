@@ -100,7 +100,7 @@ export default function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornI
           <span className="tutorial-arrow">👇</span> Drag <b>Klutz&apos;s Club</b> onto a creature, or tap it to see what you can do with it.
         </div>
       )}
-      <BagSlots slots={slots} looks={bag.map((x) => slotLook(x, isPotionEntry(x) ? undefined : itemOf(x)))}
+      <BagSlots mine slots={slots} looks={bag.map((x) => slotLook(x, isPotionEntry(x) ? undefined : itemOf(x)))}
         grab={(i, l) => (wears(i) || potionAt(i) || usedOn(i) || codexAt(i) ? { onPointerDown: dnd.press(i, l), ...dnd.handlers } : {})}
         selected={sel} onSelect={(i) => { if (dnd.wasDrag()) return; setSel(i); setComparing(false); setForgetting(null); }} pulse={tutorialAt >= 0 && sel !== tutorialAt ? tutorialAt : undefined} />
       {/* Your creatures and their health: drag gear onto one to equip it, or a potion to heal it. */}

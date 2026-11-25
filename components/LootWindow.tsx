@@ -233,7 +233,8 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
         {/* Your bag */}
         <div className="pixel-font" style={{ fontSize: 17, color: full ? "#ff8a80" : "#c9b48a" }}>🎒 {bagName} {bag.length}/{slots}</div>
         {/* Every bag the same shape (BAG_MAX slots, the ones you haven't got locked: see BagSlots). */}
-        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${BAG_COLS}, minmax(0, 60px))`, justifyContent: "center", gap: 6, padding: 8 }}>
+        {/* (As wide as the chest's grid above, and gilded: yours. The user, 2026-11-26.) */}
+        <div className="inv-panel inv-mine" style={{ display: "grid", gridTemplateColumns: `repeat(${BAG_COLS}, minmax(0, 1fr))`, justifyContent: "center", gap: 4 }}>
           {Array.from({ length: Math.max(slots, BAG_MAX) }, (_, i) => {
             if (i >= slots) return <LockedSlot key={i} style={{ aspectRatio: "1" }} />;
             const l = bag[i];
