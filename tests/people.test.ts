@@ -21,7 +21,8 @@ import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES } from "../lib/creatures/c
 // People who wander (decision 39, the user, 2026-11-10; world version 9; the Cyclops first).
 
 const cyclops = (seed: number): DungeonRun => newWalkRun(startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 1 }, 4, [], false, seeded(seed), 1));
-const RUN = cyclops(7);
+// (Seed 8: 7 laid out a run where only 2 of its 3 wanderers left their room once the 2026-11-26 creatures joined the foe pools.)
+const RUN = cyclops(8);
 const room = (id: string) => walkRoom(RUN, id);
 
 describe("people who wander", () => {

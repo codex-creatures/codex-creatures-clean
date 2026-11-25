@@ -85,7 +85,7 @@ describe("the first quest: Klutz's box", () => {
       rounds += s.round; fights++;
     }
     expect(rounds / fights).toBeGreaterThan(10); // (lots of HP: about 15 rounds, 1–2 potions' worth of hits)
-  });
+  }, 90_000); // (10 Rares since the 2026-11-26 picks, 10 fights each)
 
   it("the thief's slap never knocks your creature out: it always leaves 1 HP", () => {
     const me = { ...starter(), hp: 1 };

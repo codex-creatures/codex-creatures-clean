@@ -58,6 +58,16 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   glob:             ["toxic"],
   dreadpox:         ["toxic", "undead"], // the user's: Undead and Toxic
   pale_rider:       ["undead", "humanoid"],   // the user: a rider, not a plague (so Toxic has no Legendary)
+  // The user's picks (2026-11-26)
+  skinwing:         ["beast"],
+  gutsnout:         ["beast"],
+  grub_keeper:      ["underkin"],
+  mole_hag:         ["underkin", "beast"],
+  gloom_gnome:      ["underkin"],
+  cinder_husk:      ["undead", "humanoid"],
+  troglodyte_brute: ["underkin"],
+  gravewarden:      ["humanoid"],
+  hexed_puppet:     ["undead"],
 };
 
 // A race for each of today's moves (the live rules' "drafted" mode). Moves

@@ -75,10 +75,11 @@ describe("Combat V2: no damage types", () => {
 });
 
 describe("Combat V2 roster", () => {
-  it("35 creatures, one of each rarity per race by first race (the Pale Rider made Undead's Legendary a pair)", () => {
-    expect(ROSTER_V2).toHaveLength(35);
+  it("the 35 are one of each rarity per race by first race (the Pale Rider made Undead's Legendary a pair); 9 more since", () => {
+    const picks = new Set(["skinwing", "gutsnout", "grub_keeper", "mole_hag", "gloom_gnome", "cinder_husk", "troglodyte_brute", "gravewarden", "hexed_puppet"]); // (the user's picks, 2026-11-26: a race can now have two of a rarity)
+    expect(ROSTER_V2).toHaveLength(35 + picks.size);
     for (const race of RACES_V2) {
-      const rs = ROSTER_V2.filter((c) => SPECIES_RACES[c.id][0] === race).map((c) => c.rarity).sort();
+      const rs = ROSTER_V2.filter((c) => SPECIES_RACES[c.id][0] === race && !picks.has(c.id)).map((c) => c.rarity).sort();
       const want = race === "undead" ? [...RARITIES, "legendary"] : race === "toxic" ? RARITIES.slice(0, 4) : RARITIES;
       expect(rs, race).toEqual([...want].sort());
     }
@@ -89,7 +90,8 @@ describe("Combat V2 roster", () => {
   it("the archetypes: every one is used", () => {
     const counts: Record<string, number> = {};
     for (const c of ROSTER_V2) counts[SPECIES_ARCHETYPE[c.id]] = (counts[SPECIES_ARCHETYPE[c.id]] ?? 0) + 1;
-    expect(counts).toEqual({ bruiser: 6, bulwark: 5, sniper: 2, skirmisher: 2, arcanist: 5, warden: 2, ranger: 4, battlemage: 7, spellbow: 2 });
+    // (The user's 9 picks of 2026-11-26 added 5 Bruisers, a Bulwark, an Arcanist and 2 Battlemages.)
+    expect(counts).toEqual({ bruiser: 11, bulwark: 6, sniper: 2, skirmisher: 2, arcanist: 6, warden: 2, ranger: 4, battlemage: 9, spellbow: 2 });
   });
 
   it("a V2 restyle changes the style but keeps the % total", () => {
@@ -128,7 +130,8 @@ describe("Combat V2 roster", () => {
   it("the new species' %s sit within today's range for their rarity", () => {
     const sum = (p: Record<string, number>) => Object.entries(p).reduce((a, [k, v]) => a + (k === "hp" ? 0 : v), 0);
     for (const c of NEW_SPECIES_V2) {
-      if (c.id === "glob") continue; // (its defence is its HP %, not its %s: the user, 2026-11-25)
+      // (Their bulk is their HP %, not their %s: the user, 2026-11-25/26.)
+      if (c.id === "glob" || c.id === "gloom_gnome") continue;
       const today = ROSTER_V2.filter((o) => o.rarity === c.rarity && !NEW_SPECIES_V2.some((n) => n.id === o.id));
       const sums = today.map((o) => sum(o.proficiency));
       expect(sum(c.proficiency), c.id).toBeGreaterThanOrEqual(Math.min(...sums) - 5);

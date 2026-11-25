@@ -41,6 +41,9 @@ export const SPECIES_ARCHETYPE: Record<string, Archetype> = {
   // New
   gleamling: "spellbow", flame_imp: "arcanist", deep_angler: "battlemage", tunnel_wyrm: "bulwark", thunderhead: "battlemage",
   plague_rat: "bruiser", rotgut_fly: "skirmisher", glob: "bulwark", dreadpox: "warden", pale_rider: "battlemage",
+  // The user's picks (2026-11-26)
+  skinwing: "bruiser", gutsnout: "bruiser", grub_keeper: "bruiser", mole_hag: "battlemage", gloom_gnome: "arcanist",
+  cinder_husk: "bruiser", troglodyte_brute: "bruiser", gravewarden: "bulwark", hexed_puppet: "battlemage",
 };
 
 // The 10 new species, filling the races' empty rarities. Their %s follow
@@ -74,6 +77,26 @@ export const NEW_SPECIES_V2: NewSpecies[] = [
     flavour: "A skeleton in a plague mask, shaking a dreamcatcher hung with feathers. The sickness it catches, it sends back worse." },
   { id: "pale_rider",      name: "The Pale Rider",  rarity: "legendary", baseHp: 140, cls: "melee",  proficiency: { atk: 40, rng: 3, mag: 36, agil: 24, mdef: 22, rdef: 20, magdef: 24, hp: 30 },
     flavour: "A rider on a rotting horse, scythe in one hand and a plague in the other. Where it rides, nothing grows." },
+  // The user's picks of 50 drafts (2026-11-26; art/creature-candidates): races, rarities and roles the user's,
+  // the %s Claude's draft with the user's edits (given at level 25). A race now has more than one of a rarity.
+  { id: "skinwing", name: "Skinwing", rarity: "common", baseHp: 58, cls: "melee", proficiency: { atk: 14, rng: 4, mag: 3, agil: 22, mdef: 5, rdef: 1, magdef: 4, hp: 5 },
+    flavour: "A naked bat with skin like wet paper. You hear its shriek long after it's gone." },
+  { id: "gutsnout", name: "Gutsnout", rarity: "common", baseHp: 63, cls: "melee", proficiency: { atk: 16, rng: 3, mag: 3, agil: 12, mdef: 6, rdef: 4, magdef: 2, hp: 20 },
+    flavour: "All snout and sores. It roots through the Labyrinth's leavings and bites whatever it finds there." },
+  { id: "grub_keeper", name: "Grub Keeper", rarity: "common", baseHp: 57, cls: "melee", proficiency: { atk: 12, rng: 6, mag: 4, agil: 6, mdef: 11, rdef: 4, magdef: 7, hp: 13 },
+    flavour: "A fat goblin with a sack of squirming grubs. He'll share, whether you want them or not." },
+  { id: "mole_hag", name: "Mole Hag", rarity: "uncommon", baseHp: 74, cls: "melee", proficiency: { atk: 14, rng: 3, mag: 14, agil: 10, mdef: 2, rdef: 6, magdef: 10, hp: 10 },
+    flavour: "A blind crone with a candle on her head and claws made for digging. She finds you by smell." },
+  { id: "gloom_gnome", name: "Gloom Gnome", rarity: "uncommon", baseHp: 92, cls: "magic", proficiency: { atk: 3, rng: 3, mag: 20, agil: 8, mdef: 5, rdef: 5, magdef: 5, hp: 25 },
+    flavour: "Older than the tunnels, by his own account. The orb on his staff remembers the way out; he doesn't." },
+  { id: "cinder_husk", name: "Cinder Husk", rarity: "rare", baseHp: 84, cls: "melee", proficiency: { atk: 30, rng: 3, mag: 6, agil: 30, mdef: 2, rdef: 6, magdef: 12, hp: 10 },
+    flavour: "A skeleton still burning from the inside. It moves before the smoke from its eyes can catch up." },
+  { id: "troglodyte_brute", name: "Troglodyte Brute", rarity: "rare", baseHp: 112, cls: "melee", proficiency: { atk: 26, rng: 4, mag: 3, agil: 4, mdef: 16, rdef: 14, magdef: 4, hp: 25 },
+    flavour: "Eyeless, stone-shouldered and slow to anger. Slow to stop, too." },
+  { id: "gravewarden", name: "Gravewarden", rarity: "rare", baseHp: 115, cls: "melee", proficiency: { atk: 14, rng: 3, mag: 3, agil: 4, mdef: 30, rdef: 26, magdef: 2, hp: 35 },
+    flavour: "A knight who never left his post, his own tombstone strapped to his arm." },
+  { id: "hexed_puppet", name: "Hexed Puppet", rarity: "epic", baseHp: 110, cls: "magic", proficiency: { atk: 22, rng: 4, mag: 30, agil: 14, mdef: 15, rdef: 18, magdef: 4, hp: 20 },
+    flavour: "Someone is still working the strings. Nobody has ever seen who." },
 ];
 
 // A creature's V2 moves (the user, 2026-11-12): the core moves of its main

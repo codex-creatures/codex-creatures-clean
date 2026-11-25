@@ -4,6 +4,9 @@
 import { describe, expect, it } from "vitest";
 import { PCT_SHIFT_2026_11_25 } from "../lib/creatures/instance";
 import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
+import { DRAFT } from "../app/lab/pvp/rules";
+// The packages were drawn for the 35 species of 2026-11-25; the picks since aren't in them.
+const DRAWN = CREATURE_TEMPLATES.filter((c) => DRAFT[c.id]);
 import { ITEM_CEILINGS, ITEM_KEYS } from "../lib/items/ceilings";
 import { ARMOR_KEYS } from "../lib/items/armor";
 import { RARITY_BUDGETS } from "../lib/items/budgets";
@@ -17,7 +20,7 @@ describe("the PvP lab's rules", () => {
   });
 
   it("a two-style package leaves no magic and gives every creature both styles' core moves", () => {
-    for (const rules of TWO) for (const c of CREATURE_TEMPLATES) {
+    for (const rules of TWO) for (const c of DRAWN) {
       // (The packages were drawn on the %s before 2026-11-25's: the zeros filled, the Glob's goo.)
       const d = PCT_SHIFT_2026_11_25[c.id] ?? {};
       const t = templateUnder(c.id, rules), p = t.proficiency, q = Object.fromEntries(Object.entries(c.proficiency).map(([k, v]) => [k, v - (d[k as keyof typeof d] ?? 0)])) as typeof c.proficiency;
@@ -36,7 +39,7 @@ describe("the PvP lab's rules", () => {
   });
 
   it("a three-style package keeps every attack % and agility, takes its defences from the user's table, and leaves magic in", () => {
-    for (const rules of ["M1", "T1", "T2", "T3"] as RulesKey[]) for (const c of CREATURE_TEMPLATES) {
+    for (const rules of ["M1", "T1", "T2", "T3"] as RulesKey[]) for (const c of DRAWN) {
       const t = templateUnder(c.id, rules), p = t.proficiency, q = c.proficiency;
       expect([p.atk, p.rng, p.mag, p.agil]).toEqual([q.atk, q.rng, q.mag, q.agil]);
       expect([p.mdef, p.rdef, p.magdef], `${c.id} defences`).toEqual(SHARP3[c.id]);

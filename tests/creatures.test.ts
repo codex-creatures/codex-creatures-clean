@@ -94,9 +94,10 @@ describe("Klutz", () => {
 });
 
 describe("races", () => {
-  it("35 creatures, 7 of each rarity, each with one or two races", () => {
-    expect(CREATURE_TEMPLATES).toHaveLength(RACES.length * 5);
-    for (const r of ["common", "uncommon", "rare", "epic", "legendary"]) expect(CREATURE_TEMPLATES.filter((c) => c.rarity === r)).toHaveLength(RACES.length);
+  it("44 creatures: the 35 (7 of each rarity) and the user's 9 picks of 2026-11-26; each with one or two races", () => {
+    const picks = new Set(["skinwing", "gutsnout", "grub_keeper", "mole_hag", "gloom_gnome", "cinder_husk", "troglodyte_brute", "gravewarden", "hexed_puppet"]);
+    expect(CREATURE_TEMPLATES).toHaveLength(RACES.length * 5 + picks.size);
+    for (const r of ["common", "uncommon", "rare", "epic", "legendary"]) expect(CREATURE_TEMPLATES.filter((c) => c.rarity === r && !picks.has(c.id))).toHaveLength(RACES.length);
     for (const c of CREATURE_TEMPLATES) {
       expect(c.races?.length, c.id).toBeGreaterThanOrEqual(1);
       expect(c.races!.length, c.id).toBeLessThanOrEqual(2);

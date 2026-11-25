@@ -32,6 +32,15 @@ the PNG here.
 | creatures/gleamling.png | gallery:e677034e-9f2c-4c89-ba55-117a51c50eee (raw generation; trimmed + mirrored here) |
 | creatures/plague_rat.png | gallery:5b422641-093d-4ce6-a738-293427afdebc (raw generation; trimmed + mirrored here) |
 | creatures/rotgut_fly.png | gallery:3c6195d0-db24-4a67-9f83-4e6c05c09d0d (raw generation; trimmed + mirrored here) |
+| creatures/skinwing.png | job 3e823d01-1037-4ffb-8965-7e7d14313dd4 (pixen 128×128, gallery 3466f4c4-4cbc-5b33-ab97-d84e37178e2b; trimmed + mirrored here; the user's picks of 2026-11-26, all in art/creature-candidates) |
+| creatures/gutsnout.png | job d72f507b-1599-4268-9175-9472f8d9b418 (pixen 128×128, gallery f5bbb7c6-24b9-5991-aa31-209b4fd4677b) |
+| creatures/grub_keeper.png | job 1e3e105d-8c94-4204-aa9f-22b83c2e958a (pixen 128×128, gallery d862a2ec-cbb9-5ee2-a42a-e1f35a6a4c6b) |
+| creatures/mole_hag.png | job 8224be28-54bf-481c-8dbf-8bbcfedde471 (pixen 128×128, gallery 6b6de202-3f79-5e72-b018-c862f6f88ac9) |
+| creatures/gloom_gnome.png | edit_image_pro_flash 174c4c39-4a64-41a6-8d8f-34b3dd9a1d4f (an orb for the mushroom on his staff) of pixen f18e7693-1393-48cb-be46-393ed5762bcb |
+| creatures/cinder_husk.png | edit_image_pro_flash cd055d97-d525-4be1-b9de-88c2b1cf873d (smoke from the eyes) of pixen 7af42792-cb0f-405a-8e91-f36216c0f3e4 |
+| creatures/troglodyte_brute.png | job 67ed269a-ca13-4765-83fe-b35df2944608 (pixen 128×128, gallery c335fd01-ea0d-5785-9bb3-faf5f7481f87) |
+| creatures/gravewarden.png | job 8cd2d3c2-fcb0-40b4-a98b-b79505ae73b1 (pixen 128×128, gallery bde346e7-3644-5a5e-bdd9-8584e533f2a6) |
+| creatures/hexed_puppet.png | edit_image_pro_flash 54cf04de-84a8-4d7d-b7e3-9524eba3d90e (a whole marionette cross) of pixen cc79a273-a6d2-476f-ad22-1e19d5242628 |
 | creatures/deep_angler.png | gallery:aa6e8bcd-c214-4545-8890-8c9f9b18fcb7 (raw generation; trimmed + mirrored here) |
 | creatures/tunnel_wyrm.png | gallery:6b352516-6423-470d-8f0c-1b50394f10a9 (raw generation; trimmed + mirrored here) |
 | creatures/thunderhead.png | gallery:7903642a-e4f1-49e8-892f-9f8df1cbc2cb (raw generation; trimmed + mirrored here) |

@@ -6,8 +6,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ## 4. Creatures
 
-- ✅ 35 scannable species (`CREATURE_TEMPLATES`, lib/creatures/creatureData.ts and rosterV2.ts):
-  7 races × one of each rarity. Each has a rarity, a main **style** (`cls`: melee / ranged / magic),
+- ✅ 44 scannable species (`CREATURE_TEMPLATES`, lib/creatures/creatureData.ts and rosterV2.ts): the 35 (7 races × one of
+  each rarity) and the user's 9 picks of 2026-11-26 (decision 66): Skinwing, Gutsnout, Grub Keeper (Commons), Mole Hag,
+  Gloom Gnome (Uncommons), Cinder Husk, Troglodyte Brute, Gravewarden (Rares), Hexed Puppet (Epic); chosen from 50 drafts
+  (art/creature-candidates, with their specs). Each has a rarity, a main **style** (`cls`: melee / ranged / magic),
   an **archetype** (which style kits it draws from, §6) and **one or two races** (Undead, Divine,
   Beast, Underkin, Geo, Humanoid, Toxic). Plus Klutz (no race) and the boss parts. (The 7 species retired before V2 were removed
   on 2026-11-04: no save from after the fresh start can hold one.)
@@ -41,7 +43,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   creature once he's helping (`nameTipDue`, till you've heard him or named one: `nameTipRead`).
 - ✅ The card design is settled (CardFace, the stone card). The Skull Raven (id `storm_phoenix`) is
   the quality benchmark for sprites and cards.
-- ✅ Races have 5 creatures each, one per rarity (a dual-race creature counts under its first race).
+- ✅ The 35 are one per rarity per race (a dual-race creature counts under its first race); since the 2026-11-26 picks a
+  race can have more than one of a rarity (by first race: Underkin 9, Undead 8, Beast 7, Humanoid 6, Geo 5, Divine 5, Toxic 4). The plan is to roughly
+  double Epic and below; Geo and Divine are the next to grow (the user, 2026-11-26).
 - ❓ **Secondary classes** (Shaman, Rogue, Brute, Trickster, Cleric were floated): largely answered
   by Combat V2's archetypes (§6); anything more is undefined and deferred. A **Celestial** race was mentioned as a future race.
 

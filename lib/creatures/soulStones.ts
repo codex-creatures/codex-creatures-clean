@@ -49,6 +49,9 @@ export const POOLS: Record<string, SoulStoneKey[]> = {
   aurelius:         ["perfectionist", "revitalise"],
   deep_angler:      ["haunting_presence", "perfectionist"],
   glob:             ["toxic_skin", "revitalise"],
+  cinder_husk:      ["haunting_presence", "perfectionist"], // (the 2026-11-26 picks' pools: Claude's drafts)
+  troglodyte_brute: ["unstoppable_force", "revitalise"],
+  gravewarden:      ["unstoppable_force", "haunting_presence"],
   // Epic
   dire_wolf:        ["perfectionist", "unstoppable_force"],
   crystal_golem:    ["unstoppable_force", "revitalise"],
@@ -57,6 +60,7 @@ export const POOLS: Record<string, SoulStoneKey[]> = {
   swamp_witch:      ["toxic_skin", "revitalise"],
   tunnel_wyrm:      ["unstoppable_force", "revitalise"],
   dreadpox:         ["toxic_skin", "trickster"],
+  hexed_puppet:     ["trickster", "haunting_presence"],
   // Legendary
   ironhide:         ["unstoppable_force", "perfectionist"],
   hollow_matriarch: ["toxic_skin", "haunting_presence", "revitalise"],

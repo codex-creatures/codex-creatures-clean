@@ -31,7 +31,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   their upscaled image: "keep this exact …, redraw as crisp pixel art …"). Never reinterpret it
   from a description.
 - **Recipes that worked:**
-  - creatures: `create_image_pixen`, side view, "…to the right in profile…";
+  - creatures: `create_image_pixen`, side view, "…to the right in profile…"; **always a 128×128 canvas** (the user,
+    2026-11-25: every creature at the Pale Rider's detail, not smaller canvases for small ones), and say "zoomed out small
+    full-body sprite … fits inside the frame with empty space on every side, nothing cut off" or about one in three comes
+    out cropped. Small fixes: `edit_image_pro_flash` on the 128px raw ("keep this exact …; add/replace …"), 6 generations;
   - items: `create_image_pro_flash` 64×64 with the Void Scythe as the style image;
   - rooms: `edit_image` over the code-drawn chamber, so the tunnels line up.
   - Ask before using the expensive generators (`create_image_pro`, pro characters).

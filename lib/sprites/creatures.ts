@@ -52,12 +52,22 @@ const ART_SIZES: Record<string, [number, number]> = {
   aurelius: [124, 118],
   swamp_witch: [86, 89],
   sylvaran: [71, 94],
+  // The user's picks (2026-11-26): drawn on the Pale Rider's 128px canvas, so the same detail.
+  skinwing: [124, 113],
+  gutsnout: [117, 93],
+  grub_keeper: [111, 104],
+  mole_hag: [110, 118],
+  gloom_gnome: [93, 103],
+  cinder_husk: [97, 112],
+  troglodyte_brute: [119, 112],
+  gravewarden: [115, 120],
+  hexed_puppet: [67, 117],
 };
 // Those drawn facing right (the rest face left). (The Leafblade Scout was listed
 // here by mistake: it runs leftwards, so it turned its back on its foe: the user, 2026-11-24.)
 const FACING_RIGHT = new Set(["mr_shadows"]);
 // Those that float rather than stand: drawn hanging in the air, bobbing.
-const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "amber_wasp", "storm_phoenix", "gleamling", "rotgut_fly"]);
+const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "amber_wasp", "storm_phoenix", "gleamling", "rotgut_fly", "skinwing", "hexed_puppet"]);
 
 
 // Shown for creatures that don't have their own sprite yet.
