@@ -9,6 +9,17 @@
 
 ## Picks so far (the user, 2026-11-25)
 
+**The user's specs for approved ones** (these replace the draft row in the table below):
+
+| # | Creature | Race | Rarity | Style and role | Defences | Art |
+|---|---|---|---|---|---|---|
+| 29 | Cinder Husk | Undead / Humanoid | Rare | Melee, fast glass cannon | strong v magic, middling v ranged, **weak v melee** | retries/29-final.png |
+| 28 | Gloom Gnome | Underkin (draft) | not given (draft Common) | Magic; a sponge: higher HP, lower defence | even spread | retries/28-final.png |
+| 18 | Skinwing | Beast | Common | Melee, very fast | okay v melee and magic, **weak v ranged** | retries/18-final.png |
+| 39 | Hexed Puppet | Undead | Epic | Magic + melee hybrid | stronger v melee and ranged, **weak v magic** | retries/39-final.png |
+
+- **Not approved:** 6 Seraph Husk (the user: the spear doesn't make sense, nor do the little wings).
+
 - **Approved:** 23 Mole Hag, 24 Grub Keeper, 27 Troglodyte Brute, 16 Gutsnout (the reroll), 13 Gravewarden.
 - **Retried** (two takes each, in [retries.png](retries.png) and retries/): 6 Seraph Husk, 28 Gloom Gnome, 29 Cinder Husk, 39 Hexed Puppet, 47 Miasma Wraith, 18 Skinwing. The user's main note: too many came out cut off by the canvas edge. The retries add "zoomed out small full-body sprite … fits inside the frame with empty space on every side, nothing cut off" to the prompt, which fixed it.
 - Cut off in the first batch (a canvas edge crops them): 3, 7, 12, 17, 18, 25, 26, 36, 38, 40, 41, 42, 44, 47 (and 39). Any of these that are picked need redoing with the zoomed-out prompt.
