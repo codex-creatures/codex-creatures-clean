@@ -59,8 +59,9 @@ describe("combatLine", () => {
   it("a boss part's numbers in one line, rounded", () => {
     const f = bossTeam("cyclops", 6)[0], s = combatSummary(f);
     const line = combatLine(f);
-    expect(line).toMatch(/^\d+(\.\d+)? HP · Atk -?\d+ · Rng -?\d+ · Mag -?\d+ · Agi -?\d+ · MDef -?\d+ · RDef -?\d+ · MgDef -?\d+$/);
-    expect(line.startsWith(`${s.hp} HP · Atk ${Math.round(s.atk)} ·`)).toBe(true);
+    // (In the one stat order, the user, 2026-11-26: attacks and agility, defences, health last.)
+    expect(line).toMatch(/^Atk -?\d+ · Rng -?\d+ · Mag -?\d+ · Agi -?\d+ · MDef -?\d+ · RDef -?\d+ · MgDef -?\d+ · \d+(\.\d+)? HP$/);
+    expect(line.startsWith(`Atk ${Math.round(s.atk)} ·`) && line.endsWith(` ${s.hp} HP`)).toBe(true);
   });
 });
 

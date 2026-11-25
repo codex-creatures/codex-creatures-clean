@@ -16,7 +16,7 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 
 // Stats in a fixed order, with short names.
 export const GEAR_STATS: [string, string][] = [
-  ["melee", "Atk"], ["ranged", "Rng"], ["magic", "Mag"], ["agility", "Agi"], ["hp", "HP"], ["mDef", "MDef"], ["rDef", "RDef"], ["magDef", "MgDef"],
+  ["melee", "Atk"], ["ranged", "Rng"], ["magic", "Mag"], ["agility", "Agi"], ["mDef", "MDef"], ["rDef", "RDef"], ["magDef", "MgDef"], ["hp", "HP"],
 ];
 // A gear stat's icon: the creature window's (STATS), so the new art shows here too.
 const GEAR_STAT_KEYS: Record<string, StatKey> = { melee: "atk", ranged: "rng", magic: "mag", agility: "agil", hp: "hp", mDef: "mdef", rDef: "rdef", magDef: "magdef" };

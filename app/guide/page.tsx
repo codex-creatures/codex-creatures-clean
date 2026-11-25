@@ -373,6 +373,8 @@ function Bars({ ceil, keys, labels }: { ceil: Record<string, number>; keys: read
   );
 }
 const WEAPON_LABELS: Record<string, React.ReactNode> = { melee: stat("⚔️", "Melee", "stat_atk"), ranged: stat("🏹", "Ranged"), magic: stat("🔮", "Magic", "stat_mag"), agility: stat("💨", "Agility", "stat_agil"), hp: stat("❤️", "HP", "stat_hp") };
+// (Shown in the usual stat order, agility before the defences: ARMOR_STAT_KEYS stays as the rolls use it.)
+const ARMOR_SHOWN = (["agility", "mDef", "rDef", "magDef", "hp"] as const).filter((k) => ARMOR_STAT_KEYS.includes(k));
 const ARMOR_LABELS: Record<string, React.ReactNode> = { mDef: stat("🛡️", "M.Def"), rDef: stat("🔰", "R.Def"), magDef: stat("🧿", "Mg.Def"), agility: stat("💨", "Agility", "stat_agil"), hp: stat("❤️", "HP", "stat_hp") };
 
 function weaponGroup(k: ItemKey): string {
@@ -420,7 +422,7 @@ function Gear() {
               <div className="pixel-font" style={{ color: GOLD, fontSize: 15 }}>{ARMOR_META[k].name}</div>
             </div>
             <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{ARMOR_META[k].desc}</div>
-            <Bars ceil={ARMOR_CEILINGS[k].legendary} keys={ARMOR_STAT_KEYS} labels={ARMOR_LABELS} />
+            <Bars ceil={ARMOR_CEILINGS[k].legendary} keys={ARMOR_SHOWN} labels={ARMOR_LABELS} />
             <div style={{ fontSize: 12, color: "#ffd98a", marginTop: 6 }}>Set: {SET_BONUS[k].name} — {SET_BONUS[k].text}</div>
           </div>
         ))}

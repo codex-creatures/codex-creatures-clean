@@ -80,7 +80,7 @@ function Section({ children }: { children: React.ReactNode }) {
 
 export function RollTable({ p, base }: { p: CreatureProficiency; base: CreatureProficiency }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(72px, 1fr))", gap: 4, textAlign: "center" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, textAlign: "center" }}>
       {STATS.map(([k, label]) => {
         const d = (p[k] ?? base[k] ?? 0) - (base[k] ?? 0); // (a stat its card predates: its species')
         return (

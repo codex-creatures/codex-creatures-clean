@@ -38,6 +38,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - **The stone card standard:**
   - #23262f stone with pixel bevels and a thin rarity-coloured trim;
   - the pixel font in yellow #f1d9a0, and sunken wells for text;
+  - **One stat order everywhere** (the user, 2026-11-26): Melee, Ranged, Magic, Agility, then Melee Def, Ranged Def,
+    Magic Def, HP: the creature window, cards, the Bestiary, the level-up, the Soul Altar, fights' stat lines, foe cards,
+    Klutz's points (his points left where HP would be). Gear lists keep it, skipping what gear hasn't got (`STATS`, components/CreatureDetailModal.tsx).
   - `.inv-panel` for anything holding loot or creatures; your own bag beside a chest's gets a gilded frame (`.inv-mine`) and
     slots as wide as the chest's things (the user, 2026-11-26: the haul's bag was smaller than everything round it);
   - Colour carries **race** (`RACE_INFO`: Beast green, Humanoid blue…; Neutral slate grey); the

@@ -82,7 +82,7 @@ const RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary
 // The stats a weapon or armour piece can roll, in a fixed order, as the
 // creature stat each one feeds (so they share its icon and colour).
 const WEAPON_STATS: [string, StatKey][] = [["melee", "atk"], ["ranged", "rng"], ["magic", "mag"], ["agility", "agil"], ["hp", "hp"]];
-const ARMOR_STATS:  [string, StatKey][] = [["mDef", "mdef"], ["rDef", "rdef"], ["magDef", "magdef"], ["agility", "agil"], ["hp", "hp"]];
+const ARMOR_STATS:  [string, StatKey][] = [["agility", "agil"], ["mDef", "mdef"], ["rDef", "rdef"], ["magDef", "magdef"], ["hp", "hp"]];
 // The gear picker shows 3 rows of 3; more than that scrolls inside it.
 const PICKER_COLS = 3, PICKER_ROW = 58, PICKER_GAP = 6;
 
@@ -95,8 +95,9 @@ const lines = (n: number, lineHeight: number): React.CSSProperties => ({
 // Each stat's bar is full at about the best a creature reaches with Legendary gear.
 export type StatKey = "hp" | "atk" | "rng" | "mag" | "agil" | "mdef" | "rdef" | "magdef";
 // art: its PixelLab icon (public/sprites/icons); the rest keep their emoji until theirs is picked.
+// In the one order every screen shows a creature's stats in (the user, 2026-11-26): attacks and agility, then
+// defences and health.
 export const STATS: { key: StatKey; icon: string; art?: string; label: string; max: number; color: string }[] = [
-  { key: "hp",   icon: "❤️", art: "stat_hp",   label: "Health",     max: 350, color: "#e0524a" },
   { key: "atk",  icon: "⚔️", art: "stat_atk",  label: "Melee",      max: 180, color: "#ff9f43" },
   { key: "rng",  icon: "🏹", label: "Ranged",     max: 180, color: "#6fdc6f" },
   { key: "mag",  icon: "🔮", art: "stat_mag",  label: "Magic",      max: 180, color: "#c08cff" },
@@ -104,6 +105,7 @@ export const STATS: { key: StatKey; icon: string; art?: string; label: string; m
   { key: "mdef", icon: "🛡️", label: "Melee Def",  max: 160, color: "#7aa7ff" },
   { key: "rdef", icon: "🔰", label: "Ranged Def", max: 160, color: "#8fd0ff" },
   { key: "magdef", icon: "🧿", label: "Magic Def", max: 160, color: "#e0a8ff" },
+  { key: "hp",   icon: "❤️", art: "stat_hp",   label: "Health",     max: 350, color: "#e0524a" },
 ];
 
 const rarityColor = (r: Rarity) => RARITY_COLORS[r]?.text ?? "white";
@@ -474,8 +476,8 @@ export default function CreatureDetailModal({
                 respec={points.respec} />
             ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(76px, 1fr))", gap: 5 }}>
-              {/* Health last: its HP % (the user, 2026-11-25), on its whole HP rather than on gear. */}
-              {[...STATS.filter((st) => st.key !== "hp"), ...STATS.filter((st) => st.key === "hp")].map((st) => {
+              {/* Health last, as everywhere: its HP % (the user, 2026-11-25) is on its whole HP rather than on gear. */}
+              {STATS.map((st) => {
                 const k = st.key;
                 const d = base ? (prof![k] ?? 0) - (base[k] ?? 0) : 0;
                 const what = k === "hp" ? "its whole health (level and gear)" : `gear ${st.label.toLowerCase()}`;
@@ -506,10 +508,10 @@ export default function CreatureDetailModal({
   );
 }
 
-// Klutz's %s as points to spend: attacks on top (with the points left in the
-// gap), defences and agility below. Tap a stat to put a point on it, then
+// Klutz's %s as points to spend, in the usual order: attacks and agility on top,
+// defences below with the points left where health would be (his HP % isn't bought). Tap a stat to put a point on it, then
 // confirm or cancel; the stats above preview it. The boxes never move.
-const POINT_ROWS: (ProfKey | "free")[] = ["atk", "rng", "mag", "free", "mdef", "rdef", "magdef", "agil"];
+const POINT_ROWS: (ProfKey | "free")[] = ["atk", "rng", "mag", "agil", "mdef", "rdef", "magdef", "free"];
 function PointsGrid({ prof, free, pending, locked, onAdd, onConfirm, onCancel, respec }: {
   prof: Record<ProfKey, number>; free: number; pending: Partial<Record<ProfKey, number>>; locked: boolean;
   onAdd: (k: ProfKey) => void; onConfirm: () => void; onCancel: () => void;

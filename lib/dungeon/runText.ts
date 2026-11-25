@@ -9,7 +9,7 @@ import { DUNGEONS, type DungeonRun, type DungeonSave, type Room } from "./run";
 // A fighter's numbers in one line (a boss part's, in the room window).
 export function combatLine(f: Parameters<typeof combatSummary>[0]): string {
   const s = combatSummary(f);
-  return `${s.hp} HP · Atk ${Math.round(s.atk)} · Rng ${Math.round(s.rng)} · Mag ${Math.round(s.mag)} · Agi ${Math.round(s.agil)} · MDef ${Math.round(s.mdef)} · RDef ${Math.round(s.rdef)} · MgDef ${Math.round(s.magdef)}`;
+  return `Atk ${Math.round(s.atk)} · Rng ${Math.round(s.rng)} · Mag ${Math.round(s.mag)} · Agi ${Math.round(s.agil)} · MDef ${Math.round(s.mdef)} · RDef ${Math.round(s.rdef)} · MgDef ${Math.round(s.magdef)} · ${s.hp} HP`;
 }
 
 export function dropLabel(d: Drop): string {

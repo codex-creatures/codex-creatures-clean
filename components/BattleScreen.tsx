@@ -844,7 +844,7 @@ export function StatsLine({ stats }: { stats: ReturnType<typeof combatSummary> }
   const r = Math.round;
   return (
     <span style={{ display: "block", fontSize: 11, color: MUTED, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
-      HP {stats.hp} · Atk {r(stats.atk)} · Rng {r(stats.rng)} · Mag {r(stats.mag)} · Agi {r(stats.agil)} · MDef {r(stats.mdef)} · RDef {r(stats.rdef)} · MgDef {r(stats.magdef)}
+      Atk {r(stats.atk)} · Rng {r(stats.rng)} · Mag {r(stats.mag)} · Agi {r(stats.agil)} · MDef {r(stats.mdef)} · RDef {r(stats.rdef)} · MgDef {r(stats.magdef)} · HP {stats.hp}
     </span>
   );
 }

@@ -55,10 +55,10 @@ const clamp = (lines: number, lineHeight: number): React.CSSProperties => ({
 });
 
 const ARMOR_STATS = [
+  { label: "Agility",    key: "agility" },
   { label: "Melee Def",  key: "mDef"    },
   { label: "Ranged Def", key: "rDef"    },
   { label: "Magic Def",  key: "magDef"  },
-  { label: "Agility",    key: "agility" },
   { label: "Health",     key: "hp"      },
 ];
 

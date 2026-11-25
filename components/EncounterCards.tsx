@@ -121,8 +121,8 @@ function Card({ creatureId, races }: { creatureId: string; races?: RaceV2[] }) {
             {ATTACKS.map(([k, label]) => row(label, pct(k), k === own ? CLASS_INFO[t.cls].color : undefined))}
           </div>
           <div>
-            {row("HP", `${t.baseHp}`, CARD_YELLOW)}
             {DEFENCES.map(([k, label]) => row(label, pct(k)))}
+            {row("HP", `${t.baseHp}`, CARD_YELLOW)}
           </div>
         </div>
       </CardBody>
