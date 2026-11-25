@@ -160,9 +160,10 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   const glowBg = (glow?: string) => `radial-gradient(circle, ${glow ?? "rgba(255,255,255,0.05)"} 0%, transparent 62%)`;
 
   return (
-    // Anchored to the top, not centred: a closer look opens under the chest and the window grows, and centred it
-    // slid up under your finger, so the second tap of a double-tap missed (the user, 2026-11-24).
-    <div ref={dragBox} onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 190, background: "rgba(4,5,9,0.72)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "1.5cqh 6px 6px" }}>
+    // Centred, and always the same height: the closer look's place is kept when nothing's tapped, so opening one
+    // doesn't grow the window and slide it under your finger (the user, 2026-11-24: a double-tap's second tap missed;
+    // it was anchored to the top for that till 2026-11-26, when the user found it too high up).
+    <div ref={dragBox} onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 190, background: "rgba(4,5,9,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 6 }}>
       <div role="dialog" aria-label={name} onClick={(e) => e.stopPropagation()} className="title-bar sheet-up"
         style={{ width: "100%", maxHeight: "97cqh", overflowY: "auto", overflowX: "hidden", padding: 10, display: "grid", gap: 8, userSelect: "none", WebkitUserSelect: "none" }}>
         {/* The chest */}
@@ -213,7 +214,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           <button className="dock-tab" style={{ flex: "none", minHeight: 44, padding: "4px 12px" }} onClick={() => { onTakeAll(); setTriedAll(true); }} disabled={items.length === 0}>Take all</button>
         </div>
         {/* A closer look: one fixed box for whatever you tapped in the chest or
-            in your bag. Nothing tapped: no box (the hint above says to tap), so it all fits. */}
+            in your bag. Nothing tapped: its place kept, empty, so the window never changes height. */}
         {seen !== null && items[seen] ? (
           <ItemPeek item={items[seen]} action={<>
             {actionChips("loot", seen)}
@@ -228,7 +229,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
               {!teaching && <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>{putLabel}</button>}
             </>} />
           );
-        })() : null}
+        })() : <div aria-hidden style={{ visibility: "hidden" }}><ItemPeek look={{ name: "-", color: MUTED }} /></div>}
 
         {/* Your bag */}
         <div className="pixel-font" style={{ fontSize: 17, color: full ? "#ff8a80" : "#c9b48a" }}>🎒 {bagName} {bag.length}/{slots}</div>
