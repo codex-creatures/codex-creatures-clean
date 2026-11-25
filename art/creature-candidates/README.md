@@ -12,6 +12,8 @@
 - **Approved:** 23 Mole Hag, 24 Grub Keeper, 27 Troglodyte Brute, 16 Gutsnout (the reroll), 13 Gravewarden.
 - **Retried** (two takes each, in [retries.png](retries.png) and retries/): 6 Seraph Husk, 28 Gloom Gnome, 29 Cinder Husk, 39 Hexed Puppet, 47 Miasma Wraith, 18 Skinwing. The user's main note: too many came out cut off by the canvas edge. The retries add "zoomed out small full-body sprite … fits inside the frame with empty space on every side, nothing cut off" to the prompt, which fixed it.
 - Cut off in the first batch (a canvas edge crops them): 3, 7, 12, 17, 18, 25, 26, 36, 38, 40, 41, 42, 44, 47 (and 39). Any of these that are picked need redoing with the zoomed-out prompt.
+- **Approved:** 18 Skinwing, flying take (retries/18-final.png), as a Common Beast.
+- **Edited to the user's notes** (edit_image_pro_flash, 6 generations each; in [edits.png](edits.png), retries/<n>-final.png): 29 Cinder Husk smoke from the eyes (29e), 6 Seraph Husk wings tidied on the 6A style (06f; the first edit 06e barely changed, a fresh pixen 06g came out a cartoon skeleton), 39 Hexed Puppet a clean marionette cross (39e), 28 Gloom Gnome a green orb on his staff (28e).
 - The user is open to some cute ones (wider appeal: younger players, girls).
 
 | # | Name | Races | Rarity | Style · archetype | Strong / weak def | Why the weakness | Job |
