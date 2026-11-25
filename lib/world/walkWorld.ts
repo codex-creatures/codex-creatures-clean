@@ -285,6 +285,30 @@ export function tappedThing(things: Thing[], q: Pt, known: Uint8Array, w: number
   }
   return best;
 }
+// The thing a tap in the 3D view picks: its ray from the camera (`at(h)`: where it is at height h,
+// in panels) can pass through a tall thing before it meets the floor behind it, so a tap on a stack
+// of crates as drawn lands on them, not on the floor they hide. Tried from high to low (higher is
+// nearer the camera), each thing only up to its own height; at height 0 it's tappedThing's floor tap.
+// Above the floor the ray must pass through the thing itself (RAY_HIT of its centre), not the
+// floor tap's looser TAP_OBJECT, or a tap on the floor behind a low sack would pick the sack.
+export const RAY_STEP = 0.1; // u
+export const RAY_HIT = 0.75;  // u
+export function tappedOnRay(things: Thing[], at: (h: number) => Pt | null, known: Uint8Array, w: number): Thing | undefined {
+  const top = Math.max(0, ...things.map((t) => objectDef(t.def).height ?? 0));
+  for (let h = Math.floor(top / RAY_STEP) * RAY_STEP; h > 0; h -= RAY_STEP) {
+    const q = at(h);
+    if (!q) continue;
+    let best: Thing | undefined, bestD = RAY_HIT;
+    for (const t of things) {
+      const p = usedFrom(t), d = Math.hypot(t.x - q.x, t.y - q.y);
+      if (t.inert || (objectDef(t.def).height ?? 0) < h || known[p.y * w + p.x] !== 1 || d > bestD) continue;
+      best = t; bestD = d;
+    }
+    if (best) return best;
+  }
+  const q = at(0);
+  return q ? tappedThing(things, { x: Math.round(q.x), y: Math.round(q.y) }, known, w) : undefined;
+}
 // Close enough to use it: within its reach of the panel it's in.
 export const inReach = (t: Thing, you: Pt) => {
   const p = usedFrom(t);

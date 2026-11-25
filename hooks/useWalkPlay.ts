@@ -16,7 +16,7 @@ import { shutPlan, FLARE_WALK } from "@/lib/dungeon/torch";
 import type { DungeonId, Room } from "@/lib/dungeon/run";
 import type { WalkRun } from "@/lib/dungeon/walkRun";
 import type { DungeonMap } from "@/lib/dungeon/map";
-import { foeStarts, guarding, roomIds, thingsOf, solidCells, walkRule, tappedThing, usableNear, fromRuns, type Thing } from "@/lib/world/walkWorld";
+import { foeStarts, guarding, roomIds, thingsOf, solidCells, walkRule, tappedThing, tappedOnRay, usableNear, fromRuns, type Thing } from "@/lib/world/walkWorld";
 import { placementsOfWalk } from "@/lib/world/migrate";
 import { startWalk, restartLoop, stepWalk, walkState, walkUpTo, soundAlarm, type WalkState, type Warming, type Frame } from "@/lib/world/walkSim";
 import type { PartyMember } from "@/components/PartySlots";
@@ -152,11 +152,12 @@ export function useWalkPlay(P0: WalkPlayProps) {
   };
 
   // A tap on the floor at `spot`: on (or by) something to loot that you've seen, walk up beside it and it opens; else walk there.
-  const tapAt = (spot: Pt) => {
+  // along: the tap's ray from the camera (where it is at a height), so a tap on a tall thing as drawn picks it (tappedOnRay).
+  const tapAt = (spot: Pt, along?: (h: number) => Pt | null) => {
     if (props.current.busy || sim.fired > 0 || sim.alarm) return;
     props.current.onTapClose?.();
     const can = rule(sim.progress);
-    const t = tappedThing(things(), spot, sim.known, plan.w);
+    const t = along ? tappedOnRay(things(), along, sim.known, plan.w) : tappedThing(things(), spot, sim.known, plan.w);
     if (t) {
       if (walkUpTo(sim, t, live, can) === "use") openThing(t, state());
       return;

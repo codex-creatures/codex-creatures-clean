@@ -153,11 +153,24 @@ export default function WalkView3D({ view = GAME_VIEW, onStats, been, cleared, l
     const p = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3());
     return p ? { x: Math.round(p.x), y: Math.round(p.z) } : null;
   };
+  // …and the ray itself: where it is at a thing's height h (in units; drawn uprightStretch times as tall), in panels
+  // unrounded, for tapping tall things as drawn.
+  const rayAt = (el: HTMLElement, clientX: number, clientY: number) => {
+    const cam = camera.current;
+    if (!cam) return undefined;
+    const box = el.getBoundingClientRect();
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(((clientX - box.left) / box.width) * 2 - 1, 1 - ((clientY - box.top) / box.height) * 2), cam);
+    return (h: number): Pt | null => {
+      const p = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -h * uprightStretch(view.pitch)), new THREE.Vector3());
+      return p ? { x: p.x, y: p.z } : null;
+    };
+  };
   const tap = (e: React.PointerEvent<HTMLDivElement>) => {
     const spot = floorAt(e.currentTarget, e.clientX, e.clientY);
     held.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, drag: false, at: spot ? `${spot.x},${spot.y}` : "" };
     e.currentTarget.setPointerCapture?.(e.pointerId);
-    if (spot) W.tapAt(spot);
+    if (spot) W.tapAt(spot, rayAt(e.currentTarget, e.clientX, e.clientY));
   };
   const drag = (e: React.PointerEvent<HTMLDivElement>) => {
     const h = held.current;

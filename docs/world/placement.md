@@ -320,6 +320,10 @@ the materials in the chest and shares the materials among the rest. A stockroom 
   where it stands (its footprint's middle, `t.x`, `t.y`), where it's drawn (the same), and the
   panel it's used from (`usedFrom`). A tap picks the thing drawn nearest it among those whose
   panel you've seen (`tappedThing`, walkWorld.ts); walking up to it is `walkUpTo` (walkSim.ts);
+  in the 3D view the tap follows its ray from the camera, so a tall thing tapped as drawn is picked even where the
+  floor under the finger lies behind it (`tappedOnRay`: from high to low, each thing up to its height × the upright
+  stretch, the ray within 0.75 u of it; at the floor, `tappedThing` as before; the user, 2026-11-26: a stack of boxes
+  didn't walk to it);
   reach (1.5 u) is measured from `usedFrom`. Every thing is usable from every panel round it.
   Tests: tests/thingAccess.test.ts. Not taken: reach to the footprint's nearest edge (it would
   lengthen reach); it waits for walking on subcells.

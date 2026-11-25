@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { walkSetup } from "./walkBaseline";
-import { thingsOf, tapsThing, inReach, approach, guardedChestSpot, usableNear, guarding, foeStarts, cageGuardSpot, type Thing } from "../lib/world/walkWorld";
+import { thingsOf, tapsThing, tappedThing, tappedOnRay, inReach, approach, guardedChestSpot, usableNear, guarding, foeStarts, cageGuardSpot, type Thing } from "../lib/world/walkWorld";
 import { startWalk, restartLoop, stepWalk, soundAlarm } from "../lib/world/walkSim";
 import { findPath, walkable, type CanStep } from "../lib/dungeon/walk";
 import type { Pt } from "../lib/dungeon/floorplan";
@@ -145,5 +145,34 @@ describe("a camp's cages are guarded like a chest (the user, 2026-11-09)", () =>
     const things = (done: boolean) => thingsOf({ rooms: {}, tunnels: [] } as never, { ...placed, sconces: [], candles: [], witches: [], foes: [] } as never, ["r"], () => camp(done), [], undefined, 1);
     expect(things(false).filter((t) => t.def === "cage").every((t) => t.guarded && !t.flag)).toBe(true);
     expect(things(true).filter((t) => t.def === "cage").every((t) => !t.guarded && t.flag)).toBe(true);
+  });
+});
+
+// A tap in the 3D view picks a tall thing as drawn (the user, 2026-11-26: tapping a stack of boxes didn't walk
+// to it: its ray met the floor behind the stack). The ray here comes down from the south, the camera's side.
+describe("a tap's ray from the camera (tappedOnRay)", () => {
+  const W = 10, known = new Uint8Array(W * W).fill(1);
+  const at = (x: number, y: number): Thing => ({ key: `${x},${y}`, room: "r", x, y, def: "stacked-crates", open: false, solid: true });
+  const ray = (floorY: number) => (h: number): Pt => ({ x: 5, y: floorY + 1.7 * h }); // higher up is nearer the camera
+  it("picks a stack of crates when the tap lands on them as drawn, though the floor under the finger is behind them", () => {
+    const stack = at(5, 5);
+    expect(tappedThing([stack], { x: 5, y: 3 }, known, W)).toBeUndefined(); // (the floor alone: missed)
+    expect(tappedOnRay([stack], ray(3), known, W)).toBe(stack);
+  });
+  it("leaves floor in front of a thing, and floor behind a low one, as floor", () => {
+    expect(tappedOnRay([at(5, 5)], ray(7.5), known, W)).toBeUndefined();
+    const sack = { ...at(5, 5), def: "sack" };
+    expect(tappedOnRay([sack], ray(3), known, W)).toBeUndefined();
+  });
+  it("is the floor tap when the ray meets nothing tall: a tap right by a thing still picks it", () => {
+    const sack = { ...at(5, 5), def: "sack" };
+    expect(tappedOnRay([sack], ray(5), known, W)).toBe(sack);
+  });
+  it("of two in line, picks the one nearer the camera", () => {
+    const front = at(5, 6), back = at(5, 4);
+    expect(tappedOnRay([back, front], ray(3.2), known, W)).toBe(front);
+  });
+  it("never picks one you haven't seen", () => {
+    expect(tappedOnRay([at(5, 5)], ray(3), new Uint8Array(W * W), W)).toBeUndefined();
   });
 });
