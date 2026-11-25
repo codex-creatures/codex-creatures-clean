@@ -7,6 +7,13 @@
 - Rerolled once with sharper prompts (originals in raw/): 15, 16, 28, 39. The Grave Crawler reroll (raw/08b.png) came out worse, so the first is kept (it still has legs).
 - Taste it's aimed at (the user's favourites: Deep Angler, Dreadpox, Skull Raven, Veilstalker, Rotgut Fly, Plague Rat, Cave Goblin): gaunt, diseased, undead, grotesque. Avoided: ordinary animals and cute elementals (the least-liked: Moss Wolf, Flicker Wisp, Amber Wasp, Flame Imp, Bellow Toad, Dire Wolf).
 
+## Picks so far (the user, 2026-11-25)
+
+- **Approved:** 23 Mole Hag, 24 Grub Keeper, 27 Troglodyte Brute, 16 Gutsnout (the reroll), 13 Gravewarden.
+- **Retried** (two takes each, in [retries.png](retries.png) and retries/): 6 Seraph Husk, 28 Gloom Gnome, 29 Cinder Husk, 39 Hexed Puppet, 47 Miasma Wraith, 18 Skinwing. The user's main note: too many came out cut off by the canvas edge. The retries add "zoomed out small full-body sprite … fits inside the frame with empty space on every side, nothing cut off" to the prompt, which fixed it.
+- Cut off in the first batch (a canvas edge crops them): 3, 7, 12, 17, 18, 25, 26, 36, 38, 40, 41, 42, 44, 47 (and 39). Any of these that are picked need redoing with the zoomed-out prompt.
+- The user is open to some cute ones (wider appeal: younger players, girls).
+
 | # | Name | Races | Rarity | Style · archetype | Strong / weak def | Why the weakness | Job |
 |---|---|---|---|---|---|---|---|
 | 1 | Hollow Cherub | Divine / Undead | C | Magic · Arcanist | ranged / **melee** | cracked porcelain: one blow shatters it | 4d95563d |
