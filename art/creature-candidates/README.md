@@ -7,6 +7,23 @@
 - Rerolled once with sharper prompts (originals in raw/): 15, 16, 28, 39. The Grave Crawler reroll (raw/08b.png) came out worse, so the first is kept (it still has legs).
 - Taste it's aimed at (the user's favourites: Deep Angler, Dreadpox, Skull Raven, Veilstalker, Rotgut Fly, Plague Rat, Cave Goblin): gaunt, diseased, undead, grotesque. Avoided: ordinary animals and cute elementals (the least-liked: Moss Wolf, Flicker Wisp, Amber Wasp, Flame Imp, Bellow Toad, Dire Wolf).
 
+## The nine picked (the user, 2026-11-25), with Claude's draft %s
+
+Races and rarities are the user's. The Seraph Husk is scrapped (too many redraws). Next focus: Geo and Divine (none picked yet).
+The %s are Claude's draft for the user to adjust, set to their rarity's totals today and on the balance refresh's rules (a lean and a weakness each, attackers less tanky, an HP %).
+
+| Creature | Race | Rarity | Base HP | Style · archetype | Atk / Rng / Mag | Agil | Mdef / Rdef / Magdef | HP % |
+|---|---|---|---|---|---|---|---|---|
+| Skinwing | Beast | Common | 58 | Melee · Bruiser | 14 / 0 / 0 | 22 | 5 / **1** / 4 | 5 |
+| Gutsnout | Beast | Common | 63 | Melee · Bruiser | 16 / 0 / 0 | 12 | 6 / 4 / **2** | 20 |
+| Grub Keeper | Underkin | Common | 64 | Melee · Bruiser | 16 / 2 / 0 | 6 | 8 / **2** / 5 | 25 |
+| Mole Hag | Underkin / Beast | Uncommon | 74 | Magic · Arcanist | 6 / 0 / 20 | 10 | **2** / 6 / 10 | 10 |
+| Gloom Gnome | Underkin | Uncommon | 80 | Magic · Arcanist | 2 / 0 / 20 | 8 | 5 / 5 / 5 | 50 |
+| Cinder Husk | Undead / Humanoid | Rare | 84 | Melee · Bruiser | 30 / 0 / 0 | 30 | **2** / 6 / 12 | 0 |
+| Troglodyte Brute | Underkin | Rare | 100 | Melee · Bruiser | 30 / 4 / 0 | 8 | 16 / 14 / **4** | 35 |
+| Gravewarden | Humanoid | Rare | 102 | Melee · Bulwark | 14 / 0 / 0 | 4 | 30 / 26 / **8** | 50 |
+| Hexed Puppet | Undead | Epic | 110 | Magic · Battlemage | 26 / 0 / 30 | 14 | 18 / 18 / **4** | 20 |
+
 ## Picks so far (the user, 2026-11-25)
 
 **The user's specs for approved ones** (these replace the draft row in the table below):
