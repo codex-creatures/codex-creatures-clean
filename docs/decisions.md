@@ -135,6 +135,10 @@ Undefined standards (not conflicts, but not to be invented) are listed in
 
 ## Resolved
 
+- **Two creature size lists** (2026-11-26): the placer's 2026-11-08 size classes disagreed with the look sizes
+  (lib/creatures/sizes.ts) for about 20 species. The user: "this new decision should override the previous". From
+  world version 19 the placer's classes follow the look sizes ([world/persistence.md](world/persistence.md#world-versions)).
+
 Settled by the user on 2026-11-09, or by the code and approved decisions; the files now say so.
 
 1. **Walkable art before the standard:** the old blanket "don't make more walkable-world art" no

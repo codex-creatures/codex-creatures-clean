@@ -201,8 +201,9 @@ Until it's saved, a recipe's changes are a draft in that browser only: on anothe
   (`KIT_DENSITY`, lib/render/scene.ts). Kits E and F (F is the default, `WALK_TILES[0]`; E is
   `WALK_TILES[1]`) are **48 across and 36 down a tile**; the older kits 32 × 24. Both are the old
   4:3 shape (`pixelAspect`), drawn into a square cell, so their pixels show 1⅓× taller than wide.
-- **The hero:** 32 art pixels a unit (`KIT_PX`, `WALK_HERO`). **Foes:** drawn at a fixed height
-  (`FOE_U`) whatever their art's size; bosses and the chief scaled from it.
+- **The hero:** 32 art pixels a unit (`KIT_PX`, `WALK_HERO`). **Foes:** drawn as tall as their size (1–5,
+  lib/creatures/sizes.ts, a share of `FOE_SIZE5_U`; size 3 is the hero's 1.5 u), whatever their art's size;
+  the chief 1.3× its size, a waiting boss its old fixed height (`FOE_U` × `BOSS_SCALE`).
 - **Props and decor** (chests, sacks, cages, pools, campfires, candles, decor): legacy pictures,
   each drawn at its own width (`size` at 16 px a cell, turned into u by `legacyU` in
   lib/world/objects.ts), so their density is their art's width ÷ that width, not a set number.

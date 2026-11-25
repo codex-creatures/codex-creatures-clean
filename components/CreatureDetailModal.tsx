@@ -34,6 +34,8 @@ import { SOUL_STONES, SOUL_STONE_KEYS, setStoneCost, type SoulStoneKey } from "@
 import { SOUL_COLOR } from "./SoulStoneTag";
 import { NICK_MAX } from "@/lib/creatures/nickname";
 import PixelSprite, { creatureSprite, itemSprite, StoneIcon } from "./PixelSprite";
+import { sizeHeight } from "@/lib/creatures/sizes";
+import { artFor } from "@/lib/sprites/art";
 import { STONE_SPRITES } from "@/lib/sprites/items";
 import { useDragDrop } from "@/hooks/useDragDrop";
 import { doubleTapper } from "@/lib/doubleTap";
@@ -593,17 +595,21 @@ export function gearValue(f: NonNullable<ReturnType<typeof fighterFor>>, key: St
 }
 
 // The creature standing on its stone pedestal.
+const PEDESTAL_TALL = 180; // px: a size-5 creature's height on it
 function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop; glow: string; border: string; hp: number }) {
+  const sprite = creatureSprite(creature.creatureId), a = artFor(sprite);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
       <div style={{ position: "relative", padding: "6px 10px 0", height: 186, boxSizing: "border-box", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
         {/* The glow sits behind the creature itself, so a short one (Klutz) isn't under a glow floating above it. */}
         <span style={{ position: "relative", display: "flex" }}>
           <span style={{ position: "absolute", inset: "-15%", background: `radial-gradient(circle, ${glow}, transparent 70%)`, filter: "blur(2px)" }} />
-          {/* Fitted to a box: the widest art (Aurelius, 124px) would push the slots off the screen.
-              (The weapon slot is the armour slots' size, so the creature gets the room.) */}
-          <PixelSprite sprite={creatureSprite(creature.creatureId)} scale={5} title={creature.name}
-            style={{ position: "relative", width: "auto", height: "auto", maxWidth: "min(180px, 40cqw)", maxHeight: 180 }} />
+          {/* As tall as its size (lib/creatures/sizes.ts: a size 5 fills the 180px box), fitted to the box's width:
+              the widest art (Aurelius) would push the slots off the screen. (The weapon slot is the armour slots'
+              size, so the creature gets the room.) */}
+          {/* (Its scale sets the height, so a picture shown smaller than drawn is smoothed, not crisp: PixelSprite.) */}
+          <PixelSprite sprite={sprite} scale={a ? (2 * PEDESTAL_TALL * sizeHeight(creature.creatureId ?? "")) / a.h : 5} title={creature.name}
+            style={{ position: "relative", maxWidth: "min(180px, 40cqw)", objectFit: "contain", objectPosition: "bottom" }} />
         </span>
       </div>
       <div style={{ width: 150, height: 14, marginTop: -6, background: "#3a3f4c", borderTop: `3px solid ${border}`, boxShadow: "inset 0 -3px 0 #23262f, 0 3px 0 rgba(0,0,0,0.5)", borderRadius: "50% / 40%" }} />

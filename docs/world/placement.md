@@ -328,7 +328,9 @@ the materials in the chest and shares the materials among the rest. A stockroom 
   Tests: tests/thingAccess.test.ts. Not taken: reach to the footprint's nearest edge (it would
   lengthen reach); it waits for walking on subcells.
 - Big creatures stand on their panel's centre as before; their size class only checks there's
-  free floor round the spot.
+  free floor round the spot. From v19 a creature's class is its look size's (1 tiny, 2 small, 3 and 4
+  medium, 5 large; bosses huge: `LOOK_CLASS`, lib/world/creatures.ts), the user, 2026-11-26. (Size 4 as
+  large left a chief's fixed stand without room in 3 of 300-odd rooms.)
 
 ### Candles and extra torches (world versions 5–8)
 

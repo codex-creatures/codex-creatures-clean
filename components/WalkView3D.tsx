@@ -34,7 +34,8 @@ import type { Layout, Progress } from "@/lib/dungeon/layout";
 import { placeFloorLifeOf, type Thing } from "@/lib/world/walkWorld";
 import type { RatHole, CobWeb } from "@/lib/dungeon/decor";
 import { torchThere, type WalkSim, type Frame } from "@/lib/world/walkSim";
-import { objectDef, artOf, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE } from "@/lib/world/objects";
+import { objectDef, artOf, FOE_U, FOE_SIZE5_U, NPC_U, BOSS_SCALE, CHIEF_SCALE } from "@/lib/world/objects";
+import { sizeHeight } from "@/lib/creatures/sizes";
 import { WALK_TILES, WALK_HERO8, WALK_BOB, WALK_WITCH, KIT_LIGHTS, KIT_PX, FLOOR_LIFE, WALK_STANDING_TORCH, STANDING_TORCH_U, STANDING_TORCH_FLAME } from "@/lib/sprites/walk";
 import { useWalkPlay, type WalkPlayProps } from "@/hooks/useWalkPlay";
 import { Stick, Warmth, WalkScroll } from "@/components/WalkParts";
@@ -460,7 +461,8 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
     const r = room(f.room), e = r?.enemies?.[f.index];
     const sprite = r?.boss ? CREATURE_SPRITES[r.boss] : e && CREATURE_SPRITES[e.creatureId], a = sprite && artFor(sprite);
     if (!a) continue;
-    const tall = FOE_U * (f.waits ? (r?.boss ? BOSS_SCALE : CHIEF_SCALE) : 1) * stretch, wd = (tall / stretch) * (a.w / a.h);
+    // Each stands as tall as its size (lib/creatures/sizes.ts); a waiting boss keeps its own bigger height.
+    const tall = (r?.boss ? FOE_U * BOSS_SCALE : FOE_SIZE5_U * sizeHeight(e!.creatureId) * (f.waits ? CHIEF_SCALE : 1)) * stretch, wd = (tall / stretch) * (a.w / a.h);
     // (The sim swaps a foe for a moved copy each step: find it again by its room and place in it.)
     const now = () => sim.foes.find((g) => g.room === f.room && g.index === f.index) ?? f;
     out.push(<Upright key={`foe:${f.room}:${f.index}`} src={a.src} x={f.x} y={f.y} w={wd} h={tall} below={0} colour={shade && (() => { const g = now(); return shade(g.x, g.y); })}

@@ -94,7 +94,10 @@ const AROUND = [-1, 0, 1].flatMap((dy) => [-1, 0, 1].map((dx) => ({ dx, dy })));
 const usable = (verb: string, tapBody = false) => ({ points: AROUND, reach: REACH_OBJECT, tap: TAP_OBJECT, tapBody, verb });
 
 // Today's sizes (px at 16px a cell), now in units: the old FOE_PX, NPC_PX, OBJECT_PX and SACK_PX.
-export const FOE_U = legacyU(22);    // a foe's height, whatever its species
+export const FOE_U = legacyU(22);    // a foe's height for its footprint and tap area, whatever its species
+// How tall a size-5 creature stands (u); smaller sizes are a share of it (lib/creatures/sizes.ts). Set so a
+// person-sized one (size 3) is the hero's height: his body is 48px of his 96px frame, 3u wide, so 1.5u. 🧪
+export const FOE_SIZE5_U = 1.5 / 0.62;
 export const NPC_U = legacyU(26);    // a wanderer's height (the merchant, the librarian, the card witch)
 export const OBJECT_U = legacyU(28); // a chest's width
 export const SACK_U = legacyU(16);   // …a sack's (stashes, a fight's loot): smaller (the user, 2026-11-06)
@@ -213,7 +216,7 @@ const DEFS: ObjectDef[] = [
   def("librarian-walk", floorThing({ footprint: { w: 2, d: 2 }, kind: "npc", height: 1.4, collision: "none", light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(LIBRARIAN) }, { height: NPC_U })),
   def("witch", floorThing({ footprint: { w: 2, d: 2 }, kind: "npc", height: 1.3, collision: "none", light: NPC_LIGHT, interact: usable("talk", true) }),
     legacyVisual({ base: propRef(CARD_WITCH) }, { height: NPC_U }, { facings: ["south", "east", "north", "west"] })),
-  // You, and foes: a foe's art is its species' (lib/sprites/creatures.ts), drawn FOE_U tall, bigger when it waits.
+  // You, and foes: a foe's art is its species' (lib/sprites/creatures.ts), drawn as tall as its size (lib/creatures/sizes.ts), bigger when it waits.
   def("hero", { kind: "creature", attach: "floor", footprint: { w: 2, d: 2 }, height: 1.1, collision: "none", blocksSight: false, blocksLight: false, sizeClass: "small" },
     { art: { base: { src: WALK_HERO.sheet, w: WALK_HERO.cell, h: WALK_HERO.cell } }, bounds: { left: WALK_HERO.cell / KIT_PX / 2, right: WALK_HERO.cell / KIT_PX / 2, up: WALK_HERO.feet / KIT_PX, down: (WALK_HERO.cell - WALK_HERO.feet) / KIT_PX },
       anchorPx: { x: WALK_HERO.cell / 2, y: WALK_HERO.feet }, artPerU: KIT_PX, facings: ["south", "east", "north", "west"], legacy: {} }),

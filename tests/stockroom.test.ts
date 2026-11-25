@@ -26,7 +26,7 @@ describe("the stockroom", () => {
   });
 
   slowIt("from world version 18: its chest holds all but the materials; its stacked crates and barrels the materials", () => {
-    expect(WALK_V).toBe(18);
+    expect(WALK_V).toBeGreaterThanOrEqual(18);
     let seen = 0;
     for (let i = 0; i < 400 && seen < 6; i++) {
       const run = startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 1 }, 5, [], false, seeded(i * 7919 + 3), 1, false);

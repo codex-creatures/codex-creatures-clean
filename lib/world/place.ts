@@ -74,7 +74,7 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 18;         // the world version a new run is placed at (stockrooms; version.ts)
+export const PLACED_V = 19;         // the world version a new run is placed at (foes' room by their look sizes; version.ts)
 // (v12) Tables (the user, 2026-11-11): the chance a room has one (rooms of these kinds, not the
 // entrance or the boss's), and that one has a candle on it. A cards room's deck stands on a table of its own. 🧪
 export const TABLE_CHANCE = 0.25;
@@ -819,10 +819,11 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
 
   // 7. Spawns: every fight room's foes, and the card witch.
   const reach = new Map(parents.map((id) => [id, reachableIn(o, fp.rooms[id], id)]));
-  // (v4) Room for the i-th one's body round a spot: its size class's footprint, and spawn clearance.
+  // (v4) Room for the i-th one's body round a spot: its size class's footprint, and spawn clearance
+  // (v19: the class its look size gives, lib/world/creatures.ts).
   const bodyFits = (p: Pt, species: string | undefined) => {
     if (!v4 || !species) return true;
-    const cls = sizeClassOf(species), size = creatureSize(species);
+    const cls = sizeClassOf(species, v), size = creatureSize(species, v);
     return !roomFor(o, p, size, cls ? SPAWN_CLEARANCE[cls] ?? 0 : 0);
   };
   const startsFor = (id: string, count: number, rng: Rng, end?: 0 | 1, rule = "foe", speciesOf: (i: number) => string | undefined = () => undefined): (Pt & { facing: number; walks: boolean; wait: number })[] => {
@@ -863,7 +864,7 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
       const at = standOf(floorsOf(id)), why = canStand(o, at, `${id}:foe:0`, claims);
       if (why) report.problems.push({ id: `${id}:foe:0`, room: id, what: `a waiting boss ${why}` });
       const species = r.boss ?? r.enemies?.[0]?.creatureId;
-      if (!bodyFits(at, species)) report.problems.push({ id: `${id}:foe:0`, room: id, what: `no room round its stand for ${species}: ${roomFor(o, at, creatureSize(species!), SPAWN_CLEARANCE[sizeClassOf(species!) ?? ""] ?? 0)}` });
+      if (!bodyFits(at, species)) report.problems.push({ id: `${id}:foe:0`, room: id, what: `no room round its stand for ${species}: ${roomFor(o, at, creatureSize(species!, v), SPAWN_CLEARANCE[sizeClassOf(species!, v) ?? ""] ?? 0)}` });
       placed.push({ id: `${id}:foe:0`, def: "foe", room: id, ...anchorOf(at), facing: Math.PI / 2, foe: { waits: true } });
       continue;
     }

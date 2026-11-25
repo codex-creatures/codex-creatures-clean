@@ -41,7 +41,9 @@
 // 18: stockrooms (the user, 2026-11-20: a room with odds of being a small storehouse): a rickety chest
 //    (`crate:<room>:0`, holding its potion and any find) and stacked crates and barrels holding its materials
 //    (`stacked-crates`), searched one by one as a storehouse's: new runs only.
-export const WALK_V = 18;
+// 19: foes given room by their look sizes (lib/creatures/sizes.ts: a size 1 tiny, 2 small, 3 and 4 medium, 5
+//    large; bosses still huge) instead of the 2026-11-08 classes (the user, 2026-11-26): new runs only.
+export const WALK_V = 19;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

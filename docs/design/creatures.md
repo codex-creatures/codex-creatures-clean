@@ -46,6 +46,14 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ The 35 are one per rarity per race (a dual-race creature counts under its first race); since the 2026-11-26 picks a
   race can have more than one of a rarity (by first race: Underkin 9, Beast 7, Undead 7, Humanoid 6, Geo 6, Divine 5, Toxic 4). The plan is to roughly
   double Epic and below; Geo and Divine are the next to grow (the user, 2026-11-26).
+- 🧪 **Sizes** (the user, 2026-11-26; lib/creatures/sizes.ts): every creature is sized 1–5 (1 tiny like the
+  Flicker Wisp, 2 small, 3 person-sized like the Leafblade Scout, 4 big beast like the Crystalback, 5 huge or a
+  rider on a mount like Ironhide or the Pale Rider). **Looks only**: it sets how tall a creature stands wandering the
+  Labyrinth (size 3 is the hero's height) and on the pedestal of its creature window (size 5 fills the 180px box);
+  cards keep their picture filling the card. Heights are shares of size 5 (`SIZE_HEIGHT`, first guesses). From
+  world version 19 it also sets how much floor a foe is given in new runs, replacing the 2026-11-08 size classes
+  (the user: "this new decision should override the previous"; [world/persistence.md](../world/persistence.md#world-versions)). The
+  user's sorting is in the doc they filled in (claude.ai/artifact/PSJAyTWcB1PEA9TFKFUiQM).
 - ❓ **Secondary classes** (Shaman, Rogue, Brute, Trickster, Cleric were floated): largely answered
   by Combat V2's archetypes (§6); anything more is undefined and deferred. A **Celestial** race was mentioned as a future race.
 
