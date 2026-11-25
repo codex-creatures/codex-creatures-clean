@@ -20,7 +20,7 @@ As the game stores them (level 15):
 | Grub Keeper | Underkin | C | Melee · Bruiser | 57 | 12 / 6 / 4 | 6 | 11 / 4 / 7 | 13 |
 | Mole Hag | Underkin / Beast | U | Melee + Magic · Battlemage | 74 | 14 / 3 / 14 | 10 | 2 / 6 / 10 | 10 |
 | Gloom Gnome | Underkin | U | Magic · Arcanist | 92 | 3 / 3 / 20 | 8 | 5 / 5 / 5 | 25 |
-| Cinder Husk | Undead / Humanoid | R | Melee · Bruiser | 84 | 30 / 3 / 6 | 30 | 2 / 6 / 12 | 10 |
+| Cinder Husk | Geo / Humanoid | R | Melee · Bruiser | 84 | 30 / 3 / 6 | 30 | 2 / 6 / 12 | 10 |
 | Troglodyte Brute | Underkin | R | Melee · Bruiser | 112 | 26 / 4 / 3 | 4 | 16 / 14 / 4 | 25 |
 | Gravewarden | Humanoid | R | Melee · Bulwark | 115 | 14 / 3 / 3 | 4 | 30 / 26 / 2 | 35 |
 | Hexed Puppet | Undead | E | Magic + Melee · Battlemage | 110 | 22 / 4 / 30 | 14 | 15 / 18 / 4 | 20 |
@@ -47,7 +47,7 @@ At level 25 (no gear, no roll; HP % on today's HP, which the balance refresh wou
 
 | # | Creature | Race | Rarity | Style and role | Defences | Art |
 |---|---|---|---|---|---|---|
-| 29 | Cinder Husk | Undead / Humanoid | Rare | Melee, fast glass cannon | strong v magic, middling v ranged, **weak v melee** | retries/29-final.png |
+| 29 | Cinder Husk | Geo / Humanoid | Rare | Melee, fast glass cannon | strong v magic, middling v ranged, **weak v melee** | retries/29-final.png |
 | 28 | Gloom Gnome | Underkin (draft) | not given (draft Common) | Magic; a sponge: higher HP, lower defence | even spread | retries/28-final.png |
 | 18 | Skinwing | Beast | Common | Melee, very fast | okay v melee and magic, **weak v ranged** | retries/18-final.png |
 | 39 | Hexed Puppet | Undead | Epic | Magic + melee hybrid | stronger v melee and ranged, **weak v magic** | retries/39-final.png |

@@ -64,7 +64,7 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   grub_keeper:      ["underkin"],
   mole_hag:         ["underkin", "beast"],
   gloom_gnome:      ["underkin"],
-  cinder_husk:      ["undead", "humanoid"],
+  cinder_husk:      ["geo", "humanoid"],     // the user, 2026-11-26: Geo, not Undead
   troglodyte_brute: ["underkin"],
   gravewarden:      ["humanoid"],
   hexed_puppet:     ["undead"],

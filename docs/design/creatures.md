@@ -44,7 +44,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ The card design is settled (CardFace, the stone card). The Skull Raven (id `storm_phoenix`) is
   the quality benchmark for sprites and cards.
 - ✅ The 35 are one per rarity per race (a dual-race creature counts under its first race); since the 2026-11-26 picks a
-  race can have more than one of a rarity (by first race: Underkin 9, Undead 8, Beast 7, Humanoid 6, Geo 5, Divine 5, Toxic 4). The plan is to roughly
+  race can have more than one of a rarity (by first race: Underkin 9, Beast 7, Undead 7, Humanoid 6, Geo 6, Divine 5, Toxic 4). The plan is to roughly
   double Epic and below; Geo and Divine are the next to grow (the user, 2026-11-26).
 - ❓ **Secondary classes** (Shaman, Rogue, Brute, Trickster, Cleric were floated): largely answered
   by Combat V2's archetypes (§6); anything more is undefined and deferred. A **Celestial** race was mentioned as a future race.
