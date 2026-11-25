@@ -14,7 +14,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "963791ebd49e27c616439583baac0b7f5cd0af58"
+    "hash": "a241e688d0befa845e1326c90359808e98ac4420"
    }
   },
   {
@@ -31,12 +31,12 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "963791ebd49e27c616439583baac0b7f5cd0af58"
+    "hash": "a241e688d0befa845e1326c90359808e98ac4420"
    }
   },
   {
    "step": "entered: the map",
-   "screen": "← Den🌀 The Encampment500Labyrinth Map?🚪⛺encampment??????the campentranceNUnknown room (north-east)StashEnterTeamleadsCave GoblinEmptyEmptyTap a creature to make it lead, or drag it to swap places.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment500Labyrinth Map?🚪⛺encampment????????the campentranceNUnknown room (north)Unknown room (north)Unknown room (north-east)EnterTeamleadsCave GoblinEmptyEmptyTap a creature to make it lead, or drag it to swap places.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 500,
     "creatures": [
@@ -61,12 +61,12 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "11cd8d612f301ae9dd6340eaf54b28091d5869a0"
+    "hash": "8c9cd1dbe25e7919e0021a9dd96143963bfc35bb"
    }
   },
   {
    "step": "inside",
-   "screen": "← Den🌀 The Encampment500way r0way r2Water drips somewhere in the dark. Tunnels lead off into the gloom — the left-most heads furthest west. Tap one to go on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment500way r7way r1way r10Water drips somewhere in the dark. Tunnels lead off into the gloom — the left-most heads furthest west. Tap one to go on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 500,
     "creatures": [
@@ -91,12 +91,12 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "caa15cca9af305d9307481cc7a0f1a719b2a3995"
+    "hash": "3c410232af0b2c531a0d5e03dd6566e3c992a569"
    }
   },
   {
-   "step": "room 1: stash",
-   "screen": "← Den🌀 The Encampment500way r12way r14floor object StashA burlap sack slumps against the wall, tied at the neck. Something inside clinks.Open the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "step": "room 1: easy",
+   "screen": "🔒 Den🌀 The Encampment500⚔️ Fight!⚔️ Creature denA few creatures look up from their scraps. They don't look tough. They play like the Easy AI.Plague Rat Lv 1 · Toxic / Beast · Bruiser · Skirmisher · Arrowward Mantle (common)Win: 15 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 500,
     "creatures": [
@@ -110,152 +110,6 @@
     "run": {
      "status": "exploring",
      "room": 1,
-     "at": "stash",
-     "done": false,
-     "opened": false,
-     "sack": 3,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 0,
-     "floor": 0,
-     "loot": []
-    },
-    "hash": "ff0dd93f5c7ce7a1c70db623ae91bf01493a7b48"
-   }
-  },
-  {
-   "step": "room 1: opened what's here",
-   "screen": "← Den🌀 The Encampment500way r12way r14floor objectThe stash✕--Lesser PotionLesser PotionDragonscale Tunic HelmTap to look · double-tap or drag to takeTake all🎒 Bindle 0/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Stash🔍 Look inside (3)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 500,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 0xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 0,
-    "equipment": {},
-    "bag": [],
-    "run": {
-     "status": "exploring",
-     "room": 1,
-     "at": "stash",
-     "done": true,
-     "opened": true,
-     "sack": 3,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 0,
-     "floor": 0,
-     "loot": []
-    },
-    "hash": "fdd3414f88d20c3b60dfdf535348228c7b74653a"
-   }
-  },
-  {
-   "step": "room 1: took all",
-   "screen": "← Den🌀 The Encampment500way r12way r14The stash✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done StashEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 500,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 0xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 0,
-    "equipment": {},
-    "bag": [
-     "loot:00000000-0000-4000-8000-000000000008",
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 1,
-     "at": "stash",
-     "done": true,
-     "opened": true,
-     "sack": 0,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 3,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion"
-     ]
-    },
-    "hash": "9e5a7faede9195f5da63c9e54003df9ff94c382d"
-   }
-  },
-  {
-   "step": "room 1: equipped",
-   "screen": "← Den🌀 The Encampment500way r12way r14 StashEmpty now.↑ Take a tunnel to move on.Your bindle✕Bindle (2/3)🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 500,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 0xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 1,
-     "at": "stash",
-     "done": true,
-     "opened": true,
-     "sack": 0,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 3,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion"
-     ]
-    },
-    "hash": "241d9cddcf908a7febdfc1059751b8f17c75402b"
-   }
-  },
-  {
-   "step": "room 2: easy",
-   "screen": "🔒 Den🌀 The Encampment500⚔️ Fight!⚔️ Creature denA few creatures look up from their scraps. They don't look tough. They play like the Easy AI.Thicket Archer Lv 3 · Humanoid · Marksman · Polished Chainbolster (common)Win: 18 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 500,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 0xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 2,
      "at": "easy",
      "done": false,
      "opened": false,
@@ -263,19 +117,15 @@
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 3,
+     "got": 0,
      "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion"
-     ]
+     "loot": []
     },
-    "hash": "6b4279307a8d916e2d351bfff34589b5faa949a5"
+    "hash": "122e364b710b1fd41abc282377a789de41604eca"
    }
   },
   {
-   "step": "room 2: fought",
+   "step": "room 1: fought",
    "screen": "🔒 Den🌀 The Encampment500Collect your reward",
    "save": {
     "gold": 500,
@@ -284,19 +134,12 @@
      "Cave Goblin Lv4 0xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
+    "items": 0,
+    "equipment": {},
+    "bag": [],
     "run": {
      "status": "exploring",
-     "room": 2,
+     "room": 1,
      "at": "easy",
      "done": false,
      "opened": false,
@@ -304,155 +147,322 @@
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 3,
+     "got": 0,
      "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion"
-     ]
+     "loot": []
     },
-    "hash": "6c5d1feb751cb99f70e8c383897d7d438c790dc0"
+    "hash": "33a4cbdb5ce5a98db9828766638af411826067bb"
    }
   },
   {
-   "step": "room 2: fight over",
-   "screen": "← Den🌀 The Encampment500way r13floor objectVictory!Cave Goblin+20 XPLv 40 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "step": "room 1: fight over",
+   "screen": "← Den🌀 The Encampment500way r0floor objectVictory!Cave Goblin+12 XPLv 40 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 500,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 20xp",
+     "Cave Goblin Lv4 12xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
+    "items": 0,
+    "equipment": {},
+    "bag": [],
     "run": {
      "status": "exploring",
-     "room": 2,
+     "room": 1,
      "at": "easy",
      "done": true,
      "opened": false,
-     "sack": 1,
+     "sack": 2,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 3,
+     "got": 0,
      "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion"
-     ]
+     "loot": []
     },
-    "hash": "bcfed965ba5e1e6bfc22e0dfedcc9222ba533403"
+    "hash": "8317ddbb99bf04584b909ae895930f3ea53ee45a"
    }
   },
   {
-   "step": "room 2: loot open",
-   "screen": "← Den🌀 The Encampment500way r13floor objectThe sack✕----18 goldTap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "step": "room 1: loot open",
+   "screen": "← Den🌀 The Encampment500way r0floor objectThe sack✕---15 goldArrowward Mantle HelmTap to look · double-tap or drag to takeTake all🎒 Bindle 0/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (2)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 500,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 20xp",
+     "Cave Goblin Lv4 12xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 0,
+    "equipment": {},
+    "bag": [],
+    "run": {
+     "status": "exploring",
+     "room": 1,
+     "at": "easy",
+     "done": true,
+     "opened": true,
+     "sack": 2,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 0,
+     "floor": 0,
+     "loot": []
+    },
+    "hash": "bc7b19f3873dd11aded74b8e729f5518efd0c1e2"
+   }
+  },
+  {
+   "step": "room 1: took all",
+   "screen": "← Den🌀 The Encampment515way r0The sack✕Empty-----Tap to look · double-tap or drag to takeTake all🎒 Bindle 1/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 1/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 515,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 12xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 0,
+    "equipment": {},
+    "bag": [
+     "loot:00000000-0000-4000-8000-000000000009"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 1,
+     "at": "easy",
+     "done": true,
+     "opened": true,
+     "sack": 0,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 2,
+     "floor": 0,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)"
+     ]
+    },
+    "hash": "87c0fdcfc3746d815b204236696be2569cc8ce87"
+   }
+  },
+  {
+   "step": "room 1: equipped",
+   "screen": "← Den🌀 The Encampment515way r0⚔️ Creature denEmpty now.↑ Take a tunnel to move on.Your bindle✕Bindle (0/3)🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Empty. Gold and creature cards take no space; gear, codexes, potions and materials take a slot each (materials stack).🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 515,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 12xp",
      "Dust Sprite Lv4 0xp"
     ],
     "items": 1,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009"
      }
     },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
+    "bag": [],
     "run": {
      "status": "exploring",
-     "room": 2,
+     "room": 1,
      "at": "easy",
      "done": true,
      "opened": true,
-     "sack": 1,
+     "sack": 0,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 3,
+     "got": 2,
      "floor": 0,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion"
+      "15 gold",
+      "Arrowward Mantle Helm (common)"
      ]
     },
-    "hash": "f7d317c9d4bc167d72a3fd6bce770e51cb611691"
+    "hash": "e620903fc86e248c98df7b0c2dd7b7b4e301d48e"
+   }
+  },
+  {
+   "step": "room 2: stash",
+   "screen": "← Den🌀 The Encampment515way r5floor object StashA burlap sack slumps against the wall, tied at the neck. Something inside clinks.Open the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 515,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 12xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 1,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009"
+     }
+    },
+    "bag": [],
+    "run": {
+     "status": "exploring",
+     "room": 2,
+     "at": "stash",
+     "done": false,
+     "opened": false,
+     "sack": 3,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 2,
+     "floor": 0,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)"
+     ]
+    },
+    "hash": "3acaf119055a2c16f32c2d5130be393e9bb59c3a"
+   }
+  },
+  {
+   "step": "room 2: opened what's here",
+   "screen": "← Den🌀 The Encampment515way r5floor objectThe stash✕--Lesser PotionLesser PotionThunderhead CrossbowTap to look · double-tap or drag to takeTake all🎒 Bindle 0/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Stash🔍 Look inside (3)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 515,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 12xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 1,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009"
+     }
+    },
+    "bag": [],
+    "run": {
+     "status": "exploring",
+     "room": 2,
+     "at": "stash",
+     "done": true,
+     "opened": true,
+     "sack": 3,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 2,
+     "floor": 0,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)"
+     ]
+    },
+    "hash": "b8a4dff0ca4a61b2304945486a33f31ff0a2f43f"
    }
   },
   {
    "step": "room 2: took all",
-   "screen": "← Den🌀 The Encampment518way r13The sack✕Empty-----Tap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment515way r5The stash✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done StashEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 518,
+    "gold": 515,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 20xp",
+     "Cave Goblin Lv4 12xp",
      "Dust Sprite Lv4 0xp"
     ],
     "items": 1,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009"
      }
     },
     "bag": [
+     "loot:00000000-0000-4000-8000-000000000011",
      "lesser",
      "lesser"
     ],
     "run": {
      "status": "exploring",
      "room": 2,
-     "at": "easy",
+     "at": "stash",
      "done": true,
      "opened": true,
      "sack": 0,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 4,
+     "got": 5,
      "floor": 0,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
-      "Lesser Potion",
-      "18 gold"
+      "Lesser Potion"
      ]
     },
-    "hash": "2bc9d4cd3b6b2a1ee054f935746e59a8f4e0a77c"
+    "hash": "c91ecfd436d0f21b85d0479b5ee6d59bb7fef5b3"
    }
   },
   {
    "step": "room 2: reloaded",
-   "screen": "← Den🌀 The Encampment518way r13⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment515way r5 StashEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 518,
+    "gold": 515,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 20xp",
+     "Cave Goblin Lv4 12xp",
      "Dust Sprite Lv4 0xp"
     ],
     "items": 1,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009"
+     }
+    },
+    "bag": [
+     "loot:00000000-0000-4000-8000-000000000011",
+     "lesser",
+     "lesser"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 2,
+     "at": "stash",
+     "done": true,
+     "opened": true,
+     "sack": 0,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 5,
+     "floor": 0,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion"
+     ]
+    },
+    "hash": "c91ecfd436d0f21b85d0479b5ee6d59bb7fef5b3"
+   }
+  },
+  {
+   "step": "room 2: equipped",
+   "screen": "← Den🌀 The Encampment515way r5 StashEmpty now.↑ Take a tunnel to move on.Your bindle✕Bindle (2/3)🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 515,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 12xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
@@ -462,39 +472,41 @@
     "run": {
      "status": "exploring",
      "room": 2,
-     "at": "easy",
+     "at": "stash",
      "done": true,
      "opened": true,
      "sack": 0,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 4,
+     "got": 5,
      "floor": 0,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
-      "Lesser Potion",
-      "18 gold"
+      "Lesser Potion"
      ]
     },
-    "hash": "2bc9d4cd3b6b2a1ee054f935746e59a8f4e0a77c"
+    "hash": "8063c2de645f9a6df37a7bdb16354430c4738d80"
    }
   },
   {
    "step": "room 3: easy",
-   "screen": "🔒 Den🌀 The Encampment518⚔️ Fight!⚔️ Creature denA few creatures look up from their scraps. They don't look tough. They play like the Easy AI.Plague Rat Lv 1 · Toxic / Beast · Skirmisher · Bruiser · Polished Chainbolster (common)Win: 11 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "🔒 Den🌀 The Encampment515⚔️ Fight!⚔️ Creature denA few creatures look up from their scraps. They don't look tough. They play like the Easy AI.Cave Goblin Lv 1 · Underkin · Bruiser · Skirmisher · Polished Chainbolster (common)Win: 18 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 518,
+    "gold": 515,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 20xp",
+     "Cave Goblin Lv4 12xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
@@ -511,32 +523,34 @@
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 4,
+     "got": 5,
      "floor": 0,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
-      "Lesser Potion",
-      "18 gold"
+      "Lesser Potion"
      ]
     },
-    "hash": "db8d6086196136f1f3b4b85ad127c827a94fb7ce"
+    "hash": "94c93d73a26d31ac67389e8a89c6e41eb794b512"
    }
   },
   {
    "step": "room 3: fought",
-   "screen": "🔒 Den🌀 The Encampment518Collect your reward",
+   "screen": "🔒 Den🌀 The Encampment515Collect your reward",
    "save": {
-    "gold": 518,
+    "gold": 515,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 20xp",
+     "Cave Goblin Lv4 12xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
@@ -553,32 +567,34 @@
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 4,
+     "got": 5,
      "floor": 0,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
-      "Lesser Potion",
-      "18 gold"
+      "Lesser Potion"
      ]
     },
-    "hash": "7fe178be179c58da3dda7949f3b539b15f3cecac"
+    "hash": "adf75fe925f6c1b6a2180cba8850eca521b9a26e"
    }
   },
   {
    "step": "room 3: fight over",
-   "screen": "← Den🌀 The Encampment518way r8floor objectVictory!Cave Goblin+12 XPLv 420 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment515way r6way r8floor objectVictory!Cave Goblin+12 XPLv 412 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 518,
+    "gold": 515,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 32xp",
+     "Cave Goblin Lv4 24xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
@@ -595,32 +611,34 @@
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 4,
+     "got": 5,
      "floor": 0,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
-      "Lesser Potion",
-      "18 gold"
+      "Lesser Potion"
      ]
     },
-    "hash": "e50d4af34e878d6fba621d7243bb20e1ab83a41e"
+    "hash": "e828462225fede7d2f2973dca5bc123a45e57cd3"
    }
   },
   {
    "step": "room 3: loot open",
-   "screen": "← Den🌀 The Encampment518way r8floor objectThe sack✕----11 goldTap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment515way r6way r8floor objectThe sack✕----18 goldTap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 518,
+    "gold": 515,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 32xp",
+     "Cave Goblin Lv4 24xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
@@ -637,75 +655,79 @@
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 4,
+     "got": 5,
      "floor": 0,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion"
+     ]
+    },
+    "hash": "984fb0b22673b76a19aa64c16a184124152e6ba0"
+   }
+  },
+  {
+   "step": "room 3: took all",
+   "screen": "← Den🌀 The Encampment533way r6way r8The sack✕Empty-----Tap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 533,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 24xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 3,
+     "at": "easy",
+     "done": true,
+     "opened": true,
+     "sack": 0,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 6,
+     "floor": 0,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
       "Lesser Potion",
       "18 gold"
      ]
     },
-    "hash": "79a710d921443bfa94140cc067862a3d3fa243c3"
+    "hash": "3708d02752c8e868912cc780b369059096cf7f7a"
    }
   },
   {
-   "step": "room 3: took all",
-   "screen": "← Den🌀 The Encampment529way r8The sack✕Empty-----Tap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "step": "room 4: chest",
+   "screen": "🔒 Den🌀 The Encampment533floor object ChestAn old chest, humming faintly — like the barcodes do. 3 things rattle inside.Open it🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 529,
+    "gold": 533,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 32xp",
+     "Cave Goblin Lv4 24xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 3,
-     "at": "easy",
-     "done": true,
-     "opened": true,
-     "sack": 0,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 5,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold"
-     ]
-    },
-    "hash": "fdf5e5bbaed3819431ec9aa4e37ca6a989921cea"
-   }
-  },
-  {
-   "step": "room 4: easy",
-   "screen": "🔒 Den🌀 The Encampment529⚔️ Fight!⚔️ Creature denA few creatures look up from their scraps. They don't look tough. They play like the Easy AI.Rattlebones Lv 2 · Undead · Bruiser · Serrated Fan-Blade (common), Colossal Shellarmor (common)Win: 12 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 529,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 32xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
@@ -715,40 +737,42 @@
     "run": {
      "status": "exploring",
      "room": 4,
-     "at": "easy",
+     "at": "chest",
      "done": false,
      "opened": false,
      "sack": 0,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 5,
+     "got": 6,
      "floor": 0,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
       "Lesser Potion",
-      "18 gold",
-      "11 gold"
+      "18 gold"
      ]
     },
-    "hash": "e48b7452111ca63da0588b49a4f24a92a184f583"
+    "hash": "043464aa8bb32a8e2dbbcc849f7d04ccdc5c2e84"
    }
   },
   {
-   "step": "room 4: fought",
-   "screen": "🔒 Den🌀 The Encampment529Collect your reward",
+   "step": "room 4: opened what's here",
+   "screen": "← Den🌀 The Encampment533way r4way r11floor objectThe chest✕-Metal bars ×2140 gold123 goldTorchTap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Chest🔍 Look inside (4)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 529,
+    "gold": 533,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 32xp",
+     "Cave Goblin Lv4 24xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
@@ -758,175 +782,97 @@
     "run": {
      "status": "exploring",
      "room": 4,
-     "at": "easy",
-     "done": false,
-     "opened": false,
-     "sack": 0,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 5,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold"
-     ]
-    },
-    "hash": "dd2fe18d9422d815e7b073441682e05c0f0916c7"
-   }
-  },
-  {
-   "step": "room 4: fight over",
-   "screen": "← Den🌀 The Encampment529way r11way r6floor objectVictory!Cave Goblin+16 XPLv 432 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 529,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 48xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 4,
-     "at": "easy",
-     "done": true,
-     "opened": false,
-     "sack": 1,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 5,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold"
-     ]
-    },
-    "hash": "582ca1f9bdff6d883ce3948df2370eabbb9a46eb"
-   }
-  },
-  {
-   "step": "room 4: loot open",
-   "screen": "← Den🌀 The Encampment529way r11way r6floor objectThe sack✕----12 goldTap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 529,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 48xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 4,
-     "at": "easy",
+     "at": "chest",
      "done": true,
      "opened": true,
-     "sack": 1,
+     "sack": 4,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 5,
+     "got": 6,
      "floor": 0,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
       "Lesser Potion",
-      "18 gold",
-      "11 gold"
+      "18 gold"
      ]
     },
-    "hash": "8ffbce536cd2cdb00872c0e7a8766cf632129b20"
+    "hash": "6bd1b12693eb8f5822d41537b8352b93f5ad8e33"
    }
   },
   {
    "step": "room 4: took all",
-   "screen": "← Den🌀 The Encampment541way r11way r6The sack✕Empty-----Tap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment796way r4way r11floor objectThe chest✕----TorchYour bindle is fullTake all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Chest🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 541,
+    "gold": 796,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 48xp",
+     "Cave Goblin Lv4 24xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
      "lesser",
-     "lesser"
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
     ],
     "run": {
      "status": "exploring",
      "room": 4,
-     "at": "easy",
+     "at": "chest",
      "done": true,
      "opened": true,
-     "sack": 0,
+     "sack": 1,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 6,
+     "got": 9,
      "floor": 0,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
       "Lesser Potion",
       "18 gold",
-      "11 gold",
-      "12 gold"
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2"
      ]
     },
-    "hash": "5071110f39fbf2523ed600255db17876e48bcb35"
+    "hash": "57d8184790e9a8675c11ffc40f30cab8f241cf4b"
    }
   },
   {
    "step": "room 5: easy",
-   "screen": "🔒 Den🌀 The Encampment541⚔️ Fight!⚔️ Creature denA few creatures look up from their scraps. They don't look tough. They play like the Easy AI.Rattlebones Lv 3 · Undead · Bruiser · Serrated Fan-Blade (common), Juggernaut Platemail (common)Moss Wolf Lv 3 · Beast · Bruiser · Skirmisher · Temporal Maul (common), Juggernaut Platemail (common)Win: 14 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "🔒 Den🌀 The Encampment796⚔️ Fight!⚔️ Creature denA few creatures look up from their scraps. They don't look tough. They play like the Easy AI.Gleamling Lv 2 · Divine · Spellcaster · Skirmisher · Frostspire Staff (common), Dragonscale Tunic (common)Thicket Archer Lv 2 · Humanoid · Marksman · Stormlash Whip (common), Polished Chainbolster (common)Win: 13 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 541,
+    "gold": 796,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 48xp",
+     "Cave Goblin Lv4 24xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
      "lesser",
-     "lesser"
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
     ],
     "run": {
      "status": "exploring",
@@ -938,39 +884,44 @@
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 6,
-     "floor": 0,
+     "got": 9,
+     "floor": 1,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
       "Lesser Potion",
       "18 gold",
-      "11 gold",
-      "12 gold"
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2"
      ]
     },
-    "hash": "cc2e3c789b86bd6b73bae753866315d4d0378fd2"
+    "hash": "57d29b08d1ce391ccfa71a65eccaec9132795055"
    }
   },
   {
    "step": "room 5: fought",
-   "screen": "🔒 Den🌀 The Encampment541Collect your reward",
+   "screen": "🔒 Den🌀 The Encampment796Collect your reward",
    "save": {
-    "gold": 541,
+    "gold": 796,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 48xp",
+     "Cave Goblin Lv4 24xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
      "lesser",
-     "lesser"
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
     ],
     "run": {
      "status": "exploring",
@@ -982,39 +933,44 @@
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 6,
-     "floor": 0,
+     "got": 9,
+     "floor": 1,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
       "Lesser Potion",
       "18 gold",
-      "11 gold",
-      "12 gold"
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2"
      ]
     },
-    "hash": "f27c677550c4fc9d6e950f1159212cc8ecc1d6fe"
+    "hash": "6f880294348b15db0c57270e9f1c078308947259"
    }
   },
   {
    "step": "room 5: fight over",
-   "screen": "← Den🌀 The Encampment541way r5floor objectVictory!Cave Goblin+40 XPLv 448 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment796way r9way r11floor objectVictory!Cave Goblin+32 XPLv 424 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 541,
+    "gold": 796,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 88xp",
+     "Cave Goblin Lv4 56xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
      "lesser",
-     "lesser"
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
     ],
     "run": {
      "status": "exploring",
@@ -1022,43 +978,48 @@
      "at": "easy",
      "done": true,
      "opened": false,
-     "sack": 1,
+     "sack": 2,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 6,
-     "floor": 0,
+     "got": 9,
+     "floor": 1,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
       "Lesser Potion",
       "18 gold",
-      "11 gold",
-      "12 gold"
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2"
      ]
     },
-    "hash": "16813ca51e1e7db63499a52db858ef2615349d23"
+    "hash": "393070e4419ec62eb658eede52a9168f3168b59e"
    }
   },
   {
    "step": "room 5: loot open",
-   "screen": "← Den🌀 The Encampment541way r5floor objectThe sack✕----14 goldTap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment796way r9way r11floor objectThe sack✕---13 goldDragonscale Tunic GreavesTap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (2)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 541,
+    "gold": 796,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 88xp",
+     "Cave Goblin Lv4 56xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
      "lesser",
-     "lesser"
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
     ],
     "run": {
      "status": "exploring",
@@ -1066,43 +1027,48 @@
      "at": "easy",
      "done": true,
      "opened": true,
-     "sack": 1,
+     "sack": 2,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 6,
-     "floor": 0,
+     "got": 9,
+     "floor": 1,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
       "Lesser Potion",
       "18 gold",
-      "11 gold",
-      "12 gold"
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2"
      ]
     },
-    "hash": "5a79479b5dc048bdab022fd2ab455159c72d913d"
+    "hash": "f97f1d6738ef9721f5989a7e04af1f88481c6fa3"
    }
   },
   {
    "step": "room 5: took all",
-   "screen": "← Den🌀 The Encampment555way r5The sack✕Empty-----Tap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature denEmpty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment809way r9way r11floor objectThe sack✕----Dragonscale Tunic GreavesYour bindle is fullTake all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 555,
+    "gold": 809,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 88xp",
+     "Cave Goblin Lv4 56xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
      "lesser",
-     "lesser"
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
     ],
     "run": {
      "status": "exploring",
@@ -1110,44 +1076,149 @@
      "at": "easy",
      "done": true,
      "opened": true,
-     "sack": 0,
+     "sack": 1,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
-     "got": 7,
-     "floor": 0,
+     "got": 10,
+     "floor": 1,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
       "Lesser Potion",
       "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold"
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold"
      ]
     },
-    "hash": "5e7fca35381d086a8fb5e47b3e8fdc8c8e86866c"
+    "hash": "1b740265b39e64564a0c67db19f7bacfd1a25111"
+   }
+  },
+  {
+   "step": "room 5: opened what's here",
+   "screen": "← Den🌀 The Encampment809way r9way r11floor objectThe sack✕----Dragonscale Tunic GreavesTap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 809,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 56xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 5,
+     "at": "easy",
+     "done": true,
+     "opened": true,
+     "sack": 1,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 10,
+     "floor": 1,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold"
+     ]
+    },
+    "hash": "1b740265b39e64564a0c67db19f7bacfd1a25111"
+   }
+  },
+  {
+   "step": "room 5: took all",
+   "screen": "← Den🌀 The Encampment809way r9way r11floor objectThe sack✕----Dragonscale Tunic GreavesYour bindle is fullTake all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 809,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 56xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 5,
+     "at": "easy",
+     "done": true,
+     "opened": true,
+     "sack": 1,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 10,
+     "floor": 1,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold"
+     ]
+    },
+    "hash": "1b740265b39e64564a0c67db19f7bacfd1a25111"
    }
   },
   {
    "step": "room 6: easy",
-   "screen": "🔒 Den🌀 The Encampment555⚔️ Fight!⚔️ Creature denA few creatures look up from their scraps. They don't look tough. They play like the Easy AI.Thicket Archer Lv 1 · Humanoid · Marksman · Lightning Trident (common), Frontier’s Mail (common)Gleamling Lv 1 · Divine · Skirmisher · Spellcaster · Frostspire Staff (common), Arcane Nullifier (common)Win: 19 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "🔒 Den🌀 The Encampment809⚔️ Fight!⚔️ Creature denA few creatures look up from their scraps. They don't look tough. They play like the Easy AI.Thicket Archer Lv 2 · Humanoid · Marksman · Thunderhead Crossbow (common), Colossal Shellarmor (common)Win: 20 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
    "save": {
-    "gold": 555,
+    "gold": 809,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 88xp",
+     "Cave Goblin Lv4 56xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 2,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [
      "lesser",
-     "lesser"
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
     ],
     "run": {
      "status": "exploring",
@@ -1155,511 +1226,818 @@
      "at": "easy",
      "done": false,
      "opened": false,
-     "sack": 0,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 7,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold"
-     ]
-    },
-    "hash": "83048acab1979759c3454ff356a73cb9a03e6edc"
-   }
-  },
-  {
-   "step": "room 6: fought",
-   "screen": "🔒 Den🌀 The Encampment555Collect your reward",
-   "save": {
-    "gold": 555,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 88xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 6,
-     "at": "easy",
-     "done": false,
-     "opened": false,
-     "sack": 0,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 7,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold"
-     ]
-    },
-    "hash": "0e903112a978f9bbd33dad7beb2f331d744a8073"
-   }
-  },
-  {
-   "step": "room 6: fight over",
-   "screen": "← Den🌀 The Encampment555way bossfloor objectVictory!Cave Goblin+24 XPLv 488 / 140 XPLeaveLoot⚔️ Creature den🌟 You reached explorer level 2!It leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 555,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 112xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 6,
-     "at": "easy",
-     "done": true,
-     "opened": false,
-     "sack": 1,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 7,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold"
-     ]
-    },
-    "hash": "c572f29d5d1acae0a450a5224604590b86fb91fe"
-   }
-  },
-  {
-   "step": "room 6: loot open",
-   "screen": "← Den🌀 The Encampment555way bossfloor objectThe sack✕----19 goldTap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🌟 You reached explorer level 2!🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 555,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 112xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 6,
-     "at": "easy",
-     "done": true,
-     "opened": true,
-     "sack": 1,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 7,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold"
-     ]
-    },
-    "hash": "1807728c9ecdafca5aa2d6aeaf4dc8a521011154"
-   }
-  },
-  {
-   "step": "room 6: took all",
-   "screen": "← Den🌀 The Encampment574way bossThe sack✕Empty-----Tap to look · double-tap or drag to takeTake all🎒 Bindle 2/3🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🌟 You reached explorer level 2!Empty now.↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 574,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 112xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 6,
-     "at": "easy",
-     "done": true,
-     "opened": true,
-     "sack": 0,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 8,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold",
-      "19 gold"
-     ]
-    },
-    "hash": "3c4fa204f17da86fe2d4d561eef88ef343c0011b"
-   }
-  },
-  {
-   "step": "room 7: encampment",
-   "screen": "🔒 Den🌀 The Encampment574⚔️ Fight!⛺ EncampmentCages · beat them first🔒 Open cage 1🔒 Open cage 2The camp at the top: bedrolls, a cookfire, cages along the wall — and its chief, who doesn't want visitors. Beat it, and the cages are yours to open. They play like the Hard AI.Baby Cyclops Lv 5 · Bruiser · Melee Tank · Temporal Maul (common)Win: 77 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
-   "save": {
-    "gold": 574,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 112xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 7,
-     "at": "encampment",
-     "done": false,
-     "opened": false,
-     "sack": 0,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 8,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold",
-      "19 gold"
-     ]
-    },
-    "hash": "8ce9f637f45ce6bd2d524393a8757a4e6c3b4301"
-   }
-  },
-  {
-   "step": "room 7: fought",
-   "screen": "🔒 Den🌀 The Encampment574Collect your reward",
-   "save": {
-    "gold": 574,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv4 112xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "exploring",
-     "room": 7,
-     "at": "encampment",
-     "done": false,
-     "opened": false,
-     "sack": 0,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 8,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold",
-      "19 gold"
-     ]
-    },
-    "hash": "50cab7007d956d7bbfec374eb58a11d6836f728f"
-   }
-  },
-  {
-   "step": "room 7: fight over",
-   "screen": "← Den🌀 The Encampment574🏆 VICTORY 🏆The Encampment is yours!The chief goes down, and the camp is yours. You beat the Encampment on run 1! He drops a glowing gem: the Soul Altar works again. The Cyclops's way in is open now.Cave Goblin7rooms8finds#1runContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
-   "save": {
-    "gold": 574,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv5 14xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "cleared",
-     "room": 7,
-     "at": "encampment",
-     "done": true,
-     "opened": true,
-     "sack": 2,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 8,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold",
-      "19 gold"
-     ]
-    },
-    "hash": "9eb8bba6757e08f3f90f8ee31ad84be81affa3d4"
-   }
-  },
-  {
-   "step": "cleared",
-   "screen": "← Den🌀 The Encampment574🏆 VICTORY 🏆The Encampment is yours!The chief goes down, and the camp is yours. You beat the Encampment on run 1! He drops a glowing gem: the Soul Altar works again. The Cyclops's way in is open now.Cave Goblin7rooms8finds#1runContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
-   "save": {
-    "gold": 574,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv5 14xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "cleared",
-     "room": 7,
-     "at": "encampment",
-     "done": true,
-     "opened": true,
-     "sack": 2,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 8,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold",
-      "19 gold"
-     ]
-    },
-    "hash": "9eb8bba6757e08f3f90f8ee31ad84be81affa3d4"
-   }
-  },
-  {
-   "step": "the haul",
-   "screen": "← Den🌀 The Encampment574Cave Goblin levelled up!Lv 4Lv 5Health62+2Melee4%+1%Magic1%+0%Agility3%+2%🛡️Melee Def0%+1%🔰Ranged Def1%+1%ContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
-   "save": {
-    "gold": 574,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv5 14xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "cleared",
-     "room": 7,
-     "at": "encampment",
-     "done": true,
-     "opened": true,
-     "sack": 2,
-     "hp": {
-      "00000000-0000-4000-8000-000000000002": 1
-     },
-     "got": 8,
-     "floor": 0,
-     "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
-      "Lesser Potion",
-      "Lesser Potion",
-      "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold",
-      "19 gold"
-     ]
-    },
-    "hash": "9eb8bba6757e08f3f90f8ee31ad84be81affa3d4"
-   }
-  },
-  {
-   "step": "haul: took all",
-   "screen": "← Den🌀 The Encampment651Cave Goblin levelled up!Lv 4Lv 5Health62+2Melee4%+1%Magic1%+0%Agility3%+2%🛡️Melee Def0%+1%🔰Ranged Def1%+1%ContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 0 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (0)Empty now.Cages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to DenThe chief's chest✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3🔒🔒🔒🔒🔒🔒🔒Done",
-   "save": {
-    "gold": 651,
-    "creatures": [
-     "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv5 14xp",
-     "Dust Sprite Lv4 0xp"
-    ],
-    "items": 1,
-    "equipment": {
-     "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
-     }
-    },
-    "bag": [
-     "lesser",
-     "lesser",
-     "lesser"
-    ],
-    "run": {
-     "status": "cleared",
-     "room": 7,
-     "at": "encampment",
-     "done": true,
-     "opened": true,
      "sack": 0,
      "hp": {
       "00000000-0000-4000-8000-000000000002": 1
      },
      "got": 10,
-     "floor": 0,
+     "floor": 2,
      "loot": [
-      "Dragonscale Tunic Helm (uncommon)",
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
       "Lesser Potion",
       "Lesser Potion",
       "18 gold",
-      "11 gold",
-      "12 gold",
-      "14 gold",
-      "19 gold",
-      "77 gold",
-      "Lesser Potion"
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold"
      ]
     },
-    "hash": "41210029823fb291a5c5f5f858128b8e627ee2d8"
+    "hash": "defb73cab3a493fb582d2598ad28f195b47a0eaf"
+   }
+  },
+  {
+   "step": "room 6: fought",
+   "screen": "🔒 Den🌀 The Encampment809Collect your reward",
+   "save": {
+    "gold": 809,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 56xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 6,
+     "at": "easy",
+     "done": false,
+     "opened": false,
+     "sack": 0,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 10,
+     "floor": 2,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold"
+     ]
+    },
+    "hash": "9af1828af3f4ee2a8882b379128680bf4e07fed4"
+   }
+  },
+  {
+   "step": "room 6: fight over",
+   "screen": "← Den🌀 The Encampment809way r3way r12floor objectVictory!Cave Goblin+16 XPLv 456 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 809,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 72xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 6,
+     "at": "easy",
+     "done": true,
+     "opened": false,
+     "sack": 2,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 10,
+     "floor": 2,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold"
+     ]
+    },
+    "hash": "f4f9369f36b853ee1cb2706925521e0cd5eeae57"
+   }
+  },
+  {
+   "step": "room 6: loot open",
+   "screen": "← Den🌀 The Encampment809way r3way r12floor objectThe sack✕---20 goldColossal Shellarmor HelmTap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (2)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 809,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 72xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 6,
+     "at": "easy",
+     "done": true,
+     "opened": true,
+     "sack": 2,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 10,
+     "floor": 2,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold"
+     ]
+    },
+    "hash": "e68eab7680b3ff0d1f509f1cfd1f952a28fa8fe7"
+   }
+  },
+  {
+   "step": "room 6: took all",
+   "screen": "← Den🌀 The Encampment829way r3way r12floor objectThe sack✕----Colossal Shellarmor HelmYour bindle is fullTake all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 72xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 6,
+     "at": "easy",
+     "done": true,
+     "opened": true,
+     "sack": 1,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 2,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "b77d84b45adaba3b31627ed13f5176fce0b89123"
+   }
+  },
+  {
+   "step": "room 6: opened what's here",
+   "screen": "← Den🌀 The Encampment829way r3way r12floor objectThe sack✕----Colossal Shellarmor HelmTap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 72xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 6,
+     "at": "easy",
+     "done": true,
+     "opened": true,
+     "sack": 1,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 2,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "b77d84b45adaba3b31627ed13f5176fce0b89123"
+   }
+  },
+  {
+   "step": "room 6: took all",
+   "screen": "← Den🌀 The Encampment829way r3way r12floor objectThe sack✕----Colossal Shellarmor HelmYour bindle is fullTake all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done⚔️ Creature den🔍 Look inside (1)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 72xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 6,
+     "at": "easy",
+     "done": true,
+     "opened": true,
+     "sack": 1,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 2,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "b77d84b45adaba3b31627ed13f5176fce0b89123"
+   }
+  },
+  {
+   "step": "room 7: stash",
+   "screen": "← Den🌀 The Encampment829way bossfloor object StashA burlap sack slumps against the wall, tied at the neck. Something inside clinks.Open the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 72xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 7,
+     "at": "stash",
+     "done": false,
+     "opened": false,
+     "sack": 3,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 3,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "ef9acc379856c9090cbe03ce89ce2bf36ea43b41"
+   }
+  },
+  {
+   "step": "room 7: opened what's here",
+   "screen": "← Den🌀 The Encampment829way bossfloor objectThe stash✕--Lesser PotionLesser PotionLesser PotionTap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Stash🔍 Look inside (3)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 72xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 7,
+     "at": "stash",
+     "done": true,
+     "opened": true,
+     "sack": 3,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 3,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "1bdb506dc1ce3bbf1c1a73a5465a3d3f5a26b0eb"
+   }
+  },
+  {
+   "step": "room 7: took all",
+   "screen": "← Den🌀 The Encampment829way bossfloor objectThe stash✕--Lesser PotionLesser PotionLesser PotionYour bindle is fullTake all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Cave Goblin❤ 100%Done Stash🔍 Look inside (3)↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 72xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 7,
+     "at": "stash",
+     "done": true,
+     "opened": true,
+     "sack": 3,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 3,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "1bdb506dc1ce3bbf1c1a73a5465a3d3f5a26b0eb"
+   }
+  },
+  {
+   "step": "room 8: encampment",
+   "screen": "🔒 Den🌀 The Encampment829⚔️ Fight!⛺ EncampmentCages · beat them first🔒 Open cage 1🔒 Open cage 2The camp at the top: bedrolls, a cookfire, cages along the wall — and its chief, who doesn't want visitors. Beat it, and the cages are yours to open. They play like the Hard AI.Baby Cyclops Lv 5 · Bruiser · Melee Tank · Temporal Maul (common)Win: 58 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 3/3📜 Scroll 2/2🏃 Retreat",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 72xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 8,
+     "at": "encampment",
+     "done": false,
+     "opened": false,
+     "sack": 0,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 6,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "bfbdf7cc3dc4d07d306b086b9726fd2731b3f690"
+   }
+  },
+  {
+   "step": "room 8: fought",
+   "screen": "🔒 Den🌀 The Encampment829Collect your reward",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 72xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "exploring",
+     "room": 8,
+     "at": "encampment",
+     "done": false,
+     "opened": false,
+     "sack": 0,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 6,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "226833eca76c84119ce77fef796fb366bb595284"
+   }
+  },
+  {
+   "step": "room 8: fight over",
+   "screen": "← Den🌀 The Encampment829🏆 VICTORY 🏆The Encampment is yours!The chief goes down, and the camp is yours. You beat the Encampment on run 1! He drops a glowing gem: the Soul Altar works again. The Cyclops's way in is open now.Cave Goblin8rooms11finds#1runContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42🌟 You reached explorer level 2!🎒 Bindle · 0 free×2🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (4)ItemsLesser PotionLesser PotionTattered XP ScrollGold58 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (6)ItemsTorchDragonscale Tunic GreavesColossal Shellarmor HelmLesser PotionLesser PotionLesser Potion🏠 Return to Den",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 114xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "cleared",
+     "room": 8,
+     "at": "encampment",
+     "done": true,
+     "opened": true,
+     "sack": 4,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 6,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "06b49b6b1ff39ab514a64de921a9b97c92e75d62"
+   }
+  },
+  {
+   "step": "cleared",
+   "screen": "← Den🌀 The Encampment829🏆 VICTORY 🏆The Encampment is yours!The chief goes down, and the camp is yours. You beat the Encampment on run 1! He drops a glowing gem: the Soul Altar works again. The Cyclops's way in is open now.Cave Goblin8rooms11finds#1runContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42🌟 You reached explorer level 2!🎒 Bindle · 0 free×2🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (4)ItemsLesser PotionLesser PotionTattered XP ScrollGold58 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (6)ItemsTorchDragonscale Tunic GreavesColossal Shellarmor HelmLesser PotionLesser PotionLesser Potion🏠 Return to Den",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 114xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "cleared",
+     "room": 8,
+     "at": "encampment",
+     "done": true,
+     "opened": true,
+     "sack": 4,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 6,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "06b49b6b1ff39ab514a64de921a9b97c92e75d62"
+   }
+  },
+  {
+   "step": "the haul",
+   "screen": "← Den🌀 The Encampment829The Encampment is yours!✨ 42 XP — Cave Goblin +42🌟 You reached explorer level 2!🎒 Bindle · 0 free×2🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (4)ItemsLesser PotionLesser PotionTattered XP ScrollGold58 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (6)ItemsTorchDragonscale Tunic GreavesColossal Shellarmor HelmLesser PotionLesser PotionLesser Potion🏠 Return to Den",
+   "save": {
+    "gold": 829,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 114xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "cleared",
+     "room": 8,
+     "at": "encampment",
+     "done": true,
+     "opened": true,
+     "sack": 4,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 11,
+     "floor": 6,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold"
+     ]
+    },
+    "hash": "06b49b6b1ff39ab514a64de921a9b97c92e75d62"
+   }
+  },
+  {
+   "step": "haul: took all",
+   "screen": "← Den🌀 The Encampment887The Encampment is yours!✨ 42 XP — Cave Goblin +42🌟 You reached explorer level 2!🎒 Bindle · 0 free×2🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (3)ItemsLesser PotionLesser PotionTattered XP ScrollCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (6)ItemsTorchDragonscale Tunic GreavesColossal Shellarmor HelmLesser PotionLesser PotionLesser Potion🏠 Return to DenThe chief's chest✕--Lesser PotionLesser PotionTattered XP ScrollYour bindle is fullTake all🎒 Bindle 3/3×2🔒🔒🔒🔒🔒🔒🔒Done",
+   "save": {
+    "gold": 887,
+    "creatures": [
+     "Moss Wolf Lv4 0xp",
+     "Cave Goblin Lv4 114xp",
+     "Dust Sprite Lv4 0xp"
+    ],
+    "items": 2,
+    "equipment": {
+     "00000000-0000-4000-8000-000000000002": {
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
+     }
+    },
+    "bag": [
+     "lesser",
+     "lesser",
+     "loot:00000000-0000-4000-8000-000000000014"
+    ],
+    "run": {
+     "status": "cleared",
+     "room": 8,
+     "at": "encampment",
+     "done": true,
+     "opened": true,
+     "sack": 3,
+     "hp": {
+      "00000000-0000-4000-8000-000000000002": 1
+     },
+     "got": 12,
+     "floor": 6,
+     "loot": [
+      "15 gold",
+      "Arrowward Mantle Helm (common)",
+      "Thunderhead Crossbow (common)",
+      "Lesser Potion",
+      "Lesser Potion",
+      "18 gold",
+      "140 gold",
+      "123 gold",
+      "Metal bars ×2",
+      "13 gold",
+      "20 gold",
+      "58 gold"
+     ]
+    },
+    "hash": "770df09cc3075fb773c9fdfde6f2984d03eca6aa"
    }
   },
   {
    "step": "home",
-   "screen": "← Den🌀 The Labyrinth651Back to the Den…",
+   "screen": "← Den🌀 The Labyrinth887Back to the Den…",
    "save": {
-    "gold": 651,
+    "gold": 887,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv5 14xp",
+     "Cave Goblin Lv4 114xp",
      "Dust Sprite Lv4 0xp"
     ],
     "items": 4,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
-      "helmetId": "00000000-0000-4000-8000-000000000008"
+      "helmetId": "00000000-0000-4000-8000-000000000009",
+      "weaponId": "00000000-0000-4000-8000-000000000011"
      }
     },
     "bag": [],
     "run": null,
-    "hash": "11d3eef0997f0fbef412855ecb7295a35d9c8eee"
+    "hash": "d7086cb68cb94182fdb42be598928ac431ea24ca"
    }
   }
  ],
  "defeat": [
   {
    "step": "inside",
-   "screen": "← Den🌀 The Encampment500way r7way r10Water drips somewhere in the dark. Tunnels lead off into the gloom — the left-most heads furthest west. Tap one to go on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment500way r11way r7way r12Water drips somewhere in the dark. Tunnels lead off into the gloom — the left-most heads furthest west. Tap one to go on.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 500,
     "creatures": [
@@ -1684,7 +2062,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "e38f706417d7c8a113ce7fd8d73254b05012e67a"
+    "hash": "9400d8d1cc7571eb229b6b5dd673e42366918790"
    }
   },
   {
@@ -1714,7 +2092,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "404241f3530e91615b5c46123d87105e83126e1d"
+    "hash": "d88d4a88e8623782fe9948a3a7ca96602364df44"
    }
   },
   {
@@ -1744,7 +2122,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "8d1a3e04096c0a67316b1b00d3ed32ee3744e3b1"
+    "hash": "8604ab27059dfb3cb64ea04e41e67a7a8bfcf6e6"
    }
   },
   {
@@ -1761,7 +2139,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "b965806f8c8b7639123008606922b3c92a19d99e"
+    "hash": "515d35b234659f00bdc288558152ee6c4c06dd49"
    }
   }
  ],
@@ -1793,7 +2171,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "f08906271822750585f4f2ae27bf32904770f7cf"
+    "hash": "259b580d651581f414478697c9ad9bdcae04d1e6"
    }
   },
   {
@@ -1823,7 +2201,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "5a1aa8fa29918c737b40a752923382c8314c25db"
+    "hash": "cc55e8c53a4a48655007b298ee627a78407d3a58"
    }
   },
   {
@@ -1853,7 +2231,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "5a1aa8fa29918c737b40a752923382c8314c25db"
+    "hash": "cc55e8c53a4a48655007b298ee627a78407d3a58"
    }
   },
   {
@@ -1883,7 +2261,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "9d80eb0340a607b7dd2abaeb55da77ec92102fdc"
+    "hash": "b704223942d24782f6769ce1c918900aa5dc23fe"
    }
   },
   {
@@ -1900,7 +2278,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "26bef84207badee6b4a07d8b5f3a3045991c933b"
+    "hash": "7161a09183827550d2e3a2e8be91840d11ee2829"
    }
   }
  ]

@@ -1,9 +1,9 @@
 [
  {
   "tiles": "1c8d5f65",
-  "rooms": 23,
-  "kinds": "2727b7a5",
-  "scene": "eaed7e7d"
+  "rooms": 25,
+  "kinds": "f23bc029",
+  "scene": "be8020a6"
  },
  {
   "tiles": "c3964803",
@@ -37,9 +37,9 @@
  },
  {
   "tiles": "323d77f9",
-  "rooms": 26,
-  "kinds": "ba235e0a",
-  "scene": "bde365a3"
+  "rooms": 27,
+  "kinds": "ba81d9ca",
+  "scene": "b5491431"
  },
  {
   "tiles": "0c200451",
