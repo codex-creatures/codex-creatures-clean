@@ -28,9 +28,10 @@ import { countDaily } from "@/lib/daily";
 import { useRouter } from "next/navigation";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
+import { CreatureCard } from "@/components/TileGrid";
 import PixelSprite from "@/components/PixelSprite";
 import {
-  BattleView, DuelClock, Token, loadOwnedCreatures, rarityColor, usePlayableBattle, historyMembers, MUTED,
+  BattleView, DuelClock, Token, loadOwnedCreatures, rarityColor, usePlayableBattle, historyMembers,
   type Match, type OwnedCreature,
 } from "@/components/BattleScreen";
 import { onlineClient } from "@/lib/online/client";
@@ -323,24 +324,16 @@ export default function DuelPage() {
             );
           })}
         </div>
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "grid", gap: 6, alignContent: "start" }}>
+        {/* As the Pit shows them (the user, 2026-11-27): cards three a row, the pick order in a lit corner, and under
+            each one that can't go, why (its moves on a long press or hover). */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "14px 6px", alignContent: "start", padding: 2 }}>
           {owned.map((c) => {
             const why = whyNot(c, params.format);
             const slot = picked.indexOf(c.id);
             return (
-              <button key={c.id} className="card-btn" disabled={!!why || view.sent} onClick={() => toggle(c.id)}
-                style={{ opacity: why ? 0.45 : 1, borderColor: slot >= 0 ? "#4EA1FF" : undefined, background: slot >= 0 ? "rgba(78,161,255,0.12)" : undefined, minHeight: 56 }}>
-                <span className="pixel-font" style={{ width: 24, height: 24, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 14, background: slot >= 0 ? "#4EA1FF" : "rgba(255,255,255,0.08)", color: slot >= 0 ? "black" : MUTED }}>
-                  {slot >= 0 ? slot + 1 : ""}
-                </span>
-                <Token name={c.name} rarity={c.rarity} creatureId={c.creatureId} />
-                <span style={{ minWidth: 0, flex: 1, textAlign: "left" }}>
-                  <span style={{ display: "block", fontWeight: 600, color: rarityColor(c.rarity), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.roster ? "★ " : ""}{c.name}</span>
-                  <span style={{ display: "block", fontSize: 12, color: why ? "#ff8a80" : MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={why ?? c.fighter.skills.map((s) => s.name).join(" · ")}>
-                    {why ?? c.fighter.skills.map((s) => s.name).join(" · ")}
-                  </span>
-                </span>
-              </button>
+              <CreatureCard key={c.id} d={{ name: c.name, rarity: c.rarity, creatureId: c.creatureId, level: c.fighter.level }} fav={c.roster}
+                gear={`${c.weaponName ? "⚔️" : ""}${c.armorName ? "🛡️" : ""}` || undefined} pick={slot >= 0 ? slot + 1 : undefined}
+                disabled={!!why || view.sent} note={why ?? ""} title={why ?? c.fighter.skills.map((s) => s.name).join(" · ")} onClick={() => toggle(c.id)} />
             );
           })}
         </div>

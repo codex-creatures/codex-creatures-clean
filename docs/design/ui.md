@@ -82,6 +82,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     ones you haven't unlocked yet greyed out with a 🔒, so bindle and backpack share one layout.
   - The creature window's set line follows the armour slot you tap (that piece's set and how
     many of it you wear), instead of always the set you wear most of.
+- Places that list creatures to pick show them as the Pit does, its cards three a row (components/TileGrid.tsx `CreatureCard`; the user, 2026-11-27): the Training Pit, who reads an XP scroll, and a duel's team, where a picked card is lit with its number in the corner and one that can't go is greyed with why under its name (its moves on hover).
 - Creature lists (Chest, Pit) sort highest level first by default (the user, 2026-11-14: the ones
   they've invested in), rarest breaking ties; Rarity, Class, Race, Name and Newest are in the sort
   menu. The card gallery has no levels, so it starts on Rarity.

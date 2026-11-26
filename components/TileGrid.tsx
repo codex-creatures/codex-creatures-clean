@@ -143,13 +143,25 @@ function Tile({ d, fav, badge, gear, sell, picked, onClick, compact, grab }: {
 // (T1…), what it wears top right (⚔️ 🛡️), the creature on a glow of its rarity, then its level,
 // then its name in the rarity's colour (two lines, so every card is the same size). No race or
 // type: those are in its window.
-function CreatureCard({ d, fav, badge, gear, onClick, glow, inTeams }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; gear?: string; onClick: () => void; glow?: boolean; inTeams?: number[] }) {
+// A creature's card, as the Pit shows it; also the pickers' (a duel's team, who reads an XP scroll: the user,
+// 2026-11-27, "list them like the pit does"). pick: its place in a team being picked (1, 2…: a number in the
+// corner, lit); disabled: it can't be picked (greyed); note: one line under its name, its space kept whenever
+// given ("" for none), e.g. why it can't go.
+export type CardCreature = Pick<CreatureOrItemDrop, "name" | "rarity" | "creatureId" | "level" | "ascended">;
+export function CreatureCard({ d, fav = false, badge, gear, onClick, glow, inTeams, pick, disabled, note, title }: {
+  d: CardCreature; fav?: boolean; badge?: string; gear?: string; onClick: () => void; glow?: boolean; inTeams?: number[];
+  pick?: number; disabled?: boolean; note?: string; title?: string;
+}) {
   const col = RARITY_COLORS[d.rarity];
   const SHADOW = "0 2px 0 #000, 0 0 3px #000";
   return (
-    <button onClick={onClick} title={d.name} className={glow ? "tutorial-pulse" : undefined}
-      style={{ position: "relative", background: "none", border: "none", borderRadius: 8, padding: "2px 0", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-      {inTeams && inTeams.length > 0 && (
+    <button onClick={onClick} title={title ?? d.name} disabled={disabled} aria-pressed={pick !== undefined ? true : undefined} className={glow ? "tutorial-pulse" : undefined}
+      style={{ position: "relative", background: pick !== undefined ? "rgba(78,161,255,0.14)" : "none", border: "none", borderRadius: 8, padding: "2px 0", cursor: disabled ? "default" : "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+        opacity: disabled ? 0.45 : 1, outline: pick !== undefined ? "2px solid #4EA1FF" : undefined }}>
+      {pick !== undefined && (
+        <span className="pixel-font" style={{ position: "absolute", top: 2, left: 2, zIndex: 1, width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: "#4EA1FF", color: "black" }}>{pick}</span>
+      )}
+      {pick === undefined && inTeams && inTeams.length > 0 && (
         <span className="pixel-font" title={inTeams.map((i) => `Team ${i + 1}`).join(", ")} style={{ position: "absolute", top: 2, left: 2, zIndex: 1, fontSize: 11, lineHeight: 1, color: "#8fd0ff", textShadow: SHADOW }}>
           {inTeams.map((i) => `T${i + 1}`).join(" ")}
         </span>
@@ -160,6 +172,9 @@ function CreatureCard({ d, fav, badge, gear, onClick, glow, inTeams }: { d: Crea
       <span className="pixel-font" style={{ width: "100%", height: "2.3em", display: "flex", alignItems: "flex-start", justifyContent: "center", fontSize: 13, lineHeight: 1.15, textAlign: "center", color: col.text, textShadow: "0 2px 0 #000" }}>
         <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{d.name}</span>
       </span>
+      {note !== undefined && (
+        <span style={{ width: "100%", height: 15, fontSize: 11, lineHeight: "15px", color: "#ff8a80", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{note}</span>
+      )}
       {fav && <span style={{ position: "absolute", top: 16, left: 2, fontSize: 14, color: "#f5c542", textShadow: SHADOW }}>★</span>}
       {(gear || badge) && <span style={{ position: "absolute", top: 0, right: 0, fontSize: 12 }}>{gear}{badge}</span>}
     </button>

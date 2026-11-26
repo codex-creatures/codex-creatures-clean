@@ -130,7 +130,7 @@ export default function InventoryList({
   // Who can read a scroll from here: Klutz (once he's helping), then your creatures, highest level first.
   const scrollReaders: ScrollReader[] = [
     ...(klutzReads !== undefined ? [{ id: KLUTZ_DROP_ID, name: "Klutz", level: klutzReads, creatureId: KLUTZ.id, rarity: KLUTZ.rarity }] : []),
-    ...(inventory.filter(isCreatureDrop) as CreatureOrItemDrop[]).map((c) => ({ id: c.id, name: c.name, level: c.level ?? 1, creatureId: c.creatureId ?? "", rarity: c.rarity }))
+    ...(inventory.filter(isCreatureDrop) as CreatureOrItemDrop[]).map((c) => ({ id: c.id, name: c.name, level: c.level ?? 1, creatureId: c.creatureId ?? "", rarity: c.rarity, ascended: c.ascended, gear: gearMarks(equipment[c.id]) || undefined }))
       .sort((a, b) => b.level - a.level),
   ];
   // The rarest creature you have enough cards to summon (its colour lights up the Cards tab).

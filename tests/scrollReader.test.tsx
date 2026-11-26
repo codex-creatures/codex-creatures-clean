@@ -31,9 +31,9 @@ describe("reading a scroll from the Inventory", () => {
     await tap(button("Consumables"));
     await tap(host.querySelector("button[title='Tattered XP Scroll']") ?? undefined);
     await tap(button("📜 Read"));
-    const names = [...host.querySelectorAll("button.card-btn")].map((b) => b.getAttribute("title"));
+    const names = [...host.querySelectorAll("[data-readers] button")].map((b) => b.getAttribute("title"));
     expect(names).toEqual(["Klutz", "Moss Wolf"]);
-    await tap(host.querySelector("button.card-btn[title='Klutz']") ?? undefined);
+    await tap(host.querySelector("[data-readers] button[title='Klutz']") ?? undefined);
     const saved = JSON.parse(localStorage.getItem(SAVE_KEY)!);
     expect(saved.inventory.map((d: { id: string }) => d.id)).toEqual(["c1"]);
     expect(saved.klutz.level > 2 || saved.klutz.xp > 0).toBe(true); // (his ${SCROLL_XP} XP)

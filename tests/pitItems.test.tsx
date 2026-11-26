@@ -51,7 +51,7 @@ describe("the Pit's Items, beside the Inventory's", () => {
       await tap(tabOf("Consumables"));
       await tap(host.querySelector('button[title="Tattered XP Scroll"]'));
       await tap(button("Read"));
-      expect([...host.querySelectorAll("button.card-btn")].map((b) => b.getAttribute("title"))).toContain("Klutz");
+      expect([...host.querySelectorAll("[data-readers] button")].map((b) => b.getAttribute("title"))).toContain("Klutz");
     });
   }
 });
