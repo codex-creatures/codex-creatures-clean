@@ -11,11 +11,11 @@ import Glyph from "./Glyph";
 const NEUTRAL_GREY = "#a9a9b8";
 
 // neutral: Klutz, who knows every style's core moves, shown as a grey "Neutral".
-export default function ClassBadge({ cls, neutral }: { cls?: CombatClass; neutral?: boolean }) {
+export default function ClassBadge({ cls, neutral, font = 12 }: { cls?: CombatClass; neutral?: boolean; font?: number }) {
   if (neutral) {
     return (
       <span className="pixel-font" title="Neutral: he knows every style's moves, and has no race."
-        style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: NEUTRAL_GREY, border: `2px solid ${NEUTRAL_GREY}55` }}>
+        style={{ padding: "1px 8px", fontSize: font, textTransform: "uppercase", color: NEUTRAL_GREY, border: `2px solid ${NEUTRAL_GREY}55` }}>
         <Glyph icon={BALANCED_INFO.icon} art={BALANCED_INFO.art} /> Neutral
       </span>
     );

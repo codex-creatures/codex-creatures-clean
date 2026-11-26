@@ -5,14 +5,15 @@
 import { RACE_INFO, type Race } from "@/lib/creatures/creatureData";
 import { RaceIcon } from "./Glyph";
 
-export default function RaceTag({ race, races }: { race?: Race; races?: Race[] }) {
+// font: its size (12px; the creature window's name plate shows it bigger, the user, 2026-11-27).
+export default function RaceTag({ race, races, font = 12 }: { race?: Race; races?: Race[]; font?: number }) {
   const list = races?.length ? races : race ? [race] : [];
   if (list.length === 0) return null;
   const color = RACE_INFO[list[0]].color;
   const names = list.map((r) => RACE_INFO[r].name).join(" / ");
   return (
     <span className="pixel-font" title={`${list.length > 1 ? "Races" : "Race"}: ${names}`}
-      style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color, border: `2px solid ${color}55`, whiteSpace: "nowrap" }}>
+      style={{ padding: "1px 8px", fontSize: font, textTransform: "uppercase", color, border: `2px solid ${color}55`, whiteSpace: "nowrap" }}>
       {list.map((r, i) => <span key={r} style={{ color: RACE_INFO[r].color }}>{i > 0 && <span style={{ color: "rgba(255,255,255,0.4)" }}> / </span>}<RaceIcon r={r} /> {RACE_INFO[r].name}</span>)}
     </span>
   );

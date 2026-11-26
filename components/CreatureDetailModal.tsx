@@ -256,18 +256,12 @@ export default function CreatureDetailModal({
           <div className="pixel-font" style={{ fontSize: 13, color: MUTED, marginBottom: 8 }}>{position.index + 1} / {position.count}</div>
         )}
 
-        {/* Name plate */}
-        <div style={{ paddingRight: 28, marginBottom: 12 }}>
-          <div style={{ display: "flex", alignContent: "flex-start", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap", height: 52, overflow: "hidden" }}>
-            <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: c.text, border: `2px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
-            <RaceTag race={template?.race} races={template?.races} />
-            {template?.neutral && <ClassBadge neutral />}
-            {/* The style(s) it's built for, "Melee - Magic" (the user, 2026-11-24: in place of its type words). */}
-            {prof && preferredStyles(prof).length > 0 && <StyleTag styles={preferredStyles(prof)} />}
-          </div>
+        {/* Name plate: the name big and centred on top, its species under it when named, then its rarity, race(s)
+            and style, bigger, so the race icons can be made out (the user, 2026-11-27). Clear of the ✕ on both sides. */}
+        <div style={{ padding: "0 28px", marginBottom: 12, textAlign: "center" }}>
           {/* One line (a long name ends in "…"), so flicking between creatures never moves anything below it.
               Your own creatures: tap the name to give it one of your own (it becomes a text box in the same place). */}
-          <h2 className="pixel-font" title={onRename ? "Tap to name it" : creature.name} style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "baseline", gap: 8 }}>
+          <h2 className="pixel-font" title={onRename ? "Tap to name it" : creature.name} style={{ margin: 0, fontSize: 30, fontWeight: 600, color: c.text, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "baseline", justifyContent: "center", gap: 8 }}>
             {naming !== null ? (
               <input ref={nameBox} value={naming} maxLength={NICK_MAX} aria-label="Its name" className="pixel-font"
                 onChange={(e) => setNaming(e.target.value)} onBlur={keepName}
@@ -284,6 +278,14 @@ export default function CreatureDetailModal({
           {/* Named: its species, small, under the name (the line's there either way, so nothing below moves). */}
           <div style={{ fontSize: 12, color: MUTED, height: 16, lineHeight: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {creature.nick && template ? template.name : naming !== null ? `Up to ${NICK_MAX} letters. Leave it empty for its own name.` : ""}
+          </div>
+          {/* Two rows' room whatever it has, so nothing below moves. */}
+          <div style={{ display: "flex", alignContent: "center", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 6, flexWrap: "wrap", height: 62, overflow: "hidden" }}>
+            <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 15, textTransform: "uppercase", color: c.text, border: `2px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
+            <RaceTag race={template?.race} races={template?.races} font={15} />
+            {template?.neutral && <ClassBadge neutral font={15} />}
+            {/* The style(s) it's built for, "Melee - Magic" (the user, 2026-11-24: in place of its type words). */}
+            {prof && preferredStyles(prof).length > 0 && <StyleTag styles={preferredStyles(prof)} />}
           </div>
         </div>
 
@@ -335,8 +337,11 @@ export default function CreatureDetailModal({
               </div>
             )}
             {/* Paper doll: weapon · creature · armour, on a stage lit in its rarity's colour. */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: `repeating-conic-gradient(from 0deg at 50% 78%, ${c.text}12 0 6deg, transparent 6deg 18deg), radial-gradient(ellipse at 50% 74%, ${c.text}55, transparent 52%), radial-gradient(ellipse at 50% 0%, ${c.text}24, #0e0f13 75%)`, border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+            {/* (The sides share what's left equally, never sized by what's in them, and the pedestal's column is one width
+                for every creature: flicking between creatures never moves a slot. The user, 2026-11-27.) */}
+            <div style={{ display: "grid", gridTemplateColumns: `minmax(${SIDE_W}px, 1fr) minmax(0, ${PEDESTAL_W}) minmax(${SIDE_W}px, 1fr)`, alignItems: "center", gap: 8, padding: "12px 8px", background: `repeating-conic-gradient(from 0deg at 50% 78%, ${c.text}12 0 6deg, transparent 6deg 18deg), radial-gradient(ellipse at 50% 74%, ${c.text}55, transparent 52%), radial-gradient(ellipse at 50% 0%, ${c.text}24, #0e0f13 75%)`, border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
+              {/* (A wide gap between the weapon and the stone, so "Soul stone" plainly names the box under it.) */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
                 <Slot label={weaponKind ? `${weaponKind.icon} ${weaponKind.name} weapon` : "Weapon"} labelColor={weaponKind?.color} slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} small />
                 <SoulSlot stone={creature.soulStone} active={stonePicking} changeable={canSetStone}
                   onClick={canSetStone || creature.soulStone ? () => { setStonePicking((p) => !p); setPicking(null); setPreview(undefined); } : undefined} />
@@ -477,7 +482,9 @@ export default function CreatureDetailModal({
                 onCancel={() => setPending({})}
                 respec={points.respec} />
             ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(76px, 1fr))", gap: 5 }}>
+            // Four a row, in the one stat order: Melee, Ranged, Magic, Agility over Melee Def, Ranged Def, Magic Def, Health
+            // (the user, 2026-11-27: "a row of 4"), centred, each box one size whatever its numbers.
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 5, maxWidth: 420, margin: "0 auto" }}>
               {/* Health last, as everywhere: its HP % (the user, 2026-11-25) is on its whole HP rather than on gear. */}
               {STATS.map((st) => {
                 const k = st.key;
@@ -485,11 +492,11 @@ export default function CreatureDetailModal({
                 const what = k === "hp" ? "its whole health (level and gear)" : `gear ${st.label.toLowerCase()}`;
                 return (
                   <div key={k} title={`${st.label}: ${what} is boosted by ${now.f.proficiency[k]}% (at level ${MAX_LEVEL}: ${proficiencyAt(template, prof, MAX_LEVEL, creature.ascended ?? 0)[k]}%)`}
-                    style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
+                    style={{ textAlign: "center", padding: "6px 2px", minWidth: 0, background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
                     <div style={{ fontSize: 13 }}><Glyph icon={st.icon} art={st.art} /></div>
                     <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
-                    <div style={{ ...NUM, fontSize: 18, color: st.color }}>{now.f.proficiency[k] >= 0 ? "+" : ""}{now.f.proficiency[k]}%</div>
-                    <div style={{ fontSize: 11, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d} roll` : d < 0 ? `${d} roll` : "standard"}</div>
+                    <div style={{ ...NUM, fontSize: 18, color: st.color, whiteSpace: "nowrap" }}>{now.f.proficiency[k] >= 0 ? "+" : ""}{now.f.proficiency[k]}%</div>
+                    <div style={{ fontSize: 11, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d > 0 ? `+${d} roll` : d < 0 ? `${d} roll` : "standard"}</div>
                   </div>
                 );
               })}
@@ -596,10 +603,14 @@ export function gearValue(f: NonNullable<ReturnType<typeof fighterFor>>, key: St
 
 // The creature standing on its stone pedestal.
 const PEDESTAL_TALL = 180; // px: a size-5 creature's height on it
+// Its column's width, the same for every creature (what's in it never sizes it): up to the widest art
+// (min(180px, 40cqw)) with the padding round it, less on a narrow phone, where the slots' columns (SIDE_W) come first.
+const PEDESTAL_W = "min(200px, calc(40cqw + 20px))";
+const SIDE_W = 64; // px: a slot (60) and its label
 function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop; glow: string; border: string; hp: number }) {
   const sprite = creatureSprite(creature.creatureId), a = artFor(sprite);
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0, width: "100%", minWidth: 0 }}>
       <div style={{ position: "relative", padding: "6px 10px 0", height: 186, boxSizing: "border-box", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
         {/* The glow sits behind the creature itself, so a short one (Klutz) isn't under a glow floating above it. */}
         <span style={{ position: "relative", display: "flex" }}>
@@ -619,9 +630,9 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
 }
 
 // The creature's soul stone, under its weapon: always there (empty for none),
-// so nothing moves flicking between creatures, drawn with the stone's own art (not its old emoji).
-// Tapping it says what it does
-// (or opens the picker, when it can be changed). The name gets two lines.
+// so nothing moves flicking between creatures, drawn with the stone's own art (not its old emoji),
+// filling its box as a weapon's does (the user, 2026-11-27: it was half the size). Tapping it says
+// what it does (or opens the picker, when it can be changed), so its name isn't written under it.
 function SoulSlot({ stone, onClick, active, changeable }: { stone?: SoulStoneKey | null; onClick?: () => void; active?: boolean; changeable?: boolean }) {
   const s = stone ? SOUL_STONES[stone] : undefined;
   const Box = onClick ? "button" : "span";
@@ -633,10 +644,7 @@ function SoulSlot({ stone, onClick, active, changeable }: { stone?: SoulStoneKey
         width: 60, height: 60, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26,
         background: s ? "radial-gradient(circle, rgba(185,230,255,0.25), #101117 75%)" : "#101117",
         border: `3px solid ${s ? "rgba(185,230,255,0.6)" : "#2f3340"}`, boxShadow: "inset 2px 2px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(0,0,0,0.5)",
-      }}>{stone && s ? <PixelSprite sprite={STONE_SPRITES[stone]} scale={1.6} /> : <span style={{ fontSize: 18, color: changeable ? MUTED : "#3a3e4b" }}>{changeable ? "+" : "—"}</span>}</Box>
-      <span title={s?.name} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 11, lineHeight: 1.2, height: "2.4em", maxWidth: 110, textAlign: "center", color: s ? SOUL_COLOR : MUTED }}>
-        {s ? s.name : "None"}
-      </span>
+      }}>{stone && s ? <PixelSprite sprite={STONE_SPRITES[stone]} scale={3.3} /> : <span style={{ fontSize: 18, color: changeable ? MUTED : "#3a3e4b" }}>{changeable ? "+" : "—"}</span>}</Box>
     </div>
   );
 }
@@ -784,7 +792,10 @@ function Badge({ children, color }: { children: React.ReactNode; color: string }
   return <span style={{ ...NUM, position: "absolute", top: 1, right: 3, fontSize: 11, color }}>{children}</span>;
 }
 
-// One stat: icon, name, a chunky bar (with the previewed change), the total.
+// One stat: icon, name, a chunky bar (with the previewed change), the total; under the name and
+// bar, on one line of its own, where it comes from. Every row the same height and every column
+// the same width whatever the numbers, so flicking between creatures moves nothing (the user,
+// 2026-11-27: the "where from" line wrapped onto two or three lines for some creatures).
 // compact: smaller, for narrow windows (EquipPreview).
 export function StatRow({ icon, label, color, max, total, after, detail, diff, compact }: {
   icon: React.ReactNode; label: string; color: string; max: number; total: number; after: number; detail: string; diff: number; compact?: boolean;
@@ -793,12 +804,11 @@ export function StatRow({ icon, label, color, max, total, after, detail, diff, c
   const change = after - total;
   const lo = Math.min(total, after), hi = Math.max(total, after);
   return (
-    <div style={{ display: "grid", gridTemplateColumns: compact ? "18px minmax(64px, 1.3fr) 1fr auto" : "22px minmax(70px, 96px) 1fr auto", alignItems: "center", columnGap: compact ? 6 : 8 }}>
+    <div style={{ display: "grid", gridTemplateColumns: compact ? "18px 82px minmax(0, 1fr) 80px" : "22px 96px minmax(0, 1fr) 104px", alignItems: "center", columnGap: compact ? 6 : 8 }}>
       <span style={{ fontSize: 15, textAlign: "center" }}>{icon}</span>
-      <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.15 }}>
+      <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {label}
         {diff !== 0 && <sup style={{ marginLeft: 2, fontSize: 11, color: diff > 0 ? "#7CFC9A" : "#ff8a80" }}>{diff > 0 ? `+${diff}` : diff}</sup>}
-        <span style={{ display: "block", fontSize: 11, fontWeight: 400, color: MUTED }}>{detail}</span>
       </span>
       <div style={{ position: "relative", height: 12, background: "#0e0f14", border: "2px solid #2a2d38" }}>
         <div style={{ position: "absolute", inset: 0, width: `${pct(lo)}%`, background: color, transition: "width 0.25s" }} />
@@ -809,10 +819,11 @@ export function StatRow({ icon, label, color, max, total, after, detail, diff, c
         <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(90deg, transparent 0 9px, rgba(0,0,0,0.35) 9px 10px)" }} />
       </div>
       {/* Fixed width, change on the same line: flicking between items never moves anything. */}
-      <span style={{ ...NUM, minWidth: compact ? 72 : 104, textAlign: "right", fontSize: compact ? 15 : 18, whiteSpace: "nowrap" }}>
+      <span style={{ ...NUM, textAlign: "right", fontSize: compact ? 15 : 18, whiteSpace: "nowrap" }}>
         {change !== 0 && <span style={{ fontSize: 13, marginRight: 6, color: change > 0 ? "#7CFC9A" : "#ff8a80" }}>{change > 0 ? `▲+${change}` : `▼${change}`}</span>}
         {change !== 0 ? <span style={{ color: change > 0 ? "#7CFC9A" : "#ff8a80" }}>{after}</span> : total}
       </span>
+      <span title={detail} style={{ gridColumn: "2 / 4", fontSize: 11, lineHeight: "14px", height: 14, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{detail}</span>
     </div>
   );
 }
@@ -843,7 +854,7 @@ function ItemStats({ item, worn, keys }: { item: CreatureOrItemDrop; worn?: Crea
 // Its preferred attack style(s), as one tag: "Melee", or "Melee - Magic".
 function StyleTag({ styles }: { styles: CombatClass[] }) {
   return (
-    <span title="The attack style its multipliers favour" style={{ fontSize: 11, padding: "1px 7px", border: "2px solid #2f3340", background: "#1b1d25", color: "rgba(255,255,255,0.75)" }}>
+    <span title="The attack style its multipliers favour" style={{ fontSize: 14, padding: "1px 7px", border: "2px solid #2f3340", background: "#1b1d25", color: "rgba(255,255,255,0.75)" }}>
       {styles.map((c) => CLASS_INFO[c].name).join(" - ")}
     </span>
   );
