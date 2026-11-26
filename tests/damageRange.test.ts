@@ -34,6 +34,18 @@ describe("a move's damage range in a fight", () => {
     expect(damageRange(sk, me, hard)).toBe(damageRange(sk, me, { ...soft, maxHp: hard.maxHp, hpMult: hard.hpMult, races: hard.races }));
   });
 
+  it("counts the race chart only when asked (the Encampment and the Cyclops' Labyrinth)", () => {
+    const me = fighter("dire_wolf", { melee: 40 }, {});
+    const sk = { ...me.skills.find((s) => s.damage > 0)!, race: "beast" as const }; // (a beast move: the core moves have no race)
+    const them = fighter("moss_wolf", {}, {});
+    // Against a foe whose race the move is strong or weak against, the hint moves the number; without it, it's as against no race.
+    const pick = ["shambler", "rattlebones", "flicker_wisp", "crystalback", "thicket_archer", "glob"].map((id) => fighter(id, {}, {}))
+      .find((f) => damageRange(sk, me, f, true) !== damageRange(sk, me, f, false))!;
+    expect(pick).toBeDefined();
+    expect(damageRange(sk, me, pick, false)).toBe(damageRange(sk, me, { ...pick, races: [] }, true));
+    expect(damageRange(sk, me, them, false)).toBe(damageRange(sk, me, { ...them, races: [] }, true));
+  });
+
   it("is nothing for a move that does no damage", () => {
     const me = fighter("dire_wolf", {}, {}), them = fighter("glob", {}, {});
     expect(damageRange({ ...me.skills[0], damage: 0 }, me, them)).toBeUndefined();

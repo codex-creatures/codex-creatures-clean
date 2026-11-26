@@ -99,6 +99,7 @@ export type Match = {
   title?: string;                     // e.g. "Dungeon room 3", shown in the history
   tutorial?: number;                  // the guided first fight: which step you're on (tutorialSteps; -1 = not started)
   opponent?: string;                  // a duel: the other player's name (no AI)
+  raceHint?: boolean;                 // a move's damage counts the race chart (the early dungeons: see damageRange)
 };
 
 // The animation currently playing. Indexes say which creature (team index)
@@ -255,7 +256,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void, { history = tru
   // pair: their first two are both on the field (an ambush). turnLimit: the
   // room blows after this many rounds (see BattleState.turnLimit).
   function start(teams: Match["teams"], info: Match["info"], level: AiLevel,
-    opts: { startHp?: number[]; title?: string; boss?: BossKind; illnesses?: { index: number; rounds: number }[]; tutorial?: boolean; pair?: boolean; turnLimit?: number } = {}) {
+    opts: { startHp?: number[]; title?: string; boss?: BossKind; illnesses?: { index: number; rounds: number }[]; tutorial?: boolean; pair?: boolean; turnLimit?: number; raceHint?: boolean } = {}) {
     setView(null);
     setFx(null);
     const state = createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss, { pairB: opts.pair, turnLimit: opts.turnLimit });
@@ -263,7 +264,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void, { history = tru
       const sick = state.sides.A.team[ill.index];
       if (sick && ill.rounds > 0) sick.statuses.push({ id: "illness", rounds: ill.rounds, dmg: Math.max(1, Math.round(sick.maxHp * ILLNESS_DAMAGE)) });
     }
-    setMatch({ state, info, teams, level, title: opts.title, ...(opts.tutorial ? { tutorial: -1 } : {}) });
+    setMatch({ state, info, teams, level, title: opts.title, ...(opts.tutorial ? { tutorial: -1 } : {}), ...(opts.raceHint ? { raceHint: true } : {}) });
   }
 
   // Continue a saved battle.
@@ -597,7 +598,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
             </div>
             <div className="battle-moves" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, opacity: playing ? 0.6 : 1 }}>
               {me.skills.map((sk) => (
-                <MoveButton key={sk.name} sk={sk} me={me} them={them} myAgil={myAgil} theirAgil={theirAgil}
+                <MoveButton key={sk.name} sk={sk} me={me} them={them} myAgil={myAgil} theirAgil={theirAgil} raceHint={!!match.raceHint}
                   glow={!playing && !!tip?.allow && tip.allow(sk)}
                   disabled={playing || !affordableSkills(me).includes(sk) || (locked && !!tip?.allow && !tip.allow(sk))}
                   onClick={() => sk.effect?.kind === "bounce" && swapTargets(you).length > 1 ? toggle("bounce")
@@ -658,8 +659,8 @@ function raceMatchup(sk: Skill, them: Combatant): string | undefined {
 }
 
 // glow: the move Klutz wants you to use (the guided fight).
-function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }: {
-  sk: Skill; me: Combatant; them: Combatant; myAgil: number; theirAgil: number; disabled: boolean; glow?: boolean; onClick: () => void;
+function MoveButton({ sk, me, them, myAgil, theirAgil, raceHint, disabled, glow, onClick }: {
+  sk: Skill; me: Combatant; them: Combatant; myAgil: number; theirAgil: number; raceHint: boolean; disabled: boolean; glow?: boolean; onClick: () => void;
 }) {
   const fx = sk.effect;
   // (No "strong against" hints on the tile itself: the races are the clue. The
@@ -723,22 +724,25 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   const note = cooling > 0 ? { text: `recharging: ${cooling} round${cooling === 1 ? "" : "s"}`, color: "#ff8a80" }
     : sk.energyCost > me.energy ? { text: "not enough energy", color: "#ff8a80" }
     : undefined;
-  const range = damageRange(sk, me, them);
+  const range = damageRange(sk, me, them, raceHint);
   const tile = <MoveTile m={sk} note={note} extra={tags} disabled={disabled} onClick={onClick} fill
     tag={range ? { text: range, color: MOVE_NAME_COLOR } : undefined} />;
   return glow ? <div className="move-glow">{tile}</div> : tile;
 }
 
 // What a move would do to the foe it's aimed at before their defences: its hit at the lowest and highest roll
-// (±DAMAGE_VARIANCE), with the race chart and the rest, but none of their armour or defence %s (the user, 2026-11-26:
-// "raw damage before the enemy deduction", so a melee move reading 100 may land 50 on a melee wall while a ranged one
-// reading 80 lands 70; it was the landed hit at first). Shown on the move, in its name's colour.
+// (±DAMAGE_VARIANCE), with none of their armour or defence %s (the user, 2026-11-26: "raw damage before the enemy
+// deduction", so a melee move reading 100 may land 50 on a melee wall while a ranged one reading 80 lands 70; it was
+// the landed hit at first). raceHint: the race chart against them counted too, in the Encampment and the Cyclops'
+// Labyrinth only, so new players learn the matchups there; past the Cyclops, and in PvP, it's left out (the user,
+// 2026-11-26). (A move matching your own race is yours, so its bonus always counts.) Shown on the move, in its name's colour.
 // Not counted: a precise hit, and what a move's own effect adds when it lands (ambush, execute…). None for a move that does no damage.
 const MOVE_NAME_COLOR = "#fbf1dc"; // (MoveTile's name)
-export function damageRange(sk: Skill, me: Combatant, them: Combatant): string | undefined {
+export function damageRange(sk: Skill, me: Combatant, them: Combatant, raceHint = false): string | undefined {
   if (sk.damage <= 0) return undefined;
   // (A brace's coin toss isn't the move's; nor are their defences.)
-  const steady = { ...them, braceActive: false, armor: { ...them.armor, mdef: 0, rdef: 0, magdef: 0 }, proficiency: { ...them.proficiency, mdef: 0, rdef: 0, magdef: 0 } };
+  const steady = { ...them, braceActive: false, armor: { ...them.armor, mdef: 0, rdef: 0, magdef: 0 }, proficiency: { ...them.proficiency, mdef: 0, rdef: 0, magdef: 0 },
+    ...(raceHint ? {} : { races: [] }) };
   const lo = calcDamage(sk, me, steady, false, PRECISE_IGNORE, 1 - DAMAGE_VARIANCE).damage;
   const hi = calcDamage(sk, me, steady, false, PRECISE_IGNORE, 1 + DAMAGE_VARIANCE).damage;
   if (lo <= 0) return undefined;

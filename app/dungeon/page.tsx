@@ -1168,6 +1168,7 @@ export default function DungeonPage() {
         tutorial,
         pair: room.kind === "encampment" && room.variant === "ambush",
         turnLimit: room.kind === "encampment" && room.variant === "rigged" ? squadsOf(dungeonOf(r)).fuse : undefined,
+        raceHint: dungeonOf(r) <= 1, // (a move's damage counts the race chart in the Encampment and the Cyclops' Labyrinth: damageRange)
       },
     );
   }
