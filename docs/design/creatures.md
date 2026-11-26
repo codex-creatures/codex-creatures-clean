@@ -50,7 +50,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   its own roll). The wolf's old art stays as the goblin camp's picture (sprites/rooms/dire_wolf_scene.png).
 - ✅ **The Labyrinth Sprite** (the user, 2026-11-26): a pixie, Uncommon, Divine, magic Arcanist, the fastest Uncommon and
   frail (base HP 66; 3 / 3 / 18, agility 26, defences 2 / 5 / 7, HP % 4; size 1, floats). Its %s are Claude's (the Flame
-  Imp's total, magic and HP traded for agility). It gets a utility move of the user's choosing (to come).
+  Imp's total, magic and HP traded for agility). It gets a utility move of the user's choosing (to come). Its codexes and the
+  Mythiclaw's are the user's ticks (2026-11-26).
 - ✅ The 35 are one per rarity per race (a dual-race creature counts under its first race); since the 2026-11-26 picks a
   race can have more than one of a rarity (by first race: Underkin 9, Beast 7, Undead 7, Humanoid 6, Geo 6, Divine 5, Toxic 4). The plan is to roughly
   double Epic and below; Geo and Divine are the next to grow (the user, 2026-11-26).

@@ -15,7 +15,7 @@ describe("Klutz and race moves", () => {
   it("Rabid Bite: the species on its list can learn it (the v2 review, 2026-11-16); it hits as Toxic", () => {
     const bite = MOVE_BY_NAME["Rabid Bite"];
     expect(bite.race).toBe("toxic");
-    expect(bite.learners).toHaveLength(21); // (the Skinwing too since 2026-11-26)
+    expect(bite.learners).toHaveLength(20); // (the Skinwing too since 2026-11-26; not the Mythiclaw, the user's ticks)
     for (const t of CREATURE_TEMPLATES) expect(canLearnFromCodex(t, "Rabid Bite"), t.id).toBe(bite.learners!.includes(t.id));
     expect(canLearnFromCodex(CREATURE_BY_ID.amber_wasp, "Rabid Bite")).toBe(false); // (taken off it)
     expect(canLearnFromCodex(KLUTZ, "Rabid Bite")).toBe(true); // (Klutz can learn any codex: the user, 2026-11-14)
@@ -24,7 +24,7 @@ describe("Klutz and race moves", () => {
 
 describe("codexes say who can read them", () => {
   it("race moves and learnable ones", () => {
-    expect(codexLearners("Rabid Bite").text).toBe("21 creatures only");
+    expect(codexLearners("Rabid Bite").text).toBe("20 creatures only"); // (not the Mythiclaw: the user's ticks, 2026-11-26)
     expect(codexLearners("Pounce").text).toBe("15 creatures only");
     expect(codexLearners("Erupt").text).toBe("14 creatures only");
     expect(codexLearners("Divine Strength").text).toBe("any creature");

@@ -16,13 +16,13 @@ const swap = (to: number) => ({ kind: "swap" as const, to });
 const hitsBy = (s: BattleState, side: "A" | "B") => s.log.filter((e) => e.type === "attack" && e.side === side);
 
 describe("the codexes", () => {
-  it("Horn Rush Rare Beast, Leg Sweep Common neutral, Spirit Blade Epic Divine; the Mythiclaw reads all three", () => {
+  it("Horn Rush Rare Beast, Leg Sweep Common neutral, Spirit Blade Epic Divine; the Mythiclaw reads Horn Rush and Leg Sweep (the user's ticks)", () => {
     expect(MOVE_BY_NAME["Horn Rush"]).toMatchObject({ type: "melee", race: "beast", codexRarity: "rare", damage: 20, energyCost: 50 });
     expect(MOVE_BY_NAME["Leg Sweep"]).toMatchObject({ type: "melee", codexRarity: "common", damage: 10, energyCost: 30 });
     expect(MOVE_BY_NAME["Leg Sweep"].race).toBeUndefined();
     expect(MOVE_BY_NAME["Spirit Blade"]).toMatchObject({ type: "melee", race: "divine", codexRarity: "epic", damage: 20, energyCost: 60 });
     for (const m of ["Horn Rush", "Leg Sweep", "Spirit Blade"]) {
-      expect(canLearnFromCodex(CREATURE_BY_ID.dire_wolf, m), m).toBe(true);
+      expect(canLearnFromCodex(CREATURE_BY_ID.dire_wolf, m), m).toBe(m !== "Spirit Blade");
       expect((codexDrop(m) as CreatureOrItemDrop).rarity).toBe(MOVE_BY_NAME[m].codexRarity);
     }
   });
@@ -70,14 +70,14 @@ describe("Leg Sweep", () => {
 
 describe("Spirit Blade", () => {
   it("each hit adds 6% of the target's max HP past its armour", () => {
-    const s = createBattle([big(fighter("dire_wolf", ["Spirit Blade"]))], [big(fighter("gravewarden", ["Strike"]), 1000)]);
+    const s = createBattle([big(fighter("pale_rider", ["Spirit Blade"]))], [big(fighter("gravewarden", ["Strike"]), 1000)]);
     resolveRound(s, { A: attack("Spirit Blade"), B: attack("Strike") });
     const [hit] = hitsBy(s, "A");
     const plain = calcDamage(MOVE_BY_NAME["Spirit Blade"], s.sides.A.team[0], s.sides.B.team[0], false).damage;
     expect(hit.type === "attack" && hit.damage).toBeGreaterThanOrEqual(Math.round(1000 * SPIRIT_BLADE.share) + Math.floor(plain * 0.9));
   });
   it("pays once, then is locked in for 3 swings (only it or a swap), free", () => {
-    const me = big(fighter("dire_wolf", ["Spirit Blade", "Strike"])), them = big(fighter("glob", ["Strike"]));
+    const me = big(fighter("pale_rider", ["Spirit Blade", "Strike"])), them = big(fighter("glob", ["Strike"]));
     const s = createBattle([me], [them]);
     resolveRound(s, { A: attack("Spirit Blade"), B: attack("Strike") });
     const a = s.sides.A.team[0];
@@ -93,7 +93,7 @@ describe("Spirit Blade", () => {
     expect(affordableSkills(a).map((m) => m.name)).toEqual(["Spirit Blade", "Strike"]); // (free again: 70 energy)
   });
   it("swapping out ends the lock", () => {
-    const s = createBattle([big(fighter("dire_wolf", ["Spirit Blade", "Strike"])), big(fighter("glob", ["Strike"]))], [big(fighter("glob", ["Strike"]))]);
+    const s = createBattle([big(fighter("pale_rider", ["Spirit Blade", "Strike"])), big(fighter("glob", ["Strike"]))], [big(fighter("glob", ["Strike"]))]);
     resolveRound(s, { A: attack("Spirit Blade"), B: attack("Strike") });
     resolveRound(s, { A: swap(1), B: attack("Strike") });
     expect(s.sides.A.team[0].statuses.some((x) => x.id === "locked")).toBe(false);

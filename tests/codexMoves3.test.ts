@@ -16,7 +16,7 @@ afterEach(() => vi.restoreAllMocks());
 describe("the third codex batch: who and what", () => {
   it("each has the user's learners, race, style and rarity", () => {
     const want: Record<string, [string, string, string, number]> = {
-      "Flame Spit": ["ranged", "geo", "common", 13], "Cursed Claw": ["melee", "undead", "uncommon", 11], Claw: ["melee", "beast", "common", 21],
+      "Flame Spit": ["ranged", "geo", "common", 14], "Cursed Claw": ["melee", "undead", "uncommon", 11], Claw: ["melee", "beast", "common", 22], // (+ the Labyrinth Sprite, 2026-11-26)
       Bounce: ["melee", "beast", "rare", 15], Stalactite: ["ranged", "underkin", "epic", 9], Curse: ["magic", "undead", "legendary", 6], // (with the new creatures, the user's ticks, 2026-11-26)
     };
     for (const [name, [type, race, rarity, n]] of Object.entries(want)) {

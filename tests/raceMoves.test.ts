@@ -46,10 +46,10 @@ describe("what a creature can use and learn", () => {
   it("race moves: only the species on the user's list (the v2 codex review, 2026-11-16)", () => {
     const LISTS: Record<string, string[]> = {
       "Pounce":           ["moss_wolf", "bellow_toad", "dire_wolf", "cave_bat", "crystalback", "hollow_matriarch", "veilstalker", "void_serpent", "leafblade_scout", "aurelius", "gleamling", "deep_angler", "plague_rat", "cinder_husk", "gutsnout"],
-      "Mirage":           ["dust_sprite", "flicker_wisp", "veilstalker", "the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "sylvaran", "gleamling", "flame_imp", "thunderhead", "dreadpox", "pale_rider", "gloom_gnome", "hexed_puppet", "mole_hag"],
+      "Mirage":           ["dust_sprite", "flicker_wisp", "veilstalker", "the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "sylvaran", "gleamling", "flame_imp", "thunderhead", "dreadpox", "pale_rider", "gloom_gnome", "hexed_puppet", "mole_hag", "labyrinth_sprite"],
       "Erupt":            ["ironhide", "rust_beetle", "crystalback", "crystal_golem", "dust_sprite", "dustwraith", "mr_shadows", "swamp_witch", "gleamling", "flame_imp", "thunderhead", "tunnel_wyrm", "dreadpox", "cinder_husk"],
       "Barrage":          ["hollow_matriarch", "storm_phoenix", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran", "rotgut_fly", "pale_rider"],
-      "Rabid Bite":       ["moss_wolf", "bellow_toad", "dire_wolf", "ironhide", "cave_bat", "rust_beetle", "crystalback", "hollow_matriarch", "veilstalker", "void_serpent", "shambler", "dustwraith", "mr_shadows", "swamp_witch", "deep_angler", "tunnel_wyrm", "plague_rat", "rotgut_fly", "glob", "dreadpox", "skinwing"],
+      "Rabid Bite":       ["moss_wolf", "bellow_toad", "ironhide", "cave_bat", "rust_beetle", "crystalback", "hollow_matriarch", "veilstalker", "void_serpent", "shambler", "dustwraith", "mr_shadows", "swamp_witch", "deep_angler", "tunnel_wyrm", "plague_rat", "rotgut_fly", "glob", "dreadpox", "skinwing"],
       "Corpsify":         ["rattlebones", "shambler", "dustwraith", "mr_shadows", "storm_phoenix", "plague_rat", "glob", "dreadpox", "pale_rider", "cinder_husk", "hexed_puppet"],
     };
     for (const [move, ids] of Object.entries(LISTS))

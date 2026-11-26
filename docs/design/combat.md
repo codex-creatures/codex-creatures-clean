@@ -350,11 +350,14 @@ power counts for less as attack grows.
 ### The Mythiclaw's moves (the user, 2026-11-26; decision 68)
 
 🧪 Built 2026-11-26. Names, rarities, races and what they do are the user's; the numbers are Claude's (`HORN_RUSH_AGILITY`,
-`SPIRIT_BLADE` in lib/creatures/codexMoves.ts); learners are Claude's draft until the user's tick chart.
+`SPIRIT_BLADE` in lib/creatures/codexMoves.ts); learners are the user's ticks (2026-11-26, claude.ai/artifact/WVjJX83GUwcay7D1UzW9Yg).
+  The Mythiclaw reads Horn Rush and Leg Sweep but not Spirit Blade (the user's ticks).
 - **Horn Rush** (Rare, Beast, melee, 20 power, 50 energy): a melee hit that swings with **60% of its agility** in place of
   its melee attack (`agilstrike`, lib/combat/engine.ts calcDamage), still against melee defence. Why 60%: with gear, agility
   runs 1.6–1.8× melee attack on every creature, tanks included (Rare gear, Lv 25: Cinder Husk 54 attack / 94 agility,
-  Gravewarden 22 / 64), so all of it would hit about twice as hard as any melee move. Tanks are kept off its learners.
+  Gravewarden 22 / 64), so all of it would hit about twice as hard as any melee move. At 60% a fast melee creature's Horn Rush is
+  about its own attack (0.9–1.25×), while a tank's or a caster's weak melee gets 1.2–1.9× (2.9× the Flame Imp's): the user gave it
+  to horned and stony beasts (Ironhide, Rust Beetle, Crystalback, Crystal Golem, Tunnel Wyrm, the Mole Hag, the Flame Imp).
   Whiplash's +50% agility raises it; a slow or a cripple lowers it (`slowedAgil`).
 - **Leg Sweep** (Common, neutral melee, 10 power, 30 energy): 30% chance the target loses 30% of its agility for 3 rounds
   (status `slow`; no stumble, unlike a cripple). A new sweep restarts it; it multiplies with a cripple; a ward keeps it

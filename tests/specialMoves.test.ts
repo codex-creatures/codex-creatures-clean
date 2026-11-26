@@ -21,9 +21,9 @@ const swap = (to: number) => ({ kind: "swap" as const, to });
 describe("special moves: who can learn them", () => {
   // The user's lists (the v2 codex review, 2026-11-16).
   const LISTS: Record<string, string[]> = {
-    "Dark Seal":        ["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "thunderhead", "dreadpox", "pale_rider", "hexed_puppet"],
-    "Healing Blessing": ["ironhide", "crystalback", "crystal_golem", "flicker_wisp", "the_watcher", "aurelius", "sylvaran", "gleamling", "flame_imp", "thunderhead", "dreadpox", "pale_rider", "gloom_gnome"],
-    "Corrosive Soak":   ["bellow_toad", "crystalback", "hollow_matriarch", "the_watcher", "void_serpent", "swamp_witch", "gleamling", "flame_imp", "thunderhead", "plague_rat", "rotgut_fly", "glob", "dreadpox", "gloom_gnome"],
+    "Dark Seal":        ["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "thunderhead", "dreadpox", "pale_rider", "hexed_puppet", "labyrinth_sprite"],
+    "Healing Blessing": ["ironhide", "crystalback", "crystal_golem", "flicker_wisp", "the_watcher", "aurelius", "sylvaran", "gleamling", "flame_imp", "thunderhead", "dreadpox", "pale_rider", "gloom_gnome", "dire_wolf", "labyrinth_sprite"],
+    "Corrosive Soak":   ["bellow_toad", "crystalback", "hollow_matriarch", "the_watcher", "void_serpent", "swamp_witch", "gleamling", "flame_imp", "thunderhead", "plague_rat", "rotgut_fly", "glob", "dreadpox", "gloom_gnome", "labyrinth_sprite"],
     "Impale":           ["ironhide", "crystalback", "crystal_golem", "hollow_matriarch", "veilstalker", "rattlebones", "storm_phoenix", "thicket_archer", "aurelius", "sylvaran", "deep_angler", "tunnel_wyrm", "pale_rider", "cinder_husk", "gravewarden"],
     "Pin Down":         ["hollow_matriarch", "storm_phoenix", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran", "cinder_husk", "troglodyte_brute"],
   };
