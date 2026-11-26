@@ -57,3 +57,12 @@ X9 fe71fc0b-02ad-4066-b131-9d81915562f0 edit of N9: sickle-talon hind feet, full
 P1 5b912fc0-92ba-4ef2-a57e-d450709078dc edit of K1 (the second look's C): front claws thrust forward, dark horn, wider mouth
 P2 94a644c3-e5f2-4463-9dc9-c45c95c8ae9c same, seed 42
 P3 144a43ee-0cc1-4453-9a40-1637771d12d1 edit of K1: grabbing paws reaching forward, black horn, gaping jaws
+T1 9b280f23-a20a-4844-9a06-d9a36ec0ce8b edit of P1 (B): more fangs, clean black/grey spiral horn
+T2 a1b91ad4-7a01-4fcb-bf24-67a475673d93 same, seed 7
+T3 3b30a19c-710e-4206-aad0-bce8cdfd80b4 edit of P1: rows of needle teeth, charcoal horn with grey highlights
+H1 3a70cb62-c4b1-48c1-b5d9-4d77a45c9033 edit of T2: clean solid black horn, one grey spiral highlight
+H2 4bab9ed5-c90f-4113-b226-9df15372aa23 edit of T2: smooth dark grey-black horn with even grey bands, seed 21
+H3 b8c9943c-448f-428b-a33f-0abfb97b483b edit of T1: clean solid black horn, one grey spiral highlight
+G1 7605ad24-7d94-44c4-a41e-88086ae9ee6c edit of T2: solid charcoal horn, light grey spiral ridges
+G2 c66ce2cb-1abb-4db8-9a3a-ff2f43a85619 same, seed 5
+G3 da757c3f-2270-4a60-a14f-e7b984cc6487 edit of T2: polished obsidian horn, grey-white glints

@@ -42,4 +42,9 @@ the front claws more facing forward (currently all claws just sag down), the hor
 K1 and three edits of it. **The Mythiclaw finalists now:** A = P2, B = P1 (front claws thrust forward, dark horn, roaring),
 C = P3 (grabbing claws, blackest horn, widest jaw).
 
+Those are in finals/fourth-look/. The user: "B is better face structure but with more teeth … the horn needs to be cleaner and
+black/grey." round12.png: P1 (B) and T1–T3 (more fangs, black-grey horn, but speckled). round13.png: flat black horns broke up
+and vanished on the dark ground. round14.png: a charcoal horn with light grey ridges reads clean. **The Mythiclaw finalists now:**
+A = G2 (slim banded grey horn), B = G1 (chunkier), C = T2 (darkest, speckled), all with B's face, more teeth, claws forward.
+
 **The Labyrinth Sprite: C, the user's pick** (2026-11-26), in the game.
