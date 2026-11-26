@@ -19,7 +19,7 @@ const ART_SIZES: Record<string, [number, number]> = {
   moss_wolf: [82, 65],
   amber_wasp: [62, 55],
   bellow_toad: [90, 68],
-  dire_wolf: [117, 124], // the Mythiclaw (2026-11-26; the Dire Wolf's old art is rooms/dire_wolf_scene.png)
+  dire_wolf: [120, 130], // the Mythiclaw (2026-11-26; the Dire Wolf's old art is rooms/dire_wolf_scene.png)
   ironhide: [122, 87],
   cave_bat: [60, 63], // the Cave Goblin (was the Cave Bat; the id stays for old saves)
   rust_beetle: [81, 68],

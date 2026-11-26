@@ -50,4 +50,11 @@ A = G2 (slim banded grey horn), B = G1 (chunkier), C = T2 (darkest, speckled), a
 Those are in finals/fourth-look/. **The user's pick: back to finals/second-look/mythiclaw_C.png (K1)**, the version before the
 fresh designs: in the game as the Mythiclaw.
 
+**Cleaned (2026-11-26):** the user asked why it looked less clear than the Skinwing. Same 128px canvas, but four chained
+pro-flash edits had lost its black outline (1.7% dark pixels against 15–40% on approved creatures), roughened it (art-check
+texture 1.76 against the Skinwing's 1.01) and nearly doubled its colours (73 against about 40). Step 1, as the user chose:
+reduce_colors to 40 (raw/K1c.png) and a 1px dark outline round the silhouette (raw/K1o.png) → finals/mythiclaw_clean.png
+(texture 1.50, 40 colours), in the game. If it still reads soft, step 2 is a clean redraw from it (pixflux with it as the
+init image).
+
 **The Labyrinth Sprite: C, the user's pick** (2026-11-26), in the game.
