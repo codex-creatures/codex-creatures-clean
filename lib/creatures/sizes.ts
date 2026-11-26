@@ -32,3 +32,5 @@ export const CREATURE_SIZE: Record<string, CreatureSize> = Object.fromEntries(
 export const sizeOf = (creatureId: string): CreatureSize => CREATURE_SIZE[creatureId] ?? DEFAULT_SIZE;
 // Its height as a share of the biggest's.
 export const sizeHeight = (creatureId: string) => SIZE_HEIGHT[sizeOf(creatureId)];
+// …and a size smaller (a size 1 stays 1): in a boss's lair, so the boss towers (the user, 2026-11-26).
+export const smallerHeight = (creatureId: string) => SIZE_HEIGHT[Math.max(1, sizeOf(creatureId) - 1) as CreatureSize];

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
-import { CREATURE_SIZE, SIZE_HEIGHT, sizeOf, DEFAULT_SIZE } from "../lib/creatures/sizes";
+import { CREATURE_SIZE, SIZE_HEIGHT, sizeOf, DEFAULT_SIZE, smallerHeight } from "../lib/creatures/sizes";
 import { FOE_SIZE5_U } from "../lib/world/objects";
 import { sizeClassOf, LOOK_SIZES_V } from "../lib/world/creatures";
 
@@ -33,5 +33,8 @@ describe("the placer's room for a foe (lib/world/creatures.ts)", () => {
     // Bosses stay huge, whatever their look size.
     expect([sizeClassOf("hydra_fang", 19), sizeClassOf("minotaur", 19)]).toEqual(["huge", "huge"]);
     expect(LOOK_SIZES_V).toBe(19);
+  });
+  it("stands a creature a size smaller in a boss's lair, a size 1 staying 1", () => {
+    expect([smallerHeight("ironhide"), smallerHeight("leafblade_scout"), smallerHeight("flicker_wisp")]).toEqual([SIZE_HEIGHT[4], SIZE_HEIGHT[2], SIZE_HEIGHT[1]]);
   });
 });

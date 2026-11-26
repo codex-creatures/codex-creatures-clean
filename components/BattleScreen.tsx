@@ -44,7 +44,7 @@ import PixelSprite, { PotionIcon } from "@/components/PixelSprite";
 import { CREATURE_SPRITES, fightSprite } from "@/lib/sprites/creatures";
 import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
-import { sizeHeight } from "@/lib/creatures/sizes";
+import { sizeHeight, smallerHeight } from "@/lib/creatures/sizes";
 import Glyph from "./Glyph";
 import { loadTavern } from "@/lib/tavern";
 import { trainingIds } from "@/lib/trainingPit";
@@ -1032,7 +1032,7 @@ function HpFill({ pct, color }: { pct: number; color: string }) {
 export function Fighter({ f, side, slot, mi, fx, at, maxW, col, tall, aimed, onTap, shrink }: {
   f: Combatant; side: SideKey; slot: number; mi: MemberInfo; fx: Fx | null; at?: React.CSSProperties; maxW?: string;
   col?: number; // its column's share of the stage, when sized by its size with maxW too (an ambush's pair)
-  tall?: string; // in the boss's lair: a size 5's height (CSS), so it stands at its size against the boss
+  tall?: string; // in the boss's lair: a size 5's height (CSS); it stands a size smaller than its own against the boss
   aimed?: boolean; onTap?: () => void; shrink?: number;
 }) {
     const { anim, float } = fighterFx(side, slot, fx);
@@ -1051,7 +1051,7 @@ export function Fighter({ f, side, slot, mi, fx, at, maxW, col, tall, aimed, onT
             <div className={floats ? "float-bob" : undefined} style={aimed ? { filter: "drop-shadow(0 0 6px #ffd66e)" } : undefined}>
               {sprite
                 ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={{ ...(faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : {}), ...(maxW ? { maxWidth: maxW, height: "auto" } : {}), ...(!maxW || col ? { width: "100%", height: "auto" } : {}),
-                  ...(tall ? { width: `calc(${tall} * ${(sizeHeight(mi.creatureId ?? "") * fineWidth(sprite) / fineHeight(sprite)).toFixed(3)})` } : {}) }} />
+                  ...(tall ? { width: `calc(${tall} * ${(smallerHeight(mi.creatureId ?? "") * fineWidth(sprite) / fineHeight(sprite)).toFixed(3)})` } : {}) }} />
                 : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
             </div>
             {floats
