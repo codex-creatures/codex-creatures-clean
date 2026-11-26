@@ -102,10 +102,15 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
   // The Labyrinth opens once you've beaten the Encampment (or scanned plenty: labyrinthOpen);
   // until then it's shown, locked. The Minotaur opens once you've beaten the Hydra, the Abyss once you've beaten the Minotaur.
   const labOpen = labyrinthOpen(lab.meta, scans);
-  const [picked, setDungeon] = useState<DungeonId>(labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0);
+  const unlocked = (d: DungeonId) => d === 0 || (d === 1 ? labOpen : d === 2 ? deepOpen : d === 4 ? minotaurOpen(lab.meta) : abyssOpen(lab.meta));
+  // It starts on the dungeon you last went into (the run history's newest, the user, 2026-11-27: it was always
+  // the Cyclops); before any run's recorded, the Cyclops once the camp's beaten, else the camp.
+  const [picked, setDungeon] = useState<DungeonId>(() => {
+    const last = lab.meta.history?.at(-1)?.d;
+    return last !== undefined && unlocked(last) ? last : labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0;
+  });
   // Dungeon Crawling (the default) or Speed Scroll. (The quest's run is always walked: lib/dungeon/tutorialRun.ts.)
   const [mode, setMode] = useState<"crawl" | "scroll">("crawl");
-  const unlocked = (d: DungeonId) => d === 0 || (d === 1 ? labOpen : d === 2 ? deepOpen : d === 4 ? minotaurOpen(lab.meta) : abyssOpen(lab.meta));
   const dungeon: DungeonId = quest ? 1 : unlocked(picked) ? picked : 0;
   const walking = quest || mode === "crawl";
   const notBuilt = walking && !CRAWLABLE.includes(dungeon); // Dungeon Crawling isn't there yet
