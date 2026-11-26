@@ -44,12 +44,16 @@ export const SPECIES_SIZE: Record<string, SizeClass | CreatureSize> = {
 // the old large ones were; the bosses stay huge whatever their look size (the Hydra's heads are the whole beast).
 export const LOOK_CLASS: Record<LookSize, SizeClass> = { 1: "tiny", 2: "small", 3: "medium", 4: "medium", 5: "large" };
 const HUGE = new Set(["cyclops", "hydra", "hydra_spitter", "hydra_hex", "hydra_fang", "minotaur"]);
+// (v19) The look sizes as they were when version 19 came in, where a look has changed since: placement
+// reads these, so a run already made keeps its foes' room (CLAUDE.md: a run keeps its placement rules).
+// The user, 2026-11-27: the Troglodyte Brute up to 5, the Glob down to 2, as looks.
+const V19_LOOK: Record<string, LookSize> = { troglodyte_brute: 4, glob: 3 };
 
 // A species' class (or own size) in a run of world version v (the newest when not given).
 function classOf(species: string, v = LOOK_SIZES_V): SizeClass | CreatureSize {
   if (v < LOOK_SIZES_V) return SPECIES_SIZE[species] ?? "small";
   if (HUGE.has(species)) return "huge";
-  const look = CREATURE_SIZE[species];
+  const look = V19_LOOK[species] ?? CREATURE_SIZE[species];
   return look ? LOOK_CLASS[look] : SPECIES_SIZE[species] ?? "small";
 }
 

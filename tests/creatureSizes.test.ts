@@ -37,4 +37,8 @@ describe("the placer's room for a foe (lib/world/creatures.ts)", () => {
   it("stands a creature a size smaller in a boss's lair, a size 1 staying 1", () => {
     expect([smallerHeight("ironhide"), smallerHeight("leafblade_scout"), smallerHeight("flicker_wisp")]).toEqual([SIZE_HEIGHT[4], SIZE_HEIGHT[2], SIZE_HEIGHT[1]]);
   });
+  it("moves the Troglodyte Brute up to 5 and the Glob down to 2 as looks only: placement keeps the room it gave them (2026-11-27)", () => {
+    expect([sizeOf("troglodyte_brute"), sizeOf("glob")]).toEqual([5, 2]);
+    expect([sizeClassOf("troglodyte_brute", LOOK_SIZES_V), sizeClassOf("glob", LOOK_SIZES_V)]).toEqual(["medium", "medium"]);
+  });
 });

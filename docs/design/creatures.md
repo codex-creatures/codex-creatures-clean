@@ -63,7 +63,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   cards keep their picture filling the card. Heights are shares of size 5 (`SIZE_HEIGHT`, first guesses). From
   world version 19 it also sets how much floor a foe is given in new runs, replacing the 2026-11-08 size classes
   (the user: "this new decision should override the previous"; [world/persistence.md](../world/persistence.md#world-versions)). The
-  user's sorting is in the doc they filled in (claude.ai/artifact/PSJAyTWcB1PEA9TFKFUiQM).
+  user's sorting is in the doc they filled in (claude.ai/artifact/PSJAyTWcB1PEA9TFKFUiQM). Changed since (the user, 2026-11-27): the Troglodyte Brute up to 5, the Glob (wide and low, it looked too big) down to 2. As looks only: placement still gives them the room it did (`V19_LOOK`, lib/world/creatures.ts), so runs under way don't move.
 - ❓ **Secondary classes** (Shaman, Rogue, Brute, Trickster, Cleric were floated): largely answered
   by Combat V2's archetypes (§6); anything more is undefined and deferred. A **Celestial** race was mentioned as a future race.
 
