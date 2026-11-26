@@ -6,6 +6,8 @@ import { CREATURE_BY_ID, MOVE_BY_NAME, canLearnFromCodex } from "../lib/creature
 import { HORN_RUSH_AGILITY, SPIRIT_BLADE } from "../lib/creatures/codexMoves";
 import { codexDrop } from "../lib/drops";
 import type { CreatureOrItemDrop } from "../lib/types";
+import { rollCreature } from "../lib/creatures/creatureRoll";
+import { fighterFor } from "../lib/creatures/instance";
 
 // The user's Mythiclaw moves (2026-11-26): Horn Rush, Leg Sweep and Spirit Blade.
 const fighter = (id: string, moves: string[], agility = 20) =>
@@ -25,6 +27,14 @@ describe("the codexes", () => {
       expect(canLearnFromCodex(CREATURE_BY_ID.dire_wolf, m), m).toBe(m !== "Spirit Blade");
       expect((codexDrop(m) as CreatureOrItemDrop).rarity).toBe(MOVE_BY_NAME[m].codexRarity);
     }
+  });
+});
+
+describe("the Labyrinth Sprite", () => {
+  it("is always born knowing Mirage in its fourth slot (its signature move), and it works in a fight", () => {
+    for (let n = 0; n < 50; n++) expect(rollCreature(CREATURE_BY_ID.labyrinth_sprite).moves).toEqual([...CREATURE_BY_ID.labyrinth_sprite.skills.slice(0, 3).map((m) => m.name), "Mirage"]);
+    const f = fighterFor({ id: "x", moves: rollCreature(CREATURE_BY_ID.labyrinth_sprite).moves } as unknown as CreatureOrItemDrop, CREATURE_BY_ID.labyrinth_sprite);
+    expect(f.skills.map((m) => m.name)).toContain("Mirage");
   });
 });
 

@@ -23,6 +23,9 @@ export const ROLL_SPREAD_MIN = 2;
 export const ROLL_TRANSFER_SHARE = 0.08;  // most 1-point moves, as a share of the total
 export const ROLL_TRANSFERS_MIN = 4;
 export const RARE_MOVE_CHANCE = 0.1;   // per move slot
+// A move some species are always born knowing, in the fourth slot (in place of the rare roll): its signature move.
+// The Labyrinth Sprite's Mirage (the user, 2026-11-26: "good utility move (I pick)").
+export const BORN_MOVES: Record<string, string> = { labyrinth_sprite: "Mirage" };
 
 type Rng = () => number;
 type ProfKey = keyof CreatureProficiency;
@@ -60,7 +63,12 @@ export function rollMoves(c: CreatureTemplate, rng: Rng = Math.random): string[]
   const own = defaultMoveNames(c);
   // A rare move fills the empty slot, never replacing a starting move (the
   // user, 2026-10-26). Older species (all 4 slots full) have no room for one.
-  if (own.length >= MOVE_SLOTS || rng() >= RARE_MOVE_CHANCE) return own;
+  // (A born move takes the slot; the roll is still made, so what's rolled after it is as it always was.)
+  if (own.length >= MOVE_SLOTS) return own;
+  const lucky = rng() < RARE_MOVE_CHANCE;
+  const born = BORN_MOVES[c.id];
+  if (born && !own.includes(born)) return [...own, born];
+  if (!lucky) return own;
   const options = LEARNABLE_MOVES.filter((m) => m.type === c.cls && !own.includes(m.name));
   return options.length > 0 ? [...own, pick(options, rng).name] : own;
 }

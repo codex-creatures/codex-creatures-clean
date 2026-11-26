@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { BALANCED_MOVES, CORE_MOVES, CORE_NUMBERS, HEAVY_MOVES, NEUTRAL_QUICK_MOVES, RETIRED_KIT_MOVES, coreFor } from "../lib/creatures/raceKitsV2";
-import { rollMoves } from "../lib/creatures/creatureRoll";
+import { rollMoves, BORN_MOVES } from "../lib/creatures/creatureRoll";
 import { ARCHETYPE_INFO, NEW_SPECIES_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "../lib/creatures/rosterV2";
 import { PCT_SHIFT_2026_11_25 } from "../lib/creatures/instance";
 import { CREATURE_TEMPLATES as ROSTER_V2 } from "../lib/creatures/creatureData";
@@ -124,7 +124,8 @@ describe("Combat V2 roster", () => {
     expect(coreFor("magic").map((m) => m.name)).toEqual(["Zap", "Blast", "Blink"]);
     for (const t of ROSTER_V2) {
       expect(defaultMoveNames(t), t.id).toHaveLength(3);
-      expect(rollMoves(t, () => 0.99), t.id).toEqual(defaultMoveNames(t)); // no rare move: still 3
+      // no rare move: still 3 (bar a born move: the Labyrinth Sprite's Mirage, BORN_MOVES)
+      expect(rollMoves(t, () => 0.99), t.id).toEqual(BORN_MOVES[t.id] ? [...defaultMoveNames(t), BORN_MOVES[t.id]] : defaultMoveNames(t));
     }
   });
 

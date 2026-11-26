@@ -351,7 +351,8 @@ power counts for less as attack grows.
 
 🧪 Built 2026-11-26. Names, rarities, races and what they do are the user's; the numbers are Claude's (`HORN_RUSH_AGILITY`,
 `SPIRIT_BLADE` in lib/creatures/codexMoves.ts); learners are the user's ticks (2026-11-26, claude.ai/artifact/WVjJX83GUwcay7D1UzW9Yg).
-  The Mythiclaw reads Horn Rush and Leg Sweep but not Spirit Blade (the user's ticks).
+  The Mythiclaw reads Horn Rush and Leg Sweep but not Spirit Blade (the user: "Horn Rush was its move; Spirit Blade is just an
+  Epic melee move, as Epic needed another melee").
 - **Horn Rush** (Rare, Beast, melee, 20 power, 50 energy): a melee hit that swings with **60% of its agility** in place of
   its melee attack (`agilstrike`, lib/combat/engine.ts calcDamage), still against melee defence. Why 60%: with gear, agility
   runs 1.6–1.8× melee attack on every creature, tanks included (Rare gear, Lv 25: Cinder Husk 54 attack / 94 agility,

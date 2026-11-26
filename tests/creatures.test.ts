@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { slowIt } from "./slow";
 import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNABLE_MOVES, MOVE_SLOTS, RACES, defaultMoveNames } from "../lib/creatures/creatureData";
-import { rollProficiency, rollMoves, rollSpread, RARE_MOVE_CHANCE } from "../lib/creatures/creatureRoll";
+import { rollProficiency, rollMoves, rollSpread, RARE_MOVE_CHANCE, BORN_MOVES } from "../lib/creatures/creatureRoll";
 import { creatureOrCard, makeCreatureDrop, summonFromCards, REAL_CREATURE_CHANCE } from "../lib/creatures/summon";
 import { pickCreatureId } from "../lib/items/gameHelpers";
 import { CREATURE_SPRITES, BACK_SPRITES, fightSprite } from "../lib/sprites/creatures";
@@ -34,7 +34,9 @@ describe("creature % rolls", () => {
   it("starting moves: its 3, and now and then a rare (learnable) move in the empty 4th slot, never in place of one", () => {
     const rare = new Set(LEARNABLE_MOVES.map((m) => m.name));
     let rareSeen = 0;
-    for (const c of CREATURE_TEMPLATES) {
+    // (Not the species born knowing a signature move, BORN_MOVES: the Labyrinth Sprite's Mirage, in mythiclawMoves.test.ts.)
+    const rolled = CREATURE_TEMPLATES.filter((c) => !BORN_MOVES[c.id]);
+    for (const c of rolled) {
       for (let i = 0; i < 200; i++) {
         const moves = rollMoves(c);
         expect(moves.slice(0, 3)).toEqual(defaultMoveNames(c));
@@ -43,7 +45,7 @@ describe("creature % rolls", () => {
         if (moves.length === MOVE_SLOTS) { expect(rare.has(moves[3])).toBe(true); rareSeen++; }
       }
     }
-    const share = rareSeen / (CREATURE_TEMPLATES.length * 200);
+    const share = rareSeen / (rolled.length * 200);
     expect(share).toBeGreaterThan(RARE_MOVE_CHANCE - 0.03);
     expect(share).toBeLessThan(RARE_MOVE_CHANCE + 0.03);
   });
