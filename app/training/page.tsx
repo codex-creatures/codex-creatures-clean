@@ -13,6 +13,8 @@ import CreaturePortrait from "@/components/CreaturePortrait";
 import { LevelBar } from "@/components/CreatureDetailModal";
 import { MaterialIcon, SchematicIcon } from "@/components/PixelSprite";
 import { gearMarks } from "@/components/CreatureMarks";
+import TileGrid from "@/components/TileGrid";
+import { teamsWith } from "@/lib/teams";
 import { useGameState } from "@/hooks/useGameState";
 import { MAX_LEVEL } from "@/lib/creatures/levels";
 import { loadDungeon } from "@/lib/dungeon/run";
@@ -120,15 +122,10 @@ export default function TrainingPage() {
           <div style={{ marginTop: 10 }}>
             <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>{statuses.length === 0 ? "The pit's empty." : `${slots - statuses.length} of ${slots} slots free.`} Who trains?</p>
             {pickable.length === 0 ? <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>Nobody can train right now.</p> : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {pickable.map((c) => (
-                  <button key={c.id} className="card-btn" style={{ minHeight: 44 }} onClick={() => game.trainCreature(c.id)}>
-                    <b style={{ color: RARITY_COLORS[c.rarity].text, flex: 1, textAlign: "left" }}>{c.name}</b>
-                    <span title="Wearing gear" style={{ fontSize: 12 }}>{gearMarks(game.equipment[c.id])}</span>
-                    <span className="pixel-font" style={{ fontSize: 13, color: GOLD }}>Lv {c.level ?? 1}</span>
-                  </button>
-                ))}
-              </div>
+              // As the Pit lists them (the user, 2026-11-27): its cards, three a row, highest level first. Tap one to train it.
+              <TileGrid items={pickable} groupBy="none" large perRow={3} favoriteIds={game.favoriteIds}
+                gear={(c) => gearMarks(game.equipment[c.id]) || undefined} teams={(c) => teamsWith(game.teams, c.id)}
+                onOpen={(c) => game.trainCreature(c.id)} />
             )}
           </div>
         )}

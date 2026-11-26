@@ -231,7 +231,7 @@ fields optional with defaults.
    you're away: a ❗ on the pit in the room says it's ready. While it's in, it's away training:
    it can't fight: where you pick a team (the Labyrinth's entrance, a duel, PvP teams) it shows
    greyed, "🏋️ In the pit" (the user, 2026-11-04), and other fight lists leave it out. Take it out any time with the XP
-   it's earned (a full bar levels it up). An XP scroll read on it banks what it's earned first.
+   it's earned (a full bar levels it up). Who can go in are listed as the Pit lists them, its creature cards three a row, highest level first; tap one to put it in (the user, 2026-11-27). An XP scroll read on it banks what it's earned first.
    **Slay the Hydra**, a quest on the board's Daily Quests tab, goes up once you've beaten the Cyclops;
    beat the Hydra and claim its reward there, the **Training Pit Schematic** (not an item: the pit
    just offers to build). It builds the **Training Pit** over the Sparring Pit (a stone rim ringed with
