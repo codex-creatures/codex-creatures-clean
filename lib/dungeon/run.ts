@@ -415,12 +415,13 @@ export const STASH_LAST_ROLL = { potion: 0.25, none: 0.5, gear: 0.25 };
 export const STASH_GOLD: [number, number] = [100, 250];
 // Money stashes (the user, 2026-11-23): a stash's gold didn't grow with the dungeon, so it was half the
 // Cyclops' gold and a quarter of the Minotaur's. Now an ordinary stash holds none, and MONEY_STASH of
-// stashes (a campfire's too) are money stashes: MONEY_GOLD times the dungeon's goldScale on top of what
-// they hold. About the same gold as before in the Encampment and the Cyclops' Labyrinth, about 750 more
-// a full clear in the Hydra's and 1,100 in the Minotaur's. 🧪 Claude's numbers, the user's yes.
+// stashes (a campfire's too) are money stashes: MONEY_GOLD on top of what they hold, the same in every
+// dungeon (the user, 2026-11-26: it was times the dungeon's goldScale, but one stash already pays back
+// the entry fee and more). 🧪 Claude's numbers, the user's yes.
 export const MONEY_STASH = 0.25;
 export const MONEY_GOLD: [number, number] = [300, 450];
-export const moneyGold = (dungeon: DungeonId, roll: number) => Math.round((MONEY_GOLD[0] + roll * (MONEY_GOLD[1] - MONEY_GOLD[0])) * DUNGEONS[dungeon].goldScale);
+// (dungeon: kept for the callers; every dungeon's the same since 2026-11-26.)
+export const moneyGold = (_dungeon: DungeonId, roll: number) => Math.round(MONEY_GOLD[0] + roll * (MONEY_GOLD[1] - MONEY_GOLD[0]));
 // A stash, made a money stash or left as it is. rng: one of its own (seeded by the run and the room),
 // so nothing else a run rolls moves.
 export function withMoney(room: Room, dungeon: DungeonId, rng: Rng): Room {

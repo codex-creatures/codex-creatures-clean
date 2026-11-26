@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, bagWantsPotions, bossChest, BOSS_LOOT, withMoney, MONEY_STASH, MONEY_GOLD, DUNGEONS, type SackItem, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
+import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, bagWantsPotions, bossChest, BOSS_LOOT, withMoney, MONEY_STASH, MONEY_GOLD, type SackItem, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
 import { createBattle, resolveRound, isValidAction, revivable, swapTargets } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES } from "../lib/creatures/creatureData";
@@ -157,7 +157,7 @@ describe("the deeper bosses' chests (the user, 2026-11-23)", () => {
 });
 
 describe("money stashes (the user, 2026-11-23)", () => {
-  it("a quarter of stashes, their gold grown by the dungeon's; the rest hold none", () => {
+  it("a quarter of stashes, with the same gold in every dungeon; the rest hold none", () => {
     const N = 4000;
     for (const d of [0, 1, 2, 4] as const) {
       let money = 0;
@@ -167,7 +167,7 @@ describe("money stashes (the user, 2026-11-23)", () => {
         expect(!!g).toBe(!!r.money);
         if (!g) continue;
         money++;
-        expect(g.gold).toBeGreaterThanOrEqual(Math.round(MONEY_GOLD[0] * DUNGEONS[d].goldScale)); expect(g.gold).toBeLessThanOrEqual(Math.round(MONEY_GOLD[1] * DUNGEONS[d].goldScale));
+        expect(g.gold).toBeGreaterThanOrEqual(MONEY_GOLD[0]); expect(g.gold).toBeLessThanOrEqual(MONEY_GOLD[1]);
       }
       expect(Math.abs(money / N - MONEY_STASH)).toBeLessThan(0.03);
     }

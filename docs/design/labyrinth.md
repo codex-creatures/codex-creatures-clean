@@ -133,8 +133,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   stash is 2 potions and a last roll: another potion 25%, a weapon or armour piece 25%, nothing 50% (that half held
   100–250 gold until now: `STASH_LAST_ROLL`). The gold didn't grow with the dungeon, so it was half the Cyclops's
   gold and a quarter of the Minotaur's. Now **1 stash in 4 is a money stash** (a campfire's stash too): on top of
-  what it holds, 300–450 gold times the dungeon's gold scale (`MONEY_GOLD`; 300–450 in the Encampment and the
-  Cyclops's Labyrinth, 600–900 in the Hydra's, 750–1,125 in the Minotaur's, 900–1,350 in the Abyss). Its loot window
+  what it holds, 300–450 gold in every dungeon (`MONEY_GOLD`; the user, 2026-11-26: it was times the dungeon's gold
+  scale, up to 1,125 in the Minotaur's, but one stash already pays back the entry fee and more). Its loot window
   says "The money stash". Rolled from the run's seed and the room, so nothing else a run rolls moves; a run under
   way keeps the stashes it had. About the same gold as before in the first two, about 750 more a full clear in the
   Hydra's and 1,100 in the Minotaur's. 🧪 Claude's numbers, the user's yes. ✅ **Its look** (the user's pick, 2026-11-23: "the red with gold one", and "a 3D asset"): in a walked run its
