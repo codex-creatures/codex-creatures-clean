@@ -170,13 +170,13 @@ the PNG here.
 | npcs/collector-walk.png | job a0336eb3-ce1b-4d18-9457-a799cdff9638 (animate_image_pixminimax, 8 frames on a 96×96 canvas from the untrimmed still; the still sits at 7, 2) |
 | npcs/librarian-walk.png | job a6b3df74-0905-40ed-bdf3-b9bf9e297034 (animate_image_pixminimax, 8 frames on a 96×96 canvas from npcs/librarian.png; the still sits at 3, 5) |
 
-## Back views (not used in the game yet)
+## Back views
 
 `creatures/back/<id>.png`: each creature seen from behind, for your side of a
 fight. Made with `edit_image_pro_flash` (text method) from the front sprite,
-padded to multiples of 4; trimmed here. Approved by the user on 2026-11-03.
-Still to redo (the plain prompt kept details you couldn't see from behind): the
-other 22, Klutz included. Each job's image downloads from
+padded to multiples of 4; trimmed here. The first 13 approved by the user on 2026-11-03;
+the other 33 redone 2026-11-27 with a sheet for each of what shows from behind
+(art/back-views-2026-11/, which keeps every candidate; docs/design/art.md §11). Each job's image downloads from
 `https://api.pixellab.ai/mcp/images/<job>/download`.
 
 | File | PixelLab job |
@@ -185,7 +185,6 @@ other 22, Klutz included. Each job's image downloads from
 | creatures/back/cave_bat.png | 2a38b5a3-9a8c-459b-85a5-04eaf259d0ec |
 | creatures/back/crystal_golem.png | dd86c394-f667-4bc7-a20f-5466339a6625 |
 | creatures/back/deep_angler.png | b8f0101c-b993-49d1-8c47-53f38808e9d8 |
-| creatures/back/dire_wolf.png | 962ce9cb-4cd1-4852-92f7-a2a0d1c0d885 |
 | creatures/back/dreadpox.png | 71bfc212-9f58-4300-ac1d-58cbe3752aa5 |
 | creatures/back/dust_sprite.png | e09dc271-6ecc-400a-99cd-48d95dd7603e |
 | creatures/back/flame_imp.png | 489b2317-8c9b-4247-9194-45aa323b8b68 |
@@ -195,6 +194,39 @@ other 22, Klutz included. Each job's image downloads from
 | creatures/back/swamp_witch.png | 9cc9a155-a861-4a5b-92b2-7a5ca71b0a1a |
 | creatures/back/thicket_archer.png | bd86c67c-29ab-4af7-9dd3-59fb3c651a1a |
 | creatures/back/thunderhead.png | 6d17eb42-6d74-4ed5-9133-5a8104c6dd26 |
+| creatures/back/aurelius.png | bd0b6ba7-c303-44ea-a81c-0ee20d54200c then by script: the far forearm/fist clipped (x34-46,y24-46 of c4) and re-outlined |
+| creatures/back/bellow_toad.png | 79c9534a-eed4-4856-9e4d-5add4ddd5d2e |
+| creatures/back/cinder_husk.png | 569922e9-980f-4c6d-bc10-9c19f9de75f9 |
+| creatures/back/crystalback.png | 13b5efc5-9c27-42fe-92be-644c68d0d682 |
+| creatures/back/dire_wolf.png | 96b45aae-99b5-4fac-ac7e-08882e23ebe7 |
+| creatures/back/dustwraith.png | 8d3b4f85-0ff9-4b20-9405-bf36f8919f86 |
+| creatures/back/flicker_wisp.png | 5a6696c0-d77f-40a7-bc75-11b7c67a7d5a |
+| creatures/back/gleamling.png | 834d9c40-14a8-461d-bee2-87dd15fec323 |
+| creatures/back/gloom_gnome.png | 19b98e50-b452-4205-845d-8c7ee33cb4af |
+| creatures/back/gravewarden.png | e9bc959d-6021-4721-b913-4a856286166f then by script: the shield inside red bars recoloured to dark leather (x79-96,y26-63) |
+| creatures/back/grub_keeper.png | a4330471-5b13-438c-baf2-e0f3fa69593e |
+| creatures/back/gutsnout.png | 405e2948-406f-4149-9621-e08cb7ce9d3c |
+| creatures/back/hexed_puppet.png | 9a8a97d7-2db5-4ab6-89bf-35246f04855b |
+| creatures/back/hollow_matriarch.png | f665790b-0180-49f9-90a1-bd7709d53007 |
+| creatures/back/klutz.png | afa817a4-eaff-48b8-846d-944c49f00305 |
+| creatures/back/labyrinth_sprite.png | fd83e1e0-2d59-4c87-a7c0-9fc5b335f2f2 |
+| creatures/back/leafblade_scout.png | 16b2776c-7b47-4a59-b273-5319a121efc3 |
+| creatures/back/mole_hag.png | e94f9635-3862-4b56-ad9f-9729c1dd3930 |
+| creatures/back/moss_wolf.png | 9649c8f7-4ad4-4cd6-b7ad-537848290e5f (fix of c2) |
+| creatures/back/pale_rider.png | 2e20d76a-c21d-4fd8-a971-3f33a5dad7ad |
+| creatures/back/plague_rat.png | 28c5ffda-0ed2-4b72-88dc-08397bdf72bb (tail edit of c1) |
+| creatures/back/rattlebones.png | a91c5c81-ed22-4f35-81c3-f806bba05caa |
+| creatures/back/rotgut_fly.png | 9bcdf29c-48ef-40f4-86f2-09078a2c35e4 |
+| creatures/back/rust_beetle.png | 37f7c1cc-d53b-4f53-9b24-b4b5190c0d07 |
+| creatures/back/shambler.png | b133658c-d5a0-4fe3-8c27-775f6b5b0bfa |
+| creatures/back/skinwing.png | 88485455-dbe7-464b-bb5e-ef052c3f8325 |
+| creatures/back/storm_phoenix.png | 1bbf9733-94d2-429a-8dee-787eb5bae9c4 |
+| creatures/back/sylvaran.png | 44fdc4ab-545f-432c-bb2d-a28e2ae67087 (inpaint of c1 cloak centre) |
+| creatures/back/the_watcher.png | ea0d6856-609b-44ec-8d1f-40d4839a8429 |
+| creatures/back/troglodyte_brute.png | 50fae7c4-1f21-43c3-b212-17780adb1a67 |
+| creatures/back/tunnel_wyrm.png | 2e146729-e606-45a5-a469-e7a798523ab8 (regen seed11, arched neck) |
+| creatures/back/veilstalker.png | c4cf5dfd-e1bc-4b4e-9c42-e75216820775 |
+| creatures/back/void_serpent.png | 35cb4299-fb7f-4f3b-b400-8a2f113a7d2e (inpaint of c3 neck stripe) |
 
 ## The walkable Labyrinth: art samples (2026-11-06, samples only, not in the game)
 

@@ -1,0 +1,167 @@
+{
+ "aurelius": {
+  "pick": "c5",
+  "tries": 5,
+  "note": "His far arm (reaching forward) is hidden; the bow stays in view along his near side."
+ },
+ "moss_wolf": {
+  "pick": "c3",
+  "tries": 3,
+  "note": ""
+ },
+ "void_serpent": {
+  "pick": "c4",
+  "tries": 4,
+  "note": "A faint purple rim is left where the neck meets the coil."
+ },
+ "dire_wolf": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "bellow_toad": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "rust_beetle": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "crystalback": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "hollow_matriarch": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "flicker_wisp": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "veilstalker": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "the_watcher": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "rattlebones": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "shambler": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "dustwraith": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "storm_phoenix": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "leafblade_scout": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "sylvaran": {
+  "pick": "c2",
+  "tries": 2,
+  "note": ""
+ },
+ "gleamling": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "tunnel_wyrm": {
+  "pick": "c2",
+  "tries": 2,
+  "note": "Regenerated once: the first try lost the arched neck."
+ },
+ "plague_rat": {
+  "pick": "c2",
+  "tries": 2,
+  "note": ""
+ },
+ "rotgut_fly": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "pale_rider": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "skinwing": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "gutsnout": {
+  "pick": "c1",
+  "tries": 1,
+  "note": "Its tusk tip is hidden from this angle."
+ },
+ "grub_keeper": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "mole_hag": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "gloom_gnome": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "cinder_husk": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "troglodyte_brute": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "gravewarden": {
+  "pick": "c3",
+  "tries": 3,
+  "note": "The shield shows its plain back, with straps."
+ },
+ "hexed_puppet": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "labyrinth_sprite": {
+  "pick": "c1",
+  "tries": 1,
+  "note": ""
+ },
+ "klutz": {
+  "pick": "c1",
+  "tries": 1,
+  "note": "Reviewer note: his head is about 15% smaller than in his usual art. If he looks off in the game, enlarging the head is the first fix to try."
+ }
+}

@@ -129,27 +129,26 @@ for (const id of HYDRA_HEADS) CREATURE_SPRITES[id] = hydraSprite();
 CREATURE_SPRITES.hydra = hydraSprite();
 
 // Seen from behind, for your side of a fight (public/sprites/creatures/back,
-// trimmed). Only the user's approved ones; the rest show their usual art,
-// mirrored. They're drawn looking away towards the foe, so count as facing right.
+// trimmed): three-quarter from behind, over the right shoulder, as it faces the foe. Only the
+// user's approved ones; the rest show their usual art, mirrored. They're drawn looking away
+// towards the foe, so count as facing right. (Redone 2026-11-27: art/back-views-2026-11.)
 const BACK_SIZES: Record<string, [number, number]> = {
-  amber_wasp: [55, 54],
-  cave_bat: [54, 61],
-  crystal_golem: [118, 115],
-  deep_angler: [73, 69],
-  dreadpox: [82, 89],
-  dust_sprite: [48, 50],
-  flame_imp: [69, 73],
-  glob: [75, 62],
-  ironhide: [119, 85],
-  mr_shadows: [84, 94],
-  swamp_witch: [85, 89],
-  thicket_archer: [74, 76],
-  thunderhead: [104, 105],
+  amber_wasp: [55, 54], aurelius: [106, 124], bellow_toad: [83, 70], cave_bat: [54, 61],
+  cinder_husk: [84, 115], crystal_golem: [118, 115], crystalback: [73, 74], deep_angler: [73, 69],
+  dire_wolf: [106, 133], dreadpox: [82, 89], dust_sprite: [48, 50], dustwraith: [71, 82], flame_imp: [69, 73],
+  flicker_wisp: [54, 40], gleamling: [56, 55], glob: [75, 62], gloom_gnome: [91, 102], gravewarden: [116, 120],
+  grub_keeper: [111, 104], gutsnout: [100, 109], hexed_puppet: [67, 118], hollow_matriarch: [123, 105],
+  ironhide: [119, 85], klutz: [62, 79], labyrinth_sprite: [90, 120], leafblade_scout: [52, 84],
+  mole_hag: [100, 117], moss_wolf: [62, 69], mr_shadows: [84, 94], pale_rider: [99, 135], plague_rat: [55, 62],
+  rattlebones: [64, 84], rotgut_fly: [50, 73], rust_beetle: [84, 71], shambler: [59, 90], skinwing: [124, 108],
+  storm_phoenix: [92, 121], swamp_witch: [85, 89], sylvaran: [69, 100], the_watcher: [68, 81],
+  thicket_archer: [74, 76], thunderhead: [104, 105], troglodyte_brute: [115, 120], tunnel_wyrm: [106, 108],
+  veilstalker: [71, 86], void_serpent: [111, 97],
 };
 export const BACK_SPRITES: Record<string, Sprite> = {};
 for (const [id, [w, h]] of Object.entries(BACK_SIZES)) {
   const front = CREATURE_SPRITES[id];
-  BACK_SPRITES[id] = withArt([...(front ?? EGG)], { src: `/sprites/creatures/back/${id}.png`, w, h, faces: "right", ...(front && artFor(front)?.floats ? { floats: true } : {}) });
+  BACK_SPRITES[id] = withArt([...(front ?? EGG)], { src: `/sprites/creatures/back/${id}.png${ART_REV[id] ? `?v=${ART_REV[id]}` : ""}`, w, h, faces: "right", ...(front && artFor(front)?.floats ? { floats: true } : {}) });
 }
 
 // The sprite a creature shows in a fight: from behind on your side when it has one.

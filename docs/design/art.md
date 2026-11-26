@@ -21,8 +21,24 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   side). Register art in `lib/sprites` (`withArt`, `ART_SIZES`). The old code-drawn grid sprites are gone (2026-11-04): an art sprite's grid is a single dot.
 - ✅ **Back views** (2026-11-04): in a fight your creature is shown from behind
   (`public/sprites/creatures/back/`, `BACK_SIZES` and `fightSprite` in lib/sprites/creatures.ts),
-  drawn as it looks and not mirrored. 14 approved so far; the rest show their usual art, mirrored,
-  until theirs are redone and approved. Foes, and every other screen, use the usual art.
+  drawn as it looks and not mirrored. Foes, and every other screen, use the usual art. **Every
+  creature a player can own has one, Klutz too** (2026-11-27: the 13 from 2026-11-03 plus 33 redone;
+  a test checks none is missing). The view: three-quarter from behind, looking over its **right**
+  shoulder at the foe (upper right). So its right side is the near one; its left is hidden but for
+  what stands clear of the body; no face, chest or belly; held things stay where the hands are
+  (anything clear of the body, a bow, a staff, a club, stays in view). Ironhide is the benchmark.
+  - **How they're made** (art/back-views-2026-11/README.md, with every candidate, sheet and job id):
+    first a written sheet for each creature from its sprite at 4× (body plan, measured
+    proportions, near/far/back, held items, what must not show), checked by a second reviewer
+    agent; then `edit_image_pro_flash` (text, no background, palette correction, seed 22 did best)
+    on the sprite flipped to face right and padded to a square in 4s; then the reviewer measures
+    the candidate against the sprite and the sheet. Small misses: a masked
+    `inpaint_image_pro_flash`, which beats another text edit; when the model keeps redrawing a
+    part, a scripted pixel fix (Aurelius's far forearm clipped, the Gravewarden's shield bars
+    recoloured). 33 took 252 generations.
+  - Redrawn art gets a new address for its back too (`ART_REV`), so phones fetch it at once.
+  - Amber Wasp's back (2026-11-03) is still side-on, the only old one off the standard; left for
+    the user to decide.
 - ✅ **Fighters on a diagonal** (the user, 2026-11-04): yours near and low on the left, the foe
   further back, higher and smaller (`MY_SPOT`, `FOE_SPOT`, `FOE_DEPTH` 0.75 in
   components/BattleScreen.tsx; bosses `BOSS_BACK`, `BOSS_DEPTH` 0.8 in components/BossStage.tsx).
@@ -81,8 +97,7 @@ and status icons; NPCs on the collector; dungeon props with the dungeon palette 
 
 Not drafted (each needs the user first):
 - **The hero's 8-way walk** (stills with a bob now): about 20–25 generations as one animation job.
-- **22 creature back views** still to redo (memory of the method: `edit_image_pro_flash`, about 5
-  each, so about 110): the user paused them; each wants its own "what shows from behind" prompt.
+- ~~22 creature back views~~ done 2026-11-27 (§11, Back views).
 - **The chest's gold inside** (a stand-in box in 3D): could use the approved treasure pile.
 - **The tavern's interior** and the **mounted head's wall** need design before art.
 - **Walls with square pixels** (still undefined, art-pipeline.md): not touched.

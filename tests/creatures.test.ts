@@ -5,7 +5,8 @@ import { rollProficiency, rollMoves, rollSpread, RARE_MOVE_CHANCE, BORN_MOVES } 
 import { creatureOrCard, makeCreatureDrop, summonFromCards, REAL_CREATURE_CHANCE } from "../lib/creatures/summon";
 import { pickCreatureId } from "../lib/items/gameHelpers";
 import { CREATURE_SPRITES, BACK_SPRITES, fightSprite, creatureArtSrc } from "../lib/sprites/creatures";
-import { existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { SPECIES_RACES } from "../lib/creatures/racesV2";
 import { artFor, flipToFace } from "../lib/sprites/art";
 
 const sum = (p: Record<string, number>) => Object.values(p).reduce((a, b) => a + b, 0);
@@ -130,12 +131,18 @@ describe("creature art", () => {
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) {
       const art = artFor(BACK_SPRITES[id]);
-      expect(art, id).toMatchObject({ src: `/sprites/creatures/back/${id}.png` });
-      expect(existsSync(`public${art!.src}`), id).toBe(true);
+      expect(art!.src.split("?")[0], id).toBe(`/sprites/creatures/back/${id}.png`);
+      // Its listed size is the picture's own (a PNG keeps its width and height at bytes 16 and 20).
+      const png = readFileSync(`public/sprites/creatures/back/${id}.png`);
+      expect([png.readUInt32BE(16), png.readUInt32BE(20)], id).toEqual([art!.w, art!.h]);
       expect(fightSprite(id, true), id).toBe(BACK_SPRITES[id]);
       expect(fightSprite(id, false), id).toBe(CREATURE_SPRITES[id]);
       expect(flipToFace(BACK_SPRITES[id], true), id).toBe(false);
     }
-    expect(fightSprite("moss_wolf", true)).toBe(CREATURE_SPRITES.moss_wolf);
+    expect(fightSprite("cyclops", true)).toBe(CREATURE_SPRITES.cyclops);
+    // Every creature a player can own has its back view (redone 2026-11-27), Klutz too.
+    expect([...Object.keys(SPECIES_RACES), "klutz"].filter((id) => !BACK_SPRITES[id])).toEqual([]);
+    // A redrawn creature's back gets a new address too, so phones fetch it at once (the Mythiclaw's).
+    expect(artFor(BACK_SPRITES.dire_wolf)!.src).toBe("/sprites/creatures/back/dire_wolf.png?v=2");
   });
 });
