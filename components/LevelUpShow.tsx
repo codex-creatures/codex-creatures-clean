@@ -83,14 +83,16 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
     return { ...s, a, b, now: Math.round(a + (b - a) * k) };
   }).filter((r) => r.key === "hp" || r.a !== 0 || r.b !== 0);
 
+  // As wide as the screen lets it be, and the creature a share of it: the same size on a computer as on a phone
+  // (the user, 2026-11-27: it had a 400px cap, so on a big laptop window it was smaller than on a phone).
   return (
     <div onClick={next} style={{ position: "fixed", inset: 0, zIndex: 260, background: "rgba(4,5,9,0.82)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }}>
       <div role="dialog" aria-label={`${u.name} levelled up`} className="stone-panel levelup-pop"
-        style={{ width: "100%", maxWidth: 400, maxHeight: "92cqh", overflowY: "auto", padding: 14, display: "grid", gap: 10, textAlign: "center" }}>
+        style={{ width: "100%", maxHeight: "92cqh", overflowY: "auto", padding: 14, display: "grid", gap: 10, textAlign: "center" }}>
         <div className="pixel-font levelup-title" style={{ fontSize: 20, color: GOLD }}>{u.name} levelled up!</div>
         <div style={{ display: "flex", justifyContent: "center" }}>
           <div className={done ? undefined : "levelup-hop"}>
-            <PixelSprite sprite={creatureSprite(u.creatureId)} scale={3} style={{ width: "auto", height: "auto", maxWidth: "min(120px, 30cqw)", maxHeight: 110, filter: "drop-shadow(0 0 10px rgba(255,214,110,0.55)) drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
+            <PixelSprite sprite={creatureSprite(u.creatureId)} scale={3} style={{ width: "auto", height: "auto", maxWidth: "33cqw", maxHeight: "30cqw", filter: "drop-shadow(0 0 10px rgba(255,214,110,0.55)) drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
           </div>
         </div>
 

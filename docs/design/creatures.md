@@ -211,7 +211,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ **After a won fight** (the user, 2026-11-09; components/FightWon.tsx, `xpShown`): a Victory
   window shows each creature's XP counting up from what it had to what it has now ("120 / 300
   XP"), its level bar filling with it and on through each level it gains, then **Leave** (on the left; the loot stays on the floor to open later) or **Loot** (opens what they dropped; a
-  fight with nothing to loot, the thief's, has just Carry on). Level-up shows follow it. Not
+  fight with nothing to loot, the thief's, has just Carry on). Level-up shows follow it. (Each the screen's width, its creature a third of it, so it's the same size on a computer as on a phone: components/LevelUpShow.tsx, 2026-11-27.) Not
   when a win ends the run at the top (classic): the haul screen shows it, as before.
 - ✅ **Explorer level** (you, `save.player`) gets every fight's full XP and gates scan rarity
   (section 2).
