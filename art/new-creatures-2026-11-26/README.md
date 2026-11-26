@@ -63,3 +63,5 @@ image_to_pixelart_pro_flash (C5, 40 colours; came back on black, cleared by floo
 round16.png and finals/mythiclaw_crisp_A/B/C.png = C3 (grain 1.17), C4 (1.01, the Skinwing's), C5 (bolder, 93×99).
 
 **The Labyrinth Sprite: C, the user's pick** (2026-11-26), in the game.
+
+**The user picked crisp A** (2026-11-26): in the game.
