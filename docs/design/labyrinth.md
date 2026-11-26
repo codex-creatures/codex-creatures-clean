@@ -155,7 +155,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   2026-11-14). Ordinary chest rooms can be golden too (the user, 2026-11-21, so players see them and
   want a key): never before room 7 (`GOLDEN_FROM`), then 5% in the Cyclops' Labyrinth, 10% the
   Hydra's, 15% the Minotaur's and the Warden's (`GOLDEN_CHEST_ROOM`; none in the Encampment). Same key;
-  inside, 500–1000 gold and the 5 golden finds in place of the chest's own. A full map then holds
+  inside, 500–1000 gold and the 5 golden finds in place of the chest's own. Walked, it's drawn as the golden chest, glowing (it was the plain chest until 2026-11-27). A full map then holds
   about 0.65 golden chests in the Cyclops, 0.9 in the Hydra and 1.15 in the Minotaur (sim of whole
   maps, 2026-11-21). The Gold Key is a Legendary tool (`gold_key`; Epic until the user's change of
   2026-11-16, when every key already found was taken back from saves: `dropOldGoldKeys`, lib/save.ts,

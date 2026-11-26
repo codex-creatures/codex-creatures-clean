@@ -26,7 +26,7 @@ import { TUTORIAL_LIFE } from "../dungeon/tutorialRun";
 import type { Campfire } from "../dungeon/campfire";
 import type { DungeonMap } from "../dungeon/map";
 import type { Floorplan, Pt } from "../dungeon/floorplan";
-import { objectDef, REACH_OBJECT, TAP_OBJECT } from "./objects";
+import { AROUND, objectDef, REACH_OBJECT, TAP_OBJECT } from "./objects";
 import { panelAt } from "./grid";
 import type { Placements } from "./placements";
 
@@ -172,7 +172,8 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       const at = placed.spot(`${id}:${key}`);
       if (at) out.push(thingOf({ key: id, room: id, ...at, ...t }));
     };
-    if (r.kind === "chest" || r.kind === "treasure") add("chest", { def: "chest", state: shut(r.done), open: r.done, ...(r.done && (r.sack?.length ?? 0) === 0 ? { empty: true as const } : {}) });
+    // (A chest room rolled golden, run.ts goldenChestRoom: drawn as the golden chest, with its glow.)
+    if (r.kind === "chest" || r.kind === "treasure") add("chest", { def: "chest", state: shut(r.done), open: r.done, ...(r.done && (r.sack?.length ?? 0) === 0 ? { empty: true as const } : {}), ...(r.golden ? { golden: true as const } : {}) });
     else if ((r.kind === "stash" || (r.kind === "campfire" && r.sack)) && !looted(r)) add("sack", { def: "sack", state: shut(r.opened), open: !!r.opened, ...(r.money ? { money: true as const } : {}) });
     else if (r.kind === "library" && r.lectern) {
       add("lectern", { def: "lectern", open: false });
@@ -317,10 +318,13 @@ export const inReach = (t: Thing, you: Pt) => {
 
 // The shortest way from `from` up beside a thing (onto it, if it isn't
 // solid), by its interaction points round the panel it's in; null if there's none.
+// (A corner crate to search is decor, whose definition has no points, and placement reads
+// `interact`, so it can't gain them there without moving old runs' decor: it's walked up to
+// from round it, as everything you use is. The user, 2026-11-27: a click on one did nothing.)
 export function approach(plan: Floorplan, t: Thing, from: Pt, can: CanStep): Pt[] | null {
   let best: Pt[] | null = null;
   const p = usedFrom(t);
-  for (const { dx, dy } of objectDef(t.def).interact?.points ?? []) {
+  for (const { dx, dy } of objectDef(t.def).interact?.points ?? (t.box ? AROUND : [])) {
     const n = { x: p.x + dx, y: p.y + dy };
     if ((dx || dy || !t.solid) && walkable(plan, n.x, n.y)) {
       const way = findPath(plan, from, n, can);

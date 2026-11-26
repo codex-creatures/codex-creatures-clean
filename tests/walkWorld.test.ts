@@ -101,6 +101,24 @@ describe("a mini boss's or boss's chest is there from the start, guarded (the us
     expect(sacks.find((t) => t.room === stashes[0])?.money).toBe(true);
     expect(sacks.filter((t) => t.room !== stashes[0]).every((t) => !t.money)).toBe(true);
   });
+  it("a chest room rolled golden is drawn as the golden chest (the user, 2026-11-27: it had the plain chest and no glow); others aren't", () => {
+    const chests = s.ids.filter((i) => s.room(i)?.kind === "chest");
+    expect(chests.length).toBeGreaterThan(0);
+    const gold = (i: string) => (i === chests[0] ? { ...s.room(i)!, golden: true } : s.room(i));
+    const drawn = thingsOf(s.layout, s.placed, s.ids, gold, s.npcs, {}, s.dungeon).filter((t) => t.def === "chest");
+    expect(drawn.find((t) => t.room === chests[0])?.golden).toBe(true);
+    expect(drawn.filter((t) => t.room !== chests[0]).every((t) => !t.golden)).toBe(true);
+  });
+});
+
+describe("a corner crate to search (world version 17) is walked up to when tapped from across the room", () => {
+  it("there's a way up beside it, as there is to anything else you use (the user, 2026-11-27: a click on one did nothing)", () => {
+    const crate: Thing = { key: "decor:r:0", room: "r", x: 5, y: 5, def: "crates", open: false, solid: true, box: true };
+    const plan = { w: 10, h: 10, tiles: new Uint8Array(100).fill(1), rooms: {}, doors: [], tunnels: {} };
+    const way = approach(plan, crate, { x: 1, y: 1 }, () => true);
+    expect(way).not.toBeNull();
+    expect(inReach(crate, way![way!.length - 1])).toBe(true);
+  });
 });
 
 describe("a guarded chest's foes patrol close round it (the user, 2026-11-09)", () => {

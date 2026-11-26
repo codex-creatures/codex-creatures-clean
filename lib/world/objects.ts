@@ -90,7 +90,7 @@ export type FoeStart = { walks?: true; wait?: number; end?: 0 | 1; waits?: true 
 export const REACH_OBJECT = 1.5; // u: this close to a thing you use, it's used
 export const TAP_OBJECT = 1;     // u: a tap this close to one counts as tapping it
 // Walk up to a thing from any cell round it (or onto it, if it isn't solid).
-const AROUND = [-1, 0, 1].flatMap((dy) => [-1, 0, 1].map((dx) => ({ dx, dy })));
+export const AROUND = [-1, 0, 1].flatMap((dy) => [-1, 0, 1].map((dx) => ({ dx, dy })));
 const usable = (verb: string, tapBody = false) => ({ points: AROUND, reach: REACH_OBJECT, tap: TAP_OBJECT, tapBody, verb });
 
 // Today's sizes (px at 16px a cell), now in units: the old FOE_PX, NPC_PX, OBJECT_PX and SACK_PX.
