@@ -92,9 +92,15 @@ export const EGG: Sprite = [
   ".......jjjjjjjj.......",
 ];
 
+// Art redrawn under the same file name gets a new address (?v=), so phones fetch it at once: they keep art they've
+// already downloaded (next.config.ts), and the old picture would show until it expired. Bump a number on each redraw.
+// (The Mythiclaw took the Dire Wolf's id, and phones kept showing the wolf: the user, 2026-11-26.)
+export const ART_REV: Record<string, number> = { dire_wolf: 2 };
+export const creatureArtSrc = (id: string) => `/sprites/creatures/${id}.png${ART_REV[id] ? `?v=${ART_REV[id]}` : ""}`;
+
 // Each one's art.
 for (const [id, [w, h]] of Object.entries(ART_SIZES)) {
-  CREATURE_SPRITES[id] = withArt(["."], { src: `/sprites/creatures/${id}.png`, w, h, ...(FLOATERS.has(id) ? { floats: true } : {}), ...(FACING_RIGHT.has(id) ? { faces: "right" as const } : {}) });
+  CREATURE_SPRITES[id] = withArt(["."], { src: creatureArtSrc(id), w, h, ...(FLOATERS.has(id) ? { floats: true } : {}), ...(FACING_RIGHT.has(id) ? { faces: "right" as const } : {}) });
 }
 
 // Klutz (69×85, with an 8-frame walk), drawn walking right.
