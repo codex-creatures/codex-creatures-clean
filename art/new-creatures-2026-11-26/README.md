@@ -57,4 +57,9 @@ reduce_colors to 40 (raw/K1c.png) and a 1px dark outline round the silhouette (r
 (texture 1.50, 40 colours), in the game. If it still reads soft, step 2 is a clean redraw from it (pixflux with it as the
 init image).
 
+**Clean redraws (2026-11-26, step 2):** the user: "generate more which are closer to this design but more crisp to the quality
+of the skinwing". round15.png: pixflux img2img of raw/K1c.png (C1/C2 keep 300: lost the horn; C3/C4 keep 200) and
+image_to_pixelart_pro_flash (C5, 40 colours; came back on black, cleared by flood fill). Each given the 1px outline.
+round16.png and finals/mythiclaw_crisp_A/B/C.png = C3 (grain 1.17), C4 (1.01, the Skinwing's), C5 (bolder, 93×99).
+
 **The Labyrinth Sprite: C, the user's pick** (2026-11-26), in the game.

@@ -66,3 +66,8 @@ H3 b8c9943c-448f-428b-a33f-0abfb97b483b edit of T1: clean solid black horn, one 
 G1 7605ad24-7d94-44c4-a41e-88086ae9ee6c edit of T2: solid charcoal horn, light grey spiral ridges
 G2 c66ce2cb-1abb-4db8-9a3a-ff2f43a85619 same, seed 5
 G3 da757c3f-2270-4a60-a14f-e7b984cc6487 edit of T2: polished obsidian horn, grey-white glints
+C1 30ae31f5-8c1b-4812-beab-fc256341e417 clean redraw: pixflux img2img of the cleaned pick (raw/K1c.png), keep 300
+C2 172883ab-ff7c-4b90-bb78-6759344e9edc same, seed 12
+C3 8bfef652-beb5-4b22-a3d5-7323626b6f0b pixflux img2img, keep 200
+C4 7009e5f0-315a-4088-a3c5-bfc38ddd1b2f pixflux img2img, keep 200, seed 34
+C5 e500a4bd-16df-430c-97ab-72693f89d691 image_to_pixelart_pro_flash of the cleaned pick, 40 colours
