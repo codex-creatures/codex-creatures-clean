@@ -41,7 +41,7 @@ the PNG here.
 | creatures/troglodyte_brute.png | job 67ed269a-ca13-4765-83fe-b35df2944608 (pixen 128×128, gallery c335fd01-ea0d-5785-9bb3-faf5f7481f87) |
 | creatures/gravewarden.png | job 8cd2d3c2-fcb0-40b4-a98b-b79505ae73b1 (pixen 128×128, gallery bde346e7-3644-5a5e-bdd9-8584e533f2a6) |
 | creatures/hexed_puppet.png | edit_image_pro_flash 54cf04de-84a8-4d7d-b7e3-9524eba3d90e (a whole marionette cross) of pixen cc79a273-a6d2-476f-ad22-1e19d5242628 |
-| creatures/dire_wolf.png | the Mythiclaw (2026-11-26; the Dire Wolf's art moved to rooms/dire_wolf_scene.png): edit_image_pro_flash 43db9c68-6cb0-4d01-9d34-db971a477059 (ridged horn) of edit 720726bf-1308-4efa-a734-d37989933de1 (one horn, talons) of pixen cd8e3a96-2a27-4f8a-8473-7a9a6f82b2e6; option A of three in art/new-creatures-2026-11-26 (stand-in until the user picks) |
+| creatures/dire_wolf.png | the Mythiclaw (2026-11-26; the Dire Wolf's art moved to rooms/dire_wolf_scene.png), restyled to the user's reference (art/new-creatures-2026-11-26/ref): edit_image_pro_flash d709b0be-cfb6-44ac-ac99-37a38b72f8d2 (thin glowing horn, bigger spikes) of 3a399567-1638-4146-a8d7-4d29176c7133 (the reference's look, by reference image) of the rearing edit ea24f831-e781-43a5-8db0-5b98067ff58f; option A of three (stand-in until the user picks) |
 | creatures/labyrinth_sprite.png | pixen 86998418-ac51-4bd5-947b-a732de99fda2; option A of three in art/new-creatures-2026-11-26 (stand-in until the user picks) |
 | creatures/deep_angler.png | gallery:aa6e8bcd-c214-4545-8890-8c9f9b18fcb7 (raw generation; trimmed + mirrored here) |
 | creatures/tunnel_wyrm.png | gallery:6b352516-6423-470d-8f0c-1b50394f10a9 (raw generation; trimmed + mirrored here) |

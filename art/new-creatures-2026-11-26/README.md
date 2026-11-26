@@ -11,3 +11,9 @@ Job ids for every draft are in jobs.txt.
   - Mythiclaw A (F7, the judge's first: snarling, heavy), B (F1: cleanest, pale glare), C (F6: rearing).
   - Labyrinth Sprite A (S2, the judge's first: fanged moth fairy, star staff), B (F4: hollow-eyed child with a halo), C (F0: gaunt goblin fairy, glowing eyes).
 - A is in the game as the stand-in until the user picks.
+
+**The user's look (2026-11-26):** their own reference (ref/user-reference.png, from Desktop/Foods/mythiclaw.jpeg: "spikes down
+the back, vein style things down it. I like the teeth. I like the colours"; the rearing stance, old C). round5.png: R1 (edit
+of C with the reference as the style image), R2/R3 (text edits of C), R4/R5 (pixen; hooves, out). round6.png: the thin
+glowing horn on R1, R3, R2 = **the Mythiclaw finalists now**, A (V1, the judge's first), B (V3, cooler lilac), C (V2, brightest
+veins). The first look's finalists are in finals/first-look/.

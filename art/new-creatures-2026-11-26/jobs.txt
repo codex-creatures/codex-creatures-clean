@@ -28,3 +28,11 @@ F1 e913406e-dd2d-4771-8ed0-44816428ce2a edit of E1: tighter ridged horn, pale gl
 F6 ea24f831-e781-43a5-8db0-5b98067ff58f edit of E6: tighter ridged horn, straight point
 F4 48af4b17-93d5-4a85-9b0c-8eb734c87aec edit of S4: darker, more torn dress
 F0 c5ece9ed-93db-4bfb-ac56-76ac7a1ec93c edit of S1: faint white-gold glowing eyes
+R1 3a399567-1638-4146-a8d7-4d29176c7133 the user's look (Desktop/Foods/mythiclaw.jpeg): edit of F6 with the reference image
+R2 0cdac18a-04e7-4dae-99ae-5bf7e993f0c3 the user's look: text edit of F6
+R3 1dd6731a-641f-46a0-ab7e-c43acf7fd5b9 the user's look: text edit of F6, seed 99
+R4 881a33e8-d44c-49d4-ae9e-581a1e474225 the user's look: pixen, rearing
+R5 1854d7dc-9ad7-452c-b0e0-35357ee5638d the user's look: pixen, rearing, seed 5150
+V1 d709b0be-cfb6-44ac-ac99-37a38b72f8d2 edit of R1: long thin glowing horn, bigger back spikes
+V3 e743c5e6-e133-4c2d-81f5-22e4124e4d10 edit of R3: long thin glowing horn, cooler lilac coat
+V2 73ddf64f-9ba9-473c-bf27-38dfdc6278c9 edit of R2: long thin glowing horn, bigger spikes, brighter veins
