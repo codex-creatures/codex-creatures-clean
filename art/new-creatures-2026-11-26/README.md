@@ -20,4 +20,21 @@ veins). The first look's finalists are in finals/first-look/.
 
 **Claws (2026-11-26):** the user picked C (V2) but wanted "more strong looking claws and more aggressive on the ones that are
 raised … too bird claw like, go more like the GPT rendition". round7.png: K1 (by the reference image), K2, K3 (text edits).
-**The Mythiclaw finalists now:** A = K3 (biggest hooked claws), B = K2, C = K1 (closest to the old C).
+Those claw versions are in finals/second-look/.
+
+**Starting fresh (2026-11-26):** the user: "the claws do not look aggressive in any way … the mouth should look larger, they look too
+horse like … almost go back to under the eye, almost like the front of the head is split in two … the horn darker, more black with
+some purple … starting new probably makes more sense." The brief every draft was drawn to:
+
+> The Mythiclaw: a monstrous, corrupted holy unicorn rearing on its hind legs. Lean muscular body, cracked lilac-white coat with
+> glowing violet veins over body and legs; a row of jagged dark-purple spikes down the spine. Not a horse's head: the jaw splits
+> open wide, the mouth running back to just under the eye as if the front of the skull is split in two, lined with long needle
+> fangs. Glowing violet eyes. One long thin spiralled horn, black with purple glints. Long wild mane and tail in pastel blue,
+> pink and purple. No hooves: huge predator claws, thick dark-purple digits ending in long curved sickle talons; the raised front
+> claws splayed open, reaching to rake. Menacing, dark fantasy.
+
+round8.png and round9.png: 12 fresh pixen drafts (N1–N12; the "head splits into gaping jaws" wording worked, "rearing" pulled
+back towards hooves). The judge's 3, fixed (round10.png, before and after): **the Mythiclaw finalists now**, A = X4 (N4: split
+jaw, raised claw, black spiral horn), B = X3 (N3 reared up, long locks), C = X9 (N9 with sickle talons on all four feet).
+
+**The Labyrinth Sprite: C, the user's pick** (2026-11-26), in the game.

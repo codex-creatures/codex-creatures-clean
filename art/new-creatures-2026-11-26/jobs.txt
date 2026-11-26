@@ -39,3 +39,18 @@ V2 73ddf64f-9ba9-473c-bf27-38dfdc6278c9 edit of R2: long thin glowing horn, bigg
 K1 dc199782-3504-41c5-b438-1f37f8f5f58a edit of V2 (C): heavy beast claws, by the reference image; raised claws splayed
 K2 4473a669-ddb1-4dd6-b184-b696789232ed edit of V2 (C): heavy clawed paws, raised claws splayed
 K3 6f0dbea2-52d7-402c-a443-04532a12f2e7 edit of V2 (C): heavy clawed paws, seed 314
+N1 21b5c905-d156-420b-a4fb-248fdc021880 fresh from the brief (prompt 1)
+N2 6451e3eb-ba95-49c9-a893-d8e39a45ab60 fresh, prompt 1, seed 8080
+N3 0a520115-2ab3-4854-8765-3d6bf46ca7b5 fresh, prompt 2 (nightmare, gaping jaws)
+N4 16312154-49b3-4bf8-aa53-e9aff0e86de6 fresh, prompt 2, seed 4321
+N5 46931da6-1d71-403e-b626-707bfdfc3028 fresh, prompt 3 (demonic, dragon claws)
+N6 6a4d446c-2045-424f-89c5-82f4cc9b619f fresh, prompt 3, seed 666
+N7 67d6f24e-e1f4-444e-8e87-096cc9bb3f6d fresh, prompt 2b (reared, both claws raised), seed 11
+N8 b57a6946-1a4d-4985-b02f-17ef2fcb2d32 fresh, prompt 2b, seed 222
+N9 b13ed7c8-e226-49e5-aba9-308b02c612f9 fresh, prompt 2b, seed 3333
+N10 a9567edc-77af-4045-9fe4-d34f976c5d6b fresh, prompt 4 (predator standing tall, clawed arms)
+N11 f2d2c0c5-ebe8-4b9e-8ae4-fbdcf6027c05 fresh, prompt 4, seed 77
+N12 50178748-5064-46e6-8aa9-a24af4b659a1 fresh, prompt 4, seed 909
+X4 74bf4c14-0a0c-4ffe-91e0-c52caf8b7e8b edit of N4: black spiral horn, jagged spine row
+X3 2961f8f1-e620-4f0d-a339-1164f3959296 edit of N3: rearing, claws raised, long mane and tail
+X9 fe71fc0b-02ad-4066-b131-9d81915562f0 edit of N9: sickle-talon hind feet, full pastel tail
