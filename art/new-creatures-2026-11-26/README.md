@@ -37,4 +37,9 @@ round8.png and round9.png: 12 fresh pixen drafts (N1–N12; the "head splits int
 back towards hooves). The judge's 3, fixed (round10.png, before and after): **the Mythiclaw finalists now**, A = X4 (N4: split
 jaw, raised claw, black spiral horn), B = X3 (N3 reared up, long locks), C = X9 (N9 with sickle talons on all four feet).
 
+Those are in finals/third-look/. The user: "we've moved further away … go back to C in the previous generation [K1] and make
+the front claws more facing forward (currently all claws just sag down), the horn darker and the mouth more open." round11.png:
+K1 and three edits of it. **The Mythiclaw finalists now:** A = P2, B = P1 (front claws thrust forward, dark horn, roaring),
+C = P3 (grabbing claws, blackest horn, widest jaw).
+
 **The Labyrinth Sprite: C, the user's pick** (2026-11-26), in the game.

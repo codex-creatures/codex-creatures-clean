@@ -54,3 +54,6 @@ N12 50178748-5064-46e6-8aa9-a24af4b659a1 fresh, prompt 4, seed 909
 X4 74bf4c14-0a0c-4ffe-91e0-c52caf8b7e8b edit of N4: black spiral horn, jagged spine row
 X3 2961f8f1-e620-4f0d-a339-1164f3959296 edit of N3: rearing, claws raised, long mane and tail
 X9 fe71fc0b-02ad-4066-b131-9d81915562f0 edit of N9: sickle-talon hind feet, full pastel tail
+P1 5b912fc0-92ba-4ef2-a57e-d450709078dc edit of K1 (the second look's C): front claws thrust forward, dark horn, wider mouth
+P2 94a644c3-e5f2-4463-9dc9-c45c95c8ae9c same, seed 42
+P3 144a43ee-0cc1-4453-9a40-1637771d12d1 edit of K1: grabbing paws reaching forward, black horn, gaping jaws
