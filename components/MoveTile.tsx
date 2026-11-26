@@ -14,7 +14,7 @@ import { damageTypesOn } from "@/lib/combat/engine";
 import { moveTag } from "./ClassBadge";
 import { moveSlab, SLAB_W, SLAB_H, SLAB_STONE, STYLE_ICON, STYLE_STONE, type SlabStone } from "@/lib/sprites/moveSlab";
 import { raceOfMove } from "@/lib/combat/raceChart";
-import { MOVE_DETAILS, NAME_EM, NAME_INSET } from "@/lib/uiText";
+import { FILL_DAMAGE_CAP, FILL_DAMAGE_CHARS, FILL_DAMAGE_INSET, FILL_NAME_CAP, MOVE_DETAILS, NAME_EM, NAME_INSET, NAME_MIN_PX, twoLineLongest } from "@/lib/uiText";
 
 const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", fontWeight: 700, fontVariantNumeric: "tabular-nums" };
 
@@ -50,6 +50,13 @@ function Slab({ m }: { m: Skill }) {
 // box is a container) and no word is ever split. lib/uiText.ts checks it stays
 // readable (NAME_MIN_PX) wherever tablets are shown; /lab/movetext measures it.
 const nameFont = (name: string) => `min(1em, calc(100cqw / ${(Math.max(...name.split(" ").map((w) => w.length)) * NAME_EM).toFixed(2)}))`;
+
+// On a fill tablet (lib/uiText.ts fillNameFont, the same sum): cqw/cqh are the tablet's own.
+const FILL_BOX = `(100cqw - ${NAME_INSET.fill.left + NAME_INSET.fill.right}px)`;
+const fillNameFont = (name: string) =>
+  `max(${NAME_MIN_PX}px, min(${FILL_NAME_CAP * 100}cqh, max(calc(${FILL_BOX} / ${(name.length * NAME_EM).toFixed(2)}), min(calc(${FILL_BOX} / ${(twoLineLongest(name) * NAME_EM).toFixed(2)}), 16.667cqh))))`;
+const FILL_DAMAGE_FONT = `min(${FILL_DAMAGE_CAP * 100}cqh, calc((100cqw - ${FILL_DAMAGE_INSET.left + FILL_DAMAGE_INSET.right}px) / ${(FILL_DAMAGE_CHARS * NAME_EM).toFixed(2)}))`;
+const FILL_NOTE_FONT = `max(${NAME_MIN_PX}px, min(14cqh, calc((100cqw - ${FILL_DAMAGE_INSET.left + FILL_DAMAGE_INSET.right + 10}px) / ${(9 * NAME_EM).toFixed(2)})))`;
 
 // Letters cut into the stone: thickened a pixel in their own colour, edged in the stone's cut.
 const carved = (ink: string, cut: string) =>
@@ -90,40 +97,51 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, fi
           fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 700, fontSize: 11, lineHeight: 1, padding: 0,
         }}>i</button>
 
-      {/* A fixed frame: the name in a box two lines tall (a one-line name sits
+      {fill ? (
+        // In a fight the words are the button's (the user, 2026-11-26): the name sits on the line a third
+        // of the way down, filling the box's width (smaller only for a long name); the damage, or a note,
+        // hangs from the line two thirds down, the same size on every tablet. (lib/uiText.ts fillNameFont)
+        <div style={{ position: "absolute", inset: 0, containerType: "size", pointerEvents: "none" }}>
+          <div style={{ position: "absolute", top: 0, height: "33.333%", left: inset.left, right: inset.right, display: "flex", alignItems: "flex-end", justifyContent: "center", textAlign: "center" }}>
+            <span className="pixel-font" title={m.name} style={{
+              fontSize: fillNameFont(m.name), lineHeight: 1, letterSpacing: "0.03em", textWrap: "balance",
+              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+              color: "#fbf1dc", textShadow: carved("#fbf1dc", stone.cut),
+            }}>{m.name}</span>
+          </div>
+          <div style={{ position: "absolute", top: "66.667%", left: FILL_DAMAGE_INSET.left, right: FILL_DAMAGE_INSET.right, display: "flex", justifyContent: "center", visibility: note || tag ? "visible" : "hidden" }}>
+            <span className="pixel-font" style={{ maxWidth: "100%", lineHeight: 1, letterSpacing: "0.03em", overflow: "hidden",
+              // (A note, "not enough energy", is longer: smaller, on up to two lines.)
+              ...(note ? { fontSize: FILL_NOTE_FONT, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", textAlign: "center", color: "#ffe1d8", background: "rgba(0,0,0,0.45)", padding: "1px 5px", textShadow: "0 1px 0 #000" }
+                : { fontSize: FILL_DAMAGE_FONT, whiteSpace: "nowrap", color: tag?.color, textShadow: carved(tag?.color ?? "#fbf1dc", stone.cut) }) }}>
+              {note?.text ?? tag?.text ?? "-"}
+            </span>
+          </div>
+        </div>
+      ) : (
+      /* A fixed frame: the name in a box two lines tall (a one-line name sits
           in its middle), and under it one line for a tag or note, kept when
-          empty. So no tablet's name moves whatever it says. On a narrow tablet
-          (fill) the name box runs under the i's and the cost's corners.
-          (lib/uiText.ts NAME_INSET)
-          In a fight (fill) the name is a title at the top and its damage sits
-          right under it, in the same lettering, smaller (the user, 2026-11-26:
-          the damage line didn't fit under a centred name). */}
-      <div style={{ position: "absolute", inset: `${fill ? 6 : 0}px ${inset.right}px 0 ${inset.left}px`, display: "flex", alignItems: fill ? "flex-start" : "center", justifyContent: "center", textAlign: "center" }}>
+          empty. So no tablet's name moves whatever it says. (lib/uiText.ts NAME_INSET) */
+      <div style={{ position: "absolute", inset: `0 ${inset.right}px 0 ${inset.left}px`, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
         <div style={{ position: "relative", width: "100%" }}>
         <div className="pixel-font" title={m.name} style={{
           containerType: "inline-size",
-          fontSize: fill ? "clamp(12px, 4.2cqw, 19px)" : "clamp(16px, 5cqw, 22px)", lineHeight: 1.05, ...(fill ? { maxHeight: "2.1em" } : { height: "2.1em" }), width: "100%",
+          fontSize: "clamp(16px, 5cqw, 22px)", lineHeight: 1.05, height: "2.1em", width: "100%",
           display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
           color: "#fbf1dc", letterSpacing: "0.03em", textShadow: carved("#fbf1dc", stone.cut),
         }}>
           <span style={{ fontSize: nameFont(m.name), display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{m.name}</span>
         </div>
         {/* The tag or note line: one line, under the name. */}
-        <div style={{ ...(fill ? { marginTop: 3 } : { position: "absolute", top: "100%", left: 0, right: 0, marginTop: 2 }), display: "flex", justifyContent: "center", visibility: note || tag ? "visible" : "hidden" }}>
-          {fill ? (
-            <span className="pixel-font" style={{ maxWidth: "100%", fontSize: "clamp(10px, 3.4cqw, 14px)", lineHeight: 1.1, letterSpacing: "0.03em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-              ...(note ? { color: "#ffe1d8", background: "rgba(0,0,0,0.45)", padding: "0 5px", textShadow: "0 1px 0 #000" } : { color: tag?.color, textShadow: carved(tag?.color ?? "#fbf1dc", stone.cut) }) }}>
-              {note?.text ?? tag?.text ?? "-"}
-            </span>
-          ) : (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 2, display: "flex", justifyContent: "center", visibility: note || tag ? "visible" : "hidden" }}>
           <span style={{ height: 15, maxWidth: "100%", fontSize: 11, lineHeight: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 1px 0 #000",
             ...(note ? { color: "#ffe1d8", background: "rgba(0,0,0,0.45)", padding: "0 5px" } : { color: tag?.color }) }}>
             {note?.text ?? tag?.text ?? "-"}
           </span>
-          )}
         </div>
         </div>
       </div>
+      )}
 
       {/* The cost: energy, in a circle in the corner. */}
       <span title={`${m.energyCost} energy`} style={{

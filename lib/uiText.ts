@@ -38,9 +38,37 @@ export const TABLET_PLACES: TabletPlace[] = [
   { id: "grid", name: "Creature window (2 across)", cols: 2, width: PHONE.w - 68, fill: false, tablet: across(PHONE.w - 68, 2, 10), font: TABLET_FONT },
   { id: "codex", name: "A codex's tablet", cols: 1, width: 150, fill: false, tablet: 150, font: TABLET_FONT },
 ];
+// ── A tablet in a fight (MoveTile's fill: the battle dock, Klutz's tour) is the button, so its
+// words are big (the user, 2026-11-26: "this needs to feel like the button"). Its name sits on the
+// line a third of the way down, as big as the box's width lets it (FILL_NAME_CAP of the tablet's
+// height at most), on one line, or on two when that's bigger; its damage hangs from the line two
+// thirds down, the same size on every tablet in the dock (sized for FILL_DAMAGE_CHARS letters).
+export const FILL_NAME_CAP = 0.27;
+export const FILL_DAMAGE_CAP = 0.22;
+export const FILL_DAMAGE_CHARS = 7; // "100–120"
+export const FILL_DAMAGE_INSET = { left: 6, right: 34 }; // (clear of the cost's circle)
+// A name split into two lines at its most even break: the longer line's letters.
+export const twoLineLongest = (name: string) => {
+  const w = name.split(" ");
+  let best = name.length;
+  for (let i = 1; i < w.length; i++) best = Math.min(best, Math.max(w.slice(0, i).join(" ").length, w.slice(i).join(" ").length));
+  return best;
+};
+// The name's size (px) on a fill tablet `width` × `height` (MoveTile writes the same sum in CSS).
+export function fillNameFont(name: string, width: number, height: number): number {
+  const box = width - NAME_INSET.fill.left - NAME_INSET.fill.right;
+  const one = box / (name.length * NAME_EM);
+  const two = Math.min(box / (twoLineLongest(name) * NAME_EM), height / 3 / 2);
+  return Math.min(height * FILL_NAME_CAP, Math.max(one, two));
+}
+
 // The name's size on a tablet at `place`, and the letters a line holds there.
 export function tabletName(name: string, place: TabletPlace): { font: number; line: number } {
   const inset = NAME_INSET[place.fill ? "fill" : "tablet"], box = place.tablet - inset.left - inset.right;
+  if (place.fill) {
+    const font = fillNameFont(name, place.tablet, place.cellH ?? 78);
+    return { font, line: Math.floor(box / (font * NAME_EM) + 1e-9) };
+  }
   const longest = Math.max(...name.split(" ").map((w) => w.length));
   const font = Math.min(place.font, box / (longest * NAME_EM));
   return { font, line: Math.floor(box / (font * NAME_EM) + 1e-9) };

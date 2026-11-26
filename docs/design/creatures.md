@@ -49,7 +49,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - 🧪 **Sizes** (the user, 2026-11-26; lib/creatures/sizes.ts): every creature is sized 1–5 (1 tiny like the
   Flicker Wisp, 2 small, 3 person-sized like the Leafblade Scout, 4 big beast like the Crystalback, 5 huge or a
   rider on a mount like Ironhide or the Pale Rider). **Looks only**: it sets how tall a creature stands wandering the
-  Labyrinth (size 3 is the hero's height) and on the pedestal of its creature window (size 5 fills the 180px box);
+  Labyrinth (size 3 is the hero's height), in a fight (a size 5 stands 40% of the stage's height, `STAGE_TALL`; the boss's lair keeps its own sizing) and on the pedestal of its creature window (size 5 fills the 180px box);
   cards keep their picture filling the card. Heights are shares of size 5 (`SIZE_HEIGHT`, first guesses). From
   world version 19 it also sets how much floor a foe is given in new runs, replacing the 2026-11-08 size classes
   (the user: "this new decision should override the previous"; [world/persistence.md](../world/persistence.md#world-versions)). The

@@ -44,6 +44,7 @@ import PixelSprite, { PotionIcon } from "@/components/PixelSprite";
 import { CREATURE_SPRITES, fightSprite } from "@/lib/sprites/creatures";
 import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
+import { sizeHeight } from "@/lib/creatures/sizes";
 import Glyph from "./Glyph";
 import { loadTavern } from "@/lib/tavern";
 import { trainingIds } from "@/lib/trainingPit";
@@ -746,7 +747,7 @@ export function damageRange(sk: Skill, me: Combatant, them: Combatant, raceHint 
   const lo = calcDamage(sk, me, steady, false, PRECISE_IGNORE, 1 - DAMAGE_VARIANCE).damage;
   const hi = calcDamage(sk, me, steady, false, PRECISE_IGNORE, 1 + DAMAGE_VARIANCE).damage;
   if (lo <= 0) return undefined;
-  return lo === hi ? `${lo} dmg` : `${lo}–${hi} dmg`;
+  return lo === hi ? `${lo}` : `${lo}–${hi}`; // (no "dmg": a number on a move's button reads as its damage, and fits big)
 }
 
 // A fighter's level, before its name ("Lv 8"). (No level: a level-15 creature, as everything used to be.)
@@ -939,7 +940,7 @@ function Stage({ me, mySlot, myInfo, foes, foeTeam, theirInfo, fx, target, onTar
           : foes.map((i, n) => {
             const up = foeTeam[i].hp > 0;
             return <Fighter key={i} f={foeTeam[i]} side="B" slot={i} mi={theirInfo[i]} fx={fx} maxW={PAIR_W}
-              at={{ left: PAIR_AT[n] ?? FOE_SPOT.left, bottom: FOE_SPOT.bottom, width: "28%" }} aimed={up && i === target} onTap={up && onTarget ? () => onTarget(i) : undefined} />;
+              at={{ left: PAIR_AT[n] ?? FOE_SPOT.left, bottom: FOE_SPOT.bottom, width: `${PAIR_COL * 100}%` }} col={PAIR_COL} shrink={FOE_DEPTH} aimed={up && i === target} onTap={up && onTarget ? () => onTarget(i) : undefined} />;
           })}
         <Fighter f={me} side="A" slot={mySlot} mi={myInfo} fx={fx} at={MY_SPOT} />
       </div>
@@ -947,10 +948,9 @@ function Stage({ me, mySlot, myInfo, foes, foeTeam, theirInfo, fx, target, onTar
   );
 }
 
-// How big a fighter stands on the stage: STAGE_SCALE of the stage's own
-// pixels, but never taller than STAGE_TALL of it (the big art, Aurelius or
-// the Void Serpent, would fill the room). FIGHTER_W: its column's share.
-const STAGE_SCALE = 2.2;
+// How big a fighter stands on the stage: by its size (lib/creatures/sizes.ts, as in the
+// Labyrinth: the user, 2026-11-26), a size 5 STAGE_TALL of the stage's height and the
+// rest their share of that; never wider than its column. FIGHTER_W: its column's share.
 // Standing on a diagonal (the user, 2026-11-04): yours near and low on the
 // left, seen from behind; theirs further back in the room, higher up and
 // smaller (FOE_DEPTH of its usual size).
@@ -963,9 +963,10 @@ const PAIR_W = "18cqw";
 const STAGE_EXTEND_STEP = 8;
 const STAGE_TALL = 0.4;
 const FIGHTER_W = 0.4;
-const stageWidth = (sprite: Sprite, shrink = 1) => {
-  const fit = Math.min(STAGE_SCALE, (STAGE_TALL * CH) / fineHeight(sprite));
-  return `${Math.min(100, ((fineWidth(sprite) * fit * shrink) / CW / FIGHTER_W) * 100)}%`;
+const PAIR_COL = 0.28; // (an ambush's foe's column: PAIR_AT's width)
+const stageWidth = (sprite: Sprite, creatureId: string, col = FIGHTER_W, shrink = 1) => {
+  const fit = (STAGE_TALL * CH * sizeHeight(creatureId)) / fineHeight(sprite);
+  return `${Math.min(100, ((fineWidth(sprite) * fit * shrink) / CW / col) * 100)}%`;
 };
 
 // A fighter's floating label: level and name, its races, a small health bar
@@ -1028,8 +1029,9 @@ function HpFill({ pct, color }: { pct: number; color: string }) {
 // crowded). aimed / onTap: one of two foes, aimed at or tapped to aim at
 // (aimed given at all keeps a line for the 🎯 over its label). shrink: drawn
 // smaller, further back in the room.
-export function Fighter({ f, side, slot, mi, fx, at, maxW, aimed, onTap, shrink }: {
+export function Fighter({ f, side, slot, mi, fx, at, maxW, col, aimed, onTap, shrink }: {
   f: Combatant; side: SideKey; slot: number; mi: MemberInfo; fx: Fx | null; at?: React.CSSProperties; maxW?: string;
+  col?: number; // its column's share of the stage, when sized by its size with maxW too (an ambush's pair)
   aimed?: boolean; onTap?: () => void; shrink?: number;
 }) {
     const { anim, float } = fighterFx(side, slot, fx);
@@ -1042,12 +1044,12 @@ export function Fighter({ f, side, slot, mi, fx, at, maxW, aimed, onTap, shrink 
         {aimed !== undefined && <div className="pixel-font" style={{ fontSize: 11, height: 14, color: "#ffd66e", visibility: aimed ? "visible" : "hidden" }}>🎯</div>}
         <FighterLabel f={f} side={side} mi={mi} />
         {/* (The floating text sits outside the part rebuilt each step, so it can outlast the step.) */}
-        <div style={{ position: "relative", marginTop: 4, ...(sprite && !maxW ? { width: stageWidth(sprite, shrink) } : {}) }}>
+        <div style={{ position: "relative", marginTop: 4, ...(sprite && (!maxW || col) ? { width: stageWidth(sprite, mi.creatureId ?? "", col, shrink) } : {}) }}>
           <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
             {/* One that floats hangs above its shadow, bobbing (while it's still up). */}
             <div className={floats ? "float-bob" : undefined} style={aimed ? { filter: "drop-shadow(0 0 6px #ffd66e)" } : undefined}>
               {sprite
-                ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={{ ...(faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : {}), ...(maxW ? { maxWidth: maxW, height: "auto" } : { width: "100%", height: "auto" }) }} />
+                ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={{ ...(faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : {}), ...(maxW ? { maxWidth: maxW, height: "auto" } : {}), ...(!maxW || col ? { width: "100%", height: "auto" } : {}) }} />
                 : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
             </div>
             {floats
