@@ -56,15 +56,15 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     New creature and move names must fit: write them shorter rather than growing the box.
   - **Move text everywhere it's shown** (the user, 2026-11-14: names were split on narrow tablets,
     and descriptions didn't fit the tablet's back). On a narrow tablet (the battle dock, Klutz's
-    tour) the name runs under the i's and the cost's corners (`NAME_INSET`) and shrinks so its
+    tour) the name has the same room on both sides (`NAME_INSET`), so it's centred over the style drawn behind it (the user, 2026-11-27: it sat off to the left, clear of the i), with the i and the cost smaller there to make room (`FILL_CORNER`), and shrinks so its
     longest word fits, never below 10px (`NAME_MIN_PX`). Klutz's tour shows two tablets a row. The
     i opens one fixed details window over the screen (MoveTile's `MoveDetails`) instead of flipping
     the tablet; a description gets at most 7 lines of 38 letters there (`DESC_LINE`, `DESC_LINES`),
     with 3 lines kept for a fight's effect lines. In a fight the words are the button's (the user, 2026-11-26: "this needs to feel like the button"): the
     name sits on the line a third of the way down, filling the box's width up to 27% of the tablet's height (a long
     name shrinks, or takes two lines when that's bigger; `fillNameFont` in lib/uiText.ts), and the move's damage range
-    against the foe it's aimed at hangs from the line two thirds down, in the same carved pixel lettering, one size on
-    every tablet in the dock (sized for "100–120"; `FILL_DAMAGE_*`)
+    against the foe it's aimed at hangs from the line two thirds down, in the same carved pixel lettering, smaller than the name (at most 15% of the tablet's height, the user, 2026-11-27: context, not a second title), centred, one size on
+    every tablet in the dock (sized for "100–120"; `FILL_DAMAGE_*`); a move with no damage to show and no note (a utility move) has its name in the tablet's middle instead
     ("12–14", no "dmg": its hit at the lowest and highest ±5% roll before their armour and defence %s; the race chart against them counted only in the Encampment and the
     Cyclops' Labyrinth, so new players learn the matchups, and left out past the Cyclops and in PvP (`Match.raceHint`); in the name's cream; the
     user, 2026-11-26: raw damage before the foe's defences take their share; `damageRange`, components/BattleScreen.tsx), unless a note (no energy, recharging) needs the line. tests/uiText.test.ts checks every move at every

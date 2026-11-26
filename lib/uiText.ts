@@ -15,9 +15,12 @@ export const MOVE_NAME_LINE = 12;
 // Measured in a browser on the smallest phone we design for (/lab/movetext, which
 // uses these same numbers), then checked for every move by tests/uiText.test.ts.
 export const PHONE = { w: 360, h: 640 };
-// The name box: the tablet less these sides (the i and the cost sit at the right).
-// A narrow tablet (MoveTile's fill) lets the name run under their corners.
-export const NAME_INSET = { tablet: { left: 24, right: 24 }, fill: { left: 6, right: 28 } };
+// The name box: the tablet less these sides (the i and the cost sit at the right), the same on both, so
+// the name is centred over the style drawn behind it (the user, 2026-11-27: off to the left, it looked off).
+// On a fight's tablet (MoveTile's fill) the i and the cost are smaller (FILL_CORNER), and the name clears the i.
+export const NAME_INSET = { tablet: { left: 24, right: 24 }, fill: { left: 17, right: 17 } };
+// A fight's tablet's corners (px): the i's size and the cost's circle, in from the edge by `at`.
+export const FILL_CORNER = { info: 15, cost: 24, at: 2 };
 // A letter of the tablet's name font, in em, at its widest (Pixelify Sans with the
 // tablet's letter spacing; measured 0.682 on 2026-11-14): the name shrinks so its longest word fits.
 export const NAME_EM = 0.69;
@@ -42,11 +45,12 @@ export const TABLET_PLACES: TabletPlace[] = [
 // words are big (the user, 2026-11-26: "this needs to feel like the button"). Its name sits on the
 // line a third of the way down, as big as the box's width lets it (FILL_NAME_CAP of the tablet's
 // height at most), on one line, or on two when that's bigger; its damage hangs from the line two
-// thirds down, the same size on every tablet in the dock (sized for FILL_DAMAGE_CHARS letters).
+// thirds down, the same size on every tablet in the dock (sized for FILL_DAMAGE_CHARS letters). A move with
+// no damage to show and no note (a utility move) has its name in the middle of the tablet instead (2026-11-27).
 export const FILL_NAME_CAP = 0.27;
-export const FILL_DAMAGE_CAP = 0.22;
+export const FILL_DAMAGE_CAP = 0.15; // (smaller than the name: context, not a second title; the user, 2026-11-27)
 export const FILL_DAMAGE_CHARS = 7; // "100–120"
-export const FILL_DAMAGE_INSET = { left: 6, right: 34 }; // (clear of the cost's circle)
+export const FILL_DAMAGE_INSET = { left: 28, right: 28 }; // (clear of the cost's circle, on both sides so it's centred)
 // A name split into two lines at its most even break: the longer line's letters.
 export const twoLineLongest = (name: string) => {
   const w = name.split(" ");

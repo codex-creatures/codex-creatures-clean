@@ -14,7 +14,7 @@ import { damageTypesOn } from "@/lib/combat/engine";
 import { moveTag } from "./ClassBadge";
 import { moveSlab, SLAB_W, SLAB_H, SLAB_STONE, STYLE_ICON, STYLE_STONE, type SlabStone } from "@/lib/sprites/moveSlab";
 import { raceOfMove } from "@/lib/combat/raceChart";
-import { FILL_DAMAGE_CAP, FILL_DAMAGE_CHARS, FILL_DAMAGE_INSET, FILL_NAME_CAP, MOVE_DETAILS, NAME_EM, NAME_INSET, NAME_MIN_PX, twoLineLongest } from "@/lib/uiText";
+import { FILL_CORNER, FILL_DAMAGE_CAP, FILL_DAMAGE_CHARS, FILL_DAMAGE_INSET, FILL_NAME_CAP, MOVE_DETAILS, NAME_EM, NAME_INSET, NAME_MIN_PX, twoLineLongest } from "@/lib/uiText";
 
 const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", fontWeight: 700, fontVariantNumeric: "tabular-nums" };
 
@@ -76,6 +76,9 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, fi
   const stone = SLAB_STONE[stoneOf(m)];
   const active = !!onClick && !disabled;
   const inset = NAME_INSET[fill ? "fill" : "tablet"];
+  // (A fight's tablet's i and cost are smaller, so its name and damage can sit centred: FILL_CORNER.)
+  const infoPx = fill ? FILL_CORNER.info : 22, cost = fill ? FILL_CORNER.cost : 28, at = fill ? FILL_CORNER.at : 5;
+  const middle = fill && !note && !tag; // nothing under the name (a utility move): it sits in the tablet's middle
   return (
     <div role={onClick ? "button" : undefined} tabIndex={active ? 0 : -1} aria-disabled={disabled} aria-pressed={selected}
       aria-label={`${m.name}: ${CLASS_INFO[m.type].name}, ${moveTag(m).name}, ${m.energyCost} energy`}
@@ -92,9 +95,9 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, fi
       <button type="button" aria-label="Show details" title="Details"
         onClick={(e) => { e.stopPropagation(); setInfo(true); }}
         style={{
-          position: "absolute", top: 5, right: 5, width: 22, height: 22, borderRadius: 11, cursor: "pointer", zIndex: 1,
+          position: "absolute", top: at, right: at, width: infoPx, height: infoPx, borderRadius: infoPx / 2, cursor: "pointer", zIndex: 1,
           background: "rgba(15,12,10,0.55)", border: `2px solid ${stone.cut}`, color: "#eee4cc",
-          fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 700, fontSize: 11, lineHeight: 1, padding: 0,
+          fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 700, fontSize: fill ? 9 : 11, lineHeight: 1, padding: 0,
         }}>i</button>
 
       {fill ? (
@@ -102,7 +105,7 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, fi
         // of the way down, filling the box's width (smaller only for a long name); the damage, or a note,
         // hangs from the line two thirds down, the same size on every tablet. (lib/uiText.ts fillNameFont)
         <div style={{ position: "absolute", inset: 0, containerType: "size", pointerEvents: "none" }}>
-          <div style={{ position: "absolute", top: 0, height: "33.333%", left: inset.left, right: inset.right, display: "flex", alignItems: "flex-end", justifyContent: "center", textAlign: "center" }}>
+          <div style={{ position: "absolute", top: 0, height: middle ? "100%" : "33.333%", left: inset.left, right: inset.right, display: "flex", alignItems: middle ? "center" : "flex-end", justifyContent: "center", textAlign: "center" }}>
             <span className="pixel-font" title={m.name} style={{
               fontSize: fillNameFont(m.name), lineHeight: 1, letterSpacing: "0.03em", textWrap: "balance",
               display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
@@ -145,8 +148,8 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, fi
 
       {/* The cost: energy, in a circle in the corner. */}
       <span title={`${m.energyCost} energy`} style={{
-        ...NUM, position: "absolute", right: 5, bottom: 6, width: 28, height: 28, borderRadius: 14, zIndex: 1,
-        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#e8f4ff",
+        ...NUM, position: "absolute", right: at, bottom: at + 1, width: cost, height: cost, borderRadius: cost / 2, zIndex: 1,
+        display: "flex", alignItems: "center", justifyContent: "center", fontSize: fill ? 11 : 12, color: "#e8f4ff",
         background: "radial-gradient(circle at 35% 30%, #4f9fe0, #1d4f86 70%)", border: "2px solid #0d2238",
         boxShadow: "inset 0 -2px 0 rgba(0,0,0,0.35), 0 2px 0 rgba(0,0,0,0.5)",
       }}>{m.energyCost}</span>
