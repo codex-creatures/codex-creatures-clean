@@ -387,9 +387,11 @@ body {
 .move-live:active { transform: translateY(1px); }
 
 /* Arrows on the screen's sides, to flick between creatures or codexes (components/SideArrow.tsx):
-   brass buttons low down, so they don't sit over the middle of the window (the user, 2026-11-24). */
+   brass buttons where the middle third meets the bottom third, off the middle of the window (the user,
+   2026-11-24, 2026-11-26); its top is set by the component (lib/sideArrow.ts), its middle on it.
+   Pressed and held, they lift (.lifted) and drag up or down. */
 .side-arrow {
-  position: fixed; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 230;
+  position: fixed; translate: 0 -50%; z-index: 230; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   width: 52px; height: 52px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;
   border-radius: 12px; border: 2px solid #1c140b;
   background: radial-gradient(circle at 50% 35%, #6b5330, #3a2a18 70%);
@@ -399,6 +401,7 @@ body {
 .side-arrow.next { right: max(8px, env(safe-area-inset-right)); }
 .side-arrow:hover { filter: brightness(1.15); }
 .side-arrow:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px #b08a4a, inset 0 3px 0 2px rgba(0, 0, 0, 0.3), 0 2px 0 rgba(0, 0, 0, 0.6); }
+.side-arrow.lifted { transform: scale(1.12); filter: brightness(1.25); box-shadow: inset 0 0 0 2px #e0b866, 0 6px 0 rgba(0, 0, 0, 0.6), 0 0 18px rgba(255, 214, 110, 0.55); }
 
 /* The big Fight! button, bottom centre of the room. */
 .fight-btn {
