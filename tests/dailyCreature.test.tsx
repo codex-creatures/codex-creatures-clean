@@ -35,4 +35,26 @@ describe("claiming a daily creature", () => {
     await act(async () => { vi.advanceTimersByTime(20000); });
     expect(host.textContent).toContain(`${got.name} joins you!`);
   });
+  // The Den sends you to /board?tab=daily by router.push, which changes the address only once the new page has
+  // drawn (the user, 2026-11-27: "it takes you to the campaign", again). Stood in for here: the address changes
+  // in a layout effect round the page, after it has drawn and before its effects.
+  it("opens on today's quests when the address only says so after the page has drawn (a move within the game)", async () => {
+    vi.resetModules();
+    localStorage.clear();
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: [], equipment: {}, gold: 0, caged: [], quest: { stage: "done" },
+      [DAILY_FIELD]: { day: dayKey(), ids: ["camp", "scans"], progress: [2, 0], claimed: [false, false] } }));
+    window.history.replaceState(null, "", "/");
+    const Page = (await import("@/app/board/page")).default;
+    const { useLayoutEffect } = await import("react");
+    function Router({ children }: { children: React.ReactNode }) {
+      useLayoutEffect(() => { window.history.pushState(null, "", "/board?tab=daily"); }, []);
+      return <>{children}</>;
+    }
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => { root.render(<Router><Page /></Router>); });
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).not.toMatch(/campaign/i);
+    expect([...host.querySelectorAll("button")].some((b) => b.textContent?.includes("Claim") && !b.disabled)).toBe(true);
+  });
 });

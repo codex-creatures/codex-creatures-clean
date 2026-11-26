@@ -45,10 +45,14 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 type View = { status: "loading" | "off" | "out" | "failed" } | { status: "ok"; board: Board };
 
 export default function QuestBoardPage() {
-  // Opens on the campaign (the user, 2026-11-17), or on today's quests from the Den's daily popup (?tab=daily).
-  // (Read as it mounts: the screen only shows once the page is in the browser, GameScreen.)
-  const [tab, setTab] = useState<"campaign" | "quests" | "boards">(() =>
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "daily" ? "quests" : "campaign");
+  // Opens on the campaign (the user, 2026-11-17), or on today's quests from the Den (?tab=daily).
+  // (Read once the page is in, not as it's first drawn: going there within the game, the address
+  // only changes after the new page has drawn, so it read the old one and always opened on the campaign.)
+  const [tab, setTab] = useState<"campaign" | "quests" | "boards">("campaign");
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (new URLSearchParams(window.location.search).get("tab") === "daily") setTab("quests");
+  }, []);
   const quests = tab !== "boards"; // (the campaign too: neither shows the leaderboards' parts)
   const [kind, setKind] = useState<BoardKind>("species");
   const [dungeon, setDungeon] = useState<DungeonId>(1);
