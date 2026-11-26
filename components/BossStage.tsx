@@ -37,6 +37,12 @@ const BOSS_DEPTH = 0.8;
 const BOSS_BACK = "14%";
 const fit = (id: string): React.CSSProperties => ({ maxWidth: `calc(${MAX_W[id] ?? "40cqw"} * ${BOSS_DEPTH})`, height: "auto" });
 const size = (id: string) => (SCALE[id] ?? 3) * BOSS_DEPTH;
+// A boss is a size beyond the biggest creature (the user, 2026-11-26: "more like a 6 than a 5,
+// so it feels daunting"): your creature stands at its size (lib/creatures/sizes.ts) against the
+// boss's body, a size 5 BOSS_SIZE times smaller than it. BOSS_YOU_TALL: a size 5's height in the
+// lair (the Cyclops's body, about square, is drawn min(its scale, its MAX_W) wide).
+export const BOSS_SIZE = 1.4;
+export const BOSS_YOU_TALL = `(min(${(119 * size("cyclops")) / 2}px, ${MAX_W.cyclops} * ${BOSS_DEPTH}) / ${BOSS_SIZE})`;
 // The boss stands in the right part of the lair; your creature on the left.
 const BOSS_SIDE: React.CSSProperties = { paddingLeft: "38%", paddingRight: "2%", paddingBottom: BOSS_BACK };
 
