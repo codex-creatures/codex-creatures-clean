@@ -17,3 +17,7 @@ the back, vein style things down it. I like the teeth. I like the colours"; the 
 of C with the reference as the style image), R2/R3 (text edits of C), R4/R5 (pixen; hooves, out). round6.png: the thin
 glowing horn on R1, R3, R2 = **the Mythiclaw finalists now**, A (V1, the judge's first), B (V3, cooler lilac), C (V2, brightest
 veins). The first look's finalists are in finals/first-look/.
+
+**Claws (2026-11-26):** the user picked C (V2) but wanted "more strong looking claws and more aggressive on the ones that are
+raised … too bird claw like, go more like the GPT rendition". round7.png: K1 (by the reference image), K2, K3 (text edits).
+**The Mythiclaw finalists now:** A = K3 (biggest hooked claws), B = K2, C = K1 (closest to the old C).

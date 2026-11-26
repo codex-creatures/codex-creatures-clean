@@ -36,3 +36,6 @@ R5 1854d7dc-9ad7-452c-b0e0-35357ee5638d the user's look: pixen, rearing, seed 51
 V1 d709b0be-cfb6-44ac-ac99-37a38b72f8d2 edit of R1: long thin glowing horn, bigger back spikes
 V3 e743c5e6-e133-4c2d-81f5-22e4124e4d10 edit of R3: long thin glowing horn, cooler lilac coat
 V2 73ddf64f-9ba9-473c-bf27-38dfdc6278c9 edit of R2: long thin glowing horn, bigger spikes, brighter veins
+K1 dc199782-3504-41c5-b438-1f37f8f5f58a edit of V2 (C): heavy beast claws, by the reference image; raised claws splayed
+K2 4473a669-ddb1-4dd6-b184-b696789232ed edit of V2 (C): heavy clawed paws, raised claws splayed
+K3 6f0dbea2-52d7-402c-a443-04532a12f2e7 edit of V2 (C): heavy clawed paws, seed 314
