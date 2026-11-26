@@ -233,7 +233,7 @@ function UnseenCard({ t }: { t: CreatureTemplate }) {
   return (
     <div style={{ ...PANEL, marginTop: 0, borderColor: rc.border, opacity: 0.85 }}>
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <div style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), #101117 75%)", padding: 4 }}>
+        <div style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)", padding: 4 }}>
           <PixelSprite sprite={creatureSprite(t.id)} scale={2} style={{ filter: "brightness(0) drop-shadow(0 0 1px rgba(255,255,255,0.35))" }} />
         </div>
         <div>
@@ -254,7 +254,8 @@ function CreatureCard({ t, level }: { t: CreatureTemplate; level: number }) {
   return (
     <div style={{ ...PANEL, marginTop: 0, borderColor: rc.border }}>
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <div style={{ background: `radial-gradient(circle, ${rc.glow}, #101117 75%)`, padding: 4 }}>
+        {/* (No box round it: its rarity's glow fades into the panel, the user, 2026-11-27.) */}
+        <div style={{ background: `radial-gradient(circle, ${rc.glow}, transparent 70%)`, padding: 4 }}>
           <PixelSprite sprite={creatureSprite(t.id)} scale={2} title={t.name} />
         </div>
         <div style={{ minWidth: 0 }}>
