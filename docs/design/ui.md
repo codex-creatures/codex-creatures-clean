@@ -34,7 +34,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   rarity, with no boxes round them, their races or the grid (the user, 2026-11-17: the words need the room). A creature card (the user, 2026-11-24): the teams it's in top left (T1…), what it wears top right (⚔️ 🛡️), the creature, then its level, then its name; no race or type words. Its window shows the attack style its multipliers favour (`preferredStyles`: "Melee", or two as "Melee - Magic") in place of the type words (Bruiser, Hybrid…). A tapped codex (the bookcase, a creature's Moves tab) opens in a window floating over the page (components/CodexWindow.tsx), with ‹ › on the screen's sides where its middle third meets its bottom third (components/SideArrow.tsx: drawn pixel chevrons on brass buttons, kept off the middle of the window, as on a creature's window; press and hold either to lift both and drag them up or down, the spot kept per device in lib/sideArrow.ts; the user, 2026-11-26), ← → or a sideways swipe for the next; teaching from the bookcase happens in it too; codexes, schematics and soul stones show their own art everywhere, not emoji. Muted, adventurous colours: leather, brass and parchment, never neon. The Labyrinth entrance shows the
   dungeon picked as a showcase (its boss in its own light on a cave backdrop: a shadow for the camp's
   chief and the Warden, who are different every time), with a medallion per dungeon under it to pick
-  one, and your creatures in a panel that scrolls inside itself so the screen fits.
+  one, and your creatures in a panel that scrolls inside itself so the screen fits. A medallion is its boss's head
+  (components/DungeonHead.tsx; the Encampment's the Baby Cyclops, the Abyss's a shadow), and it stands for its
+  dungeon wherever one's named in place of an emoji: Klutz's trips and where he's exploring (the user, 2026-11-27).
 - **The stone card standard:**
   - #23262f stone with pixel bevels and a thin rarity-coloured trim;
   - the pixel font in yellow #f1d9a0, and sunken wells for text;

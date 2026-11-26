@@ -8,17 +8,17 @@
 // on the trip (kit), just not shown.
 
 import { useState } from "react";
-import { KLUTZ_DESTS, lookByName, tripLog, TRIP_LOG, type KlutzDest, type KlutzTrip } from "@/lib/klutz";
+import { KLUTZ_DESTS, lookByName, tripLog, TRIP_LOG, type KlutzTrip } from "@/lib/klutz";
 import { CREATURE_BY_ID } from "@/lib/creatures/creatureData";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import PixelSprite, { itemSprite } from "@/components/PixelSprite";
 import { GOLD_SPRITE } from "@/lib/sprites/items";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { KlutzState } from "@/lib/klutz";
+import DungeonHead from "@/components/DungeonHead";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
-const DEST_ICON: Record<KlutzDest, string> = { 0: "⛺", 1: "👁️", 2: "🐍", 3: "🕳️" };
 
 const why = (t: KlutzTrip) => (t.recalled ? "you called him back" : t.home === "pack" ? "his pack was full" : t.home === "hurt" ? "he was hurt"
   : t.home === "ko" ? "something beat him" : t.home === "limit" ? "he'd been out long enough" : "the hunt was over");
@@ -46,7 +46,7 @@ export default function KlutzTrips({ klutz }: { klutz: KlutzState }) {
               style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", background: "none", border: "none", color: "inherit", font: "inherit", cursor: "pointer", minHeight: 52 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
                 <span className="pixel-font" style={{ flex: 1, minWidth: 0, fontSize: 15, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {t.dest !== undefined ? `${DEST_ICON[t.dest]} ${KLUTZ_DESTS[t.dest].name}` : "🌀 The Labyrinth"}
+                  {t.dest !== undefined ? <><DungeonHead d={t.dest} size={22} /> {KLUTZ_DESTS[t.dest].name}</> : "🌀 The Labyrinth"}
                 </span>
                 <span style={{ fontSize: 12, color: MUTED, whiteSpace: "nowrap" }}>{when(t.startedAt)} · {length(t)}</span>
                 <span style={{ color: MUTED, fontSize: 12 }}>{shut ? "▸" : "▾"}</span>

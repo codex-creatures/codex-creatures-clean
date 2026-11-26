@@ -25,6 +25,7 @@ import { useEscape } from "@/hooks/useEscape";
 import { useScrollKeep } from "@/hooks/useScrollKeep";
 import { startTour, TOUR_CHOICES } from "@/lib/tour";
 import DenFrame from "@/components/DenFrame";
+import DungeonHead from "@/components/DungeonHead";
 import KlutzHead from "@/components/klutz/KlutzHead";
 import PixelSprite, { creatureSprite, PotionIcon } from "@/components/PixelSprite";
 import { POTIONS } from "@/lib/dungeon/run";
@@ -56,7 +57,6 @@ import {
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
 const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
-const DEST_ICON: Record<KlutzDest, string> = { 0: "⛺", 1: "👁️", 2: "🐍", 3: "🕳️" };
 const DEST_OPENS: Record<KlutzDest, string> = { 0: "", 1: "Beat the Cyclops", 2: "Beat the Hydra", 3: "Beat the Warden" };
 // What a skill does now (or, untrained, what a point gives).
 const pct = (s: SkillKey, lv: number) => Math.round(skillChance(s, lv) * 100);
@@ -175,7 +175,7 @@ function SendTab({ game, nudge, now, status, recallArmed, setRecallArmed }: { ga
     const e = status.expedition;
     return (
       <div className="stone-panel" style={{ marginTop: 10 }}>
-        <div className="pixel-font" style={{ fontSize: 16, color: GOLD }}>{e.dest !== undefined ? `${DEST_ICON[e.dest]} Exploring ${KLUTZ_DESTS[e.dest].name}…` : "Hunting in the Labyrinth…"}</div>
+        <div className="pixel-font" style={{ fontSize: 16, color: GOLD }}>{e.dest !== undefined ? <><DungeonHead d={e.dest} size={24} /> Exploring {KLUTZ_DESTS[e.dest].name}…</> : "Hunting in the Labyrinth…"}</div>
         <div style={{ height: 8, background: "#0e0f14", margin: "8px 0 4px" }}>
           <div style={{ height: "100%", width: `${(status.hp / e.maxHp) * 100}%`, background: "#22c55e" }} />
         </div>
@@ -240,7 +240,7 @@ function SendTab({ game, nudge, now, status, recallArmed, setRecallArmed }: { ga
               <button key={d} className="card-btn" disabled={!open} data-active={picked === d}
                 onClick={() => { setPicked(d); setWhy(null); }}
                 style={{ gap: 10, minHeight: 52, opacity: open ? 1 : 0.45, outline: picked === d && open ? `2px solid ${GOLD}` : undefined }}>
-                <span style={{ fontSize: 22, width: 30, textAlign: "center" }}>{DEST_ICON[d]}</span>
+                <DungeonHead d={d} size={34} />
                 <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
                   <b style={{ color: GOLD }}>{KLUTZ_DESTS[d].name}</b>
                   <span style={{ display: "block", fontSize: 12, color: open ? RARITY_COLORS[best].text : MUTED }}>{open ? `Up to ${cap(best)}` : DEST_OPENS[d]}</span>

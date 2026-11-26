@@ -13,6 +13,7 @@ import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, bagWant
 import { MINOTAUR_ART } from "@/lib/sprites/creatures";
 import { SectionTitle, loadOwnedCreatures, rarityColor, MUTED, type OwnedCreature } from "@/components/BattleScreen";
 import Help from "@/components/Help";
+import { HeadPicture } from "@/components/DungeonHead";
 import { gearMarks } from "@/components/CreatureMarks";
 import { BOX_NAMES, type CappedBox } from "@/lib/items/storage";
 
@@ -23,14 +24,14 @@ const BOSS: Record<DungeonId, string> = { 0: "the camp's chief", 1: "the Cyclops
 const roomsTo = (d: DungeonId) => (d === 0 ? CAMP_ROUTE : d === 1 ? DUNGEONS[1].spec.minRoute : DEEP_ROUTE);
 
 // Each dungeon's showcase (the UI overhaul, the user, 2026-11-17): its boss's art (the camp's chief and
-// the Warden are different every time, so a shadow), where a medallion crops it, and the backdrop's light.
+// the Warden are different every time, so a shadow) and the backdrop's light. (The medallions under it: components/DungeonHead.tsx.)
 // glow: the boss's light; sky: the cave above; motes: what drifts in the air.
-const SHOW: Record<DungeonId, { art: string; crop: string; shadow?: boolean; glow: string; sky: string; ground: string; motes: string; sub: string }> = {
-  0: { art: "/sprites/rooms/dire_wolf_scene.png", crop: "40% 20%", shadow: true, glow: "rgba(255,150,60,0.45)", sky: "#24170c", ground: "#120b06", motes: "#ffb45e", sub: "The goblin camp" },
-  1: { art: "/sprites/creatures/cyclops.png", crop: "50% 10%", glow: "rgba(150,180,235,0.35)", sky: "#141a24", ground: "#0b0e14", motes: "#d8e2f0", sub: "The Labyrinth" },
-  2: { art: "/sprites/creatures/hydra/hydra-000.png", crop: "50% 15%", glow: "rgba(120,230,150,0.42)", sky: "#14261d", ground: "#0a1410", motes: "#c9ffd8", sub: "The Deep Labyrinth" },
-  3: { art: "/sprites/creatures/aurelius.png", crop: "50% 15%", shadow: true, glow: "rgba(170,70,255,0.42)", sky: "#150d1e", ground: "#0b0710", motes: "#e0b8ff", sub: "The Abyss" },
-  4: { art: MINOTAUR_ART, crop: "50% 15%", glow: "rgba(230,110,60,0.42)", sky: "#22140e", ground: "#120a07", motes: "#ffc69a", sub: "The Maze" },
+const SHOW: Record<DungeonId, { art: string; shadow?: boolean; glow: string; sky: string; ground: string; motes: string; sub: string }> = {
+  0: { art: "/sprites/rooms/dire_wolf_scene.png", shadow: true, glow: "rgba(255,150,60,0.45)", sky: "#24170c", ground: "#120b06", motes: "#ffb45e", sub: "The goblin camp" },
+  1: { art: "/sprites/creatures/cyclops.png", glow: "rgba(150,180,235,0.35)", sky: "#141a24", ground: "#0b0e14", motes: "#d8e2f0", sub: "The Labyrinth" },
+  2: { art: "/sprites/creatures/hydra/hydra-000.png", glow: "rgba(120,230,150,0.42)", sky: "#14261d", ground: "#0a1410", motes: "#c9ffd8", sub: "The Deep Labyrinth" },
+  3: { art: "/sprites/creatures/aurelius.png", shadow: true, glow: "rgba(170,70,255,0.42)", sky: "#150d1e", ground: "#0b0710", motes: "#e0b8ff", sub: "The Abyss" },
+  4: { art: MINOTAUR_ART, glow: "rgba(230,110,60,0.42)", sky: "#22140e", ground: "#120a07", motes: "#ffc69a", sub: "The Maze" },
 };
 // Where the motes drift, as shares of the showcase (fixed, so it looks the same every time).
 const MOTES: [number, number, number][] = [[12, 30, 3], [22, 62, 2], [31, 18, 2], [68, 24, 3], [79, 52, 2], [88, 34, 3], [44, 12, 2], [58, 66, 2], [7, 56, 2]];
@@ -182,8 +183,7 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
                   title={locked ? lockedWhy(row) : name}
                   style={{ background: "none", border: "none", padding: 0, cursor: locked ? "default" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, minWidth: 0 }}>
                   <span className="medallion" data-on={on} data-locked={locked}><span className="medallion-in">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {!locked && <img src={SHOW[row].art} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: SHOW[row].crop, imageRendering: "pixelated", filter: SHOW[row].shadow ? "brightness(0.25) sepia(1) hue-rotate(-20deg)" : undefined }} />}
+                    {!locked && <HeadPicture d={row} />}
                     {locked && <span style={{ fontSize: 18, opacity: 0.6 }}>🔒</span>}
                   </span></span>
                   <span className="pixel-font" style={{ fontSize: 10, color: on ? "#ffe7a8" : locked ? "#6f6b62" : "#a9a49a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{row === 0 ? "Camp" : name}</span>
