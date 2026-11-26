@@ -33,6 +33,8 @@ export type { WalkState };
 // anywhere on the ring and drag, and you walk that way while it's held; the
 // knob follows your thumb. Tap a thing to use it (the ✋ button over it was
 // taken out: the user, 2026-11-09). Tapping the floor to walk works as before.
+// Not on a computer, a mouse or trackpad the main pointer (.walk-stick, globals.css): clicking the floor
+// walks, and WASD (the user, 2026-11-27: "no longer needed" there). A touch screen keeps it.
 const STICK_SIZE = "min(28cqw, 120px)";
 const STICK_KNOB = 0.42; // the knob's share of the ring
 export function Stick({ onPush }: { onPush: (push: Pt | null) => void }) {
@@ -50,7 +52,7 @@ export function Stick({ onPush }: { onPush: (push: Pt | null) => void }) {
   const letGo = () => { onPush(null); setKnob({ x: 0, y: 0 }); };
   const travel = ((1 - STICK_KNOB) / 2) * 100; // % of the ring the knob sits in from the edge, centred
   return (
-    <div style={{ position: "absolute", ...(left ? { left: 10 } : { right: 10 }), bottom: 10, zIndex: 4 }}>
+    <div className="walk-stick" style={{ position: "absolute", ...(left ? { left: 10 } : { right: 10 }), bottom: 10, zIndex: 4 }}>
       <div ref={ring} aria-label="Walk"
         onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); push(e); }}
         onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) push(e); }}

@@ -47,7 +47,7 @@ Settings' **left-handed mode**, the dock mirrored with it so Bag and Retreat sit
 held, you walk the way it points, a tile at a time snapped to the eight ways, sliding along
 a wall you push into diagonally. Things are used by tapping them (the ✋ button was taken
 out, the user, 2026-11-09). On a keyboard, WASD or the arrows walk (`keysPush`, two at once
-a diagonal) and E uses what you're beside (`usableNear`: unopened things first). Tapping to
+a diagonal) and E uses what you're beside (`usableNear`: unopened things first). On a computer (a mouse or trackpad the main pointer) there's no joystick: clicking walks, and the keys (the user, 2026-11-27; `.walk-stick`, a CSS media query, so a touch screen keeps it). Tapping to
 walk still works. 🧪
 **Drawing order** (the user, 2026-11-09): things you walk over (a fight's sack, floor
 candles) lie under everything standing, so you're always drawn over them; a mini boss's or

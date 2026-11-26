@@ -450,6 +450,9 @@ body {
 }
 .screen-shake { animation: screen-shake 0.5s ease-out; }
 
+/* The walk stick (components/WalkParts.tsx): not where the main pointer is a mouse or trackpad. */
+@media (hover: hover) and (pointer: fine) { .walk-stick { display: none; } }
+
 /* Klutz's dynamite going off at the Den's rubble: a white-hot flash, then dust. */
 .den-blast {
   position: absolute; width: 30%; aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; border-radius: 50%;
