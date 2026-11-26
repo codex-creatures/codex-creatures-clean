@@ -25,7 +25,7 @@ the PNG here.
 | creatures/cave_bat.png | gallery:7a5a21a3-4c74-533e-9d12-c6efc97b48ed (the Cave Goblin, sample 11 of 16; raw generation; trimmed + mirrored here. The old Cave Bat: gallery:054e1aad-2c7f-4370-8ba2-bae183383893) |
 | creatures/crystal_golem.png | gallery:39cc6f47-8738-4a8f-8a88-c5e05ee6ad7b |
 | creatures/crystalback.png | gallery:537af213-0666-448e-a72d-cb308fe90489 |
-| creatures/dire_wolf.png | gallery:84c2ddf7-7185-40dd-9d54-9a0f7cecb83d |
+| rooms/dire_wolf_scene.png | gallery:84c2ddf7-7185-40dd-9d54-9a0f7cecb83d (the Dire Wolf's art, creatures/dire_wolf.png until the Mythiclaw took its id, 2026-11-26) |
 | creatures/dreadpox.png | gallery:72f0d447-6a3d-5c80-8c41-38fa82810610 (raw generation; trimmed + mirrored here) |
 | creatures/flame_imp.png | gallery:e935d6b5-f3df-5889-a93d-4f6bb8758262 (raw generation; trimmed + mirrored here) |
 | creatures/glob.png | gallery:e423893e-fd95-5b08-b974-79be7cbda576 (raw generation; trimmed + mirrored here) |
@@ -41,7 +41,7 @@ the PNG here.
 | creatures/troglodyte_brute.png | job 67ed269a-ca13-4765-83fe-b35df2944608 (pixen 128×128, gallery c335fd01-ea0d-5785-9bb3-faf5f7481f87) |
 | creatures/gravewarden.png | job 8cd2d3c2-fcb0-40b4-a98b-b79505ae73b1 (pixen 128×128, gallery bde346e7-3644-5a5e-bdd9-8584e533f2a6) |
 | creatures/hexed_puppet.png | edit_image_pro_flash 54cf04de-84a8-4d7d-b7e3-9524eba3d90e (a whole marionette cross) of pixen cc79a273-a6d2-476f-ad22-1e19d5242628 |
-| creatures/dire_wolf.png | the Mythiclaw (2026-11-26; the Dire Wolf's art moved to rooms/dire_wolf_scene.png), restyled to the user's reference (art/new-creatures-2026-11-26/ref): edit_image_pro_flash c66ce2cb-1abb-4db8-9a3a-ff2f43a85619 (clean charcoal horn, light grey ridges) of a1b91ad4-7a01-4fcb-bf24-67a475673d93 (more fangs, black/grey horn) of 5b912fc0-92ba-4ef2-a57e-d450709078dc (front claws thrust forward, wider mouth) of dc199782-3504-41c5-b438-1f37f8f5f58a (heavy claws, by the user's reference) of 73ddf64f-9ba9-473c-bf27-38dfdc6278c9 of 0cdac18a-04e7-4dae-99ae-5bf7e993f0c3 of the rearing edit ea24f831-e781-43a5-8db0-5b98067ff58f; option A of three (stand-in until the user picks) |
+| creatures/dire_wolf.png | the Mythiclaw, the user's pick (2026-11-26; the Dire Wolf's art moved to rooms/dire_wolf_scene.png): edit_image_pro_flash dc199782-3504-41c5-b438-1f37f8f5f58a (heavy claws, by the user's reference image) of 73ddf64f-9ba9-473c-bf27-38dfdc6278c9 (thin glowing horn) of 0cdac18a-04e7-4dae-99ae-5bf7e993f0c3 (the reference's look) of the rearing edit ea24f831-e781-43a5-8db0-5b98067ff58f of pixen 2b5c7fd7-f338-461e-8b08-ac3a2933bdab; art/new-creatures-2026-11-26/finals/second-look/mythiclaw_C.png |
 | creatures/labyrinth_sprite.png | edit_image_pro_flash c5ece9ed-93db-4bfb-ac56-76ac7a1ec93c (white-gold glowing eyes) of pixen 399499dc-a679-4dc3-8a3d-d87dc22c41ad; option C, the user's pick (2026-11-26) |
 | creatures/deep_angler.png | gallery:aa6e8bcd-c214-4545-8890-8c9f9b18fcb7 (raw generation; trimmed + mirrored here) |
 | creatures/tunnel_wyrm.png | gallery:6b352516-6423-470d-8f0c-1b50394f10a9 (raw generation; trimmed + mirrored here) |
