@@ -117,7 +117,8 @@ export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined
   // Damage past a knockout is worth nothing (overkill = false only for the walled check).
   const value = (s: Skill, overkill = false) => {
     const fx = s.effect;
-    const hit = calcDamage(s, me, them, fx?.kind === "precise").damage;
+    // (Spirit Blade's share of their max HP lands on top of the hit.)
+    const hit = calcDamage(s, me, them, fx?.kind === "precise").damage + (fx?.kind === "spiritblade" ? Math.round(them.maxHp * fx.share) : 0);
     const counted = overkill ? hit : Math.min(hit, them.hp);
     let v = fx?.kind === "precise" ? counted * fx.hitChance : counted;
     if (fx?.kind === "cripple" && !isCrippled(them) && theirAgil >= myAgil && theirAgil * (1 - CRIPPLE_AGILITY_LOSS) < myAgil) {

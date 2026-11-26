@@ -19,7 +19,7 @@ const ART_SIZES: Record<string, [number, number]> = {
   moss_wolf: [82, 65],
   amber_wasp: [62, 55],
   bellow_toad: [90, 68],
-  dire_wolf: [112, 111],
+  dire_wolf: [115, 117], // the Mythiclaw (2026-11-26; the Dire Wolf's old art is rooms/dire_wolf_scene.png)
   ironhide: [122, 87],
   cave_bat: [60, 63], // the Cave Goblin (was the Cave Bat; the id stays for old saves)
   rust_beetle: [81, 68],
@@ -36,6 +36,7 @@ const ART_SIZES: Record<string, [number, number]> = {
   glob: [78, 63],
   dreadpox: [83, 92],
   gleamling: [52, 58],
+  labyrinth_sprite: [114, 115],
   plague_rat: [64, 59],
   rotgut_fly: [62, 62],
   deep_angler: [75, 71],
@@ -67,7 +68,7 @@ const ART_SIZES: Record<string, [number, number]> = {
 // here by mistake: it runs leftwards, so it turned its back on its foe: the user, 2026-11-24.)
 const FACING_RIGHT = new Set(["mr_shadows"]);
 // Those that float rather than stand: drawn hanging in the air, bobbing.
-const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "amber_wasp", "storm_phoenix", "gleamling", "rotgut_fly", "skinwing", "hexed_puppet"]);
+const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "amber_wasp", "storm_phoenix", "gleamling", "rotgut_fly", "skinwing", "hexed_puppet", "labyrinth_sprite"]);
 
 
 // Shown for creatures that don't have their own sprite yet.
@@ -129,7 +130,6 @@ const BACK_SIZES: Record<string, [number, number]> = {
   cave_bat: [54, 61],
   crystal_golem: [118, 115],
   deep_angler: [73, 69],
-  dire_wolf: [107, 109],
   dreadpox: [82, 89],
   dust_sprite: [48, 50],
   flame_imp: [69, 73],

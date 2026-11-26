@@ -508,7 +508,7 @@ const TILT = [-1, 1.1, -0.5, 0.7];
 // A Wanted poster's picture: the chapter's boss in sepia (the Cyclops, the Hydra), else a
 // shadow of whoever it'll be (the camp's chief and the Warden are different every time).
 function WantedPicture({ chapter }: { chapter: number }) {
-  const art = chapter === 1 ? "/sprites/creatures/cyclops.png" : chapter === 2 ? "/sprites/creatures/hydra/hydra-000.png" : "/sprites/creatures/dire_wolf.png";
+  const art = chapter === 1 ? "/sprites/creatures/cyclops.png" : chapter === 2 ? "/sprites/creatures/hydra/hydra-000.png" : "/sprites/rooms/dire_wolf_scene.png";
   const shadow = chapter !== 1 && chapter !== 2;
   return (
     <div style={{ width: 76, height: 64, display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden", boxShadow: "inset 0 0 0 2px rgba(122,90,48,0.5)", background: "radial-gradient(ellipse at 50% 80%, rgba(122,90,48,0.25), transparent 70%)" }}>

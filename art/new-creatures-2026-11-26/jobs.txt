@@ -1,0 +1,30 @@
+M1 8ca94c8a-28e5-4e60-9f4b-facea20effaa lean menacing, thick coiled horn
+M2 cc8b2824-76e2-49e3-a8dd-738dcdabcc1d gaunt feral, ribs, snarling
+M3 f5115b4d-1eb1-46b9-8f6e-1ce0c8b8170b holy predator, halo glow, head lowered
+M4 0fbc446c-e4c4-4887-8d5a-03347ade455f sinister lean, glowing eyes, mid stride
+M5 b704a11e-c61f-4068-a54d-ec708659bda4 ancient scarred, tattered tail
+M6 2b5c7fd7-f338-461e-8b08-ac3a2933bdab reared up, talons raised
+S1 399499dc-a679-4dc3-8a3d-d87dc22c41ad gaunt ashen, dragonfly wings
+S2 86998418-ac51-4bd5-947b-a732de99fda2 wicked grin, needle teeth, moth wings, thorn wand
+S3 55722fc8-6fbd-47ee-9cac-39e140d38f07 candle light and dust, four ragged wings
+S4 1ea7d289-1a4a-4e57-b06d-7c4d10571e26 cracked porcelain doll face, halo
+S5 a59b6980-8506-4604-8733-a6568c7d2858 feral cave pixie, wasp wings
+S6 1ce3bf56-226f-4dba-9e5e-875e0e79484a hooded, holy lantern
+M7 cd8e3a96-2a27-4f8a-8473-7a9a6f82b2e6 r2 judge prompt 1 (lean snarling, single ridged horn)
+M8 0006484d-7882-4de4-a6e4-5dc2ea5daa44 r2 judge prompt 1, seed 777
+M9 25013843-841c-450d-b2d3-e769a7221d40 r2 judge prompt 2 (gaunt scarred, mid-lunge)
+M10 56ed7005-5195-4532-8342-c226484cfd3f r2 judge prompt 2, seed 1313
+M11 f3977a31-49bd-4f48-bb8a-6a3d91d56e77 r2 judge prompt 3 (rearing, holy glow)
+M12 6d29ba7a-d9d9-42a7-8ad8-6d6156969096 r2 judge prompt 3, seed 2024
+S7 d7c2a0cf-a4eb-4b2e-8bda-5db37b64f209 r2 lantern, toothed grin
+S8 427b4f31-e1d1-4dc6-ac3b-59fac191caa2 r2 starved, cracked halo, golden spark
+E8 5b20ed48-d1b4-46dc-8a54-e3dccd13271e edit_image_pro_flash of M8: ram horns off, one corkscrew horn
+E4 6b5f2556-7356-4294-b855-922ba34b898d edit_image_pro_flash of M4: ram horn off, corkscrew horn, thicker legs
+E1 706e0620-3936-46a1-ad33-9253d7d0e87b edit_image_pro_flash of M1: ram horns off, corkscrew horn, talons
+E6 61a05091-045e-40e3-aba5-2d13543d3d77 edit_image_pro_flash of M6: corkscrew horn, talons (rearing)
+E7 720726bf-1308-4efa-a734-d37989933de1 edit_image_pro_flash of M7: corkscrew horn, talons, snarl
+F7 43db9c68-6cb0-4d01-9d34-db971a477059 edit of E7: tighter ridged ram's-horn corkscrew
+F1 e913406e-dd2d-4771-8ed0-44816428ce2a edit of E1: tighter ridged horn, pale glare under heavy brow
+F6 ea24f831-e781-43a5-8db0-5b98067ff58f edit of E6: tighter ridged horn, straight point
+F4 48af4b17-93d5-4a85-9b0c-8eb734c87aec edit of S4: darker, more torn dress
+F0 c5ece9ed-93db-4bfb-ac56-76ac7a1ec93c edit of S1: faint white-gold glowing eyes

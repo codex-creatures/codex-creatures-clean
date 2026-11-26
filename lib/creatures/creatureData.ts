@@ -95,7 +95,11 @@ export type MoveEffect =
   | { kind: "bounce" }                                   // a small hit, then it swaps out to a teammate the player picks (not first)
   // Force Push (the user, 2026-11-24).
   | { kind: "forcepush"; burst: number }                 // a small hit; the caltrops and cloud under your team go, and caltrops are hurled at the target for this share of its max HP
-  | { kind: "curse"; power: number; minRounds: number; maxRounds: number; spread: number }; // no hit: the target takes a power-`power` hit each round; swapping out, it may pass to a benched teammate
+  | { kind: "curse"; power: number; minRounds: number; maxRounds: number; spread: number } // no hit: the target takes a power-`power` hit each round; swapping out, it may pass to a benched teammate
+  // The user's Mythiclaw moves (2026-11-26).
+  | { kind: "agilstrike"; share: number }                 // a melee hit that swings with this share of its agility (slows included) in place of its melee attack
+  | { kind: "slow"; chance: number; loss: number; rounds: number } // a chance the target loses this share of its agility for a few rounds (no stumble, unlike a cripple)
+  | { kind: "spiritblade"; share: number; bossShare: number; swings: number }; // each hit adds this share of the target's max HP (bossShare against a boss), past armour; it swings `swings` rounds running (paid once) unless it swaps out
 
 export type Skill = {
   name: string;
@@ -397,7 +401,9 @@ const OLDER_SPECIES: CreatureTemplate[] = [
   { id: "moss_wolf",        name: "Moss Wolf",        rarity: "common",    baseHp: 65, cls: "melee", proficiency: { atk: 16, rng: 2, mag: 3, agil: 12, mdef: 5, rdef: 1, magdef: 3, hp: 20 }, skills: s("Slash","Jab","Heavy Blow"),                           flavour: "Camouflaged in undergrowth. Pounces before you spot it." },
   { id: "amber_wasp",       name: "Amber Wasp",       rarity: "uncommon",  baseHp: 72, cls: "ranged", proficiency: { atk: 10, rng: 12, mag: 0, agil: 22, mdef: 4, rdef: 1, magdef: 4, hp: 10 }, skills: s("Pebble Shot","Bolt","Jab","Stone Throw"),                  flavour: "Glass jaw but lightning fast. Always strikes first." },
   { id: "bellow_toad",      name: "Bellow Toad",      rarity: "rare",      baseHp: 102, cls: "melee", proficiency: { atk: 14, rng: 12, mag: 3, agil: 24, mdef: 8, rdef: 2, magdef: 14, hp: 30 }, skills: s("Cripple","Crippling Shot","Slash","Bolt"),         flavour: "Its throat swells like a bellows before it spits. The glands on its back glow when it's angry, and it's always angry." },
-  { id: "dire_wolf",        name: "Dire Wolf",        rarity: "epic",      baseHp: 113, cls: "melee", proficiency: { atk: 42, rng: 4, mag: 3, agil: 22, mdef: 14, rdef: 5, magdef: 11, hp: 25 }, skills: s("Crush","Heavy Blow","Slash","Devastator","Impale"),     flavour: "Three times the size of a normal wolf. Twice as hungry." },
+  // The Mythiclaw (the user's design, 2026-11-26) took the Dire Wolf's place, and its id, so the Dire Wolves players
+  // own are Mythiclaws now (their %s moved over: PCT_SHIFT_MYTHICLAW, lib/creatures/instance.ts).
+  { id: "dire_wolf",        name: "Mythiclaw",        rarity: "epic",      baseHp: 110, cls: "melee", proficiency: { atk: 34, rng: 3, mag: 6, agil: 36, mdef: 12, rdef: 6, magdef: 14, hp: 15 }, skills: s("Crush","Heavy Blow","Slash","Devastator","Impale"),     flavour: "A white beast of the old shrines, horned and taloned. Whatever it judges, it runs down." },
   { id: "ironhide",         name: "Ironhide",         rarity: "legendary", baseHp: 150, cls: "melee", proficiency: { atk: 52, rng: 6, mag: 3, agil: 10, mdef: 60, rdef: 33, magdef: 18, hp: 50 }, skills: s("Devastator","Crush","Impale","Heavy Blow","Slash","Stone Throw"), flavour: "A war elephant whose trunk was replaced with a double-headed battleaxe." },
   // UNDERKIN
   { id: "cave_bat",         name: "Cave Goblin",      rarity: "common",    baseHp: 60, cls: "ranged", proficiency: { atk: 4, rng: 14, mag: 0, agil: 16, mdef: 2, rdef: 6, magdef: 4, hp: 15 }, skills: s("Pebble Shot","Bolt","Flick"),                         flavour: "Pale as a cave fish and twice as mean. It sees you long before you see it, and it's already picked out a rock." },

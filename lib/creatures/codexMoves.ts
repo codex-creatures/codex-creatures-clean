@@ -13,6 +13,10 @@ import type { CombatClass, MoveEffect, Skill } from "./creatureData";
 import type { RaceV2 } from "./racesV2";
 
 type Rarity = NonNullable<Skill["codexRarity"]>;
+
+// Horn Rush: the share of its agility it swings with. Spirit Blade: the share of the target's max HP each swing adds.
+export const HORN_RUSH_AGILITY = 0.6;
+export const SPIRIT_BLADE = { share: 0.06, boss: 0.03 };
 type Extra = Partial<Skill>;
 
 // A move that lands as its own race (asRace), and is that race's codex (race).
@@ -153,4 +157,18 @@ export const CODEX_MOVES_2026: Skill[] = [
   utility("Curse", "undead", 60, "legendary", { kind: "curse", power: 6, minRounds: 2, maxRounds: 3, spread: 0.6 },
     ["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "dreadpox", "hexed_puppet"],
     "A small magic hit each round for 2–3 rounds. Each swap-out, 60% it passes to a benched teammate. 3-round cooldown.", { cooldown: 3 }),
+
+  // The user's Mythiclaw moves (2026-11-26): names, rarities, races and what they do the user's; the numbers
+  // Claude's, simmed. Learners are Claude's draft for the user's tick chart.
+  // Horn Rush swings with 60% of its agility for its attack: geared agility runs 1.6–1.8× melee attack on every
+  // creature (tanks too), so the whole of it would hit about twice as hard as any melee move.
+  move("Horn Rush", "melee", "beast", 20, 50, "rare", { kind: "agilstrike", share: HORN_RUSH_AGILITY },
+    ["dire_wolf", "moss_wolf", "amber_wasp", "hollow_matriarch", "void_serpent", "aurelius", "plague_rat", "pale_rider", "skinwing", "gutsnout", "cinder_husk"],
+    "Melee, but it swings with its agility, not its attack: the faster it is, the harder it hits."),
+  move("Leg Sweep", "melee", undefined, 10, 30, "common", { kind: "slow", chance: 0.3, loss: 0.3, rounds: 3 },
+    ["dire_wolf", "moss_wolf", "hollow_matriarch", "veilstalker", "rattlebones", "mr_shadows", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran", "crystal_golem", "deep_angler", "tunnel_wyrm", "plague_rat", "pale_rider", "gutsnout", "grub_keeper", "mole_hag", "cinder_husk", "troglodyte_brute", "gravewarden", "hexed_puppet"],
+    "30% chance the target loses 30% of its agility for 3 rounds."),
+  move("Spirit Blade", "melee", "divine", 20, 60, "epic", { kind: "spiritblade", share: SPIRIT_BLADE.share, bossShare: SPIRIT_BLADE.boss, swings: 3 },
+    ["dire_wolf", "veilstalker", "void_serpent", "mr_shadows", "aurelius", "pale_rider", "gravewarden"],
+    "+6% of the target's max HP through armour (3% on a boss). Locked in for 3 rounds (paid once) unless it swaps out."),
 ];

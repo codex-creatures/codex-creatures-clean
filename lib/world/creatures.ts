@@ -32,7 +32,7 @@ export const SPECIES_SIZE: Record<string, SizeClass | CreatureSize> = {
   dire_wolf: "medium", veilstalker: "medium", the_watcher: "medium", dreadpox: "medium", shambler: "medium", dustwraith: "medium", mr_shadows: "medium",
   thicket_archer: "medium", leafblade_scout: "medium", swamp_witch: "medium", sylvaran: "medium", rattlebones: "medium", ironhide: "medium",
   crystal_golem: "large", hollow_matriarch: "large", void_serpent: "large", tunnel_wyrm: "large", thunderhead: "large", pale_rider: "large", storm_phoenix: "large", aurelius: "large",
-  skinwing: "small", gutsnout: "small", grub_keeper: "small", mole_hag: "small", gloom_gnome: "tiny", hexed_puppet: "small",
+  skinwing: "small", gutsnout: "small", grub_keeper: "small", mole_hag: "small", gloom_gnome: "tiny", hexed_puppet: "small", labyrinth_sprite: "tiny",
   cinder_husk: "medium", troglodyte_brute: "medium", gravewarden: "medium",
   baby_cyclops: "medium",
   cyclops: "huge", hydra: "huge", hydra_spitter: "huge", hydra_hex: "huge", hydra_fang: "huge", // (the hydra: one beast, each head its own fighter)

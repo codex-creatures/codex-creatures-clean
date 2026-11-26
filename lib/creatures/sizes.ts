@@ -14,14 +14,14 @@ export const DEFAULT_SIZE: CreatureSize = 3; // one with no size yet stands pers
 export const SIZE_HEIGHT: Record<CreatureSize, number> = { 1: 0.25, 2: 0.42, 3: 0.62, 4: 0.8, 5: 1 };
 
 const BY_SIZE: Record<CreatureSize, string[]> = {
-  1: ["dust_sprite", "gleamling", "flicker_wisp", "cyclops_hand"],
+  1: ["dust_sprite", "gleamling", "flicker_wisp", "labyrinth_sprite", "cyclops_hand"],
   2: ["cave_bat", "gutsnout", "moss_wolf", "plague_rat", "rattlebones", "skinwing", "thicket_archer", "amber_wasp",
     "flame_imp", "gloom_gnome", "mole_hag", "rotgut_fly", "rust_beetle", "klutz", "cyclops_eye"],
   3: ["grub_keeper", "leafblade_scout", "shambler", "bellow_toad", "cinder_husk", "deep_angler", "glob", "veilstalker",
-    "dire_wolf", "dreadpox", "mr_shadows", "swamp_witch", "the_watcher", "hollow_matriarch", "storm_phoenix", "sylvaran",
+    "dreadpox", "mr_shadows", "swamp_witch", "the_watcher", "hollow_matriarch", "storm_phoenix", "sylvaran",
     "hydra_fang", "hydra_hex", "hydra_spitter"],
   4: ["baby_cyclops", "crystalback", "dustwraith", "gravewarden", "troglodyte_brute", "hexed_puppet", "tunnel_wyrm",
-    "thunderhead", "void_serpent"],
+    "thunderhead", "void_serpent", "dire_wolf"],
   5: ["aurelius", "crystal_golem", "ironhide", "pale_rider", "cyclops", "minotaur"],
 };
 

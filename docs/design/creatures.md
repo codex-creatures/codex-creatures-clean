@@ -6,7 +6,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ## 4. Creatures
 
-- ✅ 44 scannable species (`CREATURE_TEMPLATES`, lib/creatures/creatureData.ts and rosterV2.ts): the 35 (7 races × one of
+- ✅ 45 scannable species (the Labyrinth Sprite, 2026-11-26, makes 45) (`CREATURE_TEMPLATES`, lib/creatures/creatureData.ts and rosterV2.ts): the 35 (7 races × one of
   each rarity) and the user's 9 picks of 2026-11-26 (decision 66): Skinwing, Gutsnout, Grub Keeper (Commons), Mole Hag,
   Gloom Gnome (Uncommons), Cinder Husk, Troglodyte Brute, Gravewarden (Rares), Hexed Puppet (Epic); chosen from 50 drafts
   (art/creature-candidates, with their specs). Each has a rarity, a main **style** (`cls`: melee / ranged / magic),
@@ -43,6 +43,14 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   creature once he's helping (`nameTipDue`, till you've heard him or named one: `nameTipRead`).
 - ✅ The card design is settled (CardFace, the stone card). The Skull Raven (id `storm_phoenix`) is
   the quality benchmark for sprites and cards.
+- ✅ **The Mythiclaw replaced the Dire Wolf** (the user, 2026-11-26, decision 68: "never liked the Dire Wolf as a design, too
+  basic"): a white unicorn-like beast with one coiled horn and hawk talons for hooves; Epic, Beast + Divine (still Beast's Epic first), a fast melee
+  Bruiser (base HP 110; 34 / 3 / 6, agility 36, defences 12 / 6 / 14, HP % 15; size 4). It keeps the id `dire_wolf`, so
+  every Dire Wolf and card players own is a Mythiclaw now (its %s move over once, `PCT_SHIFT_MYTHICLAW`, pctSet 3, keeping
+  its own roll). The wolf's old art stays as the goblin camp's picture (sprites/rooms/dire_wolf_scene.png).
+- ✅ **The Labyrinth Sprite** (the user, 2026-11-26): a pixie, Uncommon, Divine, magic Arcanist, the fastest Uncommon and
+  frail (base HP 66; 3 / 3 / 18, agility 26, defences 2 / 5 / 7, HP % 4; size 1, floats). Its %s are Claude's (the Flame
+  Imp's total, magic and HP traded for agility). It gets a utility move of the user's choosing (to come).
 - ✅ The 35 are one per rarity per race (a dual-race creature counts under its first race); since the 2026-11-26 picks a
   race can have more than one of a rarity (by first race: Underkin 9, Beast 7, Undead 7, Humanoid 6, Geo 6, Divine 5, Toxic 4). The plan is to roughly
   double Epic and below; Geo and Divine are the next to grow (the user, 2026-11-26).

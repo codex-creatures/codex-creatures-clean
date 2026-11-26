@@ -6,7 +6,8 @@ import { PCT_SHIFT_2026_11_25 } from "../lib/creatures/instance";
 import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { DRAFT } from "../app/lab/pvp/rules";
 // The packages were drawn for the 35 species of 2026-11-25; the picks since aren't in them.
-const DRAWN = CREATURE_TEMPLATES.filter((c) => DRAFT[c.id]);
+// (Not the Mythiclaw: the packages were drawn for the Dire Wolf, whose id and place it took on 2026-11-26.)
+const DRAWN = CREATURE_TEMPLATES.filter((c) => DRAFT[c.id] && c.id !== "dire_wolf");
 import { ITEM_CEILINGS, ITEM_KEYS } from "../lib/items/ceilings";
 import { ARMOR_KEYS } from "../lib/items/armor";
 import { RARITY_BUDGETS } from "../lib/items/budgets";

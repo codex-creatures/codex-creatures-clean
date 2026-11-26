@@ -75,8 +75,8 @@ describe("Combat V2: no damage types", () => {
 });
 
 describe("Combat V2 roster", () => {
-  it("the 35 are one of each rarity per race by first race (the Pale Rider made Undead's Legendary a pair); 9 more since", () => {
-    const picks = new Set(["skinwing", "gutsnout", "grub_keeper", "mole_hag", "gloom_gnome", "cinder_husk", "troglodyte_brute", "gravewarden", "hexed_puppet"]); // (the user's picks, 2026-11-26: a race can now have two of a rarity)
+  it("the 35 are one of each rarity per race by first race (the Pale Rider made Undead's Legendary a pair); 10 more since", () => {
+    const picks = new Set(["skinwing", "gutsnout", "grub_keeper", "mole_hag", "gloom_gnome", "cinder_husk", "troglodyte_brute", "gravewarden", "hexed_puppet", "labyrinth_sprite"]); // (the user's picks, 2026-11-26: a race can now have two of a rarity)
     expect(ROSTER_V2).toHaveLength(35 + picks.size);
     for (const race of RACES_V2) {
       const rs = ROSTER_V2.filter((c) => SPECIES_RACES[c.id][0] === race && !picks.has(c.id)).map((c) => c.rarity).sort();
@@ -91,7 +91,8 @@ describe("Combat V2 roster", () => {
     const counts: Record<string, number> = {};
     for (const c of ROSTER_V2) counts[SPECIES_ARCHETYPE[c.id]] = (counts[SPECIES_ARCHETYPE[c.id]] ?? 0) + 1;
     // (The user's 9 picks of 2026-11-26 added 5 Bruisers, a Bulwark, an Arcanist and 2 Battlemages.)
-    expect(counts).toEqual({ bruiser: 11, bulwark: 6, sniper: 2, skirmisher: 2, arcanist: 6, warden: 2, ranger: 4, battlemage: 9, spellbow: 2 });
+    // (The Labyrinth Sprite, 2026-11-26, another Arcanist.)
+    expect(counts).toEqual({ bruiser: 11, bulwark: 6, sniper: 2, skirmisher: 2, arcanist: 7, warden: 2, ranger: 4, battlemage: 9, spellbow: 2 });
   });
 
   it("a V2 restyle changes the style but keeps the % total", () => {

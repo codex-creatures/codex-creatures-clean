@@ -44,6 +44,7 @@ export const SPECIES_ARCHETYPE: Record<string, Archetype> = {
   // The user's picks (2026-11-26)
   skinwing: "bruiser", gutsnout: "bruiser", grub_keeper: "bruiser", mole_hag: "battlemage", gloom_gnome: "arcanist",
   cinder_husk: "bruiser", troglodyte_brute: "bruiser", gravewarden: "bulwark", hexed_puppet: "battlemage",
+  labyrinth_sprite: "arcanist",
 };
 
 // The 10 new species, filling the races' empty rarities. Their %s follow
@@ -97,6 +98,10 @@ export const NEW_SPECIES_V2: NewSpecies[] = [
     flavour: "A knight who never left his post, his own tombstone strapped to his arm." },
   { id: "hexed_puppet", name: "Hexed Puppet", rarity: "epic", baseHp: 110, cls: "magic", proficiency: { atk: 22, rng: 4, mag: 30, agil: 14, mdef: 15, rdef: 18, magdef: 4, hp: 20 },
     flavour: "Someone is still working the strings. Nobody has ever seen who." },
+  // The user's Labyrinth Sprite (2026-11-26): Divine, Uncommon, magic, the fastest of its rarity and frail. The %s
+  // are Claude's (the Flame Imp's total, with magic and HP traded for agility).
+  { id: "labyrinth_sprite", name: "Labyrinth Sprite", rarity: "uncommon", baseHp: 66, cls: "magic", proficiency: { atk: 3, rng: 3, mag: 18, agil: 26, mdef: 2, rdef: 5, magdef: 7, hp: 4 },
+    flavour: "A pixie of the deep halls, quick as a candle gutters. It leads the lost further in, laughing." },
 ];
 
 // A creature's V2 moves (the user, 2026-11-12): the core moves of its main

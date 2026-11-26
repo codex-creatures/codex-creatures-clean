@@ -720,10 +720,14 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, raceHint, disabled, glow,
   if (fx?.kind === "sweep") tags.push("knocks them aside for a random teammate");
   if (fx?.kind === "curse") tags.push(`curse: a small hit a round for ${fx.minRounds}–${fx.maxRounds} rounds · may spread on swaps`);
   if (fx?.kind === "charge") tags.push(me.statuses.some((s) => s.id === "charged") ? "wound up: strike now!" : "winds up, strikes next turn");
+  if (fx?.kind === "agilstrike") tags.push(`swings with ${pc(fx.share)} of its agility`);
+  if (fx?.kind === "slow") tags.push(`${pc(fx.chance)}: −${pc(fx.loss)} agility for ${fx.rounds} rounds`);
+  const locked = fx?.kind === "spiritblade" && me.statuses.find((s) => s.id === "locked" && s.move === sk.name);
+  if (fx?.kind === "spiritblade") tags.push(locked ? `locked in: ${locked.rounds} swing${locked.rounds === 1 ? "" : "s"} left` : `+${pc(fx.share)} of their max HP · locked in for ${fx.swings} rounds`);
   const cooling = me.cooldowns?.[sk.name] ?? 0;
   if (cooling > 0) tags.push(`recharging: ${cooling} round${cooling === 1 ? "" : "s"}`);
   const note = cooling > 0 ? { text: `recharging: ${cooling} round${cooling === 1 ? "" : "s"}`, color: "#ff8a80" }
-    : sk.energyCost > me.energy ? { text: "not enough energy", color: "#ff8a80" }
+    : sk.energyCost > me.energy && !locked ? { text: "not enough energy", color: "#ff8a80" }
     : undefined;
   const range = damageRange(sk, me, them, raceHint);
   const tile = <MoveTile m={sk} note={note} extra={tags} disabled={disabled} onClick={onClick} fill
@@ -988,6 +992,8 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
     [has("ward"), <Glyph key="ward" icon="💎" art="status_ward" />],
     [has("flame"), <Glyph key="flame" icon="🔥" art="status_flame" />],
     [has("charged"), "💢"],
+    [has("slow"), "🐌"],
+    [has("locked"), "⚔️"],
   ];
   const shown = marks.filter(([on]) => on).map(([, m]) => m);
   const icons = shown.length ? <>{shown.map((m, i) => <span key={i}>{i > 0 && " "}{m}</span>)}</> : null;

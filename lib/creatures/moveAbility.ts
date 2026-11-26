@@ -16,6 +16,7 @@ const ABILITY: Record<MoveEffect["kind"], string> = {
   ambush: "Ambush", surge: "Magic up", poison: "Poison", implode: "Self-destruct", flamebody: "Burn attackers",
   gore: "Toxic weakness", recoil: "Recoil", slap: "Wipe buffs", charge: "Wind-up",
   burn: "Burn", fright: "Fear", bounce: "Hit and swap", curse: "Curse", sweep: "Knock aside",
+  agilstrike: "Agility hit", slow: "Slow", spiritblade: "Pierces HP",
 };
 
 // Its ability (a few kinds read differently by what they do), or none for a core move's plain hit.

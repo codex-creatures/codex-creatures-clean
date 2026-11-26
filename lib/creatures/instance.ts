@@ -86,7 +86,7 @@ export function upgradeStyle(c: CreatureOrItemDrop, t?: CreatureTemplate): boole
 // own moves over once on load (pctSet says how far it has): each change since
 // is added to its saved %s, so its own roll stays as it was. (Its HP % needs
 // nothing: a saved creature without one takes its species'.)
-export const PCT_SET = 2;
+export const PCT_SET = 3;
 export const PCT_SHIFT_2026_11_25: Record<string, Partial<CreatureProficiency>> = {
   moss_wolf: { mag: 3 }, amber_wasp: { rng: 3, mag: 3 }, bellow_toad: { mag: 3 }, dire_wolf: { mag: 3 }, ironhide: { mag: 3 },
   cave_bat: { rng: 3, mag: 3 }, rust_beetle: { mag: 3 }, crystalback: { rng: 3 }, crystal_golem: { rng: 3 }, hollow_matriarch: { mag: 3 },
@@ -114,8 +114,12 @@ export const PCT_SHIFT_2026_11_26: Record<string, Partial<CreatureProficiency>> 
   plague_rat: { mdef: -2, rdef: 1, magdef: -1 }, rotgut_fly: { mdef: 2, rdef: -3, magdef: 1 },
   dreadpox: { mdef: -12, rdef: 2, magdef: 10 }, pale_rider: { mdef: -4, rdef: -4, magdef: -18 },
 };
+// The Dire Wolf became the Mythiclaw (the user, 2026-11-26): speed for attack, a little magic, a lighter HP %.
+export const PCT_SHIFT_MYTHICLAW: Record<string, Partial<CreatureProficiency>> = {
+  dire_wolf: { atk: -8, rng: -1, mag: 3, agil: 14, mdef: -2, rdef: 1, magdef: 3, hp: -10 },
+};
 // Each set's change, in order: one at set n takes the ones after it.
-const PCT_SHIFTS = [PCT_SHIFT_2026_11_25, PCT_SHIFT_2026_11_26];
+const PCT_SHIFTS = [PCT_SHIFT_2026_11_25, PCT_SHIFT_2026_11_26, PCT_SHIFT_MYTHICLAW];
 export function upgradePcts(c: CreatureOrItemDrop, t?: CreatureTemplate) {
   const from = c.pctSet ?? 0;
   if (from >= PCT_SET || !t) return;

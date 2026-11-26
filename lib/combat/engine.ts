@@ -84,6 +84,12 @@ const statusesOf = (f: Fighter): StatusLike[] => (f as Fighter & { statuses?: St
 // How much of its attack in this style a weaken takes (Nullifying Voice: one style; Haunting Scream: all).
 export const weakenOf = (f: Fighter, style: CombatClass) =>
   Math.max(0, ...statusesOf(f).filter((s) => s.id === "weaken" && (!s.style || s.style === style)).map((s) => s.loss ?? 0));
+// A cripple's agility loss when its move doesn't give one (re-exported by battle.ts, where cripples are dealt).
+export const CRIPPLE_AGILITY_LOSS = 0.5;
+// Its agility with the slowing statuses counted: a cripple, and Leg Sweep's slow (they multiply). A haste only
+// orders the round (battle.ts turnAgility), so it isn't counted here.
+export const slowedAgil = (f: Fighter) => statusesOf(f).reduce((a, s) =>
+  s.id === "cripple" ? a * (1 - (s.loss ?? CRIPPLE_AGILITY_LOSS)) : s.id === "slow" ? a * (1 - (s.loss ?? 0)) : a, effectiveAgil(f));
 // A charge move (Mega Smash) does its damage only once wound up.
 export const isWoundUp = (f: Fighter) => statusesOf(f).some((s) => s.id === "charged");
 
@@ -213,7 +219,9 @@ export function calcDamage(
   const typed = rules.damageTypes !== false;
   const dmgType = typed ? DAMAGE_TYPES[skill.dmgType ?? "force"] : PLAIN_DAMAGE;
   const atkKey = ATTACK_STAT[moveType], defKey = DEFENCE_STAT[moveType];
-  const effectiveAtk = withProf(attacker.weapon[atkKey] ?? 0, attacker.proficiency[atkKey]) * (1 + (attacker.boost?.[moveType] ?? 0)) * (1 - weakenOf(attacker, moveType));
+  // (Horn Rush swings with a share of its agility in place of its attack: the user, 2026-11-26.)
+  const swing = skill.effect?.kind === "agilstrike" ? slowedAgil(attacker) * skill.effect.share : withProf(attacker.weapon[atkKey] ?? 0, attacker.proficiency[atkKey]);
+  const effectiveAtk = swing * (1 + (attacker.boost?.[moveType] ?? 0)) * (1 - weakenOf(attacker, moveType));
   const affinity     = typed && attacker.weapon.affinity && attacker.weapon.affinity === skill.dmgType ? 1 + AFFINITY_BONUS : 1;
   const raw          = (rules.powerModel === "multiply" ? (skill.damage * Math.max(BARE_SWING, effectiveAtk)) / SWING_UNIT : skill.damage + effectiveAtk) * roll;
 

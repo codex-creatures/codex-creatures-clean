@@ -347,6 +347,23 @@ power counts for less as attack grows.
   (Claw's), Haunting Scream's fallback weaken 3 → 5 rounds. The three cripples stay three separate Uncommon codexes at the same power (the
   user: a core, early mechanic). No codex changed rarity, so the registry's rules stand.
 
+### The Mythiclaw's moves (the user, 2026-11-26; decision 68)
+
+🧪 Built 2026-11-26. Names, rarities, races and what they do are the user's; the numbers are Claude's (`HORN_RUSH_AGILITY`,
+`SPIRIT_BLADE` in lib/creatures/codexMoves.ts); learners are Claude's draft until the user's tick chart.
+- **Horn Rush** (Rare, Beast, melee, 20 power, 50 energy): a melee hit that swings with **60% of its agility** in place of
+  its melee attack (`agilstrike`, lib/combat/engine.ts calcDamage), still against melee defence. Why 60%: with gear, agility
+  runs 1.6–1.8× melee attack on every creature, tanks included (Rare gear, Lv 25: Cinder Husk 54 attack / 94 agility,
+  Gravewarden 22 / 64), so all of it would hit about twice as hard as any melee move. Tanks are kept off its learners.
+  Whiplash's +50% agility raises it; a slow or a cripple lowers it (`slowedAgil`).
+- **Leg Sweep** (Common, neutral melee, 10 power, 30 energy): 30% chance the target loses 30% of its agility for 3 rounds
+  (status `slow`; no stumble, unlike a cripple). A new sweep restarts it; it multiplies with a cripple; a ward keeps it
+  off and Slap wipes it.
+- **Spirit Blade** (Epic, Divine, melee, 20 power, 60 energy): each hit adds **6% of the target's max HP** (3% on a boss),
+  past armour, brace and race. **Locked in:** it swings 3 rounds running (status `locked`; only it or a swap can be
+  chosen), paid once; swapping out ends it. Strong against walls (their HP % swells their HP), and the counter is real:
+  the foe can swap in a fast hitter while you can't change move. The AI counts the 6% when it weighs moves.
+
 ### Planned
 
 - 📌 More effects: vampirism, curse/blind, fear (blocks swapping). More moves from encounters,

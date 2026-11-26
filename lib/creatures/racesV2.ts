@@ -21,7 +21,7 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   moss_wolf:        ["beast"],
   amber_wasp:       ["beast", "toxic"], // a venomous sting (the user, 2026-10-27)
   bellow_toad:      ["beast", "toxic"], // poison glands, always spitting
-  dire_wolf:        ["beast"],
+  dire_wolf:        ["beast", "divine"],  // the Mythiclaw (the user, 2026-11-26; was the Dire Wolf, Beast): still Beast's Epic first
   ironhide:         ["beast"],
   // Old Underkin
   cave_bat:         ["underkin"],
@@ -68,6 +68,7 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   troglodyte_brute: ["underkin"],
   gravewarden:      ["humanoid"],
   hexed_puppet:     ["undead"],
+  labyrinth_sprite: ["divine"],             // the user's, 2026-11-26
 };
 
 // A race for each of today's moves (the live rules' "drafted" mode). Moves

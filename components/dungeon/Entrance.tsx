@@ -26,7 +26,7 @@ const roomsTo = (d: DungeonId) => (d === 0 ? CAMP_ROUTE : d === 1 ? DUNGEONS[1].
 // the Warden are different every time, so a shadow), where a medallion crops it, and the backdrop's light.
 // glow: the boss's light; sky: the cave above; motes: what drifts in the air.
 const SHOW: Record<DungeonId, { art: string; crop: string; shadow?: boolean; glow: string; sky: string; ground: string; motes: string; sub: string }> = {
-  0: { art: "/sprites/creatures/dire_wolf.png", crop: "40% 20%", shadow: true, glow: "rgba(255,150,60,0.45)", sky: "#24170c", ground: "#120b06", motes: "#ffb45e", sub: "The goblin camp" },
+  0: { art: "/sprites/rooms/dire_wolf_scene.png", crop: "40% 20%", shadow: true, glow: "rgba(255,150,60,0.45)", sky: "#24170c", ground: "#120b06", motes: "#ffb45e", sub: "The goblin camp" },
   1: { art: "/sprites/creatures/cyclops.png", crop: "50% 10%", glow: "rgba(150,180,235,0.35)", sky: "#141a24", ground: "#0b0e14", motes: "#d8e2f0", sub: "The Labyrinth" },
   2: { art: "/sprites/creatures/hydra/hydra-000.png", crop: "50% 15%", glow: "rgba(120,230,150,0.42)", sky: "#14261d", ground: "#0a1410", motes: "#c9ffd8", sub: "The Deep Labyrinth" },
   3: { art: "/sprites/creatures/aurelius.png", crop: "50% 15%", shadow: true, glow: "rgba(170,70,255,0.42)", sky: "#150d1e", ground: "#0b0710", motes: "#e0b8ff", sub: "The Abyss" },

@@ -26,7 +26,7 @@
 // (cripple, fear, blind, …) live in Combatant.statuses with a duration.
 
 import {
-  calcDamage, effectiveAgil, effectiveStats, poisonImmune, rollDamage,
+  calcDamage, effectiveStats, poisonImmune, rollDamage, slowedAgil, CRIPPLE_AGILITY_LOSS,
   MAX_ENERGY, ENERGY_REGEN, PRECISE_CHANCE, PRECISE_IGNORE,
   type Fighter,
   type CombatItem,
@@ -44,7 +44,7 @@ export const MAX_ROUNDS = 100;
 // agility for the next few rounds, and each time it tries to attack it may
 // stumble and lose that attack. Re-crippling refreshes the duration; it
 // doesn't stack. It keeps counting down while the creature is on the bench.
-export const CRIPPLE_AGILITY_LOSS = 0.5;
+export { CRIPPLE_AGILITY_LOSS };
 // The user, 2026-11-13: 3–5 rounds and a 50% stumble (were 3 rounds and 25%).
 export const CRIPPLE_ROUNDS = 3;     // (the fewest; the shortest a cripple shows)
 export const CRIPPLE_ROUNDS_MAX = 5;
@@ -147,7 +147,7 @@ export function poisonWith(f: Combatant, dmg: number, rounds: number): boolean {
   return true;
 }
 // Warded (Crystal Armour): no new status effects, and clouds don't touch it.
-export const WARD_BLOCKS = ["cripple", "venom", "poison", "bleed", "seal", "weaken", "soak", "fear", "burn", "curse"];
+export const WARD_BLOCKS = ["cripple", "venom", "poison", "bleed", "seal", "weaken", "soak", "fear", "burn", "curse", "slow"];
 export const isWarded = (f: Combatant) => f.statuses.some((s) => s.id === "ward");
 const cannotBleed = (f: Fighter) => !!f.races?.includes("undead");
 const roll = (min: number, max: number) => min + Math.floor(Math.random() * (max - min + 1));
@@ -272,6 +272,7 @@ export type BattleAction =
 // ward: no new statuses (Crystal Armour). flame: melee attackers take loss of their hit (Flame Body).
 // charged: wound up for move (Mega Smash). burn: dmg a round, like poison.
 // curse: dmg a round; by = the caster's team index, move its name, chance = to spread on a swap-out.
+// slow (Leg Sweep): loss = its share of agility lost. locked (Spirit Blade): it swings move each round until it ends.
 // fear: move = the move that struck it (missing: Haunting Presence).
 export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: number; chance?: number; dmg?: number; hp?: number; style?: CombatClass; move?: string; by?: number };
 
@@ -387,11 +388,10 @@ export function haunt(state: BattleState, key: SideKey) {
 // ── Status effects ─────────────────────────────────────────────────
 export const isCrippled = (f: Combatant) => f.statuses.some((s) => s.id === "cripple");
 
-// Agility right now (cripple and haste included).
+// Agility right now (cripple, slow and haste included).
 export function currentAgility(f: Combatant): number {
-  const cripple = f.statuses.find((s) => s.id === "cripple");
   const haste = f.statuses.find((s) => s.id === "haste");
-  return effectiveAgil(f) * (cripple ? 1 - (cripple.loss ?? CRIPPLE_AGILITY_LOSS) : 1) * (1 + (haste?.gain ?? 0));
+  return slowedAgil(f) * (1 + (haste?.gain ?? 0));
 }
 
 // Agility used for this round's turn order: a dash move hastes you before
@@ -404,7 +404,7 @@ export function turnAgility(f: Combatant, action: BattleAction): number {
 
 // ── What a side is allowed to do right now ─────────────────────────
 export function affordableSkills(f: Combatant): Skill[] {
-  const wound = f.statuses.find((s) => s.id === "charged");
+  const wound = f.statuses.find((s) => s.id === "charged" || s.id === "locked");
   if (wound) return f.skills.filter((s) => s.name === wound.move);
   return f.skills.filter((s) => s.energyCost <= f.energy && (f.cooldowns?.[s.name] ?? 0) <= 0);
 }
@@ -577,7 +577,11 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     const skill = actor.skills.find((sk) => sk.name === action.skillName)!;
     const fx = skill.effect;
     const woundUp = fx?.kind === "charge" && actor.statuses.some((s) => s.id === "charged");
-    actor.energy = Math.min(MAX_ENERGY, actor.energy - (woundUp ? 0 : skill.energyCost) + ENERGY_REGEN);
+    // Spirit Blade: paid once, then it swings on for free while it's locked in.
+    const lockedIn = fx?.kind === "spiritblade" && actor.statuses.some((s) => s.id === "locked" && s.move === skill.name);
+    actor.energy = Math.min(MAX_ENERGY, actor.energy - (woundUp || lockedIn ? 0 : skill.energyCost) + ENERGY_REGEN);
+    // (Its swings this round and the next ones: it ticks at the end of each round, so swings rounds in all.)
+    if (fx?.kind === "spiritblade" && !lockedIn && fx.swings > 1) actor.statuses = [...actor.statuses.filter((s) => s.id !== "locked"), { id: "locked", rounds: fx.swings, move: skill.name }];
     // Mega Smash: the first use winds up (and pays); the next strikes.
     if (fx?.kind === "charge" && !woundUp) {
       actor.streak = undefined;
@@ -736,6 +740,12 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         armorFx.push(`${SET_BONUS.colossal_shellarmor.name} halves it`);
       }
       if (hurled) { damage += hurled; armorFx.push(`Caltrops hurled back: ${hurled}`); } // (past armour and brace; a last stand still counts)
+      // Spirit Blade: a share of the target's max HP on top, past armour and brace (less against a boss).
+      if (fx?.kind === "spiritblade" && !missed && damage > 0) {
+        const pierce = Math.max(1, Math.round(target.maxHp * (foe.boss ? fx.bossShare : fx.share)));
+        damage += pierce;
+        armorFx.push(`${skill.name}: +${pierce} through the armour`);
+      }
       if (actor.gentle && damage >= target.hp) damage = Math.max(0, target.hp - 1);
       if (damage >= target.hp && target.hp > 1 && hasSet(target, "juggernaut_platemail") && !target.setUsed) {
         target.setUsed = true;
@@ -841,9 +851,14 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
             changed.push("STRUCK WITH FEAR");
           }
           if (fx?.kind === "curse") { curseWith(state, foeKey, targetIdx, actorIdx, skill); changed.push("CURSED"); }
+          // Leg Sweep: slower for a few rounds (+1: it ticks at the end of this one); a new sweep restarts it.
+          if (fx?.kind === "slow" && target.hp > 0 && Math.random() < fx.chance) {
+            target.statuses = [...target.statuses.filter((s) => s.id !== "slow"), { id: "slow", rounds: fx.rounds + 1, loss: fx.loss }];
+            changed.push("SLOWED");
+          }
           if (fx?.kind === "slap" && Math.random() < fx.chance) {
             target.boost = undefined; target.defenceCut = undefined; target.agilityUp = undefined; target.surge = undefined;
-            target.statuses = target.statuses.filter((s) => !["soak", "boost", "weaken", "haste"].includes(s.id));
+            target.statuses = target.statuses.filter((s) => !["soak", "boost", "weaken", "haste", "slow"].includes(s.id));
             changed.push("SLAPPED CLEAN");
           }
         }
@@ -1154,7 +1169,7 @@ export function changeActive(state: BattleState, key: SideKey, index: number) {
   leaving.streak = undefined;
   leaving.defenceCut = undefined;
   leaving.boost = undefined;
-  leaving.statuses = leaving.statuses.filter((st) => !["soak", "boost", "bleed", "weaken", "charged"].includes(st.id));
+  leaving.statuses = leaving.statuses.filter((st) => !["soak", "boost", "bleed", "weaken", "charged", "locked"].includes(st.id));
   spreadCurse(state, key, s.active, index);
   s.active = index;
   activeOf(s).streak = undefined;
