@@ -13,3 +13,15 @@ or belly. The 13 approved backs in public/sprites/creatures/back/ set the family
 - The picked ones are copied, trimmed, into public/sprites/creatures/back/ and listed in
   `BACK_SIZES` (lib/sprites/creatures.ts). Two have a scripted fix after PixelLab (see jobs.tsv):
   aurelius (far forearm clipped), gravewarden (shield bars recoloured to leather).
+
+## Round 2 standard (the user, 2026-11-27)
+Approved as best: gloom_gnome, gleamling, gutsnout, troglodyte_brute. Rejected for wrong proportions:
+flicker_wisp, veilstalker, the_watcher, rattlebones, shambler, leafblade_scout, plague_rat,
+pale_rider, skinwing, klutz (eyes and ears), labyrinth_sprite. What the good ones do:
+- The body is truly TURNED AWAY: it points into the screen, turned only a little to the right. Do
+  NOT keep the side view's silhouette or stride with just the torso turned.
+- Legs and feet are seen from behind: side by side under the body, planted (a stride shows as one
+  foot slightly lower/nearer, not a sideways scissor). Fliers fly away into the screen, wings out
+  to both sides.
+- The head keeps its size relative to the body (no shrunk heads); big ears/eyes stay big.
+- A held weapon sits on the right side.

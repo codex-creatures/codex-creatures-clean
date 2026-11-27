@@ -200,7 +200,7 @@ the other 33 redone 2026-11-27 with a sheet for each of what shows from behind
 | creatures/back/crystalback.png | 13b5efc5-9c27-42fe-92be-644c68d0d682 |
 | creatures/back/dire_wolf.png | 96b45aae-99b5-4fac-ac7e-08882e23ebe7 |
 | creatures/back/dustwraith.png | 8d3b4f85-0ff9-4b20-9405-bf36f8919f86 |
-| creatures/back/flicker_wisp.png | 5a6696c0-d77f-40a7-bc75-11b7c67a7d5a |
+| creatures/back/flicker_wisp.png | 63d01b55-6c9f-475f-96b9-159671491847 (round 2, edit of c2: longer tendrils) |
 | creatures/back/gleamling.png | 834d9c40-14a8-461d-bee2-87dd15fec323 |
 | creatures/back/gloom_gnome.png | 19b98e50-b452-4205-845d-8c7ee33cb4af |
 | creatures/back/gravewarden.png | e9bc959d-6021-4721-b913-4a856286166f then by script: the shield inside red bars recoloured to dark leather (x79-96,y26-63) |
@@ -208,24 +208,24 @@ the other 33 redone 2026-11-27 with a sheet for each of what shows from behind
 | creatures/back/gutsnout.png | 405e2948-406f-4149-9621-e08cb7ce9d3c |
 | creatures/back/hexed_puppet.png | 9a8a97d7-2db5-4ab6-89bf-35246f04855b |
 | creatures/back/hollow_matriarch.png | f665790b-0180-49f9-90a1-bd7709d53007 |
-| creatures/back/klutz.png | afa817a4-eaff-48b8-846d-944c49f00305 |
-| creatures/back/labyrinth_sprite.png | fd83e1e0-2d59-4c87-a7c0-9fc5b335f2f2 |
-| creatures/back/leafblade_scout.png | 16b2776c-7b47-4a59-b273-5319a121efc3 |
+| creatures/back/klutz.png | 8869464b-851c-423d-88c4-156f92492c8c (round 2, edit of c2: bigger head) |
+| creatures/back/labyrinth_sprite.png | 72427d6a-09a4-4725-81fd-ba7e5065d56d (round 2, edit of c2: bigger head) |
+| creatures/back/leafblade_scout.png | 69ecb32c-0c09-43d5-aab6-5483a9a9def5 (round 2) |
 | creatures/back/mole_hag.png | e94f9635-3862-4b56-ad9f-9729c1dd3930 |
 | creatures/back/moss_wolf.png | 9649c8f7-4ad4-4cd6-b7ad-537848290e5f (fix of c2) |
-| creatures/back/pale_rider.png | 2e20d76a-c21d-4fd8-a971-3f33a5dad7ad |
-| creatures/back/plague_rat.png | 28c5ffda-0ed2-4b72-88dc-08397bdf72bb (tail edit of c1) |
-| creatures/back/rattlebones.png | a91c5c81-ed22-4f35-81c3-f806bba05caa |
+| creatures/back/pale_rider.png | a79cf9bd-6e92-4f09-862d-1743326720d1 (round 2, edit of c3: peaked hood) |
+| creatures/back/plague_rat.png | 379afd44-1478-489e-a224-96f2d4e4ac27 (round 2, edit of c3: head dome + ears) |
+| creatures/back/rattlebones.png | fb1491ae-d005-440d-89a3-977ea197fb2e (round 2, edit of c2: bigger skull) |
 | creatures/back/rotgut_fly.png | 9bcdf29c-48ef-40f4-86f2-09078a2c35e4 |
 | creatures/back/rust_beetle.png | 37f7c1cc-d53b-4f53-9b24-b4b5190c0d07 |
-| creatures/back/shambler.png | b133658c-d5a0-4fe3-8c27-775f6b5b0bfa |
-| creatures/back/skinwing.png | 88485455-dbe7-464b-bb5e-ef052c3f8325 |
+| creatures/back/shambler.png | ca1c1c08-f869-4347-8bd7-1f8280e36716 (round 2, edit of c2: bigger head) |
+| creatures/back/skinwing.png | 00d8b0a8-3207-4a45-bea3-cce2cafacc0d (round 2) |
 | creatures/back/storm_phoenix.png | 1bbf9733-94d2-429a-8dee-787eb5bae9c4 |
 | creatures/back/sylvaran.png | 44fdc4ab-545f-432c-bb2d-a28e2ae67087 (inpaint of c1 cloak centre) |
-| creatures/back/the_watcher.png | ea0d6856-609b-44ec-8d1f-40d4839a8429 |
+| creatures/back/the_watcher.png | 73cd33a7-3b6e-4011-b6d4-3e42bd229e80 (round 2) |
 | creatures/back/troglodyte_brute.png | 50fae7c4-1f21-43c3-b212-17780adb1a67 |
 | creatures/back/tunnel_wyrm.png | 2e146729-e606-45a5-a469-e7a798523ab8 (regen seed11, arched neck) |
-| creatures/back/veilstalker.png | c4cf5dfd-e1bc-4b4e-9c42-e75216820775 |
+| creatures/back/veilstalker.png | 3ef56132-2144-401d-a6a0-9d1ea9239a9d (round 2) |
 | creatures/back/void_serpent.png | 35cb4299-fb7f-4f3b-b400-8a2f113a7d2e (inpaint of c3 neck stripe) |
 
 ## The walkable Labyrinth: art samples (2026-11-06, samples only, not in the game)

@@ -136,14 +136,14 @@ const BACK_SIZES: Record<string, [number, number]> = {
   amber_wasp: [55, 54], aurelius: [106, 124], bellow_toad: [83, 70], cave_bat: [54, 61],
   cinder_husk: [84, 115], crystal_golem: [118, 115], crystalback: [73, 74], deep_angler: [73, 69],
   dire_wolf: [106, 133], dreadpox: [82, 89], dust_sprite: [48, 50], dustwraith: [71, 82], flame_imp: [69, 73],
-  flicker_wisp: [54, 40], gleamling: [56, 55], glob: [75, 62], gloom_gnome: [91, 102], gravewarden: [116, 120],
+  flicker_wisp: [64, 41], gleamling: [56, 55], glob: [75, 62], gloom_gnome: [91, 102], gravewarden: [116, 120],
   grub_keeper: [111, 104], gutsnout: [100, 109], hexed_puppet: [67, 118], hollow_matriarch: [123, 105],
-  ironhide: [119, 85], klutz: [62, 79], labyrinth_sprite: [90, 120], leafblade_scout: [52, 84],
-  mole_hag: [100, 117], moss_wolf: [62, 69], mr_shadows: [84, 94], pale_rider: [99, 135], plague_rat: [55, 62],
-  rattlebones: [64, 84], rotgut_fly: [50, 73], rust_beetle: [84, 71], shambler: [59, 90], skinwing: [124, 108],
+  ironhide: [119, 85], klutz: [85, 89], labyrinth_sprite: [108, 121], leafblade_scout: [48, 82],
+  mole_hag: [100, 117], moss_wolf: [62, 69], mr_shadows: [84, 94], pale_rider: [85, 127], plague_rat: [41, 69],
+  rattlebones: [67, 90], rotgut_fly: [50, 73], rust_beetle: [84, 71], shambler: [51, 90], skinwing: [128, 71],
   storm_phoenix: [92, 121], swamp_witch: [85, 89], sylvaran: [69, 100], the_watcher: [68, 81],
   thicket_archer: [74, 76], thunderhead: [104, 105], troglodyte_brute: [115, 120], tunnel_wyrm: [106, 108],
-  veilstalker: [71, 86], void_serpent: [111, 97],
+  veilstalker: [68, 82], void_serpent: [111, 97],
 };
 export const BACK_SPRITES: Record<string, Sprite> = {};
 for (const [id, [w, h]] of Object.entries(BACK_SIZES)) {

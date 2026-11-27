@@ -23,10 +23,15 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   (`public/sprites/creatures/back/`, `BACK_SIZES` and `fightSprite` in lib/sprites/creatures.ts),
   drawn as it looks and not mirrored. Foes, and every other screen, use the usual art. **Every
   creature a player can own has one, Klutz too** (2026-11-27: the 13 from 2026-11-03 plus 33 redone;
-  a test checks none is missing). The view: three-quarter from behind, looking over its **right**
-  shoulder at the foe (upper right). So its right side is the near one; its left is hidden but for
-  what stands clear of the body; no face, chest or belly; held things stay where the hands are
-  (anything clear of the body, a bow, a staff, a club, stays in view). Ironhide is the benchmark.
+  a test checks none is missing). **The standard** (the user, 2026-11-27, naming the Gloom Gnome,
+  Gleamling, Gutsnout and Troglodyte Brute as the best): the creature is **truly turned away**, into
+  the picture and only a little to the right, facing the foe. Never the side view's pose or stride
+  with just the torso turned (11 first tries were rejected for exactly that). Legs and feet are
+  seen from behind, side by side under the body and planted; a quadruped shows its rump and both
+  hind legs, tail in the middle; a flier flies away with its wings out to both sides; a rider's
+  horse turns too. The head keeps its share of the height (no shrunk heads; Klutz's head is nearly
+  half of him, ears wide, eye domes on top). A held weapon is on the right; anything else clear of
+  the body (a bow, a staff, a club) stays in view. No face, chest or belly.
   - **How they're made** (art/back-views-2026-11/README.md, with every candidate, sheet and job id):
     first a written sheet for each creature from its sprite at 4× (body plan, measured
     proportions, near/far/back, held items, what must not show), checked by a second reviewer
@@ -35,7 +40,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     the candidate against the sprite and the sheet. Small misses: a masked
     `inpaint_image_pro_flash`, which beats another text edit; when the model keeps redrawing a
     part, a scripted pixel fix (Aurelius's far forearm clipped, the Gravewarden's shield bars
-    recoloured). 33 took 252 generations.
+    recoloured). 33 took 252 generations, and the 11 redone to the standard 111 more. Prompts that
+    worked in round 2 say "redraw this exact … seen from BEHIND: its whole body turned away from
+    us, facing into the picture and only slightly to the right", spell out where each leg, the
+    head (its size "the same as in the original") and the weapon go, and end "no side-on … pose".
+    Shrunk heads were fixed with one edit ("make the head about 1.5 times bigger").
   - Redrawn art gets a new address for its back too (`ART_REV`), so phones fetch it at once.
   - Amber Wasp's back (2026-11-03) is still side-on, the only old one off the standard; left for
     the user to decide.

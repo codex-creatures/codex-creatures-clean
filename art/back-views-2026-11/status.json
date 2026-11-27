@@ -40,29 +40,34 @@
   "note": ""
  },
  "flicker_wisp": {
-  "pick": "c1",
-  "tries": 1,
-  "note": ""
+  "pick": "c3",
+  "tries": 3,
+  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
+  "redone": true
  },
  "veilstalker": {
-  "pick": "c1",
-  "tries": 1,
-  "note": ""
+  "pick": "c2",
+  "tries": 2,
+  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
+  "redone": true
  },
  "the_watcher": {
-  "pick": "c1",
-  "tries": 1,
-  "note": ""
+  "pick": "c2",
+  "tries": 2,
+  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
+  "redone": true
  },
  "rattlebones": {
-  "pick": "c1",
-  "tries": 1,
-  "note": ""
+  "pick": "c3",
+  "tries": 3,
+  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
+  "redone": true
  },
  "shambler": {
-  "pick": "c1",
-  "tries": 1,
-  "note": ""
+  "pick": "c3",
+  "tries": 3,
+  "note": "Redone in round 2. Reviewer note: the head reads a little like a cap; one edit could lower it and add a neck.",
+  "redone": true
  },
  "dustwraith": {
   "pick": "c1",
@@ -75,9 +80,10 @@
   "note": ""
  },
  "leafblade_scout": {
-  "pick": "c1",
-  "tries": 1,
-  "note": ""
+  "pick": "c2",
+  "tries": 3,
+  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
+  "redone": true
  },
  "sylvaran": {
   "pick": "c2",
@@ -95,9 +101,10 @@
   "note": "Regenerated once: the first try lost the arched neck."
  },
  "plague_rat": {
-  "pick": "c2",
-  "tries": 2,
-  "note": ""
+  "pick": "c4",
+  "tries": 4,
+  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
+  "redone": true
  },
  "rotgut_fly": {
   "pick": "c1",
@@ -105,14 +112,16 @@
   "note": ""
  },
  "pale_rider": {
-  "pick": "c1",
-  "tries": 1,
-  "note": ""
+  "pick": "c4",
+  "tries": 4,
+  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
+  "redone": true
  },
  "skinwing": {
-  "pick": "c1",
-  "tries": 1,
-  "note": ""
+  "pick": "c2",
+  "tries": 2,
+  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
+  "redone": true
  },
  "gutsnout": {
   "pick": "c1",
@@ -155,13 +164,15 @@
   "note": ""
  },
  "labyrinth_sprite": {
-  "pick": "c1",
-  "tries": 1,
-  "note": ""
+  "pick": "c3",
+  "tries": 3,
+  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
+  "redone": true
  },
  "klutz": {
-  "pick": "c1",
-  "tries": 1,
-  "note": "Reviewer note: his head is about 15% smaller than in his usual art. If he looks off in the game, enlarging the head is the first fix to try."
+  "pick": "c4",
+  "tries": 4,
+  "note": "Redone in round 2: head back to nearly half his height, ears wide, both eye domes on top.",
+  "redone": true
  }
 }
