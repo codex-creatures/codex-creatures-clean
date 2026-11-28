@@ -46,22 +46,25 @@
   "redone": true
  },
  "veilstalker": {
-  "pick": "c2",
-  "tries": 2,
-  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
-  "redone": true
+  "pick": "c5",
+  "tries": 5,
+  "note": "Round 3: turned three-quarter, right side showing.",
+  "redone": true,
+  "round3": true
  },
  "the_watcher": {
-  "pick": "c2",
-  "tries": 2,
-  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
-  "redone": true
+  "pick": "c5",
+  "tries": 5,
+  "note": "Round 3: turned three-quarter; a thin red edge of the iris shows at the right.",
+  "redone": true,
+  "round3": true
  },
  "rattlebones": {
-  "pick": "c3",
-  "tries": 3,
-  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
-  "redone": true
+  "pick": "c7",
+  "tries": 7,
+  "note": "Round 3: turned three-quarter like the Troglodyte Brute; the belt buckle (a front detail) painted out.",
+  "redone": true,
+  "round3": true
  },
  "shambler": {
   "pick": "c3",
@@ -101,10 +104,11 @@
   "note": "Regenerated once: the first try lost the arched neck."
  },
  "plague_rat": {
-  "pick": "c4",
-  "tries": 4,
-  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
-  "redone": true
+  "pick": "c6",
+  "tries": 6,
+  "note": "Round 3: the tail now starts low, between the hind legs.",
+  "redone": true,
+  "round3": true
  },
  "rotgut_fly": {
   "pick": "c1",

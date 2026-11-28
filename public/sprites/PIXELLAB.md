@@ -214,18 +214,18 @@ the other 33 redone 2026-11-27 with a sheet for each of what shows from behind
 | creatures/back/mole_hag.png | e94f9635-3862-4b56-ad9f-9729c1dd3930 |
 | creatures/back/moss_wolf.png | 9649c8f7-4ad4-4cd6-b7ad-537848290e5f (fix of c2) |
 | creatures/back/pale_rider.png | a79cf9bd-6e92-4f09-862d-1743326720d1 (round 2, edit of c3: peaked hood) |
-| creatures/back/plague_rat.png | 379afd44-1478-489e-a224-96f2d4e4ac27 (round 2, edit of c3: head dome + ears) |
-| creatures/back/rattlebones.png | fb1491ae-d005-440d-89a3-977ea197fb2e (round 2, edit of c2: bigger skull) |
+| creatures/back/plague_rat.png | cb90cd5a-40a3-4eb6-9bc7-168c5bb28f8f (round 3, inpaint: tail root low) |
+| creatures/back/rattlebones.png | 41cb7f09-6cf3-42d9-a303-0dc10798ab00 (round 3, 45-degree turn) then by script: the front belt buckle painted as belt leather |
 | creatures/back/rotgut_fly.png | 9bcdf29c-48ef-40f4-86f2-09078a2c35e4 |
 | creatures/back/rust_beetle.png | 37f7c1cc-d53b-4f53-9b24-b4b5190c0d07 |
 | creatures/back/shambler.png | ca1c1c08-f869-4347-8bd7-1f8280e36716 (round 2, edit of c2: bigger head) |
 | creatures/back/skinwing.png | 00d8b0a8-3207-4a45-bea3-cce2cafacc0d (round 2) |
 | creatures/back/storm_phoenix.png | 1bbf9733-94d2-429a-8dee-787eb5bae9c4 |
 | creatures/back/sylvaran.png | 44fdc4ab-545f-432c-bb2d-a28e2ae67087 (inpaint of c1 cloak centre) |
-| creatures/back/the_watcher.png | 73cd33a7-3b6e-4011-b6d4-3e42bd229e80 (round 2) |
+| creatures/back/the_watcher.png | eb7907eb-4dff-4356-9ebd-d0a2d17b3b91 (round 3, 45-degree turn) |
 | creatures/back/troglodyte_brute.png | 50fae7c4-1f21-43c3-b212-17780adb1a67 |
 | creatures/back/tunnel_wyrm.png | 2e146729-e606-45a5-a469-e7a798523ab8 (regen seed11, arched neck) |
-| creatures/back/veilstalker.png | 3ef56132-2144-401d-a6a0-9d1ea9239a9d (round 2) |
+| creatures/back/veilstalker.png | d1fe32d2-c11e-4b53-8913-0cd466493cce (round 3, 45-degree turn) |
 | creatures/back/void_serpent.png | 35cb4299-fb7f-4f3b-b400-8a2f113a7d2e (inpaint of c3 neck stripe) |
 
 ## The walkable Labyrinth: art samples (2026-11-06, samples only, not in the game)

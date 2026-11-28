@@ -24,9 +24,12 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   drawn as it looks and not mirrored. Foes, and every other screen, use the usual art. **Every
   creature a player can own has one, Klutz too** (2026-11-27: the 13 from 2026-11-03 plus 33 redone;
   a test checks none is missing). **The standard** (the user, 2026-11-27, naming the Gloom Gnome,
-  Gleamling, Gutsnout and Troglodyte Brute as the best): the creature is **truly turned away**, into
-  the picture and only a little to the right, facing the foe. Never the side view's pose or stride
-  with just the torso turned (11 first tries were rejected for exactly that). Legs and feet are
+  Gleamling, Gutsnout and Troglodyte Brute as the best): the creature is **truly turned away** in a
+  **three-quarter view**, its back and some of its right side showing (the spine left of centre,
+  the right shoulder nearer), facing the foe at the upper right. Never the side view's pose or
+  stride with just the torso turned (11 first tries were rejected for that), and never dead
+  straight from behind either (The Watcher, Rattlebones and Veilstalker were sent back for
+  that, 2026-11-28). Legs and feet are
   seen from behind, side by side under the body and planted; a quadruped shows its rump and both
   hind legs, tail in the middle; a flier flies away with its wings out to both sides; a rider's
   horse turns too. The head keeps its share of the height (no shrunk heads; Klutz's head is nearly
@@ -44,7 +47,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     worked in round 2 say "redraw this exact … seen from BEHIND: its whole body turned away from
     us, facing into the picture and only slightly to the right", spell out where each leg, the
     head (its size "the same as in the original") and the weapon go, and end "no side-on … pose".
-    Shrunk heads were fixed with one edit ("make the head about 1.5 times bigger").
+    Shrunk heads were fixed with one edit ("make the head about 1.5 times bigger"). "Slightly to
+    the right" came out dead straight-on, and editing a straight-on back to turn it barely moves
+    it; regenerating from the side art with "seen from behind at a 45-degree angle: the camera is
+    behind it and off to its right … its back and its right side about equally … a NEW standing
+    pose" gives the Gnome's and Troll's turn (round 3: 55 more generations, 418 of the 500 in all).
   - Redrawn art gets a new address for its back too (`ART_REV`), so phones fetch it at once.
   - Amber Wasp's back (2026-11-03) is still side-on, the only old one off the standard; left for
     the user to decide.

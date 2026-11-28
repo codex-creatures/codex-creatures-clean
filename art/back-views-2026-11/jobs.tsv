@@ -66,3 +66,15 @@ shambler	3	ca1c1c08-f869-4347-8bd7-1f8280e36716	round2 edit of c2: bigger head (
 labyrinth_sprite	3	72427d6a-09a4-4725-81fd-ba7e5065d56d	round2 edit of c2: bigger head (img fcdc710a-fa01-5202-8968-12782e8c6f95)
 plague_rat	4	379afd44-1478-489e-a224-96f2d4e4ac27	round2 edit of c3: head dome + ears (img 414bb48c-805c-5b64-87ee-0f2dd00a6e29)
 flicker_wisp	3	63d01b55-6c9f-475f-96b9-159671491847	round2 edit of c2: longer tendrils (img fc668ee7-35fc-58c8-a967-150510bc8a3d)
+rattlebones	4	5a7c53f7-3787-4a13-8880-6a2046ccf94f	round3 three-quarter turn, edit of c2, seed22 img bf049138-7dd9-5bc2-a8d6-99a826c0d356
+rattlebones	5	dd924529-e0e9-4393-8077-bc11258b7c3a	round3 three-quarter turn, edit of c2, seed7 img 750d55d2-0b7f-5047-85be-7bc782a2ca00
+veilstalker	3	0d0567b6-b716-4ad4-a05a-36f4e91f8aa2	round3 three-quarter turn, edit of c2, seed22 img 075534c5-959d-5a43-b400-b7c757c5ff06
+veilstalker	4	0410cd18-c258-447d-ba7c-6ff78b2cb350	round3 three-quarter turn, edit of c2, seed7 img c8dd4fa1-e810-5ba7-952f-959eccf787bd
+the_watcher	3	77b53f39-b47b-4ce3-b115-23b11448cd83	round3 three-quarter turn, edit of c2, seed22 img 3488a605-5222-5930-92a1-8d6cb8b34a2a
+the_watcher	4	c3249b30-2f39-456c-876b-97eab277b1b5	round3 three-quarter turn, edit of c2, seed7 img 7d6a77e2-eed3-5413-bb3c-5680ec2eea7f
+plague_rat	5	43030814-d35b-45dc-aa69-0e6d0ed83329	round3 tail lower, edit of c4 img c7ee6f84-708e-5d94-91d4-f1ab969c29b2
+rattlebones	6	41cb7f09-6cf3-42d9-a303-0dc10798ab00	round3 45-degree from src, seed22 img 82f3a9b4-e92d-5d87-804b-18241d4c9b6f
+veilstalker	5	d1fe32d2-c11e-4b53-8913-0cd466493cce	round3 45-degree from src, seed22 img b23dab72-a7db-5023-888e-03a8af81c250
+the_watcher	5	eb7907eb-4dff-4356-9ebd-d0a2d17b3b91	round3 45-degree from src, seed22 img cda36f5b-c5a8-565d-ab3d-05607d70c607
+plague_rat	6	cb90cd5a-40a3-4eb6-9bc7-168c5bb28f8f	round3 inpaint of c4: tail root low (img cb29ff68-d1d2-50f4-a622-849ec51a98e3)
+rattlebones	7	-	scripted: c6 with the front belt buckle recoloured to belt leather

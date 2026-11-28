@@ -140,10 +140,10 @@ const BACK_SIZES: Record<string, [number, number]> = {
   grub_keeper: [111, 104], gutsnout: [100, 109], hexed_puppet: [67, 118], hollow_matriarch: [123, 105],
   ironhide: [119, 85], klutz: [85, 89], labyrinth_sprite: [108, 121], leafblade_scout: [48, 82],
   mole_hag: [100, 117], moss_wolf: [62, 69], mr_shadows: [84, 94], pale_rider: [85, 127], plague_rat: [41, 69],
-  rattlebones: [67, 90], rotgut_fly: [50, 73], rust_beetle: [84, 71], shambler: [51, 90], skinwing: [128, 71],
-  storm_phoenix: [92, 121], swamp_witch: [85, 89], sylvaran: [69, 100], the_watcher: [68, 81],
+  rattlebones: [64, 88], rotgut_fly: [50, 73], rust_beetle: [84, 71], shambler: [51, 90], skinwing: [128, 71],
+  storm_phoenix: [92, 121], swamp_witch: [85, 89], sylvaran: [69, 100], the_watcher: [65, 76],
   thicket_archer: [74, 76], thunderhead: [104, 105], troglodyte_brute: [115, 120], tunnel_wyrm: [106, 108],
-  veilstalker: [68, 82], void_serpent: [111, 97],
+  veilstalker: [74, 86], void_serpent: [111, 97],
 };
 export const BACK_SPRITES: Record<string, Sprite> = {};
 for (const [id, [w, h]] of Object.entries(BACK_SIZES)) {
