@@ -88,3 +88,7 @@ skinwing	3	4f571d54-731d-4099-b92a-fc263d7a11e5	round5 45-degree, seed22 img fd9
 skinwing	4	9b24f195-fc42-4a45-8204-9e5f12948ef3	round5 45-degree, seed7 img 2a6bd40f-4b67-5984-9846-51a24e14def8
 labyrinth_sprite	6	9b825ae9-3757-482f-ba97-f686d41ecb1a	round5 edit of c3: 20-degree turn, wings from shoulder blades, seed31 (img 51aaf1bc-c1f6-5b98-a9dc-7fb528d23a8f)
 labyrinth_sprite	7	880dac20-73c6-4946-b091-b625b33f949b	round5 edit of c3: 20-degree turn, wings from shoulder blades, seed7 (img 6c25a79a-fb48-5d94-a352-4ef0198090ab)
+skinwing	5	8d7c6e14-a3b0-4fbb-b2f8-6e820c90768e	round6 inpaint of c4: far wing right way up (img fc2ef4dd-7ef9-56e9-bc6a-20b30ffe0eae)
+labyrinth_sprite	8	c49d0b9a-2257-4329-b4ec-3e744dfca87d	round6 inpaint of c7: wing roots on the back (img 47cea279-e72f-5ce9-aff0-b3f270585389)
+skinwing	6	4501236b-6a95-43e5-8e9f-2ec5dd4a9ad3	round6 45-degree from src, both wings right way up, seed11 (img fdcfe9ba-8891-57d4-b43c-32c352113481)
+labyrinth_sprite	9	ddfb1390-3596-4f72-9f67-13db04475a21	round6 edit of c7: wing roots over the back, seed11 (img 7a1587b8-f88f-5579-ac86-ce05530e14c8)

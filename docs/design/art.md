@@ -51,7 +51,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     the right" came out dead straight-on, and editing a straight-on back to turn it barely moves
     it; regenerating from the side art with "seen from behind at a 45-degree angle: the camera is
     behind it and off to its right … its back and its right side about equally … a NEW standing
-    pose" gives the Gnome's and Troll's turn (round 3: 55 more generations, 418 of the 500 in all).
+    pose" gives the Gnome's and Troll's turn (round 3: 55 more generations; 498 of the 500 in all by the end, 2026-11-28).
   - Redrawn art gets a new address for its back too (`ART_REV`), so phones fetch it at once.
   - Amber Wasp's back (2026-11-03) is still side-on, the only old one off the standard; left for
     the user to decide.

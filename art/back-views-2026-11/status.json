@@ -124,9 +124,9 @@
   "redone": true
  },
  "skinwing": {
-  "pick": "c4",
-  "tries": 4,
-  "note": "Today: slightly diagonal, the near wing larger.",
+  "pick": "c6",
+  "tries": 6,
+  "note": "Today: both wings the right way up (the far one was upside down).",
   "redone": true,
   "latest": true
  },
@@ -171,9 +171,9 @@
   "note": ""
  },
  "labyrinth_sprite": {
-  "pick": "c7",
-  "tries": 7,
-  "note": "Today: slightly diagonal, its wings growing from its shoulder blades.",
+  "pick": "c9",
+  "tries": 9,
+  "note": "Today: the wings grow from its shoulder blades, over its back.",
   "redone": true,
   "latest": true
  },
