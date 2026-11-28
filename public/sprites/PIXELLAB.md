@@ -208,8 +208,8 @@ the other 33 redone 2026-11-27 with a sheet for each of what shows from behind
 | creatures/back/gutsnout.png | 405e2948-406f-4149-9621-e08cb7ce9d3c |
 | creatures/back/hexed_puppet.png | 9a8a97d7-2db5-4ab6-89bf-35246f04855b |
 | creatures/back/hollow_matriarch.png | f665790b-0180-49f9-90a1-bd7709d53007 |
-| creatures/back/klutz.png | 8869464b-851c-423d-88c4-156f92492c8c (round 2, edit of c2: bigger head) |
-| creatures/back/labyrinth_sprite.png | 72427d6a-09a4-4725-81fd-ba7e5065d56d (round 2, edit of c2: bigger head) |
+| creatures/back/klutz.png | 5181b43c-fff7-4cb6-8d2c-f6ef4104f9e6 (round 4, inpaint: eyes no longer show) |
+| creatures/back/labyrinth_sprite.png | 880dac20-73c6-4946-b091-b625b33f949b (round 5, edit of c3: slightly diagonal, wings from the shoulder blades) |
 | creatures/back/leafblade_scout.png | 69ecb32c-0c09-43d5-aab6-5483a9a9def5 (round 2) |
 | creatures/back/mole_hag.png | e94f9635-3862-4b56-ad9f-9729c1dd3930 |
 | creatures/back/moss_wolf.png | 9649c8f7-4ad4-4cd6-b7ad-537848290e5f (fix of c2) |
@@ -219,7 +219,7 @@ the other 33 redone 2026-11-27 with a sheet for each of what shows from behind
 | creatures/back/rotgut_fly.png | 9bcdf29c-48ef-40f4-86f2-09078a2c35e4 |
 | creatures/back/rust_beetle.png | 37f7c1cc-d53b-4f53-9b24-b4b5190c0d07 |
 | creatures/back/shambler.png | ca1c1c08-f869-4347-8bd7-1f8280e36716 (round 2, edit of c2: bigger head) |
-| creatures/back/skinwing.png | 00d8b0a8-3207-4a45-bea3-cce2cafacc0d (round 2) |
+| creatures/back/skinwing.png | 9b24f195-fc42-4a45-8204-9e5f12948ef3 (round 5, 45-degree turn) |
 | creatures/back/storm_phoenix.png | 1bbf9733-94d2-429a-8dee-787eb5bae9c4 |
 | creatures/back/sylvaran.png | 44fdc4ab-545f-432c-bb2d-a28e2ae67087 (inpaint of c1 cloak centre) |
 | creatures/back/the_watcher.png | eb7907eb-4dff-4356-9ebd-d0a2d17b3b91 (round 3, 45-degree turn) |

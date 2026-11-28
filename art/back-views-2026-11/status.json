@@ -41,30 +41,33 @@
  },
  "flicker_wisp": {
   "pick": "c3",
-  "tries": 3,
-  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
-  "redone": true
+  "tries": 6,
+  "note": "Pick one: A flies away with its tail trailing to the lower left; B is a flame seen from behind, rising; C keeps its usual shape with the orb turned away.",
+  "redone": true,
+  "latest": true,
+  "options": {
+   "A": "c4",
+   "B": "c5",
+   "C": "c6"
+  }
  },
  "veilstalker": {
   "pick": "c5",
   "tries": 5,
   "note": "Round 3: turned three-quarter, right side showing.",
-  "redone": true,
-  "round3": true
+  "redone": true
  },
  "the_watcher": {
   "pick": "c5",
   "tries": 5,
   "note": "Round 3: turned three-quarter; a thin red edge of the iris shows at the right.",
-  "redone": true,
-  "round3": true
+  "redone": true
  },
  "rattlebones": {
   "pick": "c7",
   "tries": 7,
   "note": "Round 3: turned three-quarter like the Troglodyte Brute; the belt buckle (a front detail) painted out.",
-  "redone": true,
-  "round3": true
+  "redone": true
  },
  "shambler": {
   "pick": "c3",
@@ -107,8 +110,7 @@
   "pick": "c6",
   "tries": 6,
   "note": "Round 3: the tail now starts low, between the hind legs.",
-  "redone": true,
-  "round3": true
+  "redone": true
  },
  "rotgut_fly": {
   "pick": "c1",
@@ -122,10 +124,11 @@
   "redone": true
  },
  "skinwing": {
-  "pick": "c2",
-  "tries": 2,
-  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
-  "redone": true
+  "pick": "c4",
+  "tries": 4,
+  "note": "Today: slightly diagonal, the near wing larger.",
+  "redone": true,
+  "latest": true
  },
  "gutsnout": {
   "pick": "c1",
@@ -168,15 +171,17 @@
   "note": ""
  },
  "labyrinth_sprite": {
-  "pick": "c3",
-  "tries": 3,
-  "note": "Redone in round 2: turned fully away, legs seen from behind, head at full size.",
-  "redone": true
+  "pick": "c7",
+  "tries": 7,
+  "note": "Today: slightly diagonal, its wings growing from its shoulder blades.",
+  "redone": true,
+  "latest": true
  },
  "klutz": {
-  "pick": "c4",
-  "tries": 4,
-  "note": "Redone in round 2: head back to nearly half his height, ears wide, both eye domes on top.",
-  "redone": true
+  "pick": "c5",
+  "tries": 5,
+  "note": "Today: his eyes no longer show from behind.",
+  "redone": true,
+  "latest": false
  }
 }

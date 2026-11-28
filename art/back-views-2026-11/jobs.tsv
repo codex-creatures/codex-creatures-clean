@@ -78,3 +78,13 @@ veilstalker	5	d1fe32d2-c11e-4b53-8913-0cd466493cce	round3 45-degree from src, se
 the_watcher	5	eb7907eb-4dff-4356-9ebd-d0a2d17b3b91	round3 45-degree from src, seed22 img cda36f5b-c5a8-565d-ab3d-05607d70c607
 plague_rat	6	cb90cd5a-40a3-4eb6-9bc7-168c5bb28f8f	round3 inpaint of c4: tail root low (img cb29ff68-d1d2-50f4-a622-849ec51a98e3)
 rattlebones	7	-	scripted: c6 with the front belt buckle recoloured to belt leather
+klutz	5	5181b43c-fff7-4cb6-8d2c-f6ef4104f9e6	round4 inpaint of c4: eye domes removed (img 2f8d07f7-924f-51e8-8059-01cc40b3bd50)
+flicker_wisp	4	986c8e19-8f1a-4e85-b261-7f2cb665eded	round4 option A: 45-degree, tail to lower left (img f6cb819b-f161-5a45-9f8a-4be3d382c2ce)
+flicker_wisp	5	7de9e569-30e8-4325-bd51-f290e009250a	round4 option B: candle flame from behind (img bb8c5f82-631c-582c-bc9a-af34ed2d4bc3)
+flicker_wisp	6	b0a23f28-20ef-4bb0-83fe-c571e325e64a	round4 option C: side shape kept, orb turned away (img 38bdf3ff-5651-526b-b40f-e968c4026b02)
+labyrinth_sprite	4	2659bc23-7569-4ab3-b08a-8f919e459c7d	round5 45-degree, wings from the back, seed22 img 3b143389-b27d-5799-bb54-d5ebc72de2ab
+labyrinth_sprite	5	d1ad024e-8355-40ef-a8ef-47099a8747a9	round5 45-degree, wings from the back, seed7 img 5af48fd6-219d-5e69-aa05-91196f4a8245
+skinwing	3	4f571d54-731d-4099-b92a-fc263d7a11e5	round5 45-degree, seed22 img fd9ef1ae-7786-5bc9-a81b-5a80f865162f
+skinwing	4	9b24f195-fc42-4a45-8204-9e5f12948ef3	round5 45-degree, seed7 img 2a6bd40f-4b67-5984-9846-51a24e14def8
+labyrinth_sprite	6	9b825ae9-3757-482f-ba97-f686d41ecb1a	round5 edit of c3: 20-degree turn, wings from shoulder blades, seed31 (img 51aaf1bc-c1f6-5b98-a9dc-7fb528d23a8f)
+labyrinth_sprite	7	880dac20-73c6-4946-b091-b625b33f949b	round5 edit of c3: 20-degree turn, wings from shoulder blades, seed7 (img 6c25a79a-fb48-5d94-a352-4ef0198090ab)
